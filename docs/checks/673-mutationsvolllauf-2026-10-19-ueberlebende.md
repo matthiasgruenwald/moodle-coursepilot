@@ -1,0 +1,5192 @@
+# Überlebende Mutanten je Datei (#673, 2026-10-19)
+
+Quelle und Methode: siehe [Hauptbericht](673-mutationsvolllauf-2026-10-19.md). Gesamt 4726 Überlebende, davon 135 mit begründetem exaktem Ignore in `scripts/gate/mutation-ignore.json` (gelistet als „ignoriert“), 4591 offen. Offene Überlebende sind eine Arbeitsliste, keine Gate-Verletzung.
+
+| Abschnitt | Dateien | Mutanten | getötet | überlebt (ignoriert) | ungedeckt | Fehler | MSI % | Sekunden |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| classes-01 | 10 | 872 | 669 | 163 (0) | 40 | 0 | 76.72 | 7293 |
+| classes-02 | 10 | 854 | 630 | 221 (1) | 3 | 0 | 73.77 | 4265 |
+| classes-03 | 10 | 796 | 525 | 266 (0) | 5 | 0 | 65.95 | 2380 |
+| classes-04 | 10 | 390 | 312 | 74 (4) | 4 | 0 | 80 | 1882 |
+| classes-05 | 10 | 712 | 550 | 148 (79) | 14 | 0 | 77.25 | 10593 |
+| classes-06 | 8 | 506 | 375 | 127 (0) | 4 | 0 | 74.11 | 7537 |
+| classes-activity_files | 1 | 9 | 0 | 0 (0) | 9 | 0 | 0 | 1 |
+| classes-admin | 5 | 120 | 98 | 21 (1) | 1 | 0 | 81.67 | 307 |
+| classes-catalog-01 | 10 | 1432 | 358 | 1063 (1) | 11 | 0 | 25 | 57455 |
+| classes-catalog-02 | 10 | 1294 | 705 | 584 (20) | 5 | 0 | 54.48 | 38739 |
+| classes-catalog-03 | 4 | 552 | 283 | 269 (0) | 0 | 0 | 51.27 | 13733 |
+| classes-check | 5 | 26 | 18 | 8 (0) | 0 | 0 | 69.23 | 44 |
+| classes-event | 4 | 12 | 10 | 2 (0) | 0 | 0 | 83.33 | 101 |
+| classes-external-01 | 10 | 608 | 324 | 280 (1) | 4 | 0 | 53.29 | 4560 |
+| classes-external-02 | 10 | 411 | 233 | 172 (1) | 6 | 0 | 56.69 | 1058 |
+| classes-external-03 | 10 | 485 | 238 | 234 (0) | 13 | 0 | 49.07 | 1870 |
+| classes-external-04 | 10 | 226 | 113 | 113 (1) | 0 | 0 | 50 | 2207 |
+| classes-external-05 | 10 | 817 | 468 | 322 (1) | 27 | 0 | 57.28 | 4312 |
+| classes-external-06 | 6 | 285 | 149 | 136 (0) | 0 | 0 | 52.28 | 3640 |
+| classes-history | 6 | 368 | 265 | 93 (22) | 10 | 0 | 72.01 | 5936 |
+| classes-output | 10 | 373 | 197 | 176 (0) | 0 | 0 | 52.82 | 770 |
+| classes-privacy | 1 | 209 | 126 | 83 (0) | 0 | 0 | 60.29 | 378 |
+| classes-quiz | 1 | 115 | 78 | 37 (0) | 0 | 0 | 67.83 | 611 |
+| classes-task | 2 | 1 | 1 | 0 (0) | 0 | 0 | 100 | 3 |
+| classes-webdav | 9 | 377 | 286 | 91 (3) | 0 | 0 | 75.86 | 13497 |
+| db | 2 | 0 | 0 | 0 (0) | 0 | 0 | null | 2 |
+| root | 1 | 135 | 91 | 43 (0) | 1 | 0 | 67.41 | 366 |
+| **gesamt** | 185 | 11985 | 7102 | 4726 (135) | 157 | 0 | 59.26 | 183540 |
+
+## Plugin/src/local_coursepilot/classes/access_log.php (2 überlebt, 2 offen)
+
+- 57 FalseValue: `if ($level === false || $level === '') => if ($level === true || $level === '')`
+- 60 CastInt: `return (int) $level; => return $level;`
+
+## Plugin/src/local_coursepilot/classes/activity_backup.php (91 überlebt, 91 offen)
+
+- 59 UnwrapFinally: `try { $xml = @file_get_contents(self::backup_path($backupid) . "/activities/{$cm->modname}_{$cm->id}/{$cm->modname}.xml"); } finally { self::discard_tempdir($backupid); } => $xml = @file_get_contents(`
+- 85 CastInt: `ackup::MODE_IMPORT, (int) $USER->id); => ackup::MODE_IMPORT, $USER->id);`
+- 88 UnwrapFinally: `} finally { $bc->destroy(); } => } $bc->destroy();`
+- 93 Finally_: `} finally { $bc->destroy(); => `
+- 94 MethodCallRemoval: `$bc->destroy(); => `
+- 111 FalseValue: `rce, bool $hidden = false): int => rce, bool $hidden = true): int`
+- 112 UnwrapLtrim: `l = str_starts_with(ltrim($source), '<'); => l = str_starts_with($source, '<');`
+- 116 DecrementInteger: `ame, $sectionnum ?? 1, $hidden); => ame, $sectionnum ?? 0, $hidden);`
+- 116 IncrementInteger: `ame, $sectionnum ?? 1, $hidden); => ame, $sectionnum ?? 2, $hidden);`
+- 158 NullSafePropertyCall: `dom->documentElement?->nodeName !== 'acti => dom->documentElement->nodeName !== 'acti`
+- 158 PregMatchRemoveCaret: `y' || !preg_match('/^[a-z][a-z0-9]*$/', $ => y' || !preg_match('/[a-z][a-z0-9]*$/', $`
+- 158 PregMatchRemoveDollar: `ch('/^[a-z][a-z0-9]*$/', $modname) || !pl => ch('/^[a-z][a-z0-9]*/', $modname) || !pl`
+- 158 LogicalOr: `Name !== 'activity' || !preg_match('/^[a-z => Name !== 'activity' && !preg_match('/^[a-z`
+- 177 DecrementInteger: `visible = $hidden ? 0 : 1; => visible = $hidden ? -1 : 1;`
+- 177 IncrementInteger: `visible = $hidden ? 0 : 1; => visible = $hidden ? 1 : 1;`
+- 177 DecrementInteger: `ble = $hidden ? 0 : 1; => ble = $hidden ? 0 : 0;`
+- 177 IncrementInteger: `ble = $hidden ? 0 : 1; => ble = $hidden ? 0 : 2;`
+- 177 Ternary: `visible = $hidden ? 0 : 1; => visible = $hidden ? 1 : 0;`
+- 178 DecrementInteger: `cp' . random_string(30); => cp' . random_string(29);`
+- 178 IncrementInteger: `p' . random_string(30); => p' . random_string(31);`
+- 178 Concat: `$backupid = 'cp' . random_string(30); => $backupid = random_string(30) . 'cp';`
+- 178 ConcatOperandRemoval: `$backupid = 'cp' . random_string(30); => $backupid = random_string(30);`
+- 178 ConcatOperandRemoval: `$backupid = 'cp' . random_string(30); => $backupid = 'cp';`
+- 182 CastInt: `$modversion = (int) get_config("mod_{$mo => $modversion = get_config("mod_{$mo`
+- 182 CastInt: `me}", 'version') ?: (int) $CFG->version; => me}", 'version') ?: $CFG->version;`
+- 182 Ternary: `name}", 'version') ?: (int) $CFG->version; => name}", 'version') ? (int) $CFG->version : (int) get_config("mod_{$modname}", 'version');`
+- 201 Concat: `}</modulename>" . "<sectionid>1</sectionid><sectionnumber>{$sectionnum}</sectionnumber><idnumber>\$@NULL@\$</idnumber>" . "<added>{$now}</added><score>0</score><indent>0</indent><visible>{$visible}</v`
+- 201 ConcatOperandRemoval: `@\$</idnumber>" . "<added>{$now}</added><score>0</score><indent>0</indent><visible>{$visible}</visible>" . "<visibleoncoursepage> => @\$</idnumber>" . "<visibleoncoursepage>`
+- 201 Concat: `@\$</idnumber>" . "<added>{$now}</added><score>0</score><indent>0</indent><visible>{$visible}</visible>" . "<visibleoncoursepage>1</visibleoncoursepage><visibleold>{$visible}</visibleold>" . '<groupmo`
+- 201 ConcatOperandRemoval: `sible}</visible>" . "<visibleoncoursepage>1</visibleoncoursepage><visibleold>{$visible}</visibleold>" . '<groupmode>0</group => sible}</visible>" . '<groupmode>0</group`
+- 201 Concat: `sible}</visible>" . "<visibleoncoursepage>1</visibleoncoursepage><visibleold>{$visible}</visibleold>" . '<groupmode>0</groupmode>' . '<groupingid>0</g => sible}</visible>" . '<groupmode>0</groupmode>'`
+- 201 ConcatOperandRemoval: `sibleold>" . '<groupmode>0</groupmode>' . '<groupingid>0</groupingid> => sibleold>" . '<groupingid>0</groupingid>`
+- 201 Concat: `sibleold>" . '<groupmode>0</groupmode>' . '<groupingid>0</groupingid><completion>0</completion>' . '<completiongra => sibleold>" . '<groupingid>0</groupingid><completion>0</completion>' . '<groupmode>`
+- 201 Concat: `>0</groupmode>' . '<groupingid>0</groupingid><completion>0</completion>' . '<completiongradeitemnumber>$@NULL@$</completiongradeitemnumber>' . '<completionpas => >0</groupmode>' . '<completiongradeite`
+- 201 ConcatOperandRemoval: `ion>' . '<completiongradeitemnumber>$@NULL@$</completiongradeitemnumber>' . '<completionpassgrade>0</complet => ion>' . '<completionpassgrade>0</complet`
+- 201 Concat: `ion>' . '<completiongradeitemnumber>$@NULL@$</completiongradeitemnumber>' . '<completionpassgrade>0</completionpassgrade><completionview>0</completionview>' . '<completionexp => ion>' . '<completionpa`
+- 201 ConcatOperandRemoval: `ber>' . '<completionpassgrade>0</completionpassgrade><completionview>0</completionview>' . '<completionexpected>0</completi => ber>' . '<completionexpected>0</completi`
+- 201 Concat: `ber>' . '<completionpassgrade>0</completionpassgrade><completionview>0</completionview>' . '<completionexpected>0</completionexpected>' . '<availability> => ber>' . '<completionexpected>0</completione`
+- 201 Concat: `ompletionview>' . '<completionexpected>0</completionexpected>' . '<availability>$@NULL@$</availability><showdescription>0</showdescription><downloadcontent>1</downloadcontent>' . '<lang>$@NULL@$ => om`
+- 201 ConcatOperandRemoval: `etionexpected>' . '<availability>$@NULL@$</availability><showdescription>0</showdescription><downloadcontent>1</downloadcontent>' . '<lang>$@NULL@$</lang> => etionexpected>' . '<lang>$@NULL@$</lang>`
+- 212 UnwrapLtrim: `xml[^>]*>\s*/', '', ltrim($activityxml)), 'moodle_backup.xm => xml[^>]*>\s*/', '', $activityxml), 'moodle_backup.xm`
+- 218 ConcatOperandRemoval: `coding="UTF-8"?>' . "\n" . $xml); => coding="UTF-8"?>' . $xml);`
+- 218 Concat: `coding="UTF-8"?>' . "\n" . $xml); => coding="UTF-8"?>' . $xml . "\n");`
+- 239 Foreach_: `foreach (['users' => 0, 'activities' => 1, 'files' => 1, 'filters' => 1, 'calendarevents' => 1, 'groups' => 1, 'competencies' => 1, 'customfield' => 1, 'contentbankcontent' => 1] as $name => $value =>`
+- 240 DecrementInteger: `oreach (['users' => 0, 'activities' => 1, => oreach (['users' => -1, 'activities' => 1,`
+- 240 IncrementInteger: `oreach (['users' => 0, 'activities' => 1, => oreach (['users' => 1, 'activities' => 1,`
+- 240 DecrementInteger: `0, 'activities' => 1, 'files' => 1, 'fil => 0, 'activities' => 0, 'files' => 1, 'fil`
+- 240 IncrementInteger: `0, 'activities' => 1, 'files' => 1, 'fil => 0, 'activities' => 2, 'files' => 1, 'fil`
+- 240 DecrementInteger: `s' => 1, 'files' => 1, 'filters' => 1, 'c => s' => 1, 'files' => 0, 'filters' => 1, 'c`
+- 240 IncrementInteger: `s' => 1, 'files' => 1, 'filters' => 1, 'c => s' => 1, 'files' => 2, 'filters' => 1, 'c`
+- 240 DecrementInteger: `=> 1, 'filters' => 1, 'calendarevents' = => => 1, 'filters' => 0, 'calendarevents' =`
+- 240 IncrementInteger: `=> 1, 'filters' => 1, 'calendarevents' = => => 1, 'filters' => 2, 'calendarevents' =`
+- 240 DecrementInteger: `'calendarevents' => 1, 'groups' => 1, 'co => 'calendarevents' => 0, 'groups' => 1, 'co`
+- 240 IncrementInteger: `'calendarevents' => 1, 'groups' => 1, 'co => 'calendarevents' => 2, 'groups' => 1, 'co`
+- 240 DecrementInteger: `' => 1, 'groups' => 1, 'competencies' => => ' => 1, 'groups' => 0, 'competencies' =>`
+- 240 IncrementInteger: `' => 1, 'groups' => 1, 'competencies' => => ' => 1, 'groups' => 2, 'competencies' =>`
+- 240 ArrayItemRemoval: `foreach (['users' => 0, 'activities' => 1, 'f => foreach (['activities' => 1, 'f`
+- 241 DecrementInteger: `, 'competencies' => 1, 'customfield' => 1 => , 'competencies' => 0, 'customfield' => 1`
+- 241 IncrementInteger: `, 'competencies' => 1, 'customfield' => 1 => , 'competencies' => 2, 'customfield' => 1`
+- 241 DecrementInteger: `1, 'customfield' => 1, 'contentbankconten => 1, 'customfield' => 0, 'contentbankconten`
+- 241 IncrementInteger: `1, 'customfield' => 1, 'contentbankconten => 1, 'customfield' => 2, 'contentbankconten`
+- 241 DecrementInteger: `tentbankcontent' => 1] as $name => $value => tentbankcontent' => 0] as $name => $value`
+- 241 IncrementInteger: `tentbankcontent' => 1] as $name => $value => tentbankcontent' => 2] as $name => $value`
+- 243 Assignment: `$settings .= "<setting><level>r => $settings = "<setting><level>r`
+- 246 Concat: `>{$modname}_{$cmid}_included</name><value>1</value></setting>" . "<setting><level>activity</level>{$act}<name>{$modname}_{$cmid}_userinfo</name><value>0</value></setting>"; => >{$modname}_{$cmid}_user`
+- 246 ConcatOperandRemoval: `>{$modname}_{$cmid}_included</name><value>1</value></setting>" . "<setting><level>activity</level>{$act}<name>{$modname}_{$cmid}_userinfo</name><valu => >{$modname}_{$cmid}_userinfo</name><valu`
+- 246 ConcatOperandRemoval: `1</value></setting>" . "<setting><level>activity</level>{$act}<name>{$modname}_{$cmid}_userinfo</name><value>0</value></setting>"; => 1</value></setting>";`
+- 246 Assignment: `$settings .= "<setting><level>a => $settings = "<setting><level>a`
+- 250 Concat: `/backup_release>" . "<backup_date>{$now}</backup_date><mnet_remoteusers>0</mnet_remoteusers><include_files>0</include_files>" . '<include_file_references_to_external_content>0</include_file_references`
+- 250 ConcatOperandRemoval: `include_files>" . '<include_file_references_to_external_content>0</include_file_references_to_external_content>' . '<original_wwwroot>htt => include_files>" . '<original_wwwroot>htt`
+- 250 Concat: `include_files>" . '<include_file_references_to_external_content>0</include_file_references_to_external_content>' . '<original_wwwroot>https://synthetic.invalid</original_wwwroot>' . '<original_sit => `
+- 250 Concat: `tent>' . '<original_wwwroot>https://synthetic.invalid</original_wwwroot>' . '<original_site_identifier_hash>synthetic</original_site_identifier_hash>' . '<original_cour => tent>' . '<original_site_ide`
+- 250 Concat: `root>' . '<original_site_identifier_hash>synthetic</original_site_identifier_hash>' . '<original_course_id>1</original_course_id><original_course_format>topics</original_course_format>' . '<original_c`
+- 250 Concat: `. '<original_course_id>1</original_course_id><original_course_format>topics</original_course_format>' . '<original_course_fullname>s</original_course_fullname><original_course_shortname>s</original_co`
+- 250 Concat: `. '<original_course_fullname>s</original_course_fullname><original_course_shortname>s</original_course_shortname>' . '<original_course_startdate>0</original_course_startdate><original_course_enddate>0`
+- 250 Concat: `. '<original_course_startdate>0</original_course_startdate><original_course_enddate>0</original_course_enddate>' . '<original_course_contextid>1</original_course_contextid><original_system_contextid>1`
+- 250 Concat: `e></interactive>' . '<mode>' . \backup::MODE_IMPORT . '</mode><executio => e></interactive>' . \backup::MODE_IMPORT . '<mode>' . '</mode><executio`
+- 250 ConcatOperandRemoval: `tive>' . '<mode>' . \backup::MODE_IMPORT . '</mode><execution>1 => tive>' . '<mode>' . '</mode><execution>1`
+- 250 Concat: `tive>' . '<mode>' . \backup::MODE_IMPORT . '</mode><execution>1</execution><executiontime>0</executiontime></detail></details>' . "<contents><activ => tive>' . '<mode>' . '</mode><execution>1</executi`
+- 282 CastInt: `ackup::MODE_IMPORT, (int) $USER->id, \backup:: => ackup::MODE_IMPORT, $USER->id, \backup::`
+- 285 UnwrapFinally: `} finally { $rc->destroy(); } => } $rc->destroy();`
+- 288 LogicalNot: `_array($results) && !empty($results['erro => _array($results) && empty($results['erro`
+- 288 LogicalAnd: `(is_array($results) && !empty($results['er => (is_array($results) || !empty($results['er`
+- 288 LogicalAndAllSubExprNegation: `if (is_array($results) && !empty($results['erro => if (!is_array($results) && empty($results['erro`
+- 288 LogicalAndNegation: `if (is_array($results) && !empty($results['errors'])) { => if (!(is_array($results) && !empty($results['errors']))) {`
+- 288 LogicalAndSingleSubExprNegation: `if (is_array($results) & => if (!is_array($results) &`
+- 297 CastInt: `return (int) $task->get_moduleid( => return $task->get_moduleid(`
+- 306 CastInt: `$owned[(int) $task->get_moduleid( => $owned[$task->get_moduleid(`
+- 306 CastInt: `->get_moduleid()] = (int) $task->get_activityi => ->get_moduleid()] = $task->get_activityi`
+- 332 Finally_: `} finally { $rc->destroy(); => `
+- 333 MethodCallRemoval: `$rc->destroy(); => `
+
+## Plugin/src/local_coursepilot/classes/activity_file_trash.php (11 überlebt, 11 offen)
+
+- 52 ConcatOperandRemoval: `$filepath = '/' . $cmid . '/' . $file->get_pat => $filepath = '/' . '/' . $file->get_pat`
+- 52 Concat: `$filepath = '/' . $cmid . '/' . $file->get_pathna => $filepath = '/' . '/' . $cmid . $file->get_pathna`
+- 52 ConcatOperandRemoval: `ath = '/' . $cmid . '/' . $file->get_pathnameh => ath = '/' . $cmid . $file->get_pathnameh`
+- 52 Concat: `ath = '/' . $cmid . '/' . $file->get_pathnamehash() . '/'; => ath = '/' . $cmid . $file->get_pathnamehash() . '/' . '/';`
+- 52 ConcatOperandRemoval: `'/' . $cmid . '/' . $file->get_pathnamehash() . '/'; => '/' . $cmid . '/' . '/';`
+- 68 ArrayItemRemoval: `from_storedfile(['contextid' => $file->get_contextid(), 'component' => self::CO => from_storedfile(['component' => self::CO`
+- 69 ArrayItem: `edfile(['contextid' => $file->get_context => edfile(['contextid' > $file->get_context`
+- 74 ArrayItem: `ilepath, 'filename' => $file->get_filenam => ilepath, 'filename' > $file->get_filenam`
+- 97 DecrementInteger: `created DESC', '*', 0, 1); => created DESC', '*', -1, 1);`
+- 98 DecrementInteger: `ated DESC', '*', 0, 1); => ated DESC', '*', 0, 0);`
+- 98 IncrementInteger: `ated DESC', '*', 0, 1); => ated DESC', '*', 0, 2);`
+
+## Plugin/src/local_coursepilot/classes/admin/connection_storage_location.php (10 überlebt, 9 offen)
+
+- 49 UnwrapStrReplace: `gelocationtarget' . str_replace('_', '', $target), 'local_coursepilot => gelocationtarget' . $target, 'local_coursepilot`
+- 49 Concat: `arget] = get_string('storagelocationtarget' . str_replace('_', '', $target), 'local_coursepilot => arget] = get_string(str_replace('_', '', $target) . 'storagelocationtarget', 'local_coursepilot`
+- 49 ConcatOperandRemoval: `arget] = get_string('storagelocationtarget' . str_replace('_', '', => arget] = get_string(str_replace('_', '',`
+- 49 ConcatOperandRemoval: `oragelocationtarget' . str_replace('_', '', $target), 'local_coursepilot => oragelocationtarget', 'local_coursepilot`
+- 49 Concat: `$targets[$target] = get_string('storagelocationtarget' . str_replace('_', '', $target), 'local_coursepilot') . ': ' . self::state_label => $targets[$target] = ': ' . get_string('storagelocationtarget'`
+- 49 ConcatOperandRemoval: `$targets[$target] = get_string('storagelocationtarget' . str_replace('_', '', $target), 'local_coursepilot') . ': ' . self::state_l => $targets[$target] = ': ' . self::state_l`
+- 49 ConcatOperandRemoval: `cal_coursepilot') . ': ' . self::state_label($s => cal_coursepilot') . self::state_label($s`
+- 49 Concat: `cal_coursepilot') . ': ' . self::state_label($state); => cal_coursepilot') . self::state_label($state) . ': ';`
+- 68 CastString (ignoriert): `data_hosts::allowed((string) $state['host']); => data_hosts::allowed($state['host']);`
+- 91 UnwrapArrayUnique: `foreach (array_unique($defects) as $defect) { => foreach ($defects as $defect) {`
+
+## Plugin/src/local_coursepilot/classes/admin/personaldatahosts_setting.php (1 überlebt, 1 offen)
+
+- 52 CastString: `first_invalid_entry((string) $data); => first_invalid_entry($data);`
+
+## Plugin/src/local_coursepilot/classes/admin/pointer_scan.php (7 überlebt, 7 offen)
+
+- 83 CastInt: `Class $row): int => (int) $row->id, $rows)); => Class $row): int => $row->id, $rows));`
+- 107 LogicalAnd: `is_array($decoded) && !array_is_list($dec => is_array($decoded) || !array_is_list($dec`
+- 130 LogicalAnd: `is_array($decoded) && !array_is_list($dec => is_array($decoded) || !array_is_list($dec`
+- 153 PublicVisibility: `public static function has => protected static function has`
+- 179 ArrayOneItem: `return $result; => return count($result) > 1 ? array_slice($result, 0, 1, true) : $result;`
+- 208 CastString: `$host = (string) ($location->fingerprint['server'] ?? ''); => $host = $location->fingerprint['server'] ?? '';`
+- 241 ArrayItemRemoval: `config', 'value', ['instanceid' => $location->instanceid, 'name' => 'webdav_typ => config', 'value', ['name' => 'webdav_typ`
+
+## Plugin/src/local_coursepilot/classes/admin/remoteaccesscohorts_setting.php (3 überlebt, 3 offen)
+
+- 43 MethodCallRemoval: `parent::__construct('local_coursepilot/remoteaccesscohorts', get_string('settingremoteaccesscohorts', 'local_coursepilot'), get_string('settingremoteaccesscohorts_desc', 'local_coursepilot'), [], null`
+- 69 TrueValue: `return true; => return false;`
+- 92 Assignment: `$this->description .= \html_writer::alis => $this->description = \html_writer::alis`
+
+## Plugin/src/local_coursepilot/classes/availability_privacy.php (1 überlebt, 1 offen)
+
+- 72 ArrayOneItem: `return $node; => return count($node) > 1 ? array_slice($node, 0, 1, true) : $node;`
+
+## Plugin/src/local_coursepilot/classes/catalog/assign.php (581 überlebt, 581 offen)
+
+- 142 TrueValue: `f the assignment.', true, null, null, null, => f the assignment.', false, null, null, null,`
+- 152 TrueValue: `f the assignment.', true, null, null, null, => f the assignment.', false, null, null, null,`
+- 162 FalseValue: `mat of the intro.', false, FORMAT_HTML, null => mat of the intro.', true, FORMAT_HTML, null`
+- 171 Concat: `ity', 'PARAM_RAW', 'Additional activity text (separate editor block below the intro), e.g. for ' . 'work assignments. Empty = no additional text.', false, null, null => ity', 'PARAM_RAW', 'work assign`
+- 171 ConcatOperandRemoval: `ity', 'PARAM_RAW', 'Additional activity text (separate editor block below the intro), e.g. for ' . 'work assignments. Em => ity', 'PARAM_RAW', 'work assignments. Em`
+- 171 ConcatOperandRemoval: `e intro), e.g. for ' . 'work assignments. Empty = no additional text.', false, null, null, => e intro), e.g. for ', false, null, null,`
+- 177 Concat: `, null, 'mod/assign/mod_form.php:62-66 (Editor "activityeditor"); column ' . 'mod/assign/db/install.xml (assign.activity, NOTNULL=false)'), new field('activ => , null, 'mod/assign/db/install.xml (assi`
+- 177 ConcatOperandRemoval: `, null, 'mod/assign/mod_form.php:62-66 (Editor "activityeditor"); column ' . 'mod/assign/db/install.xml (assi => , null, 'mod/assign/db/install.xml (assi`
+- 177 ConcatOperandRemoval: `tyeditor"); column ' . 'mod/assign/db/install.xml (assign.activity, NOTNULL=false)'), new field('activi => tyeditor"); column '), new field('activi`
+- 184 FalseValue: `he activity text.', false, FORMAT_HTML, null => he activity text.', true, FORMAT_HTML, null`
+- 194 FalseValue: `of only after it.', false, 0, [0, 1], null, => of only after it.', true, 0, [0, 1], null,`
+- 195 DecrementInteger: `after it.', false, 0, [0, 1], null, 'mod => after it.', false, -1, [0, 1], null, 'mod`
+- 195 IncrementInteger: `after it.', false, 0, [0, 1], null, 'mod => after it.', false, 1, [0, 1], null, 'mod`
+- 196 DecrementInteger: `er it.', false, 0, [0, 1], null, 'mod/ass => er it.', false, 0, [-1, 1], null, 'mod/ass`
+- 196 IncrementInteger: `er it.', false, 0, [0, 1], null, 'mod/ass => er it.', false, 0, [1, 1], null, 'mod/ass`
+- 196 DecrementInteger: `it.', false, 0, [0, 1], null, 'mod/assign => it.', false, 0, [0, 0], null, 'mod/assign`
+- 196 IncrementInteger: `it.', false, 0, [0, 1], null, 'mod/assign => it.', false, 0, [0, 2], null, 'mod/assign`
+- 196 ArrayItemRemoval: `er it.', false, 0, [0, 1], null, 'mod/assig => er it.', false, 0, [1], null, 'mod/assig`
+- 198 Concat: `, null, 'mod/assign/mod_form.php:123-126 (checkbox); column ' . 'mod/assign/db/install.xml (assign.alwaysshowdescription)'), new field('submi => , null, 'mod/assign/db/install.xml (assign.alwaysshowde`
+- 198 ConcatOperandRemoval: `(checkbox); column ' . 'mod/assign/db/install.xml (assign.alwaysshowdescription)'), new field('submis => (checkbox); column '), new field('submis`
+- 205 FalseValue: `plicitly submits.', false, 0, [0, 1], null, => plicitly submits.', true, 0, [0, 1], null,`
+- 206 DecrementInteger: `y submits.', false, 0, [0, 1], null, 'mod => y submits.', false, -1, [0, 1], null, 'mod`
+- 207 DecrementInteger: `bmits.', false, 0, [0, 1], null, 'mod/ass => bmits.', false, 0, [-1, 1], null, 'mod/ass`
+- 207 IncrementInteger: `bmits.', false, 0, [0, 1], null, 'mod/ass => bmits.', false, 0, [1, 1], null, 'mod/ass`
+- 207 ArrayItemRemoval: `bmits.', false, 0, [0, 1], null, 'mod/assig => bmits.', false, 0, [1], null, 'mod/assig`
+- 209 Concat: `, null, 'mod/assign/mod_form.php:132-137 (selectyesno); column ' . 'mod/assign/db/install.xml (assign.submissiondrafts)'), new field('requi => , null, 'mod/assign/db/install.xml (assign.submissiondraf`
+- 209 ConcatOperandRemoval: `lectyesno); column ' . 'mod/assign/db/install.xml (assign.submissiondrafts)'), new field('requir => lectyesno); column '), new field('requir`
+- 216 FalseValue: `efore submitting.', false, 0, [0, 1], null, => efore submitting.', true, 0, [0, 1], null,`
+- 217 DecrementInteger: `ubmitting.', false, 0, [0, 1], null, 'mod => ubmitting.', false, -1, [0, 1], null, 'mod`
+- 217 IncrementInteger: `ubmitting.', false, 0, [0, 1], null, 'mod => ubmitting.', false, 1, [0, 1], null, 'mod`
+- 218 DecrementInteger: `tting.', false, 0, [0, 1], null, 'mod/ass => tting.', false, 0, [-1, 1], null, 'mod/ass`
+- 218 IncrementInteger: `tting.', false, 0, [0, 1], null, 'mod/ass => tting.', false, 0, [1, 1], null, 'mod/ass`
+- 218 DecrementInteger: `ng.', false, 0, [0, 1], null, 'mod/assign => ng.', false, 0, [0, 0], null, 'mod/assign`
+- 218 IncrementInteger: `ng.', false, 0, [0, 1], null, 'mod/assign => ng.', false, 0, [0, 2], null, 'mod/assign`
+- 218 ArrayItemRemoval: `tting.', false, 0, [0, 1], null, 'mod/assig => tting.', false, 0, [1], null, 'mod/assig`
+- 220 Concat: `, null, 'mod/assign/mod_form.php:139-144 (selectyesno); column ' . 'mod/assign/db/install.xml (assign.requiresubmissionstatement)'), new field('maxat => , null, 'mod/assign/db/install.xml (assign.requ`
+- 220 ConcatOperandRemoval: `lectyesno); column ' . 'mod/assign/db/install.xml (assign.requiresubmissionstatement)'), new field('maxatt => lectyesno); column '), new field('maxatt`
+- 227 FalseValue: `. -1 = unlimited.', false, 1, null, null, 'm => . -1 = unlimited.', true, 1, null, null, 'm`
+- 228 DecrementInteger: `unlimited.', false, 1, null, null, 'mod/a => unlimited.', false, 0, null, null, 'mod/a`
+- 228 IncrementInteger: `unlimited.', false, 1, null, null, 'mod/a => unlimited.', false, 2, null, null, 'mod/a`
+- 231 Concat: `, null, 'mod/assign/mod_form.php:146-149 (Select 1-30 plus ASSIGN_UNLIMITED_ATTEMPTS); ' . 'mod/assign/locallib.php:61 (ASSIGN_UNLIMITED_ATTEMPTS = -1); column ' . 'mod/assign/db/ => , null, 'mod/assi`
+- 231 ConcatOperandRemoval: `, null, 'mod/assign/mod_form.php:146-149 (Select 1-30 plus ASSIGN_UNLIMITED_ATTEMPTS); ' . 'mod/assign/locallib.php:61 (ASS => , null, 'mod/assign/locallib.php:61 (ASS`
+- 231 ConcatOperandRemoval: `S); ' . 'mod/assign/locallib.php:61 (ASSIGN_UNLIMITED_ATTEMPTS = -1); column ' . 'mod/assign/db/install.xml (assi => S); ' . 'mod/assign/db/install.xml (assi`
+- 231 Concat: `S); ' . 'mod/assign/locallib.php:61 (ASSIGN_UNLIMITED_ATTEMPTS = -1); column ' . 'mod/assign/db/install.xml (assign.maxattempts, DEFAULT=1)'), new field('attem => S); ' . 'mod/assign/db/install.xml (a`
+- 231 ConcatOperandRemoval: `MPTS = -1); column ' . 'mod/assign/db/install.xml (assign.maxattempts, DEFAULT=1)'), new field('attemp => MPTS = -1); column '), new field('attemp`
+- 238 Concat: `d', 'PARAM_ALPHA', 'How a new attempt is opened after the first one: manually, automatically (after each ' . 'grading) or until pass. Only visible if "maxattempts" != 1.', false, 'untilpass => d', 'PA`
+- 238 ConcatOperandRemoval: `d', 'PARAM_ALPHA', 'How a new attempt is opened after the first one: manually, automatically (after each ' . 'grading) or until pa => d', 'PARAM_ALPHA', 'grading) or until pa`
+- 238 ConcatOperandRemoval: `ically (after each ' . 'grading) or until pass. Only visible if "maxattempts" != 1.', false, 'untilpass' => ically (after each ', false, 'untilpass'`
+- 240 FalseValue: `axattempts" != 1.', false, 'untilpass', ['ma => axattempts" != 1.', true, 'untilpass', ['ma`
+- 244 Concat: `, null, 'mod/assign/locallib.php:55-58 (ASSIGN_ATTEMPT_REOPEN_METHOD_MANUAL/AUTOMATIC/UNTILPASS); ' . 'mod/assign/mod_form.php:151-170 (choicedropdown); column ' . 'mod/assign/db/ => , null, 'mod/assi`
+- 244 ConcatOperandRemoval: `, null, 'mod/assign/locallib.php:55-58 (ASSIGN_ATTEMPT_REOPEN_METHOD_MANUAL/AUTOMATIC/UNTILPASS); ' . 'mod/assign/mod_form.php:151-170 => , null, 'mod/assign/mod_form.php:151-170`
+- 244 ConcatOperandRemoval: `S); ' . 'mod/assign/mod_form.php:151-170 (choicedropdown); column ' . 'mod/assign/db/install.xml (assi => S); ' . 'mod/assign/db/install.xml (assi`
+- 244 Concat: `S); ' . 'mod/assign/mod_form.php:151-170 (choicedropdown); column ' . 'mod/assign/db/install.xml (assign.attemptreopenmethod, DEFAULT=untilpass)'), new field('dueda => S); ' . 'mod/assign/db/install.x`
+- 244 ConcatOperandRemoval: `edropdown); column ' . 'mod/assign/db/install.xml (assign.attemptreopenmethod, DEFAULT=untilpass)'), new field('duedat => edropdown); column '), new field('duedat`
+- 251 Concat: `ate', 'PARAM_INT', 'Unix timestamp: due date, informational only (not a lock time, that is "cutoffdate"). ' . 'Creates a calendar event (see side effects).', false, 0, null, n => ate', 'PARAM_INT', 'C`
+- 251 ConcatOperandRemoval: `ate', 'PARAM_INT', 'Unix timestamp: due date, informational only (not a lock time, that is "cutoffdate"). ' . 'Creates a calendar e => ate', 'PARAM_INT', 'Creates a calendar e`
+- 251 ConcatOperandRemoval: `is "cutoffdate"). ' . 'Creates a calendar event (see side effects).', false, 0, null, nu => is "cutoffdate"). ', false, 0, null, nu`
+- 253 FalseValue: `ee side effects).', false, 0, null, null, 'm => ee side effects).', true, 0, null, null, 'm`
+- 254 DecrementInteger: `effects).', false, 0, null, null, 'mod/a => effects).', false, -1, null, null, 'mod/a`
+- 254 IncrementInteger: `effects).', false, 0, null, null, 'mod/a => effects).', false, 1, null, null, 'mod/a`
+- 257 Concat: `, null, 'mod/assign/mod_form.php:102-105 (date_time_selector, optional); column ' . 'mod/assign/db/install.xml (assign.duedate)'), new field('cutof => , null, 'mod/assign/db/install.xml (assign.duedat`
+- 257 ConcatOperandRemoval: `, null, 'mod/assign/mod_form.php:102-105 (date_time_selector, optional); column ' . 'mod/assign/db/install.xml (assi => , null, 'mod/assign/db/install.xml (assi`
+- 257 ConcatOperandRemoval: `optional); column ' . 'mod/assign/db/install.xml (assign.duedate)'), new field('cutoff => optional); column '), new field('cutoff`
+- 263 Concat: `ate', 'PARAM_INT', 'Unix timestamp: from here on Moodle accepts no more submissions, not even late ones. ' . '0 = no cut-off.', false, 0, null, n => ate', 'PARAM_INT', '0 = no cut-off.' . 'Unix timest`
+- 263 ConcatOperandRemoval: `ate', 'PARAM_INT', 'Unix timestamp: from here on Moodle accepts no more submissions, not even late ones. ' . '0 = no cut-off.', fa => ate', 'PARAM_INT', '0 = no cut-off.', fa`
+- 263 ConcatOperandRemoval: `ot even late ones. ' . '0 = no cut-off.', false, 0, null, nu => ot even late ones. ', false, 0, null, nu`
+- 265 FalseValue: `'0 = no cut-off.', false, 0, null, null, 'm => '0 = no cut-off.', true, 0, null, null, 'm`
+- 269 Concat: `, null, 'mod/assign/mod_form.php:107-109 (date_time_selector, optional); column ' . 'mod/assign/db/install.xml (assign.cutoffdate)'), new field('allow => , null, 'mod/assign/db/install.xml (assign.cut`
+- 269 ConcatOperandRemoval: `, null, 'mod/assign/mod_form.php:107-109 (date_time_selector, optional); column ' . 'mod/assign/db/install.xml (assi => , null, 'mod/assign/db/install.xml (assi`
+- 269 ConcatOperandRemoval: `optional); column ' . 'mod/assign/db/install.xml (assign.cutoffdate)'), new field('allows => optional); column '), new field('allows`
+- 276 FalseValue: `0 = immediately.', false, 0, null, null, 'm => 0 = immediately.', true, 0, null, null, 'm`
+- 277 DecrementInteger: `mediately.', false, 0, null, null, 'mod/a => mediately.', false, -1, null, null, 'mod/a`
+- 277 IncrementInteger: `mediately.', false, 0, null, null, 'mod/a => mediately.', false, 1, null, null, 'mod/a`
+- 280 Concat: `, null, 'mod/assign/mod_form.php:81-84 (date_time_selector, optional); column ' . 'mod/assign/db/install.xml (assign.allowsubmissionsfromdate)'), new field('gradi => , null, 'mod/assign/db/install.xml`
+- 280 ConcatOperandRemoval: `, null, 'mod/assign/mod_form.php:81-84 (date_time_selector, optional); column ' . 'mod/assign/db/install.xml (assi => , null, 'mod/assign/db/install.xml (assi`
+- 280 ConcatOperandRemoval: `optional); column ' . 'mod/assign/db/install.xml (assign.allowsubmissionsfromdate)'), new field('gradin => optional); column '), new field('gradin`
+- 286 Concat: `ate', 'PARAM_INT', 'Unix timestamp: expected grading date, informational only. Creates a calendar event ' . '(see side effects).', false, 0, null, n => ate', 'PARAM_INT', '(see side effects).' . 'Unix`
+- 286 ConcatOperandRemoval: `ate', 'PARAM_INT', 'Unix timestamp: expected grading date, informational only. Creates a calendar event ' . '(see side effects).' => ate', 'PARAM_INT', '(see side effects).'`
+- 286 ConcatOperandRemoval: `s a calendar event ' . '(see side effects).', false, 0, null, nu => s a calendar event ', false, 0, null, nu`
+- 288 FalseValue: `ee side effects).', false, 0, null, null, 'm => ee side effects).', true, 0, null, null, 'm`
+- 289 DecrementInteger: `effects).', false, 0, null, null, 'mod/a => effects).', false, -1, null, null, 'mod/a`
+- 289 IncrementInteger: `effects).', false, 0, null, null, 'mod/a => effects).', false, 1, null, null, 'mod/a`
+- 292 Concat: `, null, 'mod/assign/mod_form.php:111-113 (date_time_selector, optional); column ' . 'mod/assign/db/install.xml (assign.gradingduedate)'), new field('timel => , null, 'mod/assign/db/install.xml (assign`
+- 292 ConcatOperandRemoval: `, null, 'mod/assign/mod_form.php:111-113 (date_time_selector, optional); column ' . 'mod/assign/db/install.xml (assi => , null, 'mod/assign/db/install.xml (assi`
+- 292 ConcatOperandRemoval: `optional); column ' . 'mod/assign/db/install.xml (assign.gradingduedate)'), new field('timeli => optional); column '), new field('timeli`
+- 298 Concat: `mit', 'PARAM_INT', 'Working time in seconds from the start of an attempt, provided the admin has enabled time limits ' . '($CFG->assign->enabletimelimit). 0 = no time limit.', false, 0, null, n => mit`
+- 298 ConcatOperandRemoval: `mit', 'PARAM_INT', 'Working time in seconds from the start of an attempt, provided the admin has enabled time limits ' . '($CFG->assign->enabl => mit', 'PARAM_INT', '($CFG->assign->enabl`
+- 298 ConcatOperandRemoval: `nabled time limits ' . '($CFG->assign->enabletimelimit). 0 = no time limit.', false, 0, null, nu => nabled time limits ', false, 0, null, nu`
+- 300 FalseValue: `= no time limit.', false, 0, null, null, 'm => = no time limit.', true, 0, null, null, 'm`
+- 304 Concat: `se, 0, null, null, 'mod/assign/mod_form.php:115-121 (duration, optional, only with the admin setting enabled); ' . 'column mod/assign/db/install.xml (assign.timelimit)'), new field('grade => se, 0, nu`
+- 304 ConcatOperandRemoval: `se, 0, null, null, 'mod/assign/mod_form.php:115-121 (duration, optional, only with the admin setting enabled); ' . 'column mod/assign/db => se, 0, null, null, 'column mod/assign/db`
+- 304 ConcatOperandRemoval: `setting enabled); ' . 'column mod/assign/db/install.xml (assign.timelimit)'), new field('grade' => setting enabled); '), new field('grade'`
+- 310 Concat: `ade', 'PARAM_INT', 'Grade type: positive = maximum points, negative = ID of a custom scale, ' . '0 = no grading.', false, 0, null, n => ade', 'PARAM_INT', '0 = no grading.' . 'Grade type: positive = m`
+- 310 ConcatOperandRemoval: `ade', 'PARAM_INT', 'Grade type: positive = maximum points, negative = ID of a custom scale, ' . '0 = no grading.', fa => ade', 'PARAM_INT', '0 = no grading.', fa`
+- 310 ConcatOperandRemoval: `of a custom scale, ' . '0 = no grading.', false, 0, null, nu => of a custom scale, ', false, 0, null, nu`
+- 312 FalseValue: `'0 = no grading.', false, 0, null, null, 'c => '0 = no grading.', true, 0, null, null, 'c`
+- 313 DecrementInteger: `o grading.', false, 0, null, null, 'cours => o grading.', false, -1, null, null, 'cours`
+- 313 IncrementInteger: `o grading.', false, 0, null, null, 'cours => o grading.', false, 1, null, null, 'cours`
+- 316 Concat: `se, 0, null, null, 'course/moodleform_mod.php (standard_grading_coursemodule_elements(), modgrade element); ' . 'mod/assign/mod_form.php:225 (call); column mod/assign/db/install.xml (assign.grade)'), `
+- 316 ConcatOperandRemoval: `se, 0, null, null, 'course/moodleform_mod.php (standard_grading_coursemodule_elements(), modgrade element); ' . 'mod/assign/mod_form. => se, 0, null, null, 'mod/assign/mod_form.`
+- 316 ConcatOperandRemoval: `modgrade element); ' . 'mod/assign/mod_form.php:225 (call); column mod/assign/db/install.xml (assign.grade)'), new field('gradep => modgrade element); '), new field('gradep`
+- 322 Concat: `ty', 'PARAM_BOOL', 'Enable late penalties. Only visible if the penalty feature is active server-wide ' . '(core_grades\penalty_manager::is_penalty_enabled_for_module()).', false, 0, [0, 1], => ty', 'P`
+- 322 ConcatOperandRemoval: `ty', 'PARAM_BOOL', 'Enable late penalties. Only visible if the penalty feature is active server-wide ' . '(core_grades\penalty => ty', 'PARAM_BOOL', '(core_grades\penalty`
+- 322 ConcatOperandRemoval: `active server-wide ' . '(core_grades\penalty_manager::is_penalty_enabled_for_module()).', false, 0, [0, 1], => active server-wide ', false, 0, [0, 1],`
+- 324 FalseValue: `ed_for_module()).', false, 0, [0, 1], null, => ed_for_module()).', true, 0, [0, 1], null,`
+- 325 DecrementInteger: `module()).', false, 0, [0, 1], null, 'mod => module()).', false, -1, [0, 1], null, 'mod`
+- 325 IncrementInteger: `module()).', false, 0, [0, 1], null, 'mod => module()).', false, 1, [0, 1], null, 'mod`
+- 326 DecrementInteger: `le()).', false, 0, [0, 1], null, 'mod/ass => le()).', false, 0, [-1, 1], null, 'mod/ass`
+- 326 IncrementInteger: `le()).', false, 0, [0, 1], null, 'mod/ass => le()).', false, 0, [1, 1], null, 'mod/ass`
+- 326 DecrementInteger: `)).', false, 0, [0, 1], null, 'mod/assign => )).', false, 0, [0, 0], null, 'mod/assign`
+- 326 IncrementInteger: `)).', false, 0, [0, 1], null, 'mod/assign => )).', false, 0, [0, 2], null, 'mod/assign`
+- 326 ArrayItemRemoval: `le()).', false, 0, [0, 1], null, 'mod/assig => le()).', false, 0, [1], null, 'mod/assig`
+- 328 Concat: `, null, 'mod/assign/mod_form.php:253-272 (selectyesno, conditionally visible); column ' . 'mod/assign/db/install.xml (assign.gradepenalty)'), new field('sendn => , null, 'mod/assign/db/install.xml (as`
+- 328 ConcatOperandRemoval: `y visible); column ' . 'mod/assign/db/install.xml (assign.gradepenalty)'), new field('sendno => y visible); column '), new field('sendno`
+- 335 FalseValue: `see side effects.', false, 0, [0, 1], null, => see side effects.', true, 0, [0, 1], null,`
+- 336 DecrementInteger: `e effects.', false, 0, [0, 1], null, 'mod => e effects.', false, -1, [0, 1], null, 'mod`
+- 336 IncrementInteger: `e effects.', false, 0, [0, 1], null, 'mod => e effects.', false, 1, [0, 1], null, 'mod`
+- 337 DecrementInteger: `fects.', false, 0, [0, 1], null, 'mod/ass => fects.', false, 0, [-1, 1], null, 'mod/ass`
+- 337 IncrementInteger: `fects.', false, 0, [0, 1], null, 'mod/ass => fects.', false, 0, [1, 1], null, 'mod/ass`
+- 337 DecrementInteger: `ts.', false, 0, [0, 1], null, 'mod/assign => ts.', false, 0, [0, 0], null, 'mod/assign`
+- 337 IncrementInteger: `ts.', false, 0, [0, 1], null, 'mod/assign => ts.', false, 0, [0, 2], null, 'mod/assign`
+- 337 ArrayItemRemoval: `fects.', false, 0, [0, 1], null, 'mod/assig => fects.', false, 0, [1], null, 'mod/assig`
+- 339 Concat: `, null, 'mod/assign/mod_form.php:212-214 (selectyesno); column ' . 'mod/assign/db/install.xml (assign.sendnotifications)'), new field('sendl => , null, 'mod/assign/db/install.xml (assign.sendnotificat`
+- 339 ConcatOperandRemoval: `lectyesno); column ' . 'mod/assign/db/install.xml (assign.sendnotifications)'), new field('sendla => lectyesno); column '), new field('sendla`
+- 345 Concat: `ns', 'PARAM_BOOL', 'Also notify about late submissions. Only effective with "sendnotifications"=0 - with ' . '1 all notifications are on anyway.', false, 0, [0, 1], => ns', 'PARAM_BOOL', '1 all notifi`
+- 345 ConcatOperandRemoval: `ns', 'PARAM_BOOL', 'Also notify about late submissions. Only effective with "sendnotifications"=0 - with ' . '1 all notifications => ns', 'PARAM_BOOL', '1 all notifications`
+- 345 ConcatOperandRemoval: `ications"=0 - with ' . '1 all notifications are on anyway.', false, 0, [0, 1], => ications"=0 - with ', false, 0, [0, 1],`
+- 347 FalseValue: `ns are on anyway.', false, 0, [0, 1], null, => ns are on anyway.', true, 0, [0, 1], null,`
+- 348 DecrementInteger: `on anyway.', false, 0, [0, 1], null, 'mod => on anyway.', false, -1, [0, 1], null, 'mod`
+- 348 IncrementInteger: `on anyway.', false, 0, [0, 1], null, 'mod => on anyway.', false, 1, [0, 1], null, 'mod`
+- 349 DecrementInteger: `nyway.', false, 0, [0, 1], null, 'mod/ass => nyway.', false, 0, [-1, 1], null, 'mod/ass`
+- 349 IncrementInteger: `nyway.', false, 0, [0, 1], null, 'mod/ass => nyway.', false, 0, [1, 1], null, 'mod/ass`
+- 349 DecrementInteger: `ay.', false, 0, [0, 1], null, 'mod/assign => ay.', false, 0, [0, 0], null, 'mod/assign`
+- 349 IncrementInteger: `ay.', false, 0, [0, 1], null, 'mod/assign => ay.', false, 0, [0, 2], null, 'mod/assign`
+- 349 ArrayItemRemoval: `nyway.', false, 0, [0, 1], null, 'mod/assig => nyway.', false, 0, [1], null, 'mod/assig`
+- 351 Concat: `, null, 'mod/assign/mod_form.php:216-219 (selectyesno, disabledIf sendnotifications eq 1); column ' . 'mod/assign/db/install.xml (assign.sendlatenotifications)'), new field('sends => , null, 'mod/assi`
+- 351 ConcatOperandRemoval: `ions eq 1); column ' . 'mod/assign/db/install.xml (assign.sendlatenotifications)'), new field('sendst => ions eq 1); column '), new field('sendst`
+- 358 FalseValue: `box when grading.', false, 1, [0, 1], null, => box when grading.', true, 1, [0, 1], null,`
+- 359 DecrementInteger: `n grading.', false, 1, [0, 1], null, 'mod => n grading.', false, 0, [0, 1], null, 'mod`
+- 359 IncrementInteger: `n grading.', false, 1, [0, 1], null, 'mod => n grading.', false, 2, [0, 1], null, 'mod`
+- 360 DecrementInteger: `ading.', false, 1, [0, 1], null, 'mod/ass => ading.', false, 1, [-1, 1], null, 'mod/ass`
+- 360 IncrementInteger: `ading.', false, 1, [0, 1], null, 'mod/ass => ading.', false, 1, [1, 1], null, 'mod/ass`
+- 360 DecrementInteger: `ng.', false, 1, [0, 1], null, 'mod/assign => ng.', false, 1, [0, 0], null, 'mod/assign`
+- 360 IncrementInteger: `ng.', false, 1, [0, 1], null, 'mod/assign => ng.', false, 1, [0, 2], null, 'mod/assign`
+- 360 ArrayItemRemoval: `ading.', false, 1, [0, 1], null, 'mod/assig => ading.', false, 1, [1], null, 'mod/assig`
+- 362 Concat: `, null, 'mod/assign/mod_form.php:221-223 (selectyesno); column ' . 'mod/assign/db/install.xml (assign.sendstudentnotifications, DEFAULT=1)'), new field('teams => , null, 'mod/assign/db/install.xml (as`
+- 362 ConcatOperandRemoval: `lectyesno); column ' . 'mod/assign/db/install.xml (assign.sendstudentnotifications, DEFAULT=1)'), new field('teamsu => lectyesno); column '), new field('teamsu`
+- 369 FalseValue: `of individually.', false, 0, [0, 1], null, => of individually.', true, 0, [0, 1], null,`
+- 370 DecrementInteger: `ividually.', false, 0, [0, 1], null, 'mod => ividually.', false, -1, [0, 1], null, 'mod`
+- 370 IncrementInteger: `ividually.', false, 0, [0, 1], null, 'mod => ividually.', false, 1, [0, 1], null, 'mod`
+- 371 DecrementInteger: `ually.', false, 0, [0, 1], null, 'mod/ass => ually.', false, 0, [-1, 1], null, 'mod/ass`
+- 371 IncrementInteger: `ually.', false, 0, [0, 1], null, 'mod/ass => ually.', false, 0, [1, 1], null, 'mod/ass`
+- 371 DecrementInteger: `ly.', false, 0, [0, 1], null, 'mod/assign => ly.', false, 0, [0, 0], null, 'mod/assign`
+- 371 IncrementInteger: `ly.', false, 0, [0, 1], null, 'mod/assign => ly.', false, 0, [0, 2], null, 'mod/assign`
+- 371 ArrayItemRemoval: `ually.', false, 0, [0, 1], null, 'mod/assig => ually.', false, 0, [1], null, 'mod/assig`
+- 373 Concat: `, null, 'mod/assign/mod_form.php:174-179 (selectyesno); column ' . 'mod/assign/db/install.xml (assign.teamsubmission)'), new field('requi => , null, 'mod/assign/db/install.xml (assign.teamsubmission)'`
+- 373 ConcatOperandRemoval: `lectyesno); column ' . 'mod/assign/db/install.xml (assign.teamsubmission)'), new field('requir => lectyesno); column '), new field('requir`
+- 379 Concat: `it', 'PARAM_BOOL', 'A group submission only counts as submitted once all members have agreed. Only ' . 'visible with "teamsubmission"=1.', false, 0, [0, 1], => it', 'PARAM_BOOL', 'visible with "teamsu`
+- 379 ConcatOperandRemoval: `it', 'PARAM_BOOL', 'A group submission only counts as submitted once all members have agreed. Only ' . 'visible with "teamsu => it', 'PARAM_BOOL', 'visible with "teamsu`
+- 379 ConcatOperandRemoval: `have agreed. Only ' . 'visible with "teamsubmission"=1.', false, 0, [0, 1], => have agreed. Only ', false, 0, [0, 1],`
+- 381 FalseValue: `eamsubmission"=1.', false, 0, [0, 1], null, => eamsubmission"=1.', true, 0, [0, 1], null,`
+- 382 DecrementInteger: `ission"=1.', false, 0, [0, 1], null, 'mod => ission"=1.', false, -1, [0, 1], null, 'mod`
+- 383 DecrementInteger: `on"=1.', false, 0, [0, 1], null, 'mod/ass => on"=1.', false, 0, [-1, 1], null, 'mod/ass`
+- 383 IncrementInteger: `on"=1.', false, 0, [0, 1], null, 'mod/ass => on"=1.', false, 0, [1, 1], null, 'mod/ass`
+- 383 ArrayItemRemoval: `on"=1.', false, 0, [0, 1], null, 'mod/assig => on"=1.', false, 0, [1], null, 'mod/assig`
+- 385 Concat: `, null, 'mod/assign/mod_form.php:189-193 (selectyesno, hideIf teamsubmission eq 0); column ' . 'mod/assign/db/install.xml (assign.requireallteammemberssubmit)'), new field('teams => , null, 'mod/assig`
+- 385 ConcatOperandRemoval: `sion eq 0); column ' . 'mod/assign/db/install.xml (assign.requireallteammemberssubmit)'), new field('teamsu => sion eq 0); column '), new field('teamsu`
+- 391 Concat: `gid', 'PARAM_INT', 'Grouping whose groups are used for group submissions (0 = all groups of the course). ' . 'WARNING: only grouping IDs of the same course are valid - the form lists only ' . 'those, `
+- 391 ConcatOperandRemoval: `gid', 'PARAM_INT', 'Grouping whose groups are used for group submissions (0 = all groups of the course). ' . 'WARNING: only groupi => gid', 'PARAM_INT', 'WARNING: only groupi`
+- 391 Concat: `f the course). ' . 'WARNING: only grouping IDs of the same course are valid - the form lists only ' . 'those, but Moodle does not re-check this itself on write.', false, 0, null, n => f the course). '`
+- 391 ConcatOperandRemoval: `he form lists only ' . 'those, but Moodle does not re-check this itself on write.', false, 0, null, nu => he form lists only ', false, 0, null, nu`
+- 394 FalseValue: `itself on write.', false, 0, null, null, 'm => itself on write.', true, 0, null, null, 'm`
+- 395 DecrementInteger: `on write.', false, 0, null, null, 'mod/a => on write.', false, -1, null, null, 'mod/a`
+- 395 IncrementInteger: `on write.', false, 0, null, null, 'mod/a => on write.', false, 1, null, null, 'mod/a`
+- 398 Concat: `, null, 'mod/assign/mod_form.php:195-205 (groups_get_all_groupings($assignment->get_course()->id)); column ' . 'mod/assign/db/install.xml (assign.teamsubmissiongroupingid)'), new field('preve => , nul`
+- 398 ConcatOperandRemoval: `, null, 'mod/assign/mod_form.php:195-205 (groups_get_all_groupings($assignment->get_course()->id)); column ' . 'mod/assign/db/install.xml (assi => , null, 'mod/assign/db/install.xml (assi`
+- 398 ConcatOperandRemoval: `se()->id)); column ' . 'mod/assign/db/install.xml (assign.teamsubmissiongroupingid)'), new field('preven => se()->id)); column '), new field('preven`
+- 404 Concat: `up', 'PARAM_BOOL', 'Refuse submission if the learner is in no group. Only visible with ' . '"teamsubmission"=1.', false, 0, [0, 1], => up', 'PARAM_BOOL', '"teamsubmission"=1.' . 'Refuse submission if `
+- 404 ConcatOperandRemoval: `up', 'PARAM_BOOL', 'Refuse submission if the learner is in no group. Only visible with ' . '"teamsubmission"=1.' => up', 'PARAM_BOOL', '"teamsubmission"=1.'`
+- 404 ConcatOperandRemoval: `Only visible with ' . '"teamsubmission"=1.', false, 0, [0, 1], => Only visible with ', false, 0, [0, 1],`
+- 406 FalseValue: `eamsubmission"=1.', false, 0, [0, 1], null, => eamsubmission"=1.', true, 0, [0, 1], null,`
+- 407 DecrementInteger: `ission"=1.', false, 0, [0, 1], null, 'mod => ission"=1.', false, -1, [0, 1], null, 'mod`
+- 408 DecrementInteger: `on"=1.', false, 0, [0, 1], null, 'mod/ass => on"=1.', false, 0, [-1, 1], null, 'mod/ass`
+- 408 IncrementInteger: `on"=1.', false, 0, [0, 1], null, 'mod/ass => on"=1.', false, 0, [1, 1], null, 'mod/ass`
+- 408 ArrayItemRemoval: `on"=1.', false, 0, [0, 1], null, 'mod/assig => on"=1.', false, 0, [1], null, 'mod/assig`
+- 410 Concat: `, null, 'mod/assign/mod_form.php:181-187 (selectyesno, hideIf teamsubmission eq 0); column ' . 'mod/assign/db/install.xml (assign.preventsubmissionnotingroup)'), new field('blind => , null, 'mod/assig`
+- 410 ConcatOperandRemoval: `sion eq 0); column ' . 'mod/assign/db/install.xml (assign.preventsubmissionnotingroup)'), new field('blindm => sion eq 0); column '), new field('blindm`
+- 417 FalseValue: `hey are revealed.', false, 0, [0, 1], null, => hey are revealed.', true, 0, [0, 1], null,`
+- 418 DecrementInteger: `revealed.', false, 0, [0, 1], null, 'mod => revealed.', false, -1, [0, 1], null, 'mod`
+- 419 DecrementInteger: `ealed.', false, 0, [0, 1], null, 'mod/ass => ealed.', false, 0, [-1, 1], null, 'mod/ass`
+- 419 IncrementInteger: `ealed.', false, 0, [0, 1], null, 'mod/ass => ealed.', false, 0, [1, 1], null, 'mod/ass`
+- 419 ArrayItemRemoval: `ealed.', false, 0, [0, 1], null, 'mod/assig => ealed.', false, 0, [1], null, 'mod/assig`
+- 427 FalseValue: `rom the learners.', false, 0, [0, 1], null, => rom the learners.', true, 0, [0, 1], null,`
+- 428 DecrementInteger: `learners.', false, 0, [0, 1], null, 'mod => learners.', false, -1, [0, 1], null, 'mod`
+- 428 IncrementInteger: `learners.', false, 0, [0, 1], null, 'mod => learners.', false, 1, [0, 1], null, 'mod`
+- 429 DecrementInteger: `rners.', false, 0, [0, 1], null, 'mod/ass => rners.', false, 0, [-1, 1], null, 'mod/ass`
+- 429 IncrementInteger: `rners.', false, 0, [0, 1], null, 'mod/ass => rners.', false, 0, [1, 1], null, 'mod/ass`
+- 429 DecrementInteger: `rs.', false, 0, [0, 1], null, 'mod/assign => rs.', false, 0, [0, 0], null, 'mod/assign`
+- 429 IncrementInteger: `rs.', false, 0, [0, 1], null, 'mod/assign => rs.', false, 0, [0, 2], null, 'mod/assign`
+- 429 ArrayItemRemoval: `rners.', false, 0, [0, 1], null, 'mod/assig => rners.', false, 0, [1], null, 'mod/assig`
+- 437 FalseValue: `w/released, ...).', false, 0, [0, 1], null, => w/released, ...).', true, 0, [0, 1], null,`
+- 438 DecrementInteger: `sed, ...).', false, 0, [0, 1], null, 'mod => sed, ...).', false, -1, [0, 1], null, 'mod`
+- 439 DecrementInteger: `...).', false, 0, [0, 1], null, 'mod/ass => ...).', false, 0, [-1, 1], null, 'mod/ass`
+- 439 IncrementInteger: `...).', false, 0, [0, 1], null, 'mod/ass => ...).', false, 0, [1, 1], null, 'mod/ass`
+- 439 ArrayItemRemoval: `...).', false, 0, [0, 1], null, 'mod/assig => ...).', false, 0, [1], null, 'mod/assig`
+- 446 Concat: `on', 'PARAM_BOOL', 'Allocate graders per submission. Only visible with "markingworkflow"=1; forced to 0 ' . 'on save if "markingworkflow"=0.', false, 0, [0, 1], => on', 'PARAM_BOOL', 'on save if "mark`
+- 446 ConcatOperandRemoval: `on', 'PARAM_BOOL', 'Allocate graders per submission. Only visible with "markingworkflow"=1; forced to 0 ' . 'on save if "markingw => on', 'PARAM_BOOL', 'on save if "markingw`
+- 446 ConcatOperandRemoval: `ow"=1; forced to 0 ' . 'on save if "markingworkflow"=0.', false, 0, [0, 1], => ow"=1; forced to 0 ', false, 0, [0, 1],`
+- 448 FalseValue: `rkingworkflow"=0.', false, 0, [0, 1], null, => rkingworkflow"=0.', true, 0, [0, 1], null,`
+- 449 DecrementInteger: `rkflow"=0.', false, 0, [0, 1], null, 'mod => rkflow"=0.', false, -1, [0, 1], null, 'mod`
+- 449 IncrementInteger: `rkflow"=0.', false, 0, [0, 1], null, 'mod => rkflow"=0.', false, 1, [0, 1], null, 'mod`
+- 450 DecrementInteger: `ow"=0.', false, 0, [0, 1], null, 'mod/ass => ow"=0.', false, 0, [-1, 1], null, 'mod/ass`
+- 450 IncrementInteger: `ow"=0.', false, 0, [0, 1], null, 'mod/ass => ow"=0.', false, 0, [1, 1], null, 'mod/ass`
+- 450 DecrementInteger: `=0.', false, 0, [0, 1], null, 'mod/assign => =0.', false, 0, [0, 0], null, 'mod/assign`
+- 450 IncrementInteger: `=0.', false, 0, [0, 1], null, 'mod/assign => =0.', false, 0, [0, 2], null, 'mod/assign`
+- 450 ArrayItemRemoval: `ow"=0.', false, 0, [0, 1], null, 'mod/assig => ow"=0.', false, 0, [1], null, 'mod/assig`
+- 452 Concat: `, null, 'mod/assign/mod_form.php:241-244 (selectyesno, hideIf markingworkflow eq 0); ' . 'mod/assign/locallib.php:791-794/1587-1590 (enforcement); column ' . 'mod/assign/db/ => , null, 'mod/assign/loc`
+- 452 ConcatOperandRemoval: `, null, 'mod/assign/mod_form.php:241-244 (selectyesno, hideIf markingworkflow eq 0); ' . 'mod/assign/locallib.php:791-794 => , null, 'mod/assign/locallib.php:791-794`
+- 452 ConcatOperandRemoval: `0); ' . 'mod/assign/locallib.php:791-794/1587-1590 (enforcement); column ' . 'mod/assign/db/install.xml (assi => 0); ' . 'mod/assign/db/install.xml (assi`
+- 452 Concat: `0); ' . 'mod/assign/locallib.php:791-794/1587-1590 (enforcement); column ' . 'mod/assign/db/install.xml (assign.markingallocation)'), new field('marki => 0); ' . 'mod/assign/db/install.xml (assign.mar`
+- 452 ConcatOperandRemoval: `forcement); column ' . 'mod/assign/db/install.xml (assign.markingallocation)'), new field('markin => forcement); column '), new field('markin`
+- 459 Concat: `us', 'PARAM_BOOL', 'Graders do not see who is allocated to whom when allocating. Only visible with ' . '"markingworkflow"=1 and "blindmarking"=1; forced to 0 on save if one ' . 'of the two con => us',`
+- 459 ConcatOperandRemoval: `us', 'PARAM_BOOL', 'Graders do not see who is allocated to whom when allocating. Only visible with ' . '"markingworkflow"=1 => us', 'PARAM_BOOL', '"markingworkflow"=1`
+- 459 ConcatOperandRemoval: `y visible with ' . '"markingworkflow"=1 and "blindmarking"=1; forced to 0 on save if one ' . 'of the two condition => y visible with ' . 'of the two condition`
+- 459 Concat: `y visible with ' . '"markingworkflow"=1 and "blindmarking"=1; forced to 0 on save if one ' . 'of the two conditions is missing.', false, 0, [0, 1], => y visible with ' . 'of the two conditions is miss`
+- 459 ConcatOperandRemoval: `o 0 on save if one ' . 'of the two conditions is missing.', false, 0, [0, 1], => o 0 on save if one ', false, 0, [0, 1],`
+- 462 FalseValue: `tions is missing.', false, 0, [0, 1], null, => tions is missing.', true, 0, [0, 1], null,`
+- 463 DecrementInteger: `s missing.', false, 0, [0, 1], null, 'mod => s missing.', false, -1, [0, 1], null, 'mod`
+- 463 IncrementInteger: `s missing.', false, 0, [0, 1], null, 'mod => s missing.', false, 1, [0, 1], null, 'mod`
+- 464 DecrementInteger: `ssing.', false, 0, [0, 1], null, 'mod/ass => ssing.', false, 0, [-1, 1], null, 'mod/ass`
+- 464 IncrementInteger: `ssing.', false, 0, [0, 1], null, 'mod/ass => ssing.', false, 0, [1, 1], null, 'mod/ass`
+- 464 DecrementInteger: `ng.', false, 0, [0, 1], null, 'mod/assign => ng.', false, 0, [0, 0], null, 'mod/assign`
+- 464 IncrementInteger: `ng.', false, 0, [0, 1], null, 'mod/assign => ng.', false, 0, [0, 2], null, 'mod/assign`
+- 464 ArrayItemRemoval: `ssing.', false, 0, [0, 1], null, 'mod/assig => ssing.', false, 0, [1], null, 'mod/assig`
+- 466 Concat: `, null, 'mod/assign/mod_form.php:246-250 (selectyesno, hideIf markingworkflow/blindmarking eq 0); ' . 'mod/assign/locallib.php:795-802/1591-1595 (enforcement); column ' . 'mod/assign/db/ => , null, 'm`
+- 466 ConcatOperandRemoval: `, null, 'mod/assign/mod_form.php:246-250 (selectyesno, hideIf markingworkflow/blindmarking eq 0); ' . 'mod/assign/locallib.php:795-802 => , null, 'mod/assign/locallib.php:795-802`
+- 466 ConcatOperandRemoval: `0); ' . 'mod/assign/locallib.php:795-802/1591-1595 (enforcement); column ' . 'mod/assign/db/install.xml (assi => 0); ' . 'mod/assign/db/install.xml (assi`
+- 466 Concat: `0); ' . 'mod/assign/locallib.php:795-802/1591-1595 (enforcement); column ' . 'mod/assign/db/install.xml (assign.markinganonymous)'), new field('submi => 0); ' . 'mod/assign/db/install.xml (assign.mark`
+- 466 ConcatOperandRemoval: `forcement); column ' . 'mod/assign/db/install.xml (assign.markinganonymous)'), new field('submis => forcement); column '), new field('submis`
+- 474 FalseValue: `the grading page.', false, 0, [0, 1], null, => the grading page.', true, 0, [0, 1], null,`
+- 475 DecrementInteger: `ding page.', false, 0, [0, 1], null, 'mod => ding page.', false, -1, [0, 1], null, 'mod`
+- 475 IncrementInteger: `ding page.', false, 0, [0, 1], null, 'mod => ding page.', false, 1, [0, 1], null, 'mod`
+- 476 DecrementInteger: `page.', false, 0, [0, 1], null, 'mod/ass => page.', false, 0, [-1, 1], null, 'mod/ass`
+- 476 IncrementInteger: `page.', false, 0, [0, 1], null, 'mod/ass => page.', false, 0, [1, 1], null, 'mod/ass`
+- 476 DecrementInteger: `ge.', false, 0, [0, 1], null, 'mod/assign => ge.', false, 0, [0, 0], null, 'mod/assign`
+- 476 IncrementInteger: `ge.', false, 0, [0, 1], null, 'mod/assign => ge.', false, 0, [0, 2], null, 'mod/assign`
+- 476 ArrayItemRemoval: `page.', false, 0, [0, 1], null, 'mod/assig => page.', false, 0, [1], null, 'mod/assig`
+- 478 Concat: `, null, 'mod/assign/mod_form.php:73-74 (advcheckbox); column ' . 'mod/assign/db/install.xml (assign.submissionattachments)')]; => , null, 'mod/assign/db/install.xml (assign.submissionattachments)' . '`
+- 478 ConcatOperandRemoval: `vcheckbox); column ' . 'mod/assign/db/install.xml (assign.submissionattachments)')]; => vcheckbox); column ')];`
+- 498 ArrayItemRemoval: `t_record('assign', ['id' => $instanceid], 'id, name, intro, => t_record('assign', [], 'id, name, intro,`
+- 499 Concat: `' => $instanceid], 'id, name, intro, allowsubmissionsfromdate, duedate, cutoffdate, gradingduedate, completionsubmit, grade, ' . 'submissiondrafts, requiresubmissionstatement, maxattempts, attemptreop`
+- 499 Concat: `submit, grade, ' . 'submissiondrafts, requiresubmissionstatement, maxattempts, attemptreopenmethod, teamsubmission, ' . 'requireallteammemberssubmit, teamsubmissiongroupingid, sendnotifications, sendl`
+- 512 ArrayItemRemoval: `grade_items', ['itemtype' => 'mod', 'itemmodule' => 'assign', => grade_items', ['itemmodule' => 'assign',`
+- 516 CastString: `$details['name'] = (string) $assign->name; => $details['name'] = $assign->name;`
+- 517 CastString: `tate::content_field((string) $assign->intro, $ful => tate::content_field($assign->intro, $ful`
+- 519 ArrayItemRemoval: `gn_plugin_config', ['assignment' => $assign->id]) as $config) { => gn_plugin_config', []) as $config) {`
+- 519 Foreach_: `foreach ($DB->get_records('assign_plugin_config', ['assignment' => $assign->id]) as $config) { => foreach ([] as $config) {`
+- 520 CastString: `g_field($config)] = (string) $config->value; => g_field($config)] = $config->value;`
+- 535 ArrayItem: `ename(), 'filepath' => $file->get_filepat => ename(), 'filepath' > $file->get_filepat`
+- 541 CastInt: `uedate' => (string) (int) $assign->duedate, 'a => uedate' => (string) $assign->duedate, 'a`
+- 541 CastString: `erge(['duedate' => (string) (int) $assign->duedat => erge(['duedate' => (int) $assign->duedat`
+- 542 CastInt: `omdate' => (string) (int) $assign->allowsubmis => omdate' => (string) $assign->allowsubmis`
+- 542 CastString: `ssionsfromdate' => (string) (int) $assign->allows => ssionsfromdate' => (int) $assign->allows`
+- 543 CastInt: `ffdate' => (string) (int) $assign->cutoffdate, => ffdate' => (string) $assign->cutoffdate,`
+- 543 CastString: `e, 'cutoffdate' => (string) (int) $assign->cutoff => e, 'cutoffdate' => (int) $assign->cutoff`
+- 544 CastInt: `uedate' => (string) (int) $assign->gradingdued => uedate' => (string) $assign->gradingdued`
+- 544 CastString: `gradingduedate' => (string) (int) $assign->gradin => gradingduedate' => (int) $assign->gradin`
+- 545 CastInt: `submit' => (string) (int) $assign->completions => submit' => (string) $assign->completions`
+- 545 CastString: `mpletionsubmit' => (string) (int) $assign->comple => mpletionsubmit' => (int) $assign->comple`
+- 546 CastInt: `'grade' => (string) (int) $assign->grade, 'gra => 'grade' => (string) $assign->grade, 'gra`
+- 546 CastString: `submit, 'grade' => (string) (int) $assign->grade, => submit, 'grade' => (int) $assign->grade,`
+- 547 DecrementInteger: `eitem->gradepass ?? 0), 'submissiondrafts => eitem->gradepass ?? -1), 'submissiondrafts`
+- 547 IncrementInteger: `eitem->gradepass ?? 0), 'submissiondrafts => eitem->gradepass ?? 1), 'submissiondrafts`
+- 547 Coalesce: `> (string) (float) ($gradeitem->gradepass ?? 0), 'submissiondrafts => > (string) (float) (0 ?? $gradeitem->gradepass), 'submissiondrafts`
+- 547 CastFloat: `epass' => (string) (float) ($gradeitem->gradepas => epass' => (string) ($gradeitem->gradepas`
+- 547 CastString: `de, 'gradepass' => (string) (float) ($gradeitem-> => de, 'gradepass' => (float) ($gradeitem->`
+- 548 CastInt: `drafts' => (string) (int) $assign->submissiond => drafts' => (string) $assign->submissiond`
+- 548 CastString: `bmissiondrafts' => (string) (int) $assign->submis => bmissiondrafts' => (int) $assign->submis`
+- 549 CastInt: `tempts' => (string) (int) $assign->maxattempts => tempts' => (string) $assign->maxattempts`
+- 549 CastString: `, 'maxattempts' => (string) (int) $assign->maxatt => , 'maxattempts' => (int) $assign->maxatt`
+- 550 CastString: `mptreopenmethod' => (string) $assign->attemptreop => mptreopenmethod' => $assign->attemptreop`
+- 551 CastInt: `tement' => (string) (int) $assign->requiresubm => tement' => (string) $assign->requiresubm`
+- 551 CastString: `ssionstatement' => (string) (int) $assign->requir => ssionstatement' => (int) $assign->requir`
+- 552 CastInt: `ission' => (string) (int) $assign->teamsubmiss => ission' => (string) $assign->teamsubmiss`
+- 552 CastString: `teamsubmission' => (string) (int) $assign->teamsu => teamsubmission' => (int) $assign->teamsu`
+- 553 CastInt: `submit' => (string) (int) $assign->requireallt => submit' => (string) $assign->requireallt`
+- 553 CastString: `mmemberssubmit' => (string) (int) $assign->requir => mmemberssubmit' => (int) $assign->requir`
+- 554 CastInt: `pingid' => (string) (int) $assign->teamsubmiss => pingid' => (string) $assign->teamsubmiss`
+- 554 CastString: `siongroupingid' => (string) (int) $assign->teamsu => siongroupingid' => (int) $assign->teamsu`
+- 555 CastInt: `ations' => (string) (int) $assign->sendnotific => ations' => (string) $assign->sendnotific`
+- 555 CastString: `dnotifications' => (string) (int) $assign->sendno => dnotifications' => (int) $assign->sendno`
+- 556 CastInt: `ations' => (string) (int) $assign->sendlatenot => ations' => (string) $assign->sendlatenot`
+- 556 CastString: `enotifications' => (string) (int) $assign->sendla => enotifications' => (int) $assign->sendla`
+- 557 CastInt: `ations' => (string) (int) $assign->sendstudent => ations' => (string) $assign->sendstudent`
+- 557 CastString: `tnotifications' => (string) (int) $assign->sendst => tnotifications' => (int) $assign->sendst`
+- 558 CastInt: `arking' => (string) (int) $assign->blindmarkin => arking' => (string) $assign->blindmarkin`
+- 558 CastString: `'blindmarking' => (string) (int) $assign->blindm => 'blindmarking' => (int) $assign->blindm`
+- 559 CastInt: `rkflow' => (string) (int) $assign->markingwork => rkflow' => (string) $assign->markingwork`
+- 559 CastString: `arkingworkflow' => (string) (int) $assign->markin => arkingworkflow' => (int) $assign->markin`
+- 560 CastInt: `cation' => (string) (int) $assign->markingallo => cation' => (string) $assign->markingallo`
+- 560 CastString: `kingallocation' => (string) (int) $assign->markin => kingallocation' => (int) $assign->markin`
+- 561 DecrementInteger: `item->categoryid ?? 0), 'gradingmethod' = => item->categoryid ?? -1), 'gradingmethod' =`
+- 561 IncrementInteger: `item->categoryid ?? 0), 'gradingmethod' = => item->categoryid ?? 1), 'gradingmethod' =`
+- 561 Coalesce: `=> (string) (int) ($gradeitem->categoryid ?? 0), 'gradingmethod' = => => (string) (int) (0 ?? $gradeitem->categoryid), 'gradingmethod' =`
+- 561 CastInt: `decat' => (string) (int) ($gradeitem->category => decat' => (string) ($gradeitem->category`
+- 561 CastString: `ion, 'gradecat' => (string) (int) ($gradeitem->ca => ion, 'gradecat' => (int) ($gradeitem->ca`
+- 562 Ternary: `g) ($gradingmethod ?: 'none'), 'additionalfiles' => g) ($gradingmethod ? 'none' : $gradingmethod), 'additionalfiles'`
+- 562 CastString: `'gradingmethod' => (string) ($gradingmethod ?: 'none'), 'additionalfiles' => 'gradingmethod' => $gradingmethod ?: 'none', 'additionalfiles'`
+- 565 Coalesce: `inetext_enabled' => $pluginsettings['assignsubmission_onlinetext_enabled'] ?? '0', 'onlinetext_wordli => inetext_enabled' => '0' ?? $pluginsettings['assignsubmission_onlinetext_enabled'], 'onlinetext_`
+- 566 Coalesce: `rdlimit_enabled' => $pluginsettings['assignsubmission_onlinetext_wordlimit_enabled'] ?? '0', 'onlinetext_wordli => rdlimit_enabled' => '0' ?? $pluginsettings['assignsubmission_onlinetext_wordlimit_ena`
+- 567 Coalesce: `etext_wordlimit' => $pluginsettings['assignsubmission_onlinetext_wordlimit'] ?? '0', 'submission_file_e => etext_wordlimit' => '0' ?? $pluginsettings['assignsubmission_onlinetext_wordlimit'], 'submiss`
+- 568 Coalesce: `on_file_enabled' => $pluginsettings['assignsubmission_file_enabled'] ?? '0', 'submission_file_m => on_file_enabled' => '0' ?? $pluginsettings['assignsubmission_file_enabled'], 'submission_file_m`
+- 569 Coalesce: `n_file_maxfiles' => $pluginsettings['assignsubmission_file_maxfiles'] ?? '0', 'submission_file_m => n_file_maxfiles' => '0' ?? $pluginsettings['assignsubmission_file_maxfiles'], 'submission_file_m`
+- 570 Coalesce: `le_maxsizebytes' => $pluginsettings['assignsubmission_file_maxsizebytes'] ?? '0', 'submission_file_f => le_maxsizebytes' => '0' ?? $pluginsettings['assignsubmission_file_maxsizebytes'], 'submission_fi`
+- 571 Coalesce: `_file_filetypes' => $pluginsettings['assignsubmission_file_filetypes'] ?? '', 'feedback_comments => _file_filetypes' => '' ?? $pluginsettings['assignsubmission_file_filetypes'], 'feedback_comments`
+- 572 Coalesce: `omments_enabled' => $pluginsettings['assignfeedback_comments_enabled'] ?? '0', 'feedback_editpdf_ => omments_enabled' => '0' ?? $pluginsettings['assignfeedback_comments_enabled'], 'feedback_editpdf_`
+- 573 Coalesce: `editpdf_enabled' => $pluginsettings['assignfeedback_editpdf_enabled'] ?? '0', 'feedback_file_ena => editpdf_enabled' => '0' ?? $pluginsettings['assignfeedback_editpdf_enabled'], 'feedback_file_ena`
+- 574 Coalesce: `ck_file_enabled' => $pluginsettings['assignfeedback_file_enabled'] ?? '0', 'feedback_file_max => ck_file_enabled' => '0' ?? $pluginsettings['assignfeedback_file_enabled'], 'feedback_file_max`
+- 575 Coalesce: `k_file_maxfiles' => $pluginsettings['assignfeedback_file_maxfiles'] ?? '0', 'feedback_file_max => k_file_maxfiles' => '0' ?? $pluginsettings['assignfeedback_file_maxfiles'], 'feedback_file_max`
+- 576 Coalesce: `le_maxsizebytes' => $pluginsettings['assignfeedback_file_maxsizebytes'] ?? '0', 'feedback_file_fil => le_maxsizebytes' => '0' ?? $pluginsettings['assignfeedback_file_maxsizebytes'], 'feedback_file_fil`
+- 577 Coalesce: `_file_filetypes' => $pluginsettings['assignfeedback_file_filetypes'] ?? '', 'feedback_offline_ => _file_filetypes' => '' ?? $pluginsettings['assignfeedback_file_filetypes'], 'feedback_offline_`
+- 578 Coalesce: `offline_enabled' => $pluginsettings['assignfeedback_offline_enabled'] ?? '0'])); => offline_enabled' => '0' ?? $pluginsettings['assignfeedback_offline_enabled']]));`
+- 593 Concat: `$field = $config->subtype . '_' . $config->plugin . => $field = '_' . $config->subtype . $config->plugin .`
+- 593 ConcatOperandRemoval: `$field = $config->subtype . '_' . $config->plugi => $field = '_' . $config->plugi`
+- 593 ConcatOperandRemoval: `$config->subtype . '_' . $config->plugin . '_ => $config->subtype . $config->plugin . '_`
+- 593 Concat: `$config->subtype . '_' . $config->plugin . '_' . $config->na => $config->subtype . $config->plugin . '_' . '_' . $config->na`
+- 593 ConcatOperandRemoval: `ig->subtype . '_' . $config->plugin . '_' . $config->name; => ig->subtype . '_' . '_' . $config->name;`
+- 593 Concat: `ig->subtype . '_' . $config->plugin . '_' . $config->name; => ig->subtype . '_' . '_' . $config->plugin . $config->name;`
+- 593 ConcatOperandRemoval: `. $config->plugin . '_' . $config->name; => . $config->plugin . $config->name;`
+- 593 Concat: `. $config->plugin . '_' . $config->name; => . $config->plugin . $config->name . '_';`
+- 593 ConcatOperandRemoval: `config->plugin . '_' . $config->name; => config->plugin . '_';`
+- 594 ArrayItemRemoval: `['assignsubmission_onlinetext_wordlimitenabled' => 'assignsubmission_onlinetext_wordlimit_enabled', 'assignsubmission_file_maxfilesubmissi => ['assignsubmission_file_maxfilesubmissi`
+- 594 Coalesce: `return ['assignsubmission_onlinetext_wordlimitenabled' => 'assignsubmission_onlinetext_wordlimit_enabled', 'assignsubmission_file_maxfilesubmissions' => 'assignsubmission_file_maxfiles', 'assignsubmis`
+- 608 ArrayItemRemoval: `return ['editor_content' => ['activityeditor' => ['activity', 'activityformat']], 'material_reference_f => return ['material_reference_f`
+- 609 ArrayItemRemoval: `editor_content' => ['activityeditor' => ['activity', 'activityformat']], 'material_referen => editor_content' => [], 'material_referen`
+- 620 ArrayItemRemoval: `> [['reference' => 'allowsubmissionsfromdate', 'field' => 'duedate', 'mode' => 'must_be_after'], ['reference' => 'duedate', 'field' => => > [['reference' => 'duedate', 'field' =>`
+- 639 Concat: `nt, itemid: int}', 'Editor array for the additional activity text. The flat contract uses "activity" and ' . '"activityformat"; this field serves the native form path.', false, null, null => nt, itemi`
+- 639 ConcatOperandRemoval: `nt, itemid: int}', 'Editor array for the additional activity text. The flat contract uses "activity" and ' . '"activityformat"; th => nt, itemid: int}', '"activityformat"; th`
+- 639 ConcatOperandRemoval: `ses "activity" and ' . '"activityformat"; this field serves the native form path.', false, null, null, => ses "activity" and ', false, null, null,`
+- 650 Concat: `extensions only)', 'Subject images that are embedded IN the description text (Spec 0018 §4.2/§5, issue ' . '#433 - closes the path from #430/#431: view preview, choose crop, embed ' . 'here). Each pa `
+- 650 ConcatOperandRemoval: `extensions only)', 'Subject images that are embedded IN the description text (Spec 0018 §4.2/§5, issue ' . '#433 - closes the pa => extensions only)', '#433 - closes the pa`
+- 650 ConcatOperandRemoval: `§4.2/§5, issue ' . '#433 - closes the path from #430/#431: view preview, choose crop, embed ' . 'here). Each path mus => §4.2/§5, issue ' . 'here). Each path mus`
+- 650 Concat: `§4.2/§5, issue ' . '#433 - closes the path from #430/#431: view preview, choose crop, embed ' . 'here). Each path must already exist as a material file and carry an extension from the ' . 'narrower em`
+- 650 ConcatOperandRemoval: `se crop, embed ' . 'here). Each path must already exist as a material file and carry an extension from the ' . 'narrower embedding w => se crop, embed ' . 'narrower embedding w`
+- 650 Concat: `se crop, embed ' . 'here). Each path must already exist as a material file and carry an extension from the ' . 'narrower embedding whitelist (png/jpg/jpeg/gif/svg/webp) - any other extension (e.g. ' .`
+- 650 ConcatOperandRemoval: `nsion from the ' . 'narrower embedding whitelist (png/jpg/jpeg/gif/svg/webp) - any other extension (e.g. ' . 'pdf) fails with a cl => nsion from the ' . 'pdf) fails with a cl`
+- 650 Concat: `nsion from the ' . 'narrower embedding whitelist (png/jpg/jpeg/gif/svg/webp) - any other extension (e.g. ' . 'pdf) fails with a clear message. The patch carries the reference itself: the "intro" text `
+- 650 ConcatOperandRemoval: `xtension (e.g. ' . 'pdf) fails with a clear message. The patch carries the reference itself: the "intro" text ' . 'must contain an imag => xtension (e.g. ' . 'must contain an imag`
+- 650 Concat: `xtension (e.g. ' . 'pdf) fails with a clear message. The patch carries the reference itself: the "intro" text ' . 'must contain an image element whose source begins with "@@PLUGINFILE@@/" plus the fil`
+- 650 ConcatOperandRemoval: `e "intro" text ' . 'must contain an image element whose source begins with "@@PLUGINFILE@@/" plus the file name ' . '(Moodle\'s draft pla => e "intro" text ' . '(Moodle\'s draft pla`
+- 650 Concat: `e "intro" text ' . 'must contain an image element whose source begins with "@@PLUGINFILE@@/" plus the file name ' . '(Moodle\'s draft placeholder prefix), with an alt text that the AI ' . 'writes itse`
+- 650 ConcatOperandRemoval: `the file name ' . '(Moodle\'s draft placeholder prefix), with an alt text that the AI ' . 'writes itself (gloss => the file name ' . 'writes itself (gloss`
+- 650 Concat: `the file name ' . '(Moodle\'s draft placeholder prefix), with an alt text that the AI ' . 'writes itself (glossary: alt text as AI quality routine). Without an accompanying "intro" patch ' . 'the file`
+- 650 ConcatOperandRemoval: `xt that the AI ' . 'writes itself (glossary: alt text as AI quality routine). Without an accompanying "intro" patch ' . 'the file is only ava => xt that the AI ' . 'the file is only ava`
+- 650 Concat: `xt that the AI ' . 'writes itself (glossary: alt text as AI quality routine). Without an accompanying "intro" patch ' . 'the file is only available in the file area, but unlinked.', false, null, null `
+- 650 ConcatOperandRemoval: `ying "intro" patch ' . 'the file is only available in the file area, but unlinked.', false, null, null, => ying "intro" patch ', false, null, null,`
+- 663 Concat: `null, null, null, 'course/modlib.php:675-680 (update_moduleinfo(): file_save_draft_area_files() from ' . '$moduleinfo->introeditor resolves @@PLUGINFILE@@ against the draft file area)'), new field('in`
+- 663 ConcatOperandRemoval: `null, null, null, 'course/modlib.php:675-680 (update_moduleinfo(): file_save_draft_area_files() from ' . '$moduleinfo->introed => null, null, null, '$moduleinfo->introed`
+- 663 ConcatOperandRemoval: `_area_files() from ' . '$moduleinfo->introeditor resolves @@PLUGINFILE@@ against the draft file area)'), new field('introa => _area_files() from '), new field('introa`
+- 669 Concat: `al folder paths)', 'Additional files of the assignment ("Additional files"/introattachments field) - list of ' . 'paths relative to the material folder (Spec 0018 §4.2/§7: the block from Spec 0015 §4.`
+- 669 ConcatOperandRemoval: `al folder paths)', 'Additional files of the assignment ("Additional files"/introattachments field) - list of ' . 'paths relative to th => al folder paths)', 'paths relative to th`
+- 669 ConcatOperandRemoval: `eld) - list of ' . 'paths relative to the material folder (Spec 0018 §4.2/§7: the block from Spec 0015 §4.3 is gone ' . 'for assign). Each pa => eld) - list of ' . 'for assign). Each pa`
+- 669 Concat: `eld) - list of ' . 'paths relative to the material folder (Spec 0018 §4.2/§7: the block from Spec 0015 §4.3 is gone ' . 'for assign). Each path is resolved server-side to an existing material file and`
+- 669 ConcatOperandRemoval: `5 §4.3 is gone ' . 'for assign). Each path is resolved server-side to an existing material file and ' . 'taken over unchanged => 5 §4.3 is gone ' . 'taken over unchanged`
+- 669 Concat: `5 §4.3 is gone ' . 'for assign). Each path is resolved server-side to an existing material file and ' . 'taken over unchanged; already existing attachments are kept. Not a chat attachment ' . 'directl`
+- 669 ConcatOperandRemoval: `erial file and ' . 'taken over unchanged; already existing attachments are kept. Not a chat attachment ' . 'directly - the file => erial file and ' . 'directly - the file`
+- 669 Concat: `erial file and ' . 'taken over unchanged; already existing attachments are kept. Not a chat attachment ' . 'directly - the file must first be in the material folder via upload_material_file.', false, `
+- 669 ConcatOperandRemoval: `a chat attachment ' . 'directly - the file must first be in the material folder via upload_material_file.', false, null, null, => a chat attachment ', false, null, null,`
+- 678 Concat: `assign/locallib.php:1648-1650 (save_intro_draft_files(), isset guard); ' . 'mod/assign/locallib.php:82 (ASSIGN_INTROATTACHMENT_FILEAREA="introattachment")'), new field('assig => assign/locallib.php:82`
+- 678 ConcatOperandRemoval: `assign/locallib.php:1648-1650 (save_intro_draft_files(), isset guard); ' . 'mod/assign/locallib.php:82 (ASSIGN_INTROATTA => assign/locallib.php:82 (ASSIGN_INTROATTA`
+- 678 ConcatOperandRemoval: `s(), isset guard); ' . 'mod/assign/locallib.php:82 (ASSIGN_INTROATTACHMENT_FILEAREA="introattachment")'), new field('assign => s(), isset guard); '), new field('assign`
+- 684 Concat: `ed', 'PARAM_BOOL', 'Enable the submission type "File". Not a DB field: if it is missing, Moodle silently disables this ' . 'submission type (see class doc). With NO active submission type "nosubmissio`
+- 684 ConcatOperandRemoval: `ed', 'PARAM_BOOL', 'Enable the submission type "File". Not a DB field: if it is missing, Moodle silently disables this ' . 'submission type (see => ed', 'PARAM_BOOL', 'submission type (see`
+- 684 Concat: `disables this ' . 'submission type (see class doc). With NO active submission type "nosubmissions"=1 is set - ' . 'the assignment then accepts no submissions at all. The form default is ' . 'admin-con`
+- 684 Concat: `ns"=1 is set - ' . 'the assignment then accepts no submissions at all. The form default is ' . 'admin-configurable (site administration), hence no fixed default here.', false, null, [0, => ns"=1 is se`
+- 684 ConcatOperandRemoval: `he form default is ' . 'admin-configurable (site administration), hence no fixed default here.', false, null, [0, 1 => he form default is ', false, null, [0, 1`
+- 690 DecrementInteger: `re.', false, null, [0, 1], null, 'mod/ass => re.', false, null, [-1, 1], null, 'mod/ass`
+- 690 IncrementInteger: `re.', false, null, [0, 1], null, 'mod/ass => re.', false, null, [1, 1], null, 'mod/ass`
+- 690 ArrayItemRemoval: `re.', false, null, [0, 1], null, 'mod/assig => re.', false, null, [1], null, 'mod/assig`
+- 692 Concat: `ssign/locallib.php:1359-1373 (update_plugin_instance(), "{subtype}_{type}_enabled"); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignsubmission_file\', \'default\')); ' . 'mod/`
+- 692 ConcatOperandRemoval: `ssign/locallib.php:1359-1373 (update_plugin_instance(), "{subtype}_{type}_enabled"); ' . 'mod/assign/locallib.php:1713-1716 (default fr => ssign/locallib.php:1713-1716 (default fr`
+- 692 ConcatOperandRemoval: `"); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignsubmission_file\', \'default\')); ' . 'mod/assign/submission/file/sett => "); ' . 'mod/assign/submission/file/sett`
+- 692 Concat: `"); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignsubmission_file\', \'default\')); ' . 'mod/assign/submission/file/settings.php:28 (admin setting "default")'), new field('as`
+- 692 ConcatOperandRemoval: `\', \'default\')); ' . 'mod/assign/submission/file/settings.php:28 (admin setting "default")'), new field('assign => \', \'default\')); '), new field('assign`
+- 700 FalseValue: `_file_enabled"=1.', false, 20, null, null, ' => _file_enabled"=1.', true, 20, null, null, '`
+- 701 DecrementInteger: `nabled"=1.', false, 20, null, null, 'mod/a => nabled"=1.', false, 19, null, null, 'mod/a`
+- 701 IncrementInteger: `abled"=1.', false, 20, null, null, 'mod/a => abled"=1.', false, 21, null, null, 'mod/a`
+- 709 Concat: `tes', 'PARAM_INT', 'Maximum file size per file in bytes. The selectable values are a subset depending on course and ' . 'server limit, not a fixed list. Only effective with ' . '"assignsubmiss => tes'`
+- 709 ConcatOperandRemoval: `tes', 'PARAM_INT', 'Maximum file size per file in bytes. The selectable values are a subset depending on course and ' . 'server limit, not a => tes', 'PARAM_INT', 'server limit, not a`
+- 709 ConcatOperandRemoval: `on course and ' . 'server limit, not a fixed list. Only effective with ' . '"assignsubmission_fi => on course and ' . '"assignsubmission_fi`
+- 709 Concat: `on course and ' . 'server limit, not a fixed list. Only effective with ' . '"assignsubmission_file_enabled"=1.', false, 0, null, ' => on course and ' . '"assignsubmission_file_enabled"=1.' . 'server l`
+- 709 ConcatOperandRemoval: `nly effective with ' . '"assignsubmission_file_enabled"=1.', false, 0, null, 'g => nly effective with ', false, 0, null, 'g`
+- 712 FalseValue: `_file_enabled"=1.', false, 0, null, 'get_max => _file_enabled"=1.', true, 0, null, 'get_max`
+- 713 DecrementInteger: `nabled"=1.', false, 0, null, 'get_max_upl => nabled"=1.', false, -1, null, 'get_max_upl`
+- 713 IncrementInteger: `nabled"=1.', false, 0, null, 'get_max_upl => nabled"=1.', false, 1, null, 'get_max_upl`
+- 716 Concat: `x_upload_sizes()', 'lib/moodlelib.php:6453 (get_max_upload_sizes()); ' . 'mod/assign/submission/file/locallib.php:106 (Select), :130 (save_settings())'), new field('assig => x_upload_sizes()', 'mod/as`
+- 716 ConcatOperandRemoval: `x_upload_sizes()', 'lib/moodlelib.php:6453 (get_max_upload_sizes()); ' . 'mod/assign/submissio => x_upload_sizes()', 'mod/assign/submissio`
+- 716 ConcatOperandRemoval: `x_upload_sizes()); ' . 'mod/assign/submission/file/locallib.php:106 (Select), :130 (save_settings())'), new field('assign => x_upload_sizes()); '), new field('assign`
+- 722 Concat: `pes', 'PARAM_RAW', 'Allowed file extensions/types, comma-separated (empty = all). Only effective with ' . '"assignsubmission_file_enabled"=1.', false, '', null, => pes', 'PARAM_RAW', '"assignsubmissio`
+- 722 ConcatOperandRemoval: `pes', 'PARAM_RAW', 'Allowed file extensions/types, comma-separated (empty = all). Only effective with ' . '"assignsubmission_fi => pes', 'PARAM_RAW', '"assignsubmission_fi`
+- 722 ConcatOperandRemoval: `nly effective with ' . '"assignsubmission_file_enabled"=1.', false, '', null, n => nly effective with ', false, '', null, n`
+- 724 FalseValue: `_file_enabled"=1.', false, '', null, null, ' => _file_enabled"=1.', true, '', null, null, '`
+- 733 Concat: `ed', 'PARAM_BOOL', 'Enable the submission type "Online text". Not a DB field, same risk as ' . '"assignsubmission_file_enabled" (see class doc). The form default is ' . 'admin-configu => ed', 'PARAM_B`
+- 733 ConcatOperandRemoval: `ed', 'PARAM_BOOL', 'Enable the submission type "Online text". Not a DB field, same risk as ' . '"assignsubmission_fi => ed', 'PARAM_BOOL', '"assignsubmission_fi`
+- 733 ConcatOperandRemoval: `, same risk as ' . '"assignsubmission_file_enabled" (see class doc). The form default is ' . 'admin-configurable, => , same risk as ' . 'admin-configurable,`
+- 733 Concat: `, same risk as ' . '"assignsubmission_file_enabled" (see class doc). The form default is ' . 'admin-configurable, hence no fixed default here.', false, null, [0, => , same risk as ' . 'admin-configura`
+- 733 ConcatOperandRemoval: `he form default is ' . 'admin-configurable, hence no fixed default here.', false, null, [0, 1 => he form default is ', false, null, [0, 1`
+- 738 DecrementInteger: `re.', false, null, [0, 1], null, 'mod/ass => re.', false, null, [-1, 1], null, 'mod/ass`
+- 738 IncrementInteger: `re.', false, null, [0, 1], null, 'mod/ass => re.', false, null, [1, 1], null, 'mod/ass`
+- 738 DecrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 0], null, 'mod/assign`
+- 738 IncrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 2], null, 'mod/assign`
+- 738 ArrayItemRemoval: `re.', false, null, [0, 1], null, 'mod/assig => re.', false, null, [1], null, 'mod/assig`
+- 740 Concat: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignsubmission_onlinetext\', \'default\')); ' . 'mod/assign/ => ssign/local`
+- 740 ConcatOperandRemoval: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default fr => ssign/locallib.php:1713-1716 (default fr`
+- 740 ConcatOperandRemoval: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignsubmission_onlinetext\', \'default\')); ' . 'mod/assign/submission/onlinetex => )); ' . 'mod/assign/submission/onlinetex`
+- 740 Concat: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignsubmission_onlinetext\', \'default\')); ' . 'mod/assign/submission/onlinetext/settings.php:26 (admin setting "default")'), n`
+- 740 ConcatOperandRemoval: `\', \'default\')); ' . 'mod/assign/submission/onlinetext/settings.php:26 (admin setting "default")'), new field('assign => \', \'default\')); '), new field('assign`
+- 747 Concat: `mit', 'PARAM_INT', 'Maximum word count of the online text. Only effective if additionally ' . '"assignsubmission_onlinetext_wordlimit_enabled"=1 is set.', false, 0, null, n => mit', 'PARAM_INT', '"ass`
+- 747 ConcatOperandRemoval: `mit', 'PARAM_INT', 'Maximum word count of the online text. Only effective if additionally ' . '"assignsubmission_on => mit', 'PARAM_INT', '"assignsubmission_on`
+- 747 ConcatOperandRemoval: `ve if additionally ' . '"assignsubmission_onlinetext_wordlimit_enabled"=1 is set.', false, 0, null, nu => ve if additionally ', false, 0, null, nu`
+- 749 FalseValue: `nabled"=1 is set.', false, 0, null, null, 'm => nabled"=1 is set.', true, 0, null, null, 'm`
+- 750 DecrementInteger: `=1 is set.', false, 0, null, null, 'mod/a => =1 is set.', false, -1, null, null, 'mod/a`
+- 750 IncrementInteger: `=1 is set.', false, 0, null, null, 'mod/a => =1 is set.', false, 1, null, null, 'mod/a`
+- 758 Concat: `ed', 'PARAM_BOOL', 'Apply the word limit to the online text at all. Without this field ' . '"assignsubmission_onlinetext_wordlimit" has no effect (combination rule).', false, 0, [0, 1], => ed', 'PARAM`
+- 758 ConcatOperandRemoval: `ed', 'PARAM_BOOL', 'Apply the word limit to the online text at all. Without this field ' . '"assignsubmission_on => ed', 'PARAM_BOOL', '"assignsubmission_on`
+- 758 ConcatOperandRemoval: `Without this field ' . '"assignsubmission_onlinetext_wordlimit" has no effect (combination rule).', false, 0, [0, 1], => Without this field ', false, 0, [0, 1],`
+- 760 FalseValue: `ombination rule).', false, 0, [0, 1], null, => ombination rule).', true, 0, [0, 1], null,`
+- 761 DecrementInteger: `ion rule).', false, 0, [0, 1], null, 'mod => ion rule).', false, -1, [0, 1], null, 'mod`
+- 761 IncrementInteger: `ion rule).', false, 0, [0, 1], null, 'mod => ion rule).', false, 1, [0, 1], null, 'mod`
+- 762 DecrementInteger: `rule).', false, 0, [0, 1], null, 'mod/ass => rule).', false, 0, [-1, 1], null, 'mod/ass`
+- 762 IncrementInteger: `rule).', false, 0, [0, 1], null, 'mod/ass => rule).', false, 0, [1, 1], null, 'mod/ass`
+- 762 DecrementInteger: `e).', false, 0, [0, 1], null, 'mod/assign => e).', false, 0, [0, 0], null, 'mod/assign`
+- 762 IncrementInteger: `e).', false, 0, [0, 1], null, 'mod/assign => e).', false, 0, [0, 2], null, 'mod/assign`
+- 762 ArrayItemRemoval: `rule).', false, 0, [0, 1], null, 'mod/assig => rule).', false, 0, [1], null, 'mod/assig`
+- 769 Concat: `ed', 'PARAM_BOOL', 'Enable the submission type "Comments" (discussion about the submission). Not a DB field, same risk as ' . '"assignsubmission_file_enabled" (see class doc). Unlike the other ' . 'su`
+- 769 ConcatOperandRemoval: `ed', 'PARAM_BOOL', 'Enable the submission type "Comments" (discussion about the submission). Not a DB field, same risk as ' . '"assignsubmission_fi => ed', 'PARAM_BOOL', '"assignsubmission_fi`
+- 769 ConcatOperandRemoval: `, same risk as ' . '"assignsubmission_file_enabled" (see class doc). Unlike the other ' . 'submission plugins, => , same risk as ' . 'submission plugins,`
+- 769 Concat: `, same risk as ' . '"assignsubmission_file_enabled" (see class doc). Unlike the other ' . 'submission plugins, this one has no admin setting of its own - the form value follows ' . 'solely whether => `
+- 769 ConcatOperandRemoval: `ike the other ' . 'submission plugins, this one has no admin setting of its own - the form value follows ' . 'solely whether the pl => ike the other ' . 'solely whether the pl`
+- 769 Concat: `ike the other ' . 'submission plugins, this one has no admin setting of its own - the form value follows ' . 'solely whether the plugin is active server-wide.', false, 0, [0, 1], => ike the other ' . `
+- 769 ConcatOperandRemoval: `form value follows ' . 'solely whether the plugin is active server-wide.', false, 0, [0, 1], => form value follows ', false, 0, [0, 1],`
+- 773 FalseValue: `tive server-wide.', false, 0, [0, 1], null, => tive server-wide.', true, 0, [0, 1], null,`
+- 774 DecrementInteger: `rver-wide.', false, 0, [0, 1], null, 'mod => rver-wide.', false, -1, [0, 1], null, 'mod`
+- 774 IncrementInteger: `rver-wide.', false, 0, [0, 1], null, 'mod => rver-wide.', false, 1, [0, 1], null, 'mod`
+- 775 DecrementInteger: `-wide.', false, 0, [0, 1], null, 'mod/ass => -wide.', false, 0, [-1, 1], null, 'mod/ass`
+- 775 IncrementInteger: `-wide.', false, 0, [0, 1], null, 'mod/ass => -wide.', false, 0, [1, 1], null, 'mod/ass`
+- 775 DecrementInteger: `de.', false, 0, [0, 1], null, 'mod/assign => de.', false, 0, [0, 0], null, 'mod/assign`
+- 775 IncrementInteger: `de.', false, 0, [0, 1], null, 'mod/assign => de.', false, 0, [0, 2], null, 'mod/assign`
+- 775 ArrayItemRemoval: `-wide.', false, 0, [0, 1], null, 'mod/assig => -wide.', false, 0, [1], null, 'mod/assig`
+- 777 Concat: `, null, 'mod/assign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/submission/comments/locallib.php:187-188 (is_configurable() === false, ' . 'no settings.ph => , null, 'mod/assign`
+- 777 ConcatOperandRemoval: `, null, 'mod/assign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/submission/comments/ => , null, 'mod/assign/submission/comments/`
+- 777 ConcatOperandRemoval: `n_instance()); ' . 'mod/assign/submission/comments/locallib.php:187-188 (is_configurable() === false, ' . 'no settings.php)'), => n_instance()); ' . 'no settings.php)'),`
+- 777 Concat: `n_instance()); ' . 'mod/assign/submission/comments/locallib.php:187-188 (is_configurable() === false, ' . 'no settings.php)'), new field('assig => n_instance()); ' . 'no settings.php)' . 'mod/assign/s`
+- 777 ConcatOperandRemoval: `rable() === false, ' . 'no settings.php)'), new field('assign => rable() === false, '), new field('assign`
+- 784 Concat: `ed', 'PARAM_BOOL', 'Enable the feedback type "Feedback comments". Not a DB field; its absence disables only this ' . 'feedback type, not the submission itself. The form default is admin-configurable, `
+- 784 ConcatOperandRemoval: `ed', 'PARAM_BOOL', 'Enable the feedback type "Feedback comments". Not a DB field; its absence disables only this ' . 'feedback type, not t => ed', 'PARAM_BOOL', 'feedback type, not t`
+- 784 ConcatOperandRemoval: `bles only this ' . 'feedback type, not the submission itself. The form default is admin-configurable, ' . 'hence no fixed defau => bles only this ' . 'hence no fixed defau`
+- 784 Concat: `bles only this ' . 'feedback type, not the submission itself. The form default is admin-configurable, ' . 'hence no fixed default here.', false, null, [0, => bles only this ' . 'hence no fixed default`
+- 784 ConcatOperandRemoval: `dmin-configurable, ' . 'hence no fixed default here.', false, null, [0, 1 => dmin-configurable, ', false, null, [0, 1`
+- 789 DecrementInteger: `re.', false, null, [0, 1], null, 'mod/ass => re.', false, null, [-1, 1], null, 'mod/ass`
+- 789 IncrementInteger: `re.', false, null, [0, 1], null, 'mod/ass => re.', false, null, [1, 1], null, 'mod/ass`
+- 789 DecrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 0], null, 'mod/assign`
+- 789 IncrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 2], null, 'mod/assign`
+- 789 ArrayItemRemoval: `re.', false, null, [0, 1], null, 'mod/assig => re.', false, null, [1], null, 'mod/assig`
+- 791 Concat: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_comments\', \'default\')); ' . 'mod/assign/ => ssign/locallib.`
+- 791 ConcatOperandRemoval: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default fr => ssign/locallib.php:1713-1716 (default fr`
+- 791 ConcatOperandRemoval: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_comments\', \'default\')); ' . 'mod/assign/feedback/comments/se => )); ' . 'mod/assign/feedback/comments/se`
+- 791 Concat: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_comments\', \'default\')); ' . 'mod/assign/feedback/comments/settings.php:26 (admin setting "default")'), new field`
+- 791 ConcatOperandRemoval: `\', \'default\')); ' . 'mod/assign/feedback/comments/settings.php:26 (admin setting "default")'), new field('assign => \', \'default\')); '), new field('assign`
+- 798 Concat: `ne', 'PARAM_BOOL', 'Insert the feedback comment directly into the submission instead of showing it alongside. Only effective with ' . '"assignfeedback_comments_enabled"=1.', false, 0, [0, 1], => ne', `
+- 798 ConcatOperandRemoval: `ne', 'PARAM_BOOL', 'Insert the feedback comment directly into the submission instead of showing it alongside. Only effective with ' . '"assignfeedback_comm => ne', 'PARAM_BOOL', '"assignfeedback_comm`
+- 798 ConcatOperandRemoval: `nly effective with ' . '"assignfeedback_comments_enabled"=1.', false, 0, [0, 1], => nly effective with ', false, 0, [0, 1],`
+- 800 FalseValue: `ments_enabled"=1.', false, 0, [0, 1], null, => ments_enabled"=1.', true, 0, [0, 1], null,`
+- 801 DecrementInteger: `nabled"=1.', false, 0, [0, 1], null, 'mod => nabled"=1.', false, -1, [0, 1], null, 'mod`
+- 801 IncrementInteger: `nabled"=1.', false, 0, [0, 1], null, 'mod => nabled"=1.', false, 1, [0, 1], null, 'mod`
+- 802 DecrementInteger: `ed"=1.', false, 0, [0, 1], null, 'mod/ass => ed"=1.', false, 0, [-1, 1], null, 'mod/ass`
+- 802 IncrementInteger: `ed"=1.', false, 0, [0, 1], null, 'mod/ass => ed"=1.', false, 0, [1, 1], null, 'mod/ass`
+- 802 DecrementInteger: `=1.', false, 0, [0, 1], null, 'mod/assign => =1.', false, 0, [0, 0], null, 'mod/assign`
+- 802 IncrementInteger: `=1.', false, 0, [0, 1], null, 'mod/assign => =1.', false, 0, [0, 2], null, 'mod/assign`
+- 802 ArrayItemRemoval: `ed"=1.', false, 0, [0, 1], null, 'mod/assig => ed"=1.', false, 0, [1], null, 'mod/assig`
+- 809 Concat: `ed', 'PARAM_BOOL', 'Enable the feedback type "Annotate PDF". Not a DB field, same pattern ' . 'as "assignfeedback_comments_enabled" - form default admin-configurable.', false, null, [0, => ed', 'PARAM`
+- 809 ConcatOperandRemoval: `ed', 'PARAM_BOOL', 'Enable the feedback type "Annotate PDF". Not a DB field, same pattern ' . 'as "assignfeedback_c => ed', 'PARAM_BOOL', 'as "assignfeedback_c`
+- 809 ConcatOperandRemoval: `ield, same pattern ' . 'as "assignfeedback_comments_enabled" - form default admin-configurable.', false, null, [0, 1 => ield, same pattern ', false, null, [0, 1`
+- 813 DecrementInteger: `le.', false, null, [0, 1], null, 'mod/ass => le.', false, null, [-1, 1], null, 'mod/ass`
+- 813 IncrementInteger: `le.', false, null, [0, 1], null, 'mod/ass => le.', false, null, [1, 1], null, 'mod/ass`
+- 813 DecrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 0], null, 'mod/assign`
+- 813 IncrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 2], null, 'mod/assign`
+- 813 ArrayItemRemoval: `le.', false, null, [0, 1], null, 'mod/assig => le.', false, null, [1], null, 'mod/assig`
+- 815 Concat: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_editpdf\', \'default\')); ' . 'mod/assign/ => ssign/locallib.p`
+- 815 ConcatOperandRemoval: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default fr => ssign/locallib.php:1713-1716 (default fr`
+- 815 ConcatOperandRemoval: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_editpdf\', \'default\')); ' . 'mod/assign/feedback/editpdf/set => )); ' . 'mod/assign/feedback/editpdf/set`
+- 815 Concat: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_editpdf\', \'default\')); ' . 'mod/assign/feedback/editpdf/settings.php:29 (admin setting "default")'), new field('`
+- 815 ConcatOperandRemoval: `\', \'default\')); ' . 'mod/assign/feedback/editpdf/settings.php:29 (admin setting "default")'), new field('assign => \', \'default\')); '), new field('assign`
+- 822 Concat: `ed', 'PARAM_BOOL', 'Enable the feedback type "Feedback files" (returning files to the learners). Not a DB field, ' . 'same pattern as "assignfeedback_comments_enabled" - form default ' . 'admin-config`
+- 822 ConcatOperandRemoval: `ed', 'PARAM_BOOL', 'Enable the feedback type "Feedback files" (returning files to the learners). Not a DB field, ' . 'same pattern as "ass => ed', 'PARAM_BOOL', 'same pattern as "ass`
+- 822 ConcatOperandRemoval: `ot a DB field, ' . 'same pattern as "assignfeedback_comments_enabled" - form default ' . 'admin-configurable.' => ot a DB field, ' . 'admin-configurable.'`
+- 822 Concat: `ot a DB field, ' . 'same pattern as "assignfeedback_comments_enabled" - form default ' . 'admin-configurable.', false, null, [0, => ot a DB field, ' . 'admin-configurable.' . 'same pattern as "assignf`
+- 822 ConcatOperandRemoval: `ed" - form default ' . 'admin-configurable.', false, null, [0, 1 => ed" - form default ', false, null, [0, 1`
+- 827 DecrementInteger: `le.', false, null, [0, 1], null, 'mod/ass => le.', false, null, [-1, 1], null, 'mod/ass`
+- 827 IncrementInteger: `le.', false, null, [0, 1], null, 'mod/ass => le.', false, null, [1, 1], null, 'mod/ass`
+- 827 DecrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 0], null, 'mod/assign`
+- 827 IncrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 2], null, 'mod/assign`
+- 827 ArrayItemRemoval: `le.', false, null, [0, 1], null, 'mod/assig => le.', false, null, [1], null, 'mod/assig`
+- 829 Concat: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_file\', \'default\')); ' . 'mod/assign/ => ssign/locallib.php:`
+- 829 ConcatOperandRemoval: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default fr => ssign/locallib.php:1713-1716 (default fr`
+- 829 ConcatOperandRemoval: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_file\', \'default\')); ' . 'mod/assign/feedback/file/settin => )); ' . 'mod/assign/feedback/file/settin`
+- 829 Concat: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_file\', \'default\')); ' . 'mod/assign/feedback/file/settings.php:26 (admin setting "default")'), new field('assig `
+- 829 ConcatOperandRemoval: `\', \'default\')); ' . 'mod/assign/feedback/file/settings.php:26 (admin setting "default")'), new field('assign => \', \'default\')); '), new field('assign`
+- 836 Concat: `ed', 'PARAM_BOOL', 'Enable the feedback type "Offline grading worksheet" (export/import as a table). Not a DB field, ' . 'same pattern as "assignfeedback_comments_enabled" - form default ' . 'admin-co`
+- 836 ConcatOperandRemoval: `ed', 'PARAM_BOOL', 'Enable the feedback type "Offline grading worksheet" (export/import as a table). Not a DB field, ' . 'same pattern as "ass => ed', 'PARAM_BOOL', 'same pattern as "ass`
+- 836 ConcatOperandRemoval: `ot a DB field, ' . 'same pattern as "assignfeedback_comments_enabled" - form default ' . 'admin-configurable.' => ot a DB field, ' . 'admin-configurable.'`
+- 836 Concat: `ot a DB field, ' . 'same pattern as "assignfeedback_comments_enabled" - form default ' . 'admin-configurable.', false, null, [0, => ot a DB field, ' . 'admin-configurable.' . 'same pattern as "assignf`
+- 836 ConcatOperandRemoval: `ed" - form default ' . 'admin-configurable.', false, null, [0, 1 => ed" - form default ', false, null, [0, 1`
+- 841 DecrementInteger: `le.', false, null, [0, 1], null, 'mod/ass => le.', false, null, [-1, 1], null, 'mod/ass`
+- 841 IncrementInteger: `le.', false, null, [0, 1], null, 'mod/ass => le.', false, null, [1, 1], null, 'mod/ass`
+- 841 DecrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 0], null, 'mod/assign`
+- 841 IncrementInteger: `', false, null, [0, 1], null, 'mod/assign => ', false, null, [0, 2], null, 'mod/assign`
+- 841 ArrayItemRemoval: `le.', false, null, [0, 1], null, 'mod/assig => le.', false, null, [1], null, 'mod/assig`
+- 843 Concat: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_offline\', \'default\')); ' . 'mod/assign/ => ssign/locallib.p`
+- 843 ConcatOperandRemoval: `ssign/locallib.php:1359-1373 (update_plugin_instance()); ' . 'mod/assign/locallib.php:1713-1716 (default fr => ssign/locallib.php:1713-1716 (default fr`
+- 843 ConcatOperandRemoval: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_offline\', \'default\')); ' . 'mod/assign/feedback/offline/set => )); ' . 'mod/assign/feedback/offline/set`
+- 843 Concat: `)); ' . 'mod/assign/locallib.php:1713-1716 (default from get_config(\'assignfeedback_offline\', \'default\')); ' . 'mod/assign/feedback/offline/settings.php:26 (admin setting "default")')]; => )); ' .`
+- 843 ConcatOperandRemoval: `\', \'default\')); ' . 'mod/assign/feedback/offline/settings.php:26 (admin setting "default")')]; => \', \'default\')); ')];`
+- 861 CastInt: `if ((int) $CFG->branch >= 502) => if ($CFG->branch >= 502)`
+- 861 GreaterThanOrEqualTo: `(int) $CFG->branch >= 502) { => (int) $CFG->branch > 502) {`
+- 864 CastInt: `if ((int) $CFG->branch >= 503) => if ($CFG->branch >= 503)`
+- 864 GreaterThanOrEqualTo: `(int) $CFG->branch >= 503) { => (int) $CFG->branch > 503) {`
+- 877 Concat: `return ['"duedate" must be after "allowsubmissionsfromdate" if both are set ' . '(mod/assign/mod_form.php: validation()).', '"cutoffdate" mus => return ['(mod/assign/mod_form.php: validation()).' . '"`
+- 877 ConcatOperandRemoval: `return ['"duedate" must be after "allowsubmissionsfromdate" if both are set ' . '(mod/assign/mod_form => return ['(mod/assign/mod_form`
+- 877 ConcatOperandRemoval: `e" if both are set ' . '(mod/assign/mod_form.php: validation()).', '"cutoffdate" must => e" if both are set ', '"cutoffdate" must`
+- 880 Concat: `(validation()).', '"cutoffdate" must not be before "allowsubmissionsfromdate" if both are set ' . '(validation()).', '"gradingduedate" => (validation()).', '(validation()).' . '"cutoffdate" must not b`
+- 880 ConcatOperandRemoval: `(validation()).', '"cutoffdate" must not be before "allowsubmissionsfromdate" if both are set ' . '(validation()).', '" => (validation()).', '(validation()).', '"`
+- 880 ConcatOperandRemoval: `e" if both are set ' . '(validation()).', '"gradingduedate" => e" if both are set ', '"gradingduedate"`
+- 882 Concat: `'(validation()).', '"gradingduedate" must be after "allowsubmissionsfromdate" if both are set ' . '(validation()).', '"gradingduedate" => '(validation()).', '(validation()).' . '"gradingduedate" must `
+- 882 ConcatOperandRemoval: `'(validation()).', '"gradingduedate" must be after "allowsubmissionsfromdate" if both are set ' . '(validation()).', '" => '(validation()).', '(validation()).', '"`
+- 882 ConcatOperandRemoval: `e" if both are set ' . '(validation()).', '"gradingduedate" => e" if both are set ', '"gradingduedate"`
+- 885 Concat: `(validation()).', '"attemptreopenmethod"="untilpass" cannot be combined with "blindmarking"=1 as soon as more than ' . 'one attempt is allowed ("maxattempts" > 1 or unlimited) (validation()).']; => (v`
+- 885 ConcatOperandRemoval: `soon as more than ' . 'one attempt is allowed ("maxattempts" > 1 or unlimited) (validation()).']; => soon as more than '];`
+- 896 ArrayItemRemoval: `return ['"sendnotifications"=1 sends an email to all teachers of the assignment ' . 'on every new submission from then on (mod/assign/locallib.php: email_graders()).', '"duedate"/"gradingdue => return`
+- 897 Concat: `return ['"sendnotifications"=1 sends an email to all teachers of the assignment ' . 'on every new submission from then on (mod/assign/locallib.php: email_graders()).', '"duedate"/"gradi => return ['on`
+- 897 ConcatOperandRemoval: `return ['"sendnotifications"=1 sends an email to all teachers of the assignment ' . 'on every new submiss => return ['on every new submiss`
+- 897 ConcatOperandRemoval: `of the assignment ' . 'on every new submission from then on (mod/assign/locallib.php: email_graders()).', '"duedate"/"gradin => of the assignment ', '"duedate"/"gradin`
+- 899 Concat: `mail_graders()).', '"duedate"/"gradingduedate" each create or update a calendar event ' . '(mod/assign/locallib.php: update_calendar()); "cutoffdate"/"allowsubmissionsfromdate" do ' . 'not.']; => mail`
+- 899 ConcatOperandRemoval: `mail_graders()).', '"duedate"/"gradingduedate" each create or update a calendar event ' . '(mod/assign/locallib => mail_graders()).', '(mod/assign/locallib`
+- 899 ConcatOperandRemoval: `calendar event ' . '(mod/assign/locallib.php: update_calendar()); "cutoffdate"/"allowsubmissionsfromdate" do ' . 'not.']; => calendar event ' . 'not.'];`
+- 899 Concat: `calendar event ' . '(mod/assign/locallib.php: update_calendar()); "cutoffdate"/"allowsubmissionsfromdate" do ' . 'not.']; => calendar event ' . 'not.' . '(mod/assign/locallib.php: update_calendar()); `
+- 899 ConcatOperandRemoval: `ssionsfromdate" do ' . 'not.']; => ssionsfromdate" do '];`
+- 912 ArrayItemRemoval: `rn ['standard' => ['submissiondrafts' => 0, 'requiresubmissionsta => rn ['standard' => ['requiresubmissionsta`
+- 913 DecrementInteger: `ubmissiondrafts' => 0, 'requiresubmission => ubmissiondrafts' => -1, 'requiresubmission`
+- 914 DecrementInteger: `issionstatement' => 0, 'teamsubmission' = => issionstatement' => -1, 'teamsubmission' =`
+- 914 IncrementInteger: `issionstatement' => 0, 'teamsubmission' = => issionstatement' => 1, 'teamsubmission' =`
+- 915 DecrementInteger: `'teamsubmission' => 0, 'blindmarking' => => 'teamsubmission' => -1, 'blindmarking' =>`
+- 915 IncrementInteger: `'teamsubmission' => 0, 'blindmarking' => => 'teamsubmission' => 1, 'blindmarking' =>`
+- 916 DecrementInteger: `, 'blindmarking' => 0, 'markingworkflow' => , 'blindmarking' => -1, 'markingworkflow'`
+- 917 DecrementInteger: `markingworkflow' => 0, 'sendnotifications => markingworkflow' => -1, 'sendnotifications`
+- 918 DecrementInteger: `ndnotifications' => 1, 'assignsubmission_ => ndnotifications' => 0, 'assignsubmission_`
+- 918 IncrementInteger: `ndnotifications' => 1, 'assignsubmission_ => ndnotifications' => 2, 'assignsubmission_`
+- 919 DecrementInteger: `on_file_enabled' => 1, 'assignsubmission_ => on_file_enabled' => 0, 'assignsubmission_`
+- 919 IncrementInteger: `on_file_enabled' => 1, 'assignsubmission_ => on_file_enabled' => 2, 'assignsubmission_`
+- 920 DecrementInteger: `inetext_enabled' => 0, 'assignfeedback_co => inetext_enabled' => -1, 'assignfeedback_co`
+- 920 IncrementInteger: `inetext_enabled' => 0, 'assignfeedback_co => inetext_enabled' => 1, 'assignfeedback_co`
+- 921 DecrementInteger: `omments_enabled' => 1], 'exercise' => [ => omments_enabled' => 0], 'exercise' => [`
+- 921 IncrementInteger: `omments_enabled' => 1], 'exercise' => [ => omments_enabled' => 2], 'exercise' => [`
+- 923 ArrayItemRemoval: `'grade' => 0, => `
+- 924 DecrementInteger: `'grade' => 0, => 'grade' => -1,`
+- 924 IncrementInteger: `'grade' => 0, => 'grade' => 1,`
+- 925 DecrementInteger: `ubmissiondrafts' => 0, => ubmissiondrafts' => -1,`
+- 926 DecrementInteger: `issionstatement' => 0, => issionstatement' => -1,`
+- 926 IncrementInteger: `issionstatement' => 0, => issionstatement' => 1,`
+- 927 DecrementInteger: `ndnotifications' => 0, => ndnotifications' => -1,`
+- 927 IncrementInteger: `ndnotifications' => 0, => ndnotifications' => 1,`
+- 928 DecrementInteger: `'maxattempts' => -1, => 'maxattempts' => -2,`
+- 928 IncrementInteger: `'maxattempts' => -1, => 'maxattempts' => -0,`
+- 930 DecrementInteger: `inetext_enabled' => 1, => inetext_enabled' => 0,`
+- 930 IncrementInteger: `inetext_enabled' => 1, => inetext_enabled' => 2,`
+- 931 DecrementInteger: `on_file_enabled' => 0, => on_file_enabled' => -1,`
+- 931 IncrementInteger: `on_file_enabled' => 0, => on_file_enabled' => 1,`
+- 932 DecrementInteger: `omments_enabled' => 1, => omments_enabled' => 0,`
+- 932 IncrementInteger: `omments_enabled' => 1, => omments_enabled' => 2,`
+- 957 ArrayItemRemoval: `N_SUBMISSION_STATUS_NEW', 'ASSIGN_SUBMISSION_STATUS_REOPENED', 'ASSIGN_S => N_SUBMISSION_STATUS_REOPENED', 'ASSIGN_S`
+- 1029 DecrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = -1): string`
+
+## Plugin/src/local_coursepilot/classes/catalog/catalog_fields.php (6 überlebt, 5 offen)
+
+- 39 UnwrapArrayUnique (ignoriert): `$blocklist = array_unique(array_merge(shared_block::blocked_fields(), $catalogclass::blocklist())); => $blocklist = array_merge(shared_block::blocked_fields(), $catalogclass::blocklist());`
+- 47 MethodCallRemoval: `field::assert_name($fieldname); => `
+- 53 FalseValue: `e[$lookup]->values, false)) { => e[$lookup]->values, true)) {`
+- 55 ArrayItem: `> $modname, 'value' => json_encode($value => > $modname, 'value' > json_encode($value`
+- 89 PregMatchRemoveCaret: `return preg_match('/^(parameter|variable) => return preg_match('/(parameter|variable)`
+- 89 PregMatchRemoveDollar: `ameter|variable)_\d+$/', $fieldname) === => ameter|variable)_\d+/', $fieldname) ===`
+
+## Plugin/src/local_coursepilot/classes/catalog/choice.php (166 überlebt, 166 offen)
+
+- 80 TrueValue: `me of the choice.', true, null, null, null, => me of the choice.', false, null, null, null,`
+- 90 TrueValue: `o) of the choice.', true, null, null, null, => o) of the choice.', false, null, null, null,`
+- 100 FalseValue: `mat of the intro.', false, FORMAT_HTML, null => mat of the intro.', true, FORMAT_HTML, null`
+- 110 FalseValue: `or vertical (1).', false, 0, [0, 1], null, => or vertical (1).', true, 0, [0, 1], null,`
+- 111 DecrementInteger: `tical (1).', false, 0, [0, 1], null, 'mod => tical (1).', false, -1, [0, 1], null, 'mod`
+- 111 IncrementInteger: `tical (1).', false, 0, [0, 1], null, 'mod => tical (1).', false, 1, [0, 1], null, 'mod`
+- 112 DecrementInteger: `l (1).', false, 0, [0, 1], null, 'mod/cho => l (1).', false, 0, [-1, 1], null, 'mod/cho`
+- 112 IncrementInteger: `l (1).', false, 0, [0, 1], null, 'mod/cho => l (1).', false, 0, [1, 1], null, 'mod/cho`
+- 112 ArrayItemRemoval: `l (1).', false, 0, [0, 1], null, 'mod/choic => l (1).', false, 0, [1], null, 'mod/choic`
+- 114 Concat: `, null, 'mod/choice/lib.php:42-43 (CHOICE_DISPLAY_HORIZONTAL/CHOICE_DISPLAY_VERTICAL); ' . 'mod/choice/mod_form.php:29-34'), new field('allow => , null, 'mod/choice/mod_form.php:29-34' . 'mod/choice/l`
+- 114 ConcatOperandRemoval: `, null, 'mod/choice/lib.php:42-43 (CHOICE_DISPLAY_HORIZONTAL/CHOICE_DISPLAY_VERTICAL); ' . 'mod/choice/mod_form.php:29-34') => , null, 'mod/choice/mod_form.php:29-34')`
+- 114 ConcatOperandRemoval: `DISPLAY_VERTICAL); ' . 'mod/choice/mod_form.php:29-34'), new field('allowu => DISPLAY_VERTICAL); '), new field('allowu`
+- 121 FalseValue: `ction afterwards.', false, 0, [0, 1], null, => ction afterwards.', true, 0, [0, 1], null,`
+- 130 Concat: `le', 'PARAM_BOOL', 'Multiple selection allowed. Frozen after the first answer once ' . 'answers exist.', false, 0, [0, 1], => le', 'PARAM_BOOL', 'answers exist.' . 'Multiple selection allowed. Frozen `
+- 130 ConcatOperandRemoval: `le', 'PARAM_BOOL', 'Multiple selection allowed. Frozen after the first answer once ' . 'answers exist.', fal => le', 'PARAM_BOOL', 'answers exist.', fal`
+- 130 ConcatOperandRemoval: `first answer once ' . 'answers exist.', false, 0, [0, 1], => first answer once ', false, 0, [0, 1],`
+- 132 FalseValue: `. 'answers exist.', false, 0, [0, 1], null, => . 'answers exist.', true, 0, [0, 1], null,`
+- 133 DecrementInteger: `ers exist.', false, 0, [0, 1], null, 'mod => ers exist.', false, -1, [0, 1], null, 'mod`
+- 133 IncrementInteger: `ers exist.', false, 0, [0, 1], null, 'mod => ers exist.', false, 1, [0, 1], null, 'mod`
+- 134 DecrementInteger: `exist.', false, 0, [0, 1], null, 'mod/cho => exist.', false, 0, [-1, 1], null, 'mod/cho`
+- 134 IncrementInteger: `exist.', false, 0, [0, 1], null, 'mod/cho => exist.', false, 0, [1, 1], null, 'mod/cho`
+- 134 DecrementInteger: `st.', false, 0, [0, 1], null, 'mod/choice => st.', false, 0, [0, 0], null, 'mod/choice`
+- 134 IncrementInteger: `st.', false, 0, [0, 1], null, 'mod/choice => st.', false, 0, [0, 2], null, 'mod/choice`
+- 134 ArrayItemRemoval: `exist.', false, 0, [0, 1], null, 'mod/choic => exist.', false, 0, [1], null, 'mod/choic`
+- 136 Concat: `, null, 'mod/choice/mod_form.php:39-43 (selectyesno, freeze() with existing choice_answers); column ' . 'mod/choice/db/install.xml (choice.allowmultiple)'), new field('limit => , null, 'mod/choice/db/`
+- 136 ConcatOperandRemoval: `, null, 'mod/choice/mod_form.php:39-43 (selectyesno, freeze() with existing choice_answers); column ' . 'mod/choice/db/install.xml (choi => , null, 'mod/choice/db/install.xml (choi`
+- 136 ConcatOperandRemoval: `e_answers); column ' . 'mod/choice/db/install.xml (choice.allowmultiple)'), new field('limita => e_answers); column '), new field('limita`
+- 143 FalseValue: `mbination rules).', false, 0, [0, 1], null, => mbination rules).', true, 0, [0, 1], null,`
+- 144 DecrementInteger: `on rules).', false, 0, [0, 1], null, 'mod => on rules).', false, -1, [0, 1], null, 'mod`
+- 144 IncrementInteger: `on rules).', false, 0, [0, 1], null, 'mod => on rules).', false, 1, [0, 1], null, 'mod`
+- 145 DecrementInteger: `ules).', false, 0, [0, 1], null, 'mod/cho => ules).', false, 0, [-1, 1], null, 'mod/cho`
+- 145 IncrementInteger: `ules).', false, 0, [0, 1], null, 'mod/cho => ules).', false, 0, [1, 1], null, 'mod/cho`
+- 145 ArrayItemRemoval: `ules).', false, 0, [0, 1], null, 'mod/choic => ules).', false, 0, [1], null, 'mod/choic`
+- 153 FalseValue: `n limitanswers=1.', false, 0, [0, 1], null, => n limitanswers=1.', true, 0, [0, 1], null,`
+- 154 DecrementInteger: `answers=1.', false, 0, [0, 1], null, 'mod => answers=1.', false, -1, [0, 1], null, 'mod`
+- 154 IncrementInteger: `answers=1.', false, 0, [0, 1], null, 'mod => answers=1.', false, 1, [0, 1], null, 'mod`
+- 155 DecrementInteger: `ers=1.', false, 0, [0, 1], null, 'mod/cho => ers=1.', false, 0, [-1, 1], null, 'mod/cho`
+- 155 IncrementInteger: `ers=1.', false, 0, [0, 1], null, 'mod/cho => ers=1.', false, 0, [1, 1], null, 'mod/cho`
+- 155 DecrementInteger: `=1.', false, 0, [0, 1], null, 'mod/choice => =1.', false, 0, [0, 0], null, 'mod/choice`
+- 155 IncrementInteger: `=1.', false, 0, [0, 1], null, 'mod/choice => =1.', false, 0, [0, 2], null, 'mod/choice`
+- 155 ArrayItemRemoval: `ers=1.', false, 0, [0, 1], null, 'mod/choic => ers=1.', false, 0, [1], null, 'mod/choic`
+- 157 Concat: `, null, 'mod/choice/mod_form.php:50-52 (selectyesno, hideIf limitanswers eq 0); column ' . 'mod/choice/db/install.xml (choice.showavailable)'), new field('showu => , null, 'mod/choice/db/install.xml (`
+- 157 ConcatOperandRemoval: `, null, 'mod/choice/mod_form.php:50-52 (selectyesno, hideIf limitanswers eq 0); column ' . 'mod/choice/db/install.xml (choi => , null, 'mod/choice/db/install.xml (choi`
+- 157 ConcatOperandRemoval: `wers eq 0); column ' . 'mod/choice/db/install.xml (choice.showavailable)'), new field('showun => wers eq 0); column '), new field('showun`
+- 164 FalseValue: `" in the results.', false, 0, [0, 1], null, => " in the results.', true, 0, [0, 1], null,`
+- 165 DecrementInteger: `e results.', false, 0, [0, 1], null, 'mod => e results.', false, -1, [0, 1], null, 'mod`
+- 165 IncrementInteger: `e results.', false, 0, [0, 1], null, 'mod => e results.', false, 1, [0, 1], null, 'mod`
+- 166 DecrementInteger: `sults.', false, 0, [0, 1], null, 'mod/cho => sults.', false, 0, [-1, 1], null, 'mod/cho`
+- 166 IncrementInteger: `sults.', false, 0, [0, 1], null, 'mod/cho => sults.', false, 0, [1, 1], null, 'mod/cho`
+- 166 DecrementInteger: `ts.', false, 0, [0, 1], null, 'mod/choice => ts.', false, 0, [0, 0], null, 'mod/choice`
+- 166 IncrementInteger: `ts.', false, 0, [0, 1], null, 'mod/choice => ts.', false, 0, [0, 2], null, 'mod/choice`
+- 166 ArrayItemRemoval: `sults.', false, 0, [0, 1], null, 'mod/choic => sults.', false, 0, [1], null, 'mod/choic`
+- 173 Concat: `ve', 'PARAM_BOOL', 'Count answers of inactive (e.g. unenrolled) users in the results. ' . 'The form default (0) differs from the DB column default (1).', false, 0, [0, 1], => ve', 'PARAM_BOOL', 'The f`
+- 173 ConcatOperandRemoval: `ve', 'PARAM_BOOL', 'Count answers of inactive (e.g. unenrolled) users in the results. ' . 'The form default (0) => ve', 'PARAM_BOOL', 'The form default (0)`
+- 173 ConcatOperandRemoval: `rs in the results. ' . 'The form default (0) differs from the DB column default (1).', false, 0, [0, 1], => rs in the results. ', false, 0, [0, 1],`
+- 175 FalseValue: `lumn default (1).', false, 0, [0, 1], null, => lumn default (1).', true, 0, [0, 1], null,`
+- 176 DecrementInteger: `fault (1).', false, 0, [0, 1], null, 'mod => fault (1).', false, -1, [0, 1], null, 'mod`
+- 176 IncrementInteger: `fault (1).', false, 0, [0, 1], null, 'mod => fault (1).', false, 1, [0, 1], null, 'mod`
+- 177 DecrementInteger: `t (1).', false, 0, [0, 1], null, 'mod/cho => t (1).', false, 0, [-1, 1], null, 'mod/cho`
+- 177 IncrementInteger: `t (1).', false, 0, [0, 1], null, 'mod/cho => t (1).', false, 0, [1, 1], null, 'mod/cho`
+- 177 DecrementInteger: `1).', false, 0, [0, 1], null, 'mod/choice => 1).', false, 0, [0, 0], null, 'mod/choice`
+- 177 IncrementInteger: `1).', false, 0, [0, 1], null, 'mod/choice => 1).', false, 0, [0, 2], null, 'mod/choice`
+- 177 ArrayItemRemoval: `t (1).', false, 0, [0, 1], null, 'mod/choic => t (1).', false, 0, [1], null, 'mod/choic`
+- 179 Concat: `, null, 'mod/choice/mod_form.php:116-117 (selectyesno, setDefault(0) overrides DB default); column ' . 'mod/choice/db/install.xml (choice.includeinactive, DEFAULT=1)'), new field('timeo => , null, 'mo`
+- 179 ConcatOperandRemoval: `, null, 'mod/choice/mod_form.php:116-117 (selectyesno, setDefault(0) overrides DB default); column ' . 'mod/choice/db/install.xml (choi => , null, 'mod/choice/db/install.xml (choi`
+- 179 ConcatOperandRemoval: `B default); column ' . 'mod/choice/db/install.xml (choice.includeinactive, DEFAULT=1)'), new field('timeop => B default); column '), new field('timeop`
+- 185 Concat: `pen', 'PARAM_INT', 'Unix timestamp: the choice opens. 0 = no start time. Creates a calendar entry ' . '(see side effects).', false, 0, null, n => pen', 'PARAM_INT', '(see side effects).' . 'Unix times`
+- 185 ConcatOperandRemoval: `pen', 'PARAM_INT', 'Unix timestamp: the choice opens. 0 = no start time. Creates a calendar entry ' . '(see side effects).' => pen', 'PARAM_INT', '(see side effects).'`
+- 185 ConcatOperandRemoval: `s a calendar entry ' . '(see side effects).', false, 0, null, nu => s a calendar entry ', false, 0, null, nu`
+- 187 FalseValue: `ee side effects).', false, 0, null, null, 'm => ee side effects).', true, 0, null, null, 'm`
+- 188 DecrementInteger: `effects).', false, 0, null, null, 'mod/c => effects).', false, -1, null, null, 'mod/c`
+- 188 IncrementInteger: `effects).', false, 0, null, null, 'mod/c => effects).', false, 1, null, null, 'mod/c`
+- 191 Concat: `, null, 'mod/choice/mod_form.php:87-89 (date_time_selector, optional); column ' . 'mod/choice/db/install.xml (choice.timeopen)'), new field('timec => , null, 'mod/choice/db/install.xml (choice.timeope`
+- 191 ConcatOperandRemoval: `, null, 'mod/choice/mod_form.php:87-89 (date_time_selector, optional); column ' . 'mod/choice/db/install.xml (choi => , null, 'mod/choice/db/install.xml (choi`
+- 191 ConcatOperandRemoval: `optional); column ' . 'mod/choice/db/install.xml (choice.timeopen)'), new field('timecl => optional); column '), new field('timecl`
+- 197 Concat: `ose', 'PARAM_INT', 'Unix timestamp: the choice closes. 0 = no end time. Creates a calendar entry ' . '(see side effects).', false, 0, null, n => ose', 'PARAM_INT', '(see side effects).' . 'Unix timest`
+- 197 ConcatOperandRemoval: `ose', 'PARAM_INT', 'Unix timestamp: the choice closes. 0 = no end time. Creates a calendar entry ' . '(see side effects).' => ose', 'PARAM_INT', '(see side effects).'`
+- 197 ConcatOperandRemoval: `s a calendar entry ' . '(see side effects).', false, 0, null, nu => s a calendar entry ', false, 0, null, nu`
+- 199 FalseValue: `ee side effects).', false, 0, null, null, 'm => ee side effects).', true, 0, null, null, 'm`
+- 203 Concat: `, null, 'mod/choice/mod_form.php:90-92 (date_time_selector, optional); column ' . 'mod/choice/db/install.xml (choice.timeclose)'), new field('showp => , null, 'mod/choice/db/install.xml (choice.timecl`
+- 203 ConcatOperandRemoval: `, null, 'mod/choice/mod_form.php:90-92 (date_time_selector, optional); column ' . 'mod/choice/db/install.xml (choi => , null, 'mod/choice/db/install.xml (choi`
+- 203 ConcatOperandRemoval: `optional); column ' . 'mod/choice/db/install.xml (choice.timeclose)'), new field('showpr => optional); column '), new field('showpr`
+- 210 FalseValue: `ng able to vote).', false, 0, [0, 1], null, => ng able to vote).', true, 0, [0, 1], null,`
+- 211 DecrementInteger: `to vote).', false, 0, [0, 1], null, 'mod => to vote).', false, -1, [0, 1], null, 'mod`
+- 211 IncrementInteger: `to vote).', false, 0, [0, 1], null, 'mod => to vote).', false, 1, [0, 1], null, 'mod`
+- 212 DecrementInteger: `vote).', false, 0, [0, 1], null, 'mod/cho => vote).', false, 0, [-1, 1], null, 'mod/cho`
+- 212 IncrementInteger: `vote).', false, 0, [0, 1], null, 'mod/cho => vote).', false, 0, [1, 1], null, 'mod/cho`
+- 212 DecrementInteger: `e).', false, 0, [0, 1], null, 'mod/choice => e).', false, 0, [0, 0], null, 'mod/choice`
+- 212 IncrementInteger: `e).', false, 0, [0, 1], null, 'mod/choice => e).', false, 0, [0, 2], null, 'mod/choice`
+- 212 ArrayItemRemoval: `vote).', false, 0, [0, 1], null, 'mod/choic => vote).', false, 0, [1], null, 'mod/choic`
+- 219 Concat: `lts', 'PARAM_INT', 'When results are visible: never (0), after own answer (1), after closing (2), always ' . '(3).', false, 0, [0, 1, => lts', 'PARAM_INT', '(3).' . 'When results are visible: never (0`
+- 219 ConcatOperandRemoval: `lts', 'PARAM_INT', 'When results are visible: never (0), after own answer (1), after closing (2), always ' . '(3).', false, 0, [0, => lts', 'PARAM_INT', '(3).', false, 0, [0,`
+- 219 ConcatOperandRemoval: `losing (2), always ' . '(3).', false, 0, [0, 1, 2 => losing (2), always ', false, 0, [0, 1, 2`
+- 221 FalseValue: `always ' . '(3).', false, 0, [0, 1, 2, 3], => always ' . '(3).', true, 0, [0, 1, 2, 3],`
+- 222 DecrementInteger: `' . '(3).', false, 0, [0, 1, 2, 3], null => ' . '(3).', false, -1, [0, 1, 2, 3], null`
+- 222 IncrementInteger: `' . '(3).', false, 0, [0, 1, 2, 3], null => ' . '(3).', false, 1, [0, 1, 2, 3], null`
+- 223 DecrementInteger: `'(3).', false, 0, [0, 1, 2, 3], null, 'm => '(3).', false, 0, [-1, 1, 2, 3], null, 'm`
+- 223 IncrementInteger: `'(3).', false, 0, [0, 1, 2, 3], null, 'm => '(3).', false, 0, [1, 1, 2, 3], null, 'm`
+- 223 DecrementInteger: `3).', false, 0, [0, 1, 2, 3], null, 'mod/ => 3).', false, 0, [0, 0, 2, 3], null, 'mod/`
+- 223 IncrementInteger: `3).', false, 0, [0, 1, 2, 3], null, 'mod/ => 3).', false, 0, [0, 2, 2, 3], null, 'mod/`
+- 223 DecrementInteger: `', false, 0, [0, 1, 2, 3], null, 'mod/cho => ', false, 0, [0, 1, 1, 3], null, 'mod/cho`
+- 223 IncrementInteger: `', false, 0, [0, 1, 2, 3], null, 'mod/cho => ', false, 0, [0, 1, 3, 3], null, 'mod/cho`
+- 223 ArrayItemRemoval: `'(3).', false, 0, [0, 1, 2, 3], null, 'mod => '(3).', false, 0, [1, 2, 3], null, 'mod`
+- 225 Concat: `, null, 'mod/choice/lib.php:37-40 (CHOICE_SHOWRESULTS_NOT/AFTER_ANSWER/AFTER_CLOSE/ALWAYS); ' . 'mod/choice/mod_form.php:100-105'), new field('publi => , null, 'mod/choice/mod_form.php:100-105' . 'mod`
+- 225 ConcatOperandRemoval: `, null, 'mod/choice/lib.php:37-40 (CHOICE_SHOWRESULTS_NOT/AFTER_ANSWER/AFTER_CLOSE/ALWAYS); ' . 'mod/choice/mod_form.php:100-105 => , null, 'mod/choice/mod_form.php:100-105`
+- 225 ConcatOperandRemoval: `TER_CLOSE/ALWAYS); ' . 'mod/choice/mod_form.php:100-105'), new field('publis => TER_CLOSE/ALWAYS); '), new field('publis`
+- 231 Concat: `ish', 'PARAM_INT', 'Result display anonymous (0) or with names (1). Side effect: switching from anonymous to ' . 'named makes answers already given retroactively visible by name - see ' . 'side effect`
+- 231 ConcatOperandRemoval: `ish', 'PARAM_INT', 'Result display anonymous (0) or with names (1). Side effect: switching from anonymous to ' . 'named makes answers => ish', 'PARAM_INT', 'named makes answers`
+- 231 ConcatOperandRemoval: `m anonymous to ' . 'named makes answers already given retroactively visible by name - see ' . 'side effects.', fals => m anonymous to ' . 'side effects.', fals`
+- 231 Concat: `m anonymous to ' . 'named makes answers already given retroactively visible by name - see ' . 'side effects.', false, 0, [0, 1], => m anonymous to ' . 'side effects.' . 'named makes answers already gi`
+- 231 ConcatOperandRemoval: `ible by name - see ' . 'side effects.', false, 0, [0, 1], => ible by name - see ', false, 0, [0, 1],`
+- 234 FalseValue: `. 'side effects.', false, 0, [0, 1], null, => . 'side effects.', true, 0, [0, 1], null,`
+- 235 DecrementInteger: `e effects.', false, 0, [0, 1], null, 'mod => e effects.', false, -1, [0, 1], null, 'mod`
+- 235 IncrementInteger: `e effects.', false, 0, [0, 1], null, 'mod => e effects.', false, 1, [0, 1], null, 'mod`
+- 236 DecrementInteger: `fects.', false, 0, [0, 1], null, 'mod/cho => fects.', false, 0, [-1, 1], null, 'mod/cho`
+- 236 IncrementInteger: `fects.', false, 0, [0, 1], null, 'mod/cho => fects.', false, 0, [1, 1], null, 'mod/cho`
+- 236 ArrayItemRemoval: `fects.', false, 0, [0, 1], null, 'mod/choic => fects.', false, 0, [1], null, 'mod/choic`
+- 238 Concat: `, null, 'mod/choice/lib.php:34-35 (CHOICE_PUBLISH_ANONYMOUS/CHOICE_PUBLISH_NAMES); ' . 'mod/choice/mod_form.php:107-112')]; => , null, 'mod/choice/mod_form.php:107-112' . 'mod/choice/lib.php:34-35 (CH`
+- 238 ConcatOperandRemoval: `, null, 'mod/choice/lib.php:34-35 (CHOICE_PUBLISH_ANONYMOUS/CHOICE_PUBLISH_NAMES); ' . 'mod/choice/mod_form.php:107-112 => , null, 'mod/choice/mod_form.php:107-112`
+- 238 ConcatOperandRemoval: `CE_PUBLISH_NAMES); ' . 'mod/choice/mod_form.php:107-112')]; => CE_PUBLISH_NAMES); ')];`
+- 265 ArrayItemRemoval: `te_order_rules' => [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']], => te_order_rules' => [],`
+- 290 UnwrapArrayMap: `return array_map(static fn(field $f): string => $f->name, self::fields()); => return self::fields();`
+- 303 Concat: `tion', 'string[]', 'The choice options - ONE field, not a series of fields: a list of texts, linked via the same ' . 'key to "limit" and "optionid". At least one non-empty entry ' . '(option[0]) is =>`
+- 303 ConcatOperandRemoval: `tion', 'string[]', 'The choice options - ONE field, not a series of fields: a list of texts, linked via the same ' . 'key to "limit" and " => tion', 'string[]', 'key to "limit" and "`
+- 303 ConcatOperandRemoval: `d via the same ' . 'key to "limit" and "optionid". At least one non-empty entry ' . '(option[0]) is requi => d via the same ' . '(option[0]) is requi`
+- 303 Concat: `d via the same ' . 'key to "limit" and "optionid". At least one non-empty entry ' . '(option[0]) is required.', true, null, null, => d via the same ' . '(option[0]) is required.' . 'key to "limit" and`
+- 303 ConcatOperandRemoval: `ne non-empty entry ' . '(option[0]) is required.', true, null, null, => ne non-empty entry ', true, null, null,`
+- 306 TrueValue: `[0]) is required.', true, null, null, null, => [0]) is required.', false, null, null, null,`
+- 310 Concat: `, null, 'mod/choice/mod_form.php:53-78 (repeat_elements() of the option/limit/optionid group); ' . 'mod/choice/lib.php:110/151 (choice_add_instance()/choice_update_instance(): ' . ''foreach ($cho => ,`
+- 310 ConcatOperandRemoval: `, null, 'mod/choice/mod_form.php:53-78 (repeat_elements() of the option/limit/optionid group); ' . 'mod/choice/lib.php:110/151 (cho => , null, 'mod/choice/lib.php:110/151 (cho`
+- 310 ConcatOperandRemoval: `tionid group); ' . 'mod/choice/lib.php:110/151 (choice_add_instance()/choice_update_instance(): ' . ''foreach ($choice->o => tionid group); ' . ''foreach ($choice->o`
+- 310 Concat: `tionid group); ' . 'mod/choice/lib.php:110/151 (choice_add_instance()/choice_update_instance(): ' . ''foreach ($choice->option as $key => $value)')'), new field('limit => tionid group); ' . ''foreach `
+- 310 ConcatOperandRemoval: `update_instance(): ' . ''foreach ($choice->option as $key => $value)')'), new field('limit' => update_instance(): '), new field('limit'`
+- 318 Concat: `('limit', 'int[]', 'Participant limit per option, linked via the same key as "option". Only effective when ' . 'limitanswers=1. Must have as many entries as "option" (see combination rules).', false, `
+- 318 ConcatOperandRemoval: `('limit', 'int[]', 'Participant limit per option, linked via the same key as "option". Only effective when ' . 'limitanswers=1. Must => ('limit', 'int[]', 'limitanswers=1. Must`
+- 318 ConcatOperandRemoval: `nly effective when ' . 'limitanswers=1. Must have as many entries as "option" (see combination rules).', false, null, null, => nly effective when ', false, null, null,`
+- 324 Concat: `null, null, null, 'mod/choice/mod_form.php:53,61-64 (repeat_elements(), default 0); mod/choice/lib.php:116-117/156-157 ' . '('$choice->limit[$key]')'), new field('optio => null, null, null, '('$choice`
+- 324 ConcatOperandRemoval: `null, null, null, 'mod/choice/mod_form.php:53,61-64 (repeat_elements(), default 0); mod/choice/lib.php:116-117/156-157 ' . '('$choice->limit[$ke => null, null, null, '('$choice->limit[$ke`
+- 324 ConcatOperandRemoval: `hp:116-117/156-157 ' . '('$choice->limit[$key]')'), new field('option => hp:116-117/156-157 '), new field('option`
+- 331 Concat: `ptionid', 'int[]', 'Existing choice_options IDs for the update path, linked via the same key as "option"; ' . '0 or missing creates a new option. CAUTION: choice_update_instance() ' . 'does not check `
+- 331 ConcatOperandRemoval: `ptionid', 'int[]', 'Existing choice_options IDs for the update path, linked via the same key as "option"; ' . '0 or missing creates => ptionid', 'int[]', '0 or missing creates`
+- 331 ConcatOperandRemoval: `y as "option"; ' . '0 or missing creates a new option. CAUTION: choice_update_instance() ' . 'does not check wheth => y as "option"; ' . 'does not check wheth`
+- 331 Concat: `y as "option"; ' . '0 or missing creates a new option. CAUTION: choice_update_instance() ' . 'does not check whether an ID belongs to its own instance - an ID from a foreign ' . 'choice instanc => y a`
+- 331 ConcatOperandRemoval: `ate_instance() ' . 'does not check whether an ID belongs to its own instance - an ID from a foreign ' . 'choice instance must => ate_instance() ' . 'choice instance must`
+- 331 Concat: `ate_instance() ' . 'does not check whether an ID belongs to its own instance - an ID from a foreign ' . 'choice instance must therefore not end up here, otherwise its option is overwritten.', false, 0`
+- 331 ConcatOperandRemoval: `ID from a foreign ' . 'choice instance must therefore not end up here, otherwise its option is overwritten.', false, 0, null, nu => ID from a foreign ', false, 0, null, nu`
+- 335 FalseValue: `n is overwritten.', false, 0, null, null, 'm => n is overwritten.', true, 0, null, null, 'm`
+- 336 DecrementInteger: `erwritten.', false, 0, null, null, 'mod/c => erwritten.', false, -1, null, null, 'mod/c`
+- 336 IncrementInteger: `erwritten.', false, 0, null, null, 'mod/c => erwritten.', false, 1, null, null, 'mod/c`
+- 339 Concat: `, null, 'mod/choice/mod_form.php:55,120-133 (data_preprocessing(), hidden field); ' . 'mod/choice/lib.php:160-168 (choice_update_instance(): no instance check before ' . '$DB->update_re => , null, 'mo`
+- 339 ConcatOperandRemoval: `, null, 'mod/choice/mod_form.php:55,120-133 (data_preprocessing(), hidden field); ' . 'mod/choice/lib.php:160-168 (cho => , null, 'mod/choice/lib.php:160-168 (cho`
+- 339 ConcatOperandRemoval: `hidden field); ' . 'mod/choice/lib.php:160-168 (choice_update_instance(): no instance check before ' . '$DB->update_record() => hidden field); ' . '$DB->update_record()`
+- 339 Concat: `hidden field); ' . 'mod/choice/lib.php:160-168 (choice_update_instance(): no instance check before ' . '$DB->update_record())')]; => hidden field); ' . '$DB->update_record())' . 'mod/choice/lib.php:16`
+- 339 ConcatOperandRemoval: `tance check before ' . '$DB->update_record())')]; => tance check before ')];`
+- 362 Concat: `return ['"limit[]" must have as many entries as "option[]" (same key in ' . 'choice_add_instance()/choice_update_instance()) - if an entry is missing, the corresponding ' . 'option stays u => return [`
+- 362 ConcatOperandRemoval: `return ['"limit[]" must have as many entries as "option[]" (same key in ' . 'choice_add_instance( => return ['choice_add_instance(`
+- 362 ConcatOperandRemoval: `" (same key in ' . 'choice_add_instance()/choice_update_instance()) - if an entry is missing, the corresponding ' . 'option stays unlimit => " (same key in ' . 'option stays unlimit`
+- 362 Concat: `" (same key in ' . 'choice_add_instance()/choice_update_instance()) - if an entry is missing, the corresponding ' . 'option stays unlimited, even if limitanswers=1 is set.', '"timeclose" must => " (sa`
+- 362 ConcatOperandRemoval: `the corresponding ' . 'option stays unlimited, even if limitanswers=1 is set.', '"timeclose" must => the corresponding ', '"timeclose" must`
+- 376 Concat: `return ['Switching "publish" from anonymous (0) to named (1) makes answers already given ' . 'retroactively visible with names, not only future ones.', '"timeopen"/"time => return ['retroactively visi`
+- 376 ConcatOperandRemoval: `wers already given ' . 'retroactively visible with names, not only future ones.', '"timeopen"/"timec => wers already given ', '"timeopen"/"timec`
+- 378 Concat: `nly future ones.', '"timeopen"/"timeclose" create or update calendar entries (mod/choice/locallib.php: ' . 'choice_set_events()).']; => nly future ones.', 'choice_set_events()).' . '"timeopen"/"timecl`
+- 378 ConcatOperandRemoval: `nly future ones.', '"timeopen"/"timeclose" create or update calendar entries (mod/choice/locallib.php: ' . 'choice_set_events()) => nly future ones.', 'choice_set_events())`
+- 378 ConcatOperandRemoval: `oice/locallib.php: ' . 'choice_set_events()).']; => oice/locallib.php: '];`
+- 441 DecrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = -1): string`
+- 441 IncrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = 1): string`
+
+## Plugin/src/local_coursepilot/classes/catalog/drift_check.php (54 überlebt, 54 offen)
+
+- 132 UnwrapArrayDiff: `lockedrealcolumns = array_diff($catalog::blocklist(), $pseudofieldnames); => lockedrealcolumns = $catalog::blocklist();`
+- 140 UnwrapArrayValues: `$known = array_values(array_unique($known)); => $known = array_unique($known);`
+- 147 UnwrapArrayValues: `$added = array_values(array_diff($realcolumns, $known)); => $added = array_diff($realcolumns, $known);`
+- 148 UnwrapArrayDiff: `oved = array_values(array_diff($known, $realcolumns)); => oved = array_values($known);`
+- 148 UnwrapArrayValues: `$removed = array_values(array_diff($known, $realcolumns)); => $removed = array_diff($known, $realcolumns);`
+- 153 IfNegation: `if ($removed) { => if (!$removed) {`
+- 154 Concat: `$detail[] = 'listed in the catalog, no longer present in the table: ' . implode(', ', $removed); => $detail[] = implode(', ', $removed) . 'listed in the catalog, no longer present in the table: ';`
+- 154 ConcatOperandRemoval: `$detail[] = 'listed in the catalog, no longer present in the table: ' . implode(', ', $remov => $detail[] = implode(', ', $remov`
+- 154 ConcatOperandRemoval: `sent in the table: ' . implode(', ', $removed); => sent in the table: ';`
+- 156 Concat: `return ['Columns of table "' . $modname . '" differ from th => return [$modname . 'Columns of table "' . '" differ from th`
+- 156 ConcatOperandRemoval: `lumns of table "' . $modname . '" differ from the c => lumns of table "' . '" differ from the c`
+- 156 Concat: `lumns of table "' . $modname . '" differ from the catalog (' . implode('; ', $de => lumns of table "' . '" differ from the catalog (' . $modname . implode('; ', $de`
+- 156 ConcatOperandRemoval: `ble "' . $modname . '" differ from the catalog (' . implode('; ', $detai => ble "' . $modname . implode('; ', $detai`
+- 156 Concat: `ble "' . $modname . '" differ from the catalog (' . implode('; ', $detail) . ').']; => ble "' . $modname . implode('; ', $detail) . '" differ from the catalog (' . ').'];`
+- 156 Concat: `om the catalog (' . implode('; ', $detail) . ').']; => om the catalog (' . ').' . implode('; ', $detail)];`
+- 156 ConcatOperandRemoval: `plode('; ', $detail) . ').']; => plode('; ', $detail)];`
+- 167 UnwrapArrayMerge: `$fields = array_merge(shared_block::fields(), shared_block::pseudofields(), $catalogclass::fields(), $catalogclass::pseudofields()); => $fields = $catalogclass::fields();`
+- 174 UnwrapArrayUnique: `$callables = array_unique(array_filter(array_map(static fn(field $f): ?string => $f->sourcecallable, $fields))); => $callables = array_filter(array_map(static fn(field $f): ?string => $f->sourcecallab`
+- 183 IncrementInteger: `xplode('::', $bare, 2)) : function_exists => xplode('::', $bare, 3)) : function_exists`
+- 189 ArrayOneItem: `return $violations; => return count($violations) > 1 ? array_slice($violations, 0, 1, true) : $violations;`
+- 200 UnwrapArrayMerge: `ants = array_unique(array_merge(shared_block::checked_constants(), $catalogclass::checked_constants())); => ants = array_unique($catalogclass::checked_constants());`
+- 200 UnwrapArrayUnique: `$constants = array_unique(array_merge(shared_block::checked_constants(), $catalogclass::checked_constants())); => $constants = array_merge(shared_block::checked_constants(), $catalogclass::checked_con`
+- 211 ArrayOneItem: `return $violations; => return count($violations) > 1 ? array_slice($violations, 0, 1, true) : $violations;`
+- 230 Coalesce: `?? []), array_keys($options['missing_form_values'] ?? []), array_keys($opti => ?? []), array_keys([] ?? $options['missing_form_values']), array_keys($opti`
+- 231 Coalesce: `?? []), array_keys($options['admin_default_fields'] ?? []), array_keys($opti => ?? []), array_keys([] ?? $options['admin_default_fields']), array_keys($opti`
+- 232 Coalesce: `?? []), array_keys($options['scalar_to_repeated'] ?? []), array_values($op => ?? []), array_keys([] ?? $options['scalar_to_repeated']), array_values($op`
+- 232 UnwrapArrayKeys: `lt_fields'] ?? []), array_keys($options['scalar_to_repeated'] ?? []), array_values($opti => lt_fields'] ?? []), $options['scalar_to_repeated'] ?? [], array_values($opti`
+- 233 Coalesce: `? []), array_values($options['scalar_to_repeated'] ?? []), array_keys($opti => ? []), array_values([] ?? $options['scalar_to_repeated']), array_keys($opti`
+- 233 UnwrapArrayValues: `_repeated'] ?? []), array_values($options['scalar_to_repeated'] ?? []), array_keys($option => _repeated'] ?? []), $options['scalar_to_repeated'] ?? [], array_keys($option`
+- 234 Coalesce: `?? []), array_keys($options['editor_content'] ?? []), array_merge(...a => ?? []), array_keys([] ?? $options['editor_content']), array_merge(...a`
+- 235 ArrayItemRemoval: `ditor_content'] ?? [[]])), $options['read_ => ditor_content'] ?? [])), $options['read_`
+- 235 Coalesce: `rge(...array_values($options['editor_content'] ?? [[]])), $options['read_ => rge(...array_values([[]] ?? $options['editor_content'])), $options['read_`
+- 237 Coalesce: `ead_fields'] ?? [], $options['patch_blocked_fields'] ?? [], isset($options['i => ead_fields'] ?? [], [] ?? $options['patch_blocked_fields'], isset($options['i`
+- 238 ArrayItemRemoval: `o_image_field']) ? [$options['intro_image_field']] : [], array_keys($ => o_image_field']) ? [] : [], array_keys($`
+- 239 Coalesce: `]] : [], array_keys($options['settings_aliases'] ?? []), array_keys($cata => ]] : [], array_keys([] ?? $options['settings_aliases']), array_keys($cata`
+- 242 Coalesce: `oreach (array_merge($options['parallel_array_lengths'] ?? [], $options['date_or => oreach (array_merge([] ?? $options['parallel_array_lengths'], $options['date_or`
+- 242 Coalesce: `ay_lengths'] ?? [], $options['date_order_rules'] ?? []) as $rule) { => ay_lengths'] ?? [], [] ?? $options['date_order_rules']) as $rule) {`
+- 242 UnwrapArrayMerge: `foreach (array_merge($options['parallel_array_lengths'] ?? [], $options['date_order_rules'] ?? []) as $rule) { => foreach ($options['parallel_array_lengths'] ?? [] as $rule) {`
+- 242 UnwrapArrayMerge: `foreach (array_merge($options['parallel_array_lengths'] ?? [], $options['date_order_rules'] ?? []) as $rule) { => foreach ($options['date_order_rules'] ?? [] as $rule) {`
+- 242 Foreach_: `foreach (array_merge($options['parallel_array_lengths'] ?? [], $options['date_order_rules'] ?? []) as $rule) { => foreach ([] as $rule) {`
+- 246 Coalesce: `erenced, array_keys($options['side_effect_triggers'] ?? [])); => erenced, array_keys([] ?? $options['side_effect_triggers']));`
+- 246 UnwrapArrayMerge: `$referenced = array_merge($referenced, array_keys($options['side_effect_triggers'] ?? [])); => $referenced = $referenced;`
+- 247 Coalesce: `foreach ($options['repeated_group'] ?? [] as $spec) { => foreach ([] ?? $options['repeated_group'] as $spec) {`
+- 247 Foreach_: `foreach ($options['repeated_group'] ?? [] as $spec) { => foreach ([] as $spec) {`
+- 248 Coalesce: `erenced, array_keys($spec['fields'] ?? [])); => erenced, array_keys([] ?? $spec['fields']));`
+- 248 UnwrapArrayMerge: `$referenced = array_merge($referenced, array_keys($spec['fields'] ?? [])); => $referenced = $referenced;`
+- 248 UnwrapArrayMerge: `$referenced = array_merge($referenced, array_keys($spec['fields'] ?? [])); => $referenced = array_keys($spec['fields'] ?? []);`
+- 250 UnwrapArrayUnique: `y_values(array_diff(array_unique($referenced), $known)); => y_values(array_diff($referenced, $known));`
+- 250 UnwrapArrayValues: `$unknown = array_values(array_diff(array_unique($referenced), $known)); => $unknown = array_diff(array_unique($referenced), $known);`
+- 251 UnwrapArrayMap: `return array_map(static fn(string $field): string => 'Field "' . $field . '" is referenced outside the catalog.', $unknown); => return $unknown;`
+- 252 Concat: `$field): string => 'Field "' . $field . '" is referenced => $field): string => $field . 'Field "' . '" is referenced`
+- 252 ConcatOperandRemoval: `$field): string => 'Field "' . $field . '" is refer => $field): string => $field . '" is refer`
+- 252 Concat: `ring => 'Field "' . $field . '" is referenced outside the catalog.', $unknown); => ring => 'Field "' . '" is referenced outside the catalog.' . $field, $unknown);`
+- 252 ConcatOperandRemoval: `> 'Field "' . $field . '" is referenced outside the catalog.', $unknown); => > 'Field "' . $field, $unknown);`
+
+## Plugin/src/local_coursepilot/classes/catalog/field.php (2 überlebt, 2 offen)
+
+- 102 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 104 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+
+## Plugin/src/local_coursepilot/classes/catalog/folder.php (68 überlebt, 68 offen)
+
+- 62 TrueValue: `me of the folder.', true, null, null, null, => me of the folder.', false, null, null, null,`
+- 82 FalseValue: `mat of the intro.', false, FORMAT_HTML, null => mat of the intro.', true, FORMAT_HTML, null`
+- 92 FalseValue: `ge (1, "inline").', false, 0, [0, 1], null, => ge (1, "inline").', true, 0, [0, 1], null,`
+- 93 DecrementInteger: `"inline").', false, 0, [0, 1], null, 'mod => "inline").', false, -1, [0, 1], null, 'mod`
+- 93 IncrementInteger: `"inline").', false, 0, [0, 1], null, 'mod => "inline").', false, 1, [0, 1], null, 'mod`
+- 94 DecrementInteger: `ine").', false, 0, [0, 1], null, 'mod/fol => ine").', false, 0, [-1, 1], null, 'mod/fol`
+- 94 IncrementInteger: `ine").', false, 0, [0, 1], null, 'mod/fol => ine").', false, 0, [1, 1], null, 'mod/fol`
+- 94 DecrementInteger: `").', false, 0, [0, 1], null, 'mod/folder => ").', false, 0, [0, 0], null, 'mod/folder`
+- 94 IncrementInteger: `").', false, 0, [0, 1], null, 'mod/folder => ").', false, 0, [0, 2], null, 'mod/folder`
+- 94 ArrayItemRemoval: `ine").', false, 0, [0, 1], null, 'mod/folde => ine").', false, 0, [1], null, 'mod/folde`
+- 96 Concat: `, null, 'mod/folder/lib.php:29,31 (FOLDER_DISPLAY_PAGE/FOLDER_DISPLAY_INLINE); Spalte ' . 'mod/folder/db/install.xml (folder.display)'), new field('showe => , null, 'mod/folder/db/install.xml (folder.`
+- 96 ConcatOperandRemoval: `, null, 'mod/folder/lib.php:29,31 (FOLDER_DISPLAY_PAGE/FOLDER_DISPLAY_INLINE); Spalte ' . 'mod/folder/db/install.xml (fold => , null, 'mod/folder/db/install.xml (fold`
+- 96 ConcatOperandRemoval: `AY_INLINE); Spalte ' . 'mod/folder/db/install.xml (folder.display)'), new field('showex => AY_INLINE); Spalte '), new field('showex`
+- 103 FalseValue: `(0) when opening.', false, 1, [0, 1], null, => (0) when opening.', true, 1, [0, 1], null,`
+- 104 DecrementInteger: `n opening.', false, 1, [0, 1], null, 'mod => n opening.', false, 0, [0, 1], null, 'mod`
+- 104 IncrementInteger: `n opening.', false, 1, [0, 1], null, 'mod => n opening.', false, 2, [0, 1], null, 'mod`
+- 105 DecrementInteger: `ening.', false, 1, [0, 1], null, 'mod/fol => ening.', false, 1, [-1, 1], null, 'mod/fol`
+- 105 IncrementInteger: `ening.', false, 1, [0, 1], null, 'mod/fol => ening.', false, 1, [1, 1], null, 'mod/fol`
+- 105 DecrementInteger: `ng.', false, 1, [0, 1], null, 'mod/folder => ng.', false, 1, [0, 0], null, 'mod/folder`
+- 105 IncrementInteger: `ng.', false, 1, [0, 1], null, 'mod/folder => ng.', false, 1, [0, 2], null, 'mod/folder`
+- 105 ArrayItemRemoval: `ening.', false, 1, [0, 1], null, 'mod/folde => ening.', false, 1, [1], null, 'mod/folde`
+- 113 FalseValue: `g as ZIP" button.', false, 1, [0, 1], null, => g as ZIP" button.', true, 1, [0, 1], null,`
+- 114 DecrementInteger: `P" button.', false, 1, [0, 1], null, 'mod => P" button.', false, 0, [0, 1], null, 'mod`
+- 114 IncrementInteger: `P" button.', false, 1, [0, 1], null, 'mod => P" button.', false, 2, [0, 1], null, 'mod`
+- 115 DecrementInteger: `utton.', false, 1, [0, 1], null, 'mod/fol => utton.', false, 1, [-1, 1], null, 'mod/fol`
+- 115 IncrementInteger: `utton.', false, 1, [0, 1], null, 'mod/fol => utton.', false, 1, [1, 1], null, 'mod/fol`
+- 115 DecrementInteger: `on.', false, 1, [0, 1], null, 'mod/folder => on.', false, 1, [0, 0], null, 'mod/folder`
+- 115 IncrementInteger: `on.', false, 1, [0, 1], null, 'mod/folder => on.', false, 1, [0, 2], null, 'mod/folder`
+- 115 ArrayItemRemoval: `utton.', false, 1, [0, 1], null, 'mod/folde => utton.', false, 1, [1], null, 'mod/folde`
+- 123 FalseValue: `m in the browser.', false, 1, [0, 1], null, => m in the browser.', true, 1, [0, 1], null,`
+- 124 DecrementInteger: `e browser.', false, 1, [0, 1], null, 'mod => e browser.', false, 0, [0, 1], null, 'mod`
+- 124 IncrementInteger: `e browser.', false, 1, [0, 1], null, 'mod => e browser.', false, 2, [0, 1], null, 'mod`
+- 125 DecrementInteger: `owser.', false, 1, [0, 1], null, 'mod/fol => owser.', false, 1, [-1, 1], null, 'mod/fol`
+- 125 IncrementInteger: `owser.', false, 1, [0, 1], null, 'mod/fol => owser.', false, 1, [1, 1], null, 'mod/fol`
+- 125 DecrementInteger: `er.', false, 1, [0, 1], null, 'mod/folder => er.', false, 1, [0, 0], null, 'mod/folder`
+- 125 IncrementInteger: `er.', false, 1, [0, 1], null, 'mod/folder => er.', false, 1, [0, 2], null, 'mod/folder`
+- 125 ArrayItemRemoval: `owser.', false, 1, [0, 1], null, 'mod/folde => owser.', false, 1, [1], null, 'mod/folde`
+- 153 DecrementInteger: `ues' => ['files' => 0]]; => ues' => ['files' => -1]];`
+- 153 IncrementInteger: `ues' => ['files' => 0]]; => ues' => ['files' => 1]];`
+- 163 UnwrapArrayMap: `return array_map(static fn(field $f): string => $f->name, self::fields()); => return self::fields();`
+- 176 Concat: `ths (JSON array)', 'The files to place in the folder - each entry a path in the material folder (Spec 0018 §4.2, ' . 'e.g. ["worksheet.pdf"]) or an object {"path": "...", "target_folder": "subfolder"}`
+- 176 ConcatOperandRemoval: `ths (JSON array)', 'The files to place in the folder - each entry a path in the material folder (Spec 0018 §4.2, ' . 'e.g. ["worksheet.pdf => ths (JSON array)', 'e.g. ["worksheet.pdf`
+- 176 ConcatOperandRemoval: `pec 0018 §4.2, ' . 'e.g. ["worksheet.pdf"]) or an object {"path": "...", "target_folder": "subfolder"} for ' . 'a target directory i => pec 0018 §4.2, ' . 'a target directory i`
+- 176 Concat: `pec 0018 §4.2, ' . 'e.g. ["worksheet.pdf"]) or an object {"path": "...", "target_folder": "subfolder"} for ' . 'a target directory inside the folder. Multiple entries per call possible. An ' . 'EMPTY `
+- 176 ConcatOperandRemoval: `ubfolder"} for ' . 'a target directory inside the folder. Multiple entries per call possible. An ' . 'EMPTY folder is vali => ubfolder"} for ' . 'EMPTY folder is vali`
+- 176 Concat: `ubfolder"} for ' . 'a target directory inside the folder. Multiple entries per call possible. An ' . 'EMPTY folder is valid - unlike resource, a missing file does not block ' . 'creation. Usab => ubfo`
+- 176 ConcatOperandRemoval: `l possible. An ' . 'EMPTY folder is valid - unlike resource, a missing file does not block ' . 'creation. Usable ONL => l possible. An ' . 'creation. Usable ONL`
+- 176 Concat: `l possible. An ' . 'EMPTY folder is valid - unlike resource, a missing file does not block ' . 'creation. Usable ONLY on create (create_module) - a later patch via ' . 'update_module_ => l possible. A`
+- 176 ConcatOperandRemoval: `does not block ' . 'creation. Usable ONLY on create (create_module) - a later patch via ' . 'update_module_settin => does not block ' . 'update_module_settin`
+- 176 Concat: `does not block ' . 'creation. Usable ONLY on create (create_module) - a later patch via ' . 'update_module_settings deliberately fails (folderfilespatchunsupported) instead of silently ' . 'having no `
+- 176 ConcatOperandRemoval: `ater patch via ' . 'update_module_settings deliberately fails (folderfilespatchunsupported) instead of silently ' . 'having no effect: to => ater patch via ' . 'having no effect: to`
+- 176 Concat: `ater patch via ' . 'update_module_settings deliberately fails (folderfilespatchunsupported) instead of silently ' . 'having no effect: to add more files, create another folder.', false, null, null => `
+- 176 ConcatOperandRemoval: `nstead of silently ' . 'having no effect: to add more files, create another folder.', false, null, null, => nstead of silently ', false, null, null,`
+- 187 Concat: `null, null, null, 'mod/folder/lib.php (folder_add_instance(): $data->files as draft itemid; folder_update_instance() ' . 'instead reads file_get_submitted_draft_itemid() from $_REQUEST); ' . 'local_co`
+- 187 ConcatOperandRemoval: `null, null, null, 'mod/folder/lib.php (folder_add_instance(): $data->files as draft itemid; folder_update_instance() ' . 'instead reads file_g => null, null, null, 'instead reads file_g`
+- 187 ConcatOperandRemoval: `ate_instance() ' . 'instead reads file_get_submitted_draft_itemid() from $_REQUEST); ' . 'local_coursepilot\ma => ate_instance() ' . 'local_coursepilot\ma`
+- 187 Concat: `ate_instance() ' . 'instead reads file_get_submitted_draft_itemid() from $_REQUEST); ' . 'local_coursepilot\material_files::resolve_into_draft()')]; => ate_instance() ' . 'local_coursepilot\material_f`
+- 187 ConcatOperandRemoval: `) from $_REQUEST); ' . 'local_coursepilot\material_files::resolve_into_draft()')]; => ) from $_REQUEST); ')];`
+- 211 ArrayItemRemoval: `return ['display=1 (inline) is incompatible with automatic completion tracking on view ' . '(completion=automatic + completionview) - Moodle rejects this in the form ' . '(mod/folder/mod_form.php: val`
+- 212 Concat: `return ['display=1 (inline) is incompatible with automatic completion tracking on view ' . '(completion=automatic + completionview) - Moodle rejects this in the form ' . '(mod/folder/mo => return ['(c`
+- 212 ConcatOperandRemoval: `return ['display=1 (inline) is incompatible with automatic completion tracking on view ' . '(completion=automati => return ['(completion=automati`
+- 212 ConcatOperandRemoval: `cking on view ' . '(completion=automatic + completionview) - Moodle rejects this in the form ' . '(mod/folder/mod_form. => cking on view ' . '(mod/folder/mod_form.`
+- 212 Concat: `cking on view ' . '(completion=automatic + completionview) - Moodle rejects this in the form ' . '(mod/folder/mod_form.php: validation()).']; => cking on view ' . '(mod/folder/mod_form.php: validation`
+- 212 ConcatOperandRemoval: `s this in the form ' . '(mod/folder/mod_form.php: validation()).']; => s this in the form '];`
+- 225 Concat: `return ['folder can also be created without "files" - an empty folder is valid, unlike resource without ' . 'a main file (Spec 0015 §4.3).']; => return ['a main file (Spec 0015 §4.3).' . 'folder can a`
+- 225 ConcatOperandRemoval: `e resource without ' . 'a main file (Spec 0015 §4.3).']; => e resource without '];`
+- 272 DecrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = -1): string`
+- 272 IncrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = 1): string`
+
+## Plugin/src/local_coursepilot/classes/catalog/forum.php (177 überlebt, 177 offen)
+
+- 68 TrueValue: `ame of the forum.', true, null, null, null, => ame of the forum.', false, null, null, null,`
+- 78 TrueValue: `ro) of the forum.', true, null, null, null, => ro) of the forum.', false, null, null, null,`
+- 88 FalseValue: `mat of the intro.', false, FORMAT_HTML, null => mat of the intro.', true, FORMAT_HTML, null`
+- 97 Concat: `e', 'PARAM_ALPHA', 'Forum type. "news" and "social" cannot be chosen through this catalog - they only exist ' . 'on automatically created course/site forums.', false, 'general', => e', 'PARAM_ALPHA', `
+- 97 ConcatOperandRemoval: `e', 'PARAM_ALPHA', 'Forum type. "news" and "social" cannot be chosen through this catalog - they only exist ' . 'on automatically cre => e', 'PARAM_ALPHA', 'on automatically cre`
+- 97 ConcatOperandRemoval: `- they only exist ' . 'on automatically created course/site forums.', false, 'general', => - they only exist ', false, 'general',`
+- 99 FalseValue: `urse/site forums.', false, 'general', null, => urse/site forums.', true, 'general', null,`
+- 108 Concat: `ate', 'PARAM_INT', 'Unix timestamp: due date, informational only (not a cut-off for posts). Creates ' . 'a calendar entry (see side effects).', false, 0, null, n => ate', 'PARAM_INT', 'a calendar entr`
+- 108 ConcatOperandRemoval: `ate', 'PARAM_INT', 'Unix timestamp: due date, informational only (not a cut-off for posts). Creates ' . 'a calendar entry (se => ate', 'PARAM_INT', 'a calendar entry (se`
+- 108 ConcatOperandRemoval: `or posts). Creates ' . 'a calendar entry (see side effects).', false, 0, null, nu => or posts). Creates ', false, 0, null, nu`
+- 110 FalseValue: `ee side effects).', false, 0, null, null, 'm => ee side effects).', true, 0, null, null, 'm`
+- 111 DecrementInteger: `effects).', false, 0, null, null, 'mod/f => effects).', false, -1, null, null, 'mod/f`
+- 111 IncrementInteger: `effects).', false, 0, null, null, 'mod/f => effects).', false, 1, null, null, 'mod/f`
+- 114 Concat: `l, null, 'mod/forum/mod_form.php:61-63 (date_time_selector, optional); column ' . 'mod/forum/db/install.xml (forum.duedate)'), new field('cutof => l, null, 'mod/forum/db/install.xml (forum.duedate)' .`
+- 114 ConcatOperandRemoval: `l, null, 'mod/forum/mod_form.php:61-63 (date_time_selector, optional); column ' . 'mod/forum/db/install.xml (foru => l, null, 'mod/forum/db/install.xml (foru`
+- 114 ConcatOperandRemoval: `optional); column ' . 'mod/forum/db/install.xml (forum.duedate)'), new field('cutoff => optional); column '), new field('cutoff`
+- 121 FalseValue: `. 0 = no cut-off.', false, 0, null, null, 'm => . 0 = no cut-off.', true, 0, null, null, 'm`
+- 125 Concat: `l, null, 'mod/forum/mod_form.php:65-67 (date_time_selector, optional); column ' . 'mod/forum/db/install.xml (forum.cutoffdate)'), new field('asses => l, null, 'mod/forum/db/install.xml (forum.cutoffda`
+- 125 ConcatOperandRemoval: `l, null, 'mod/forum/mod_form.php:65-67 (date_time_selector, optional); column ' . 'mod/forum/db/install.xml (foru => l, null, 'mod/forum/db/install.xml (foru`
+- 125 ConcatOperandRemoval: `optional); column ' . 'mod/forum/db/install.xml (forum.cutoffdate)'), new field('assess => optional); column '), new field('assess`
+- 132 FalseValue: `sum, no rating).', false, 0, null, 'rating_ => sum, no rating).', true, 0, null, 'rating_`
+- 133 DecrementInteger: `o rating).', false, 0, null, 'rating_mana => o rating).', false, -1, null, 'rating_mana`
+- 133 IncrementInteger: `o rating).', false, 0, null, 'rating_mana => o rating).', false, 1, null, 'rating_mana`
+- 136 Concat: `ggregate_types()', 'rating/lib.php (class rating_manager, method get_aggregate_types()); ' . 'course/moodleform_mod.php:686,719 (add_rating_settings()); column ' . 'mod/forum/db/i => ggregate_types()'`
+- 136 ConcatOperandRemoval: `ggregate_types()', 'rating/lib.php (class rating_manager, method get_aggregate_types()); ' . 'course/moodleform_mo => ggregate_types()', 'course/moodleform_mo`
+- 136 ConcatOperandRemoval: `gate_types()); ' . 'course/moodleform_mod.php:686,719 (add_rating_settings()); column ' . 'mod/forum/db/install => gate_types()); ' . 'mod/forum/db/install`
+- 136 Concat: `gate_types()); ' . 'course/moodleform_mod.php:686,719 (add_rating_settings()); column ' . 'mod/forum/db/install.xml (forum.assessed)'), new field('scale => gate_types()); ' . 'mod/forum/db/install.xml`
+- 136 ConcatOperandRemoval: `ettings()); column ' . 'mod/forum/db/install.xml (forum.assessed)'), new field('scale' => ettings()); column '), new field('scale'`
+- 143 Concat: `ale', 'PARAM_INT', 'Rating scale: positive = maximum points, negative = ID of a custom scale. Only ' . 'effective when assessed != 0.', false, 0, null, n => ale', 'PARAM_INT', 'effective when assessed`
+- 143 ConcatOperandRemoval: `ale', 'PARAM_INT', 'Rating scale: positive = maximum points, negative = ID of a custom scale. Only ' . 'effective when asses => ale', 'PARAM_INT', 'effective when asses`
+- 143 ConcatOperandRemoval: `custom scale. Only ' . 'effective when assessed != 0.', false, 0, null, nu => custom scale. Only ', false, 0, null, nu`
+- 145 FalseValue: `en assessed != 0.', false, 0, null, null, 'c => en assessed != 0.', true, 0, null, null, 'c`
+- 146 DecrementInteger: `ssed != 0.', false, 0, null, null, 'cours => ssed != 0.', false, -1, null, null, 'cours`
+- 146 IncrementInteger: `ssed != 0.', false, 0, null, null, 'cours => ssed != 0.', false, 1, null, null, 'cours`
+- 149 Concat: `, 0, null, null, 'course/moodleform_mod.php:743-746 (add_rating_settings(), modgrade element; scale value = grademax/scaleid); ' . 'column ' . 'mod/forum/db/i => , 0, null, null, 'column ' . 'course/m`
+- 149 ConcatOperandRemoval: `, 0, null, null, 'course/moodleform_mod.php:743-746 (add_rating_settings(), modgrade element; scale value = grademax/scaleid); ' . 'column ' . 'mod/forum/ => , 0, null, null, 'column ' . 'mod/forum/`
+- 149 ConcatOperandRemoval: `emax/scaleid); ' . 'column ' . 'mod/forum/db/install => emax/scaleid); ' . 'mod/forum/db/install`
+- 149 Concat: `emax/scaleid); ' . 'column ' . 'mod/forum/db/install.xml (forum.scale)'), new field('grade => emax/scaleid); ' . 'mod/forum/db/install.xml (forum.scale)' . 'column '), new field('grade`
+- 149 ConcatOperandRemoval: `leid); ' . 'column ' . 'mod/forum/db/install.xml (forum.scale)'), new field('grade_ => leid); ' . 'column '), new field('grade_`
+- 156 Concat: `rum', 'PARAM_INT', 'Overall grade of the forum (independent of the post rating via "assessed"): positive = ' . 'maximum points, negative = ID of a custom scale, 0 = no grading.', false, 0, null, n => `
+- 156 ConcatOperandRemoval: `rum', 'PARAM_INT', 'Overall grade of the forum (independent of the post rating via "assessed"): positive = ' . 'maximum points, nega => rum', 'PARAM_INT', 'maximum points, nega`
+- 156 ConcatOperandRemoval: `ssed"): positive = ' . 'maximum points, negative = ID of a custom scale, 0 = no grading.', false, 0, null, nu => ssed"): positive = ', false, 0, null, nu`
+- 158 FalseValue: `, 0 = no grading.', false, 0, null, null, 'm => , 0 = no grading.', true, 0, null, null, 'm`
+- 159 DecrementInteger: `o grading.', false, 0, null, null, 'mod/f => o grading.', false, -1, null, null, 'mod/f`
+- 159 IncrementInteger: `o grading.', false, 0, null, null, 'mod/f => o grading.', false, 1, null, null, 'mod/f`
+- 162 Concat: `l, null, 'mod/forum/mod_form.php:211,225-274 (add_forum_grade_settings(), modgrade element); column ' . 'mod/forum/db/install.xml (forum.grade_forum)'), new field('grade => l, null, 'mod/forum/db/inst`
+- 162 ConcatOperandRemoval: `l, null, 'mod/forum/mod_form.php:211,225-274 (add_forum_grade_settings(), modgrade element); column ' . 'mod/forum/db/install.xml (foru => l, null, 'mod/forum/db/install.xml (foru`
+- 162 ConcatOperandRemoval: `e element); column ' . 'mod/forum/db/install.xml (forum.grade_forum)'), new field('grade_ => e element); column '), new field('grade_`
+- 169 FalseValue: `rades by default.', false, 0, [0, 1], null, => rades by default.', true, 0, [0, 1], null,`
+- 170 DecrementInteger: `y default.', false, 0, [0, 1], null, 'mod => y default.', false, -1, [0, 1], null, 'mod`
+- 170 IncrementInteger: `y default.', false, 0, [0, 1], null, 'mod => y default.', false, 1, [0, 1], null, 'mod`
+- 171 DecrementInteger: `fault.', false, 0, [0, 1], null, 'mod/for => fault.', false, 0, [-1, 1], null, 'mod/for`
+- 171 IncrementInteger: `fault.', false, 0, [0, 1], null, 'mod/for => fault.', false, 0, [1, 1], null, 'mod/for`
+- 171 DecrementInteger: `lt.', false, 0, [0, 1], null, 'mod/forum/ => lt.', false, 0, [0, 0], null, 'mod/forum/`
+- 171 IncrementInteger: `lt.', false, 0, [0, 1], null, 'mod/forum/ => lt.', false, 0, [0, 2], null, 'mod/forum/`
+- 171 ArrayItemRemoval: `fault.', false, 0, [0, 1], null, 'mod/forum => fault.', false, 0, [1], null, 'mod/forum`
+- 173 Concat: `], null, 'mod/forum/mod_form.php:305-307 (selectyesno); column ' . 'mod/forum/db/install.xml (forum.grade_forum_notify)'), new field('maxby => ], null, 'mod/forum/db/install.xml (forum.grade_forum_not`
+- 173 ConcatOperandRemoval: `], null, 'mod/forum/mod_form.php:305-307 (selectyesno); column ' . 'mod/forum/db/install.xml (foru => ], null, 'mod/forum/db/install.xml (foru`
+- 173 ConcatOperandRemoval: `lectyesno); column ' . 'mod/forum/db/install.xml (forum.grade_forum_notify)'), new field('maxbyt => lectyesno); column '), new field('maxbyt`
+- 179 Concat: `tes', 'PARAM_INT', 'Maximum file size per attachment in bytes. The selectable values are a subset depending on ' . 'course and server limits, not a fixed list.', false, 0, null, ' => tes', 'PARAM_INT'`
+- 179 ConcatOperandRemoval: `tes', 'PARAM_INT', 'Maximum file size per attachment in bytes. The selectable values are a subset depending on ' . 'course and server li => tes', 'PARAM_INT', 'course and server li`
+- 179 ConcatOperandRemoval: `ubset depending on ' . 'course and server limits, not a fixed list.', false, 0, null, 'g => ubset depending on ', false, 0, null, 'g`
+- 181 FalseValue: `not a fixed list.', false, 0, null, 'get_max => not a fixed list.', true, 0, null, 'get_max`
+- 182 DecrementInteger: `ixed list.', false, 0, null, 'get_max_upl => ixed list.', false, -1, null, 'get_max_upl`
+- 182 IncrementInteger: `ixed list.', false, 0, null, 'get_max_upl => ixed list.', false, 1, null, 'get_max_upl`
+- 185 Concat: `x_upload_sizes()', 'lib/moodlelib.php:6453 (get_max_upload_sizes()); mod/forum/mod_form.php:72-76; column ' . 'mod/forum/db/install.xml (forum.maxbytes)'), new field('maxat => x_upload_sizes()', 'mod/`
+- 185 ConcatOperandRemoval: `x_upload_sizes()', 'lib/moodlelib.php:6453 (get_max_upload_sizes()); mod/forum/mod_form.php:72-76; column ' . 'mod/forum/db/install => x_upload_sizes()', 'mod/forum/db/install`
+- 185 ConcatOperandRemoval: `.php:72-76; column ' . 'mod/forum/db/install.xml (forum.maxbytes)'), new field('maxatt => .php:72-76; column '), new field('maxatt`
+- 192 FalseValue: `chments per post.', false, 1, null, null, 'm => chments per post.', true, 1, null, null, 'm`
+- 193 DecrementInteger: `per post.', false, 1, null, null, 'mod/f => per post.', false, 0, null, null, 'mod/f`
+- 193 IncrementInteger: `per post.', false, 1, null, null, 'mod/f => per post.', false, 2, null, null, 'mod/f`
+- 202 FalseValue: `d count per post.', false, 0, [0, 1], null, => d count per post.', true, 0, [0, 1], null,`
+- 203 DecrementInteger: `per post.', false, 0, [0, 1], null, 'mod => per post.', false, -1, [0, 1], null, 'mod`
+- 203 IncrementInteger: `per post.', false, 0, [0, 1], null, 'mod => per post.', false, 1, [0, 1], null, 'mod`
+- 204 DecrementInteger: `post.', false, 0, [0, 1], null, 'mod/for => post.', false, 0, [-1, 1], null, 'mod/for`
+- 204 IncrementInteger: `post.', false, 0, [0, 1], null, 'mod/for => post.', false, 0, [1, 1], null, 'mod/for`
+- 204 DecrementInteger: `st.', false, 0, [0, 1], null, 'mod/forum/ => st.', false, 0, [0, 0], null, 'mod/forum/`
+- 204 IncrementInteger: `st.', false, 0, [0, 1], null, 'mod/forum/ => st.', false, 0, [0, 2], null, 'mod/forum/`
+- 204 ArrayItemRemoval: `post.', false, 0, [0, 1], null, 'mod/forum => post.', false, 0, [1], null, 'mod/forum`
+- 206 Concat: `], null, 'mod/forum/mod_form.php:98-100 (selectyesno); column ' . 'mod/forum/db/install.xml (forum.displaywordcount)'), new field('force => ], null, 'mod/forum/db/install.xml (forum.displaywordcount)'`
+- 206 ConcatOperandRemoval: `], null, 'mod/forum/mod_form.php:98-100 (selectyesno); column ' . 'mod/forum/db/install.xml (foru => ], null, 'mod/forum/db/install.xml (foru`
+- 206 ConcatOperandRemoval: `lectyesno); column ' . 'mod/forum/db/install.xml (forum.displaywordcount)'), new field('forces => lectyesno); column '), new field('forces`
+- 212 Concat: `ibe', 'PARAM_INT', 'Subscription mode. Value 2 (auto-subscription) immediately subscribes all potential course ' . 'participants on creation or switching - see side effects.', false, 0, null, ' => ibe`
+- 212 ConcatOperandRemoval: `ibe', 'PARAM_INT', 'Subscription mode. Value 2 (auto-subscription) immediately subscribes all potential course ' . 'participants on crea => ibe', 'PARAM_INT', 'participants on crea`
+- 212 ConcatOperandRemoval: `l potential course ' . 'participants on creation or switching - see side effects.', false, 0, null, 'f => l potential course ', false, 0, null, 'f`
+- 214 FalseValue: `see side effects.', false, 0, null, 'forum_g => see side effects.', true, 0, null, 'forum_g`
+- 215 DecrementInteger: `e effects.', false, 0, null, 'forum_get_s => e effects.', false, -1, null, 'forum_get_s`
+- 215 IncrementInteger: `e effects.', false, 0, null, 'forum_get_s => e effects.', false, 1, null, 'forum_get_s`
+- 218 Concat: `onmode_options()', 'mod/forum/lib.php:39-42 (FORUM_CHOOSESUBSCRIBE/FORCESUBSCRIBE/INITIALSUBSCRIBE/DISALLOWSUBSCRIBE), ' . ':4870-4876 (forum_get_subscriptionmode_options()); mod/forum/mod_form.php:10`
+- 218 ConcatOperandRemoval: `onmode_options()', 'mod/forum/lib.php:39-42 (FORUM_CHOOSESUBSCRIBE/FORCESUBSCRIBE/INITIALSUBSCRIBE/DISALLOWSUBSCRIBE), ' . ':4870-4876 (forum_ge => onmode_options()', ':4870-4876 (forum_ge`
+- 218 ConcatOperandRemoval: `ISALLOWSUBSCRIBE), ' . ':4870-4876 (forum_get_subscriptionmode_options()); mod/forum/mod_form.php:105-106'), new field('tracki => ISALLOWSUBSCRIBE), '), new field('tracki`
+- 225 FalseValue: `ecide) or forced.', false, 1, [0, 1, 2], nul => ecide) or forced.', true, 1, [0, 1, 2], nul`
+- 226 DecrementInteger: `or forced.', false, 1, [0, 1, 2], null, ' => or forced.', false, 0, [0, 1, 2], null, '`
+- 226 IncrementInteger: `or forced.', false, 1, [0, 1, 2], null, ' => or forced.', false, 2, [0, 1, 2], null, '`
+- 227 DecrementInteger: `orced.', false, 1, [0, 1, 2], null, 'mod/ => orced.', false, 1, [-1, 1, 2], null, 'mod/`
+- 227 IncrementInteger: `orced.', false, 1, [0, 1, 2], null, 'mod/ => orced.', false, 1, [1, 1, 2], null, 'mod/`
+- 227 DecrementInteger: `ed.', false, 1, [0, 1, 2], null, 'mod/for => ed.', false, 1, [0, 0, 2], null, 'mod/for`
+- 227 IncrementInteger: `ed.', false, 1, [0, 1, 2], null, 'mod/for => ed.', false, 1, [0, 2, 2], null, 'mod/for`
+- 227 DecrementInteger: `', false, 1, [0, 1, 2], null, 'mod/forum/ => ', false, 1, [0, 1, 1], null, 'mod/forum/`
+- 227 IncrementInteger: `', false, 1, [0, 1, 2], null, 'mod/forum/ => ', false, 1, [0, 1, 3], null, 'mod/forum/`
+- 227 ArrayItemRemoval: `orced.', false, 1, [0, 1, 2], null, 'mod/fo => orced.', false, 1, [1, 2], null, 'mod/fo`
+- 235 FalseValue: `bled server-wide.', false, 0, null, null, 'm => bled server-wide.', true, 0, null, null, 'm`
+- 236 DecrementInteger: `rver-wide.', false, 0, null, null, 'mod/f => rver-wide.', false, -1, null, null, 'mod/f`
+- 236 IncrementInteger: `rver-wide.', false, 0, null, null, 'mod/f => rver-wide.', false, 1, null, null, 'mod/f`
+- 245 FalseValue: `hen rsstype != 0.', false, 0, null, null, 'm => hen rsstype != 0.', true, 0, null, null, 'm`
+- 246 DecrementInteger: `type != 0.', false, 0, null, null, 'mod/f => type != 0.', false, -1, null, null, 'mod/f`
+- 246 IncrementInteger: `type != 0.', false, 0, null, null, 'mod/f => type != 0.', false, 1, null, null, 'mod/f`
+- 254 Concat: `ter', 'PARAM_INT', 'Show a warning from this number of posts within the block period. 0 = off. Only effective when ' . 'blockperiod != 0.', false, 0, null, n => ter', 'PARAM_INT', 'blockperiod != 0.' `
+- 254 ConcatOperandRemoval: `ter', 'PARAM_INT', 'Show a warning from this number of posts within the block period. 0 = off. Only effective when ' . 'blockperiod != 0.', => ter', 'PARAM_INT', 'blockperiod != 0.',`
+- 254 ConcatOperandRemoval: `nly effective when ' . 'blockperiod != 0.', false, 0, null, nu => nly effective when ', false, 0, null, nu`
+- 256 FalseValue: `blockperiod != 0.', false, 0, null, null, 'm => blockperiod != 0.', true, 0, null, null, 'm`
+- 257 DecrementInteger: `riod != 0.', false, 0, null, null, 'mod/f => riod != 0.', false, -1, null, null, 'mod/f`
+- 257 IncrementInteger: `riod != 0.', false, 0, null, null, 'mod/f => riod != 0.', false, 1, null, null, 'mod/f`
+- 260 Concat: `l, null, 'mod/forum/mod_form.php:201-206 (hideIf blockperiod eq 0); column ' . 'mod/forum/db/install.xml (forum.warnafter)'), new field('block => l, null, 'mod/forum/db/install.xml (forum.warnafter)' `
+- 260 ConcatOperandRemoval: `l, null, 'mod/forum/mod_form.php:201-206 (hideIf blockperiod eq 0); column ' . 'mod/forum/db/install.xml (foru => l, null, 'mod/forum/db/install.xml (foru`
+- 260 ConcatOperandRemoval: `riod eq 0); column ' . 'mod/forum/db/install.xml (forum.warnafter)'), new field('blocka => riod eq 0); column '), new field('blocka`
+- 266 Concat: `ter', 'PARAM_INT', 'Block further posts from this number of posts within the block period. 0 = off. Only effective when ' . 'blockperiod != 0.', false, 0, null, n => ter', 'PARAM_INT', 'blockperiod !=`
+- 266 ConcatOperandRemoval: `ter', 'PARAM_INT', 'Block further posts from this number of posts within the block period. 0 = off. Only effective when ' . 'blockperiod != 0.', => ter', 'PARAM_INT', 'blockperiod != 0.',`
+- 266 ConcatOperandRemoval: `nly effective when ' . 'blockperiod != 0.', false, 0, null, nu => nly effective when ', false, 0, null, nu`
+- 268 FalseValue: `blockperiod != 0.', false, 0, null, null, 'm => blockperiod != 0.', true, 0, null, null, 'm`
+- 272 Concat: `l, null, 'mod/forum/mod_form.php:194-199 (hideIf blockperiod eq 0); column ' . 'mod/forum/db/install.xml (forum.blockafter)'), new field('block => l, null, 'mod/forum/db/install.xml (forum.blockafter)`
+- 272 ConcatOperandRemoval: `l, null, 'mod/forum/mod_form.php:194-199 (hideIf blockperiod eq 0); column ' . 'mod/forum/db/install.xml (foru => l, null, 'mod/forum/db/install.xml (foru`
+- 272 ConcatOperandRemoval: `riod eq 0); column ' . 'mod/forum/db/install.xml (forum.blockafter)'), new field('blockp => riod eq 0); column '), new field('blockp`
+- 279 FalseValue: `locking disabled.', false, 0, null, null, 'm => locking disabled.', true, 0, null, null, 'm`
+- 280 DecrementInteger: `disabled.', false, 0, null, null, 'mod/f => disabled.', false, -1, null, null, 'mod/f`
+- 280 IncrementInteger: `disabled.', false, 0, null, null, 'mod/f => disabled.', false, 1, null, null, 'mod/f`
+- 288 Concat: `ons', 'PARAM_INT', 'Number of started discussions from which the activity counts as completed. 0 = no ' . 'condition.', false, 0, null, n => ons', 'PARAM_INT', 'condition.' . 'Number of started discus`
+- 288 ConcatOperandRemoval: `ons', 'PARAM_INT', 'Number of started discussions from which the activity counts as completed. 0 = no ' . 'condition.', false, => ons', 'PARAM_INT', 'condition.', false,`
+- 288 ConcatOperandRemoval: `completed. 0 = no ' . 'condition.', false, 0, null, nu => completed. 0 = no ', false, 0, null, nu`
+- 290 FalseValue: `o ' . 'condition.', false, 0, null, null, 'm => o ' . 'condition.', true, 0, null, null, 'm`
+- 291 DecrementInteger: `condition.', false, 0, null, null, 'mod/f => condition.', false, -1, null, null, 'mod/f`
+- 291 IncrementInteger: `condition.', false, 0, null, null, 'mod/f => condition.', false, 1, null, null, 'mod/f`
+- 300 FalseValue: `0 = no condition.', false, 0, null, null, 'm => 0 = no condition.', true, 0, null, null, 'm`
+- 301 DecrementInteger: `condition.', false, 0, null, null, 'mod/f => condition.', false, -1, null, null, 'mod/f`
+- 301 IncrementInteger: `condition.', false, 0, null, null, 'mod/f => condition.', false, 1, null, null, 'mod/f`
+- 309 Concat: `sts', 'PARAM_INT', 'Number of posts (discussions + replies combined) from which the activity counts as completed. ' . '0 = no condition.', false, 0, null, n => sts', 'PARAM_INT', '0 = no condition.' .`
+- 309 ConcatOperandRemoval: `sts', 'PARAM_INT', 'Number of posts (discussions + replies combined) from which the activity counts as completed. ' . '0 = no condition.', => sts', 'PARAM_INT', '0 = no condition.',`
+- 309 ConcatOperandRemoval: `unts as completed. ' . '0 = no condition.', false, 0, null, nu => unts as completed. ', false, 0, null, nu`
+- 311 FalseValue: `0 = no condition.', false, 0, null, null, 'm => 0 = no condition.', true, 0, null, null, 'm`
+- 312 DecrementInteger: `condition.', false, 0, null, null, 'mod/f => condition.', false, -1, null, null, 'mod/f`
+- 312 IncrementInteger: `condition.', false, 0, null, null, 'mod/f => condition.', false, 1, null, null, 'mod/f`
+- 320 Concat: `ter', 'PARAM_INT', 'Period in seconds after which a discussion without a new reply is locked automatically. ' . '0 = off. Not effective for type=single.', false, 0, null, n => ter', 'PARAM_INT', '0 = `
+- 320 ConcatOperandRemoval: `ter', 'PARAM_INT', 'Period in seconds after which a discussion without a new reply is locked automatically. ' . '0 = off. Not effecti => ter', 'PARAM_INT', '0 = off. Not effecti`
+- 320 ConcatOperandRemoval: `ked automatically. ' . '0 = off. Not effective for type=single.', false, 0, null, nu => ked automatically. ', false, 0, null, nu`
+- 322 FalseValue: `for type=single.', false, 0, null, null, 'm => for type=single.', true, 0, null, null, 'm`
+- 326 Concat: `l, null, 'mod/forum/mod_form.php:164-178 (disabledIf type eq single); column ' . 'mod/forum/db/install.xml (forum.lockdiscussionafter)')]; => l, null, 'mod/forum/db/install.xml (forum.lockdiscussionaf`
+- 326 ConcatOperandRemoval: `l, null, 'mod/forum/mod_form.php:164-178 (disabledIf type eq single); column ' . 'mod/forum/db/install.xml (foru => l, null, 'mod/forum/db/install.xml (foru`
+- 326 ConcatOperandRemoval: `eq single); column ' . 'mod/forum/db/install.xml (forum.lockdiscussionafter)')]; => eq single); column ')];`
+- 330 CastInt: `if ((int) $CFG->branch >= 502) => if ($CFG->branch >= 502)`
+- 330 GreaterThanOrEqualTo: `(int) $CFG->branch >= 502) { => (int) $CFG->branch > 502) {`
+- 375 UnwrapArrayMap: `return array_map(static fn(field $f): string => $f->name, self::fields()); => return self::fields();`
+- 388 Concat: `me', 'PARAM_BOOL', 'Checkbox: restrict the rating period. Only when set does Moodle take over ' . '"assesstimestart"/"assesstimefinish" - otherwise forum_update_instance() resets both to 0. ' . 'Not a`
+- 388 ConcatOperandRemoval: `me', 'PARAM_BOOL', 'Checkbox: restrict the rating period. Only when set does Moodle take over ' . '"assesstimestart"/"a => me', 'PARAM_BOOL', '"assesstimestart"/"a`
+- 388 ConcatOperandRemoval: `odle take over ' . '"assesstimestart"/"assesstimefinish" - otherwise forum_update_instance() resets both to 0. ' . 'Not a DB field.', fa => odle take over ' . 'Not a DB field.', fa`
+- 388 Concat: `odle take over ' . '"assesstimestart"/"assesstimefinish" - otherwise forum_update_instance() resets both to 0. ' . 'Not a DB field.', false, 0, [0, 1], => odle take over ' . 'Not a DB field.' . '"asse`
+- 388 ConcatOperandRemoval: `resets both to 0. ' . 'Not a DB field.', false, 0, [0, 1], => resets both to 0. ', false, 0, [0, 1],`
+- 391 FalseValue: `'Not a DB field.', false, 0, [0, 1], null, => 'Not a DB field.', true, 0, [0, 1], null,`
+- 392 DecrementInteger: `DB field.', false, 0, [0, 1], null, 'cou => DB field.', false, -1, [0, 1], null, 'cou`
+- 392 IncrementInteger: `DB field.', false, 0, [0, 1], null, 'cou => DB field.', false, 1, [0, 1], null, 'cou`
+- 393 DecrementInteger: `field.', false, 0, [0, 1], null, 'course/ => field.', false, 0, [-1, 1], null, 'course/`
+- 393 IncrementInteger: `field.', false, 0, [0, 1], null, 'course/ => field.', false, 0, [1, 1], null, 'course/`
+- 393 DecrementInteger: `ld.', false, 0, [0, 1], null, 'course/moo => ld.', false, 0, [0, 0], null, 'course/moo`
+- 393 IncrementInteger: `ld.', false, 0, [0, 1], null, 'course/moo => ld.', false, 0, [0, 2], null, 'course/moo`
+- 393 ArrayItemRemoval: `field.', false, 0, [0, 1], null, 'course/mo => field.', false, 0, [1], null, 'course/mo`
+- 395 Concat: `, 0, [0, 1], null, 'course/moodleform_mod.php:751-760 (add_rating_settings()); mod/forum/lib.php:178-181 ' . '(forum_update_instance(): 'if (empty($forum->ratingtime) or empty($forum->assessed))')')];`
+- 395 ConcatOperandRemoval: `, 0, [0, 1], null, 'course/moodleform_mod.php:751-760 (add_rating_settings()); mod/forum/lib.php:178-181 ' . '(forum_update_instan => , 0, [0, 1], null, '(forum_update_instan`
+- 395 ConcatOperandRemoval: `um/lib.php:178-181 ' . '(forum_update_instance(): 'if (empty($forum->ratingtime) or empty($forum->assessed))')')]; => um/lib.php:178-181 ')];`
+- 420 ArrayItemRemoval: `return ['"cutoffdate" must not be before "duedate" (mod/forum/mod_form.php: validation()).', '"type"="single" canno => return ['"type"="single" canno`
+- 422 Concat: `: validation()).', '"type"="single" cannot be combined with "groupmode"=SEPARATEGROUPS (mod/forum/mod_form.php: ' . 'validation()); "groupmode" is in the shared block.']; => : validation()).', 'valida`
+- 422 ConcatOperandRemoval: `: validation()).', '"type"="single" cannot be combined with "groupmode"=SEPARATEGROUPS (mod/forum/mod_form.php: ' . 'validation()); "grou => : validation()).', 'validation()); "grou`
+- 422 ConcatOperandRemoval: `orum/mod_form.php: ' . 'validation()); "groupmode" is in the shared block.']; => orum/mod_form.php: '];`
+- 434 Concat: `return ['"forcesubscribe"=2 (auto-subscription) immediately subscribes all potential course participants ' . 'on creation or when switching to this value - from then on they receive emails about every`
+- 434 Concat: `e participants ' . 'on creation or when switching to this value - from then on they receive emails about every new post ' . '(mod/forum/lib.php: forum_instance_created(), forum_update_instance()).', '`
+- 434 ConcatOperandRemoval: `out every new post ' . '(mod/forum/lib.php: forum_instance_created(), forum_update_instance()).', '"duedate" creates => out every new post ', '"duedate" creates`
+- 437 Concat: `ate_instance()).', '"duedate" creates or updates a calendar entry (mod/forum/locallib.php: ' . 'forum_update_calendar()); "cutoffdate" does not.']; => ate_instance()).', 'forum_update_calendar()); "cu`
+- 437 ConcatOperandRemoval: `orum/locallib.php: ' . 'forum_update_calendar()); "cutoffdate" does not.']; => orum/locallib.php: '];`
+- 491 DecrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = -1): string`
+
+## Plugin/src/local_coursepilot/classes/catalog/label.php (9 überlebt, 9 offen)
+
+- 55 TrueValue: `lay name from it.', true, null, null, null, => lay name from it.', false, null, null, null,`
+- 65 FalseValue: `n text/Markdown).', false, FORMAT_HTML, null => n text/Markdown).', true, FORMAT_HTML, null`
+- 86 ArrayItemRemoval: `et_record('label', ['id' => $instanceid], 'name, intro', IG => et_record('label', [], 'name, intro', IG`
+- 87 IfNegation: `if ($label) { => if (!$label) {`
+- 88 CastString: `$details['name'] = (string) $label->name; => $details['name'] = $label->name;`
+- 89 CastString: `tate::content_field((string) $label->intro, $full => tate::content_field($label->intro, $full`
+- 109 UnwrapArrayMap: `return array_map(static fn(field $f): string => $f->name, self::fields()); => return self::fields();`
+- 193 DecrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = -1): string`
+- 193 IncrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = 1): string`
+
+## Plugin/src/local_coursepilot/classes/catalog/learner_locks.php (36 überlebt, 36 offen)
+
+- 73 Concat: `r_grade:<cmid>"'), 'Learner locks this call sets on purpose. A learner lock is a setting after which a learner needs an ' . 'action by the teacher to continue or resubmit. A call that would set an unc`
+- 73 ConcatOperandRemoval: `r_grade:<cmid>"'), 'Learner locks this call sets on purpose. A learner lock is a setting after which a learner needs an ' . 'action by the teache => r_grade:<cmid>"'), 'action by the teache`
+- 73 ConcatOperandRemoval: `arner needs an ' . 'action by the teacher to continue or resubmit. A call that would set an unconfirmed lock is ' . 'rejected with each l => arner needs an ' . 'rejected with each l`
+- 73 Concat: `arner needs an ' . 'action by the teacher to continue or resubmit. A call that would set an unconfirmed lock is ' . 'rejected with each lock and its reason, and nothing is written. Name a lock here on`
+- 73 ConcatOperandRemoval: `firmed lock is ' . 'rejected with each lock and its reason, and nothing is written. Name a lock here only when the ' . 'teacher explicitly a => firmed lock is ' . 'teacher explicitly a`
+- 73 Concat: `firmed lock is ' . 'rejected with each lock and its reason, and nothing is written. Name a lock here only when the ' . 'teacher explicitly asked for it; otherwise leave the field out or choose an open`
+- 73 ConcatOperandRemoval: `here only when the ' . 'teacher explicitly asked for it; otherwise leave the field out or choose an open value.', VALUE_DEFAULT, []) => here only when the ', VALUE_DEFAULT, [])`
+- 100 CastFloat: `_numeric($value) && (float) $value > (float) $co => _numeric($value) && $value > (float) $co`
+- 100 CastFloat: `&& (float) $value > (float) $condition['value']; => && (float) $value > $condition['value'];`
+- 102 CastFloat: `_numeric($value) && (float) $value != 0; => _numeric($value) && $value != 0;`
+- 116 CastInt: `$a = is_bool($a) ? (int) $a : $a; => $a = is_bool($a) ? $a : $a;`
+- 117 CastInt: `$b = is_bool($b) ? (int) $b : $b; => $b = is_bool($b) ? $b : $b;`
+- 118 LogicalAnd: `if (is_numeric($a) && is_numeric($b)) { => if (is_numeric($a) || is_numeric($b)) {`
+- 118 LogicalAndSingleSubExprNegation: `if (is_numeric($a) && is => if (!is_numeric($a) && is`
+- 118 LogicalAndSingleSubExprNegation: `(is_numeric($a) && is_numeric($b)) { => (is_numeric($a) && !is_numeric($b)) {`
+- 121 CastString: `return (string) $a === (string) $b; => return $a === (string) $b;`
+- 121 CastString: `urn (string) $a === (string) $b; => urn (string) $a === $b;`
+- 142 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 142 Concat: `ieldname . '" = ' . json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ($fromdefault ? ' (form default, not named in this call)' : '') . ': ' . $conditio => ieldname . '" = ' . ($f`
+- 142 Concat: `NESCAPED_SLASHES) . ($fromdefault ? ' (form default, not named in this call)' : '') . ': ' . $condition['reaso => NESCAPED_SLASHES) . ': ' . ($fromdefault ? ' (form default, not named in this call)' :`
+- 142 ConcatOperandRemoval: `this call)' : '') . ': ' . $condition['reason'] => this call)' : '') . $condition['reason']`
+- 142 Concat: `this call)' : '') . ': ' . $condition['reason']]; => this call)' : '') . $condition['reason'] . ': '];`
+- 142 ConcatOperandRemoval: `call)' : '') . ': ' . $condition['reason']]; => call)' : '') . ': '];`
+- 164 LogicalAnd: `if (is_scalar($old) && is_scalar($new) && self::same($new => if ((is_scalar($old) || is_scalar($new)) && self::same($new`
+- 184 Coalesce: `$value = $settings[$fieldname] ?? $settings[$aliases[$fieldname] ?? ''] ?? null; => $value = $settings[$aliases[$fieldname] ?? ''] ?? $settings[$fieldname] ?? null;`
+- 188 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 193 ArrayOneItem: `return $result; => return count($result) > 1 ? array_slice($result, 0, 1, true) : $result;`
+- 206 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 220 UnwrapArrayUnique: `array_values(array_unique(array_merge($confirmed, array_keys(array_diff_key($bundle, $named))))); => array_values(array_merge($confirmed, array_keys(array_diff_key($bundle, $named))));`
+- 220 UnwrapArrayValues: `return array_values(array_unique(array_merge($confirmed, array_keys(array_diff_key($bundle, $named))))); => return array_unique(array_merge($confirmed, array_keys(array_diff_key($bundle, $named))));`
+- 234 UnwrapArrayValues: `$open = array_values(array_filter($found, static fn(array $lock): bool => !in_array($lock['id'], $confirmed, true))); => $open = array_filter($found, static fn(array $lock): bool => !in_array($lock['i`
+- 238 ArrayItemRemoval: `coursepilot', '', ['modname' => $modname, 'locks' => implode(' => coursepilot', '', ['locks' => implode('`
+- 240 ArrayItem: `> $modname, 'locks' => implode(' | ', arr => > $modname, 'locks' > implode(' | ', arr`
+- 241 UnwrapArrayColumn: `ids' => json_encode(array_column($open, 'id'), JSON_UNESCAPED_UNI => ids' => json_encode($open, JSON_UNESCAPED_UNI`
+- 241 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 241 ArrayItem: `, 'detail')), 'ids' => json_encode(array_ => , 'detail')), 'ids' > json_encode(array_`
+
+## Plugin/src/local_coursepilot/classes/catalog/module_state.php (52 überlebt, 47 offen)
+
+- 44 FalseValue (ignoriert): `om_id('', $cmid, 0, false, MUST_EXIST); => om_id('', $cmid, 0, true, MUST_EXIST);`
+- 50 CastString (ignoriert): `ass = registry::for((string) $cm->modname); => ass = registry::for($cm->modname);`
+- 54 CastString (ignoriert): `m->id, 'modname' => (string) $cm->modname, 'setti => m->id, 'modname' => $cm->modname, 'setti`
+- 71 ArrayItemRemoval: `cord($cm->modname, ['id' => $cm->instance], '*', MUST_EXIST); => cord($cm->modname, [], '*', MUST_EXIST);`
+- 74 CastInt: `m->id, 'section' => (int) $section->section, ' => m->id, 'section' => $section->section, '`
+- 75 CastInt: `ction, 'visible' => (int) $cm->visible, 'visib => ction, 'visible' => $cm->visible, 'visib`
+- 76 CastInt: `bleoncoursepage' => (int) $cm->visibleoncourse => bleoncoursepage' => $cm->visibleoncourse`
+- 77 CastString: `page, 'idnumber' => (string) $cm->idnumber, 'grou => page, 'idnumber' => $cm->idnumber, 'grou`
+- 78 CastInt: `ber, 'groupmode' => (int) groups_get_activity_ => ber, 'groupmode' => groups_get_activity_`
+- 79 CastInt: `m), 'groupingid' => (int) $cm->groupingid, 'co => m), 'groupingid' => $cm->groupingid, 'co`
+- 81 CastInt: `course, 'module' => (int) $cm->module, 'module => course, 'module' => $cm->module, 'module`
+- 82 CastString: `le, 'modulename' => (string) $cm->modname, 'insta => le, 'modulename' => $cm->modname, 'insta`
+- 84 CastInt: `showdescription' => (int) $cm->showdescription => showdescription' => $cm->showdescription`
+- 85 ArrayItem: `, 'downloadcontent' => $cm->downloadconte => , 'downloadcontent' > $cm->downloadconte`
+- 86 CastString: `dcontent, 'lang' => (string) $cm->lang, 'tags' => => dcontent, 'lang' => $cm->lang, 'tags' =>`
+- 89 CastInt (ignoriert): `::derive_visibility((int) $cm->visible, (int) => ::derive_visibility($cm->visible, (int)`
+- 90 CastInt (ignoriert): `(int) $cm->visible, (int) $cm->visibleoncourse => (int) $cm->visible, $cm->visibleoncourse`
+- 93 CastString: `y_privacy::sanitize((string) ($cm->availability ?? '')); => y_privacy::sanitize($cm->availability ?? '');`
+- 95 CastString: `ass = registry::for((string) $cm->modname); => ass = registry::for($cm->modname);`
+- 97 CastInt: `oups($catalogclass, (int) $cm->instance)); => oups($catalogclass, $cm->instance));`
+- 99 Identical: `if ($cm->modname === 'quiz') { => if ($cm->modname !== 'quiz') {`
+- 100 CastInt: `uiz::grade_settings((int) $cm->instance)); => uiz::grade_settings($cm->instance));`
+- 100 UnwrapArrayMerge: `$data = array_merge($data, quiz::grade_settings((int) $cm->instance)); => $data = $data;`
+- 121 ArrayItemRemoval: `t_record($modname, ['id' => $instanceid], 'name', IGNORE_MI => t_record($modname, [], 'name', IGNORE_MI`
+- 122 CastString: `'name'] = $record ? (string) $record->name : ''; => 'name'] = $record ? $record->name : '';`
+- 134 ArrayItemRemoval: `return ['name' => '', 'content' => self::co => return ['content' => self::co`
+- 149 LogicalNot: `nt), 'truncated' => !$fullcontent && trim => nt), 'truncated' => $fullcontent && trim`
+- 149 UnwrapTrim: `=> !$fullcontent && trim($html) !== '']; => => !$fullcontent && $html !== ''];`
+- 149 NotIdentical: `tent && trim($html) !== '']; => tent && trim($html) === ''];`
+- 149 LogicalAnd: `d' => !$fullcontent && trim($html) !== ''] => d' => !$fullcontent || trim($html) !== '']`
+- 149 LogicalAndAllSubExprNegation: `nt), 'truncated' => !$fullcontent && trim($html) !== '']; => nt), 'truncated' => $fullcontent && !(trim($html) !== '')];`
+- 149 LogicalAndNegation: `t), 'truncated' => !$fullcontent && trim($html) !== '']; => t), 'truncated' => !(!$fullcontent && trim($html) !== '')];`
+- 161 UnwrapTrim: `$text = trim(preg_replace('/\s+/', ' ', strip_tags($html))); => $text = preg_replace('/\s+/', ' ', strip_tags($html));`
+- 162 LessThanOrEqualTo: `t || strlen($text) <= 280 ? $text : subst => t || strlen($text) < 280 ? $text : subst`
+- 162 LessThanOrEqualToNegotiation: `nt || strlen($text) <= 280 ? $text : subst => nt || strlen($text) > 280 ? $text : subst`
+- 162 LogicalOr: `return $fullcontent || strlen($text) <= 28 => return $fullcontent && strlen($text) <= 28`
+- 162 LogicalOrAllSubExprNegation: `return $fullcontent || strlen($text) <= 280 ? $text : substr($t => return !$fullcontent || !(strlen($text) <= 280) ? $text : substr($t`
+- 162 LogicalOrNegation: `return $fullcontent || strlen($text) <= 280 ? $text : substr($t => return !($fullcontent || strlen($text) <= 280) ? $text : substr($t`
+- 162 LogicalOrSingleSubExprNegation: `return $fullcontent || strl => return !$fullcontent || strl`
+- 162 DecrementInteger: `ext : substr($text, 0, 277) . '...'; => ext : substr($text, -1, 277) . '...';`
+- 162 IncrementInteger: `ext : substr($text, 0, 277) . '...'; => ext : substr($text, 1, 277) . '...';`
+- 162 DecrementInteger: `substr($text, 0, 277) . '...'; => substr($text, 0, 276) . '...';`
+- 162 IncrementInteger: `substr($text, 0, 277) . '...'; => substr($text, 0, 278) . '...';`
+- 162 UnwrapSubstr: `t) <= 280 ? $text : substr($text, 0, 277) . '...'; => t) <= 280 ? $text : $text . '...';`
+- 162 Concat: `t) <= 280 ? $text : substr($text, 0, 277) . '...'; => t) <= 280 ? $text : '...' . substr($text, 0, 277);`
+- 162 ConcatOperandRemoval: `t) <= 280 ? $text : substr($text, 0, 277) . '...'; => t) <= 280 ? $text : '...';`
+- 162 ConcatOperandRemoval: `ubstr($text, 0, 277) . '...'; => ubstr($text, 0, 277);`
+- 162 Ternary: `len($text) <= 280 ? $text : substr($text, 0, 277) . '...'; => len($text) <= 280 ? substr($text, 0, 277) . '...' : $text;`
+- 175 CastString: `airs[] = ['name' => (string) $name, 'value' => (s => airs[] = ['name' => $name, 'value' => (s`
+- 175 CastString: `) $name, 'value' => (string) $value]; => ) $name, 'value' => $value];`
+- 191 PublicVisibility: `public static function rea => protected static function rea`
+- 199 ArrayItemRemoval: `ds($spec['table'], [$spec['foreignkey'] => $instanceid], $spec['orderby']) => ds($spec['table'], [], $spec['orderby'])`
+
+## Plugin/src/local_coursepilot/classes/catalog/page.php (80 überlebt, 80 offen)
+
+- 69 Concat: `tro', 'PARAM_RAW', 'Description (intro), optionally shown above the page content (pseudofield ' . '"printintro" controls whether it is shown).', false, null, null => tro', 'PARAM_RAW', '"printintro" c`
+- 69 ConcatOperandRemoval: `tro', 'PARAM_RAW', 'Description (intro), optionally shown above the page content (pseudofield ' . '"printintro" control => tro', 'PARAM_RAW', '"printintro" control`
+- 69 ConcatOperandRemoval: `ntent (pseudofield ' . '"printintro" controls whether it is shown).', false, null, null, => ntent (pseudofield ', false, null, null,`
+- 81 FalseValue: `mat of the intro.', false, FORMAT_HTML, null => mat of the intro.', true, FORMAT_HTML, null`
+- 90 Concat: `ent', 'PARAM_RAW', 'The actual page content (HTML). Set through the "page" pseudofield, not directly - ' . 'therefore NOT listed here as required even though the column needs a value: the ' . '"page" `
+- 90 ConcatOperandRemoval: `ent', 'PARAM_RAW', 'The actual page content (HTML). Set through the "page" pseudofield, not directly - ' . 'therefore NOT listed => ent', 'PARAM_RAW', 'therefore NOT listed`
+- 90 ConcatOperandRemoval: `not directly - ' . 'therefore NOT listed here as required even though the column needs a value: the ' . '"page" pseudofield f => not directly - ' . '"page" pseudofield f`
+- 90 Concat: `not directly - ' . 'therefore NOT listed here as required even though the column needs a value: the ' . '"page" pseudofield fulfills that requirement (#404). Requiring both created a ' . 'dead end - s`
+- 90 ConcatOperandRemoval: `s a value: the ' . '"page" pseudofield fulfills that requirement (#404). Requiring both created a ' . 'dead end - specifyin => s a value: the ' . 'dead end - specifyin`
+- 90 Concat: `s a value: the ' . '"page" pseudofield fulfills that requirement (#404). Requiring both created a ' . 'dead end - specifying "content" required "page", specifying "page" required "content".', false, n`
+- 90 ConcatOperandRemoval: `ing both created a ' . 'dead end - specifying "content" required "page", specifying "page" required "content".', false, null, null, => ing both created a ', false, null, null,`
+- 94 FalseValue: `quired "content".', false, null, null, null, => quired "content".', true, null, null, null,`
+- 98 Concat: `ll, null, 'mod/page/db/install.xml (page.content); set from the "page" pseudofield in ' . 'mod/page/lib.php (page_update_instance())'), new field('conte => ll, null, 'mod/page/lib.php (page_update_ins`
+- 98 ConcatOperandRemoval: `ll, null, 'mod/page/db/install.xml (page.content); set from the "page" pseudofield in ' . 'mod/page/lib.php (page_update => ll, null, 'mod/page/lib.php (page_update`
+- 98 ConcatOperandRemoval: `ge" pseudofield in ' . 'mod/page/lib.php (page_update_instance())'), new field('conten => ge" pseudofield in '), new field('conten`
+- 105 FalseValue: `, like "content".', false, FORMAT_HTML, null => , like "content".', true, FORMAT_HTML, null`
+- 114 Concat: `lay', 'PARAM_INT', 'Page display (e.g. new window, popup). Available options are ' . 'a subset configured by Moodle administration, not a fixed list.', false, 0, null, ' => lay', 'PARAM_INT', 'a subse`
+- 114 ConcatOperandRemoval: `lay', 'PARAM_INT', 'Page display (e.g. new window, popup). Available options are ' . 'a subset configured => lay', 'PARAM_INT', 'a subset configured`
+- 114 ConcatOperandRemoval: `ilable options are ' . 'a subset configured by Moodle administration, not a fixed list.', false, 0, null, 'r => ilable options are ', false, 0, null, 'r`
+- 116 FalseValue: `not a fixed list.', false, 0, null, 'resourc => not a fixed list.', true, 0, null, 'resourc`
+- 117 DecrementInteger: `ixed list.', false, 0, null, 'resourcelib => ixed list.', false, -1, null, 'resourcelib`
+- 117 IncrementInteger: `ixed list.', false, 0, null, 'resourcelib => ixed list.', false, 1, null, 'resourcelib`
+- 120 Concat: `displayoptions()', 'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-constants), :111 (resourcelib_get_displayoptions()); ' . 'Subset from admin_setting_configmultiselect(\'page/displayoptions\', ...)`
+- 120 ConcatOperandRemoval: `displayoptions()', 'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-constants), :111 (resourcelib_get_displayoptions()); ' . 'Subset from admin_se => displayoptions()', 'Subset from admin_se`
+- 120 ConcatOperandRemoval: `layoptions()); ' . 'Subset from admin_setting_configmultiselect(\'page/displayoptions\', ...) in ' . 'mod/page/settings.ph => layoptions()); ' . 'mod/page/settings.ph`
+- 120 Concat: `layoptions()); ' . 'Subset from admin_setting_configmultiselect(\'page/displayoptions\', ...) in ' . 'mod/page/settings.php:31-35; column mod/page/db/install.xml (page.display)')]; => layoptions()); '`
+- 120 ConcatOperandRemoval: `options\', ...) in ' . 'mod/page/settings.php:31-35; column mod/page/db/install.xml (page.display)')]; => options\', ...) in ')];`
+- 139 ArrayItemRemoval: `get_record('page', ['id' => $instanceid], 'name, intro, con => get_record('page', [], 'name, intro, con`
+- 141 CastString: `$details['name'] = (string) $page->name; => $details['name'] = $page->name;`
+- 142 CastString: `tate::content_field((string) $page->content, $ful => tate::content_field($page->content, $ful`
+- 143 CastString: `dule_state::preview((string) $page->intro, $fullc => dule_state::preview($page->intro, $fullc`
+- 163 UnwrapArrayMap: `return array_map(static fn(field $f): string => $f->name, self::fields()); => return self::fields();`
+- 176 Concat: `'Editor array for page content. WITHOUT this field, Moodle silently sets "content" (and ' . '"contentformat") to null on update - page_update_instance() reads ' . '$data->page[\' => '"contentformat") `
+- 176 ConcatOperandRemoval: `'Editor array for page content. WITHOUT this field, Moodle silently sets "content" (and ' . '"contentformat") to => '"contentformat") to`
+- 176 ConcatOperandRemoval: `"content" (and ' . '"contentformat") to null on update - page_update_instance() reads ' . '$data->page[\'text\' => "content" (and ' . '$data->page[\'text\'`
+- 176 Concat: `"content" (and ' . '"contentformat") to null on update - page_update_instance() reads ' . '$data->page[\'text\'] without a guard.', => "content" (and ' . '$data->page[\'text\'] without a guard.' . '"c`
+- 176 ConcatOperandRemoval: `e_instance() reads ' . '$data->page[\'text\'] without a guard.', => e_instance() reads ',`
+- 179 TrueValue: `true, => false,`
+- 189 Concat: `'Show intro alongside page content. Not a DB field - stored in the serialized ' . '"displayoptions" column.', => '"displayoptions" column.' . 'Show intro alongside page content. Not a DB field - store`
+- 189 ConcatOperandRemoval: `'Show intro alongside page content. Not a DB field - stored in the serialized ' . '"displayoptions" col => '"displayoptions" col`
+- 189 ConcatOperandRemoval: `in the serialized ' . '"displayoptions" column.', => in the serialized ',`
+- 191 FalseValue: `false, => true,`
+- 192 DecrementInteger: `0, => -1,`
+- 192 IncrementInteger: `0, => 1,`
+- 193 DecrementInteger: `[0, 1], => [-1, 1],`
+- 193 IncrementInteger: `[0, 1], => [1, 1],`
+- 193 DecrementInteger: `[0, 1], => [0, 0],`
+- 193 IncrementInteger: `[0, 1], => [0, 2],`
+- 193 ArrayItemRemoval: `[0, 1], => [1],`
+- 196 Concat: `'mod/page/lib.php (page_update_instance(): '$displayoptions[\'printintro\']'); Default ' . 'mod/page/settings.php:41' => 'mod/page/settings.php:41' . 'mod/page/lib.php (page_update_instance(): '$displ`
+- 196 ConcatOperandRemoval: `'mod/page/lib.php (page_update_instance(): '$displayoptions[\'printintro\']'); Default ' . 'mod/page/settings.php:41' => 'mod/page/settings.php:41'`
+- 196 ConcatOperandRemoval: `ntro\']'); Default ' . 'mod/page/settings.php:41' => ntro\']'); Default '`
+- 203 FalseValue: `false, => true,`
+- 204 DecrementInteger: `1, => 0,`
+- 204 IncrementInteger: `1, => 2,`
+- 205 DecrementInteger: `[0, 1], => [-1, 1],`
+- 205 IncrementInteger: `[0, 1], => [1, 1],`
+- 205 DecrementInteger: `[0, 1], => [0, 0],`
+- 205 IncrementInteger: `[0, 1], => [0, 2],`
+- 205 ArrayItemRemoval: `[0, 1], => [1],`
+- 208 Concat: `'mod/page/lib.php (page_update_instance(): '$displayoptions[\'printlastmodified\']'); Default ' . 'mod/page/settings.php:43' => 'mod/page/settings.php:43' . 'mod/page/lib.php (page_update_instance(): `
+- 208 ConcatOperandRemoval: `'mod/page/lib.php (page_update_instance(): '$displayoptions[\'printlastmodified\']'); Default ' . 'mod/page/settings.php:43' => 'mod/page/settings.php:43'`
+- 208 ConcatOperandRemoval: `fied\']'); Default ' . 'mod/page/settings.php:43' => fied\']'); Default '`
+- 214 Concat: `dth', 'PARAM_INT', 'Window width in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', false, 620, null, => dth', 'PARAM_INT', '"displayoptions".' . 'Win`
+- 214 ConcatOperandRemoval: `dth', 'PARAM_INT', 'Window width in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', => dth', 'PARAM_INT', '"displayoptions".',`
+- 214 ConcatOperandRemoval: `field - stored in ' . '"displayoptions".', false, 620, null, => field - stored in ', false, 620, null,`
+- 216 FalseValue: `"displayoptions".', false, 620, null, null, => "displayoptions".', true, 620, null, null,`
+- 217 DecrementInteger: `options".', false, 620, null, null, 'mod/p => options".', false, 619, null, null, 'mod/p`
+- 217 IncrementInteger: `ptions".', false, 620, null, null, 'mod/p => ptions".', false, 621, null, null, 'mod/p`
+- 220 Concat: `, 620, null, null, 'mod/page/lib.php (page_update_instance(): only set when display==RESOURCELIB_DISPLAY_POPUP); ' . 'Default mod/page/settings.php:45'), new field('popup => , 620, null, null, 'Defaul`
+- 220 ConcatOperandRemoval: `, 620, null, null, 'mod/page/lib.php (page_update_instance(): only set when display==RESOURCELIB_DISPLAY_POPUP); ' . 'Default mod/page/set => , 620, null, null, 'Default mod/page/set`
+- 220 ConcatOperandRemoval: `IB_DISPLAY_POPUP); ' . 'Default mod/page/settings.php:45'), new field('popuph => IB_DISPLAY_POPUP); '), new field('popuph`
+- 226 Concat: `ght', 'PARAM_INT', 'Window height in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', false, 450, null, => ght', 'PARAM_INT', '"displayoptions".' . 'Wi`
+- 226 ConcatOperandRemoval: `ght', 'PARAM_INT', 'Window height in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', => ght', 'PARAM_INT', '"displayoptions".',`
+- 226 ConcatOperandRemoval: `field - stored in ' . '"displayoptions".', false, 450, null, => field - stored in ', false, 450, null,`
+- 228 FalseValue: `"displayoptions".', false, 450, null, null, => "displayoptions".', true, 450, null, null,`
+- 229 DecrementInteger: `options".', false, 450, null, null, 'mod/p => options".', false, 449, null, null, 'mod/p`
+- 229 IncrementInteger: `ptions".', false, 450, null, null, 'mod/p => ptions".', false, 451, null, null, 'mod/p`
+- 311 DecrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = -1): string`
+- 311 IncrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = 1): string`
+
+## Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php (34 überlebt, 34 offen)
+
+- 59 MethodCallRemoval: `self::unformat_localised_gradepass($moduleinfo); => `
+- 79 Continue_: `continue; => break;`
+- 82 Continue_: `continue; => break;`
+- 87 Continue_: `continue; => break;`
+- 90 ArrayItemRemoval: `>name] = $value + ['format' => FORMAT_HTML, 'itemid' => 0]; => >name] = $value + ['itemid' => 0];`
+- 91 Continue_: `continue; => break;`
+- 95 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 95 ArrayItem: `ield->name, 'value' => json_encode($value => ield->name, 'value' > json_encode($value`
+- 131 LogicalAnd: `nfo, 'markercount') && ($moduleinfo->advan => nfo, 'markercount') || ($moduleinfo->advan`
+- 134 ArrayItemRemoval: `gn_plugin_config', ['assignment' => $cm->instance]); => gn_plugin_config', []);`
+- 137 LogicalOr: `$fieldname, $patch) || property_exists($mo => $fieldname, $patch) && property_exists($mo`
+- 138 Continue_: `continue; => break;`
+- 182 CastString: `troeditor['text'] = (string) $patch['intro']; => troeditor['text'] = $patch['intro'];`
+- 203 LogicalOr: `ield->name, $patch) || property_exists($mo => ield->name, $patch) && property_exists($mo`
+- 245 Continue_: `continue; => break;`
+- 252 Concat: `tance($cm->id)->id, 'mod_' . $modname, $content, 0, [], ( => tance($cm->id)->id, $modname . 'mod_', $content, 0, [], (`
+- 252 ConcatOperandRemoval: `tance($cm->id)->id, 'mod_' . $modname, $content, => tance($cm->id)->id, $modname, $content,`
+- 252 ConcatOperandRemoval: `$cm->id)->id, 'mod_' . $modname, $content, 0, [], ( => $cm->id)->id, 'mod_', $content, 0, [], (`
+- 254 DecrementInteger: `$modname, $content, 0, [], (string) ($pat => $modname, $content, -1, [], (string) ($pat`
+- 254 IncrementInteger: `$modname, $content, 0, [], (string) ($pat => $modname, $content, 1, [], (string) ($pat`
+- 256 Coalesce: `$patch[$content] ?? $before[$content] ?? '')); => $patch[$content] ?? '' ?? $before[$content]));`
+- 256 Coalesce: `, 0, [], (string) ($patch[$content] ?? $before[$content] ?? '')); => , 0, [], (string) ($before[$content] ?? $patch[$content] ?? ''));`
+- 256 CastString: `e, $content, 0, [], (string) ($patch[$content] ?? $before[$content] ?? '')); => e, $content, 0, [], $patch[$content] ?? $before[$content] ?? '');`
+- 260 Coalesce: `($patch[$format] ?? $before[$format] ?? FORMAT_HTML), 'itemid' => $draf => ($patch[$format] ?? FORMAT_HTML ?? $before[$format]), 'itemid' => $draf`
+- 260 Coalesce: `'format' => (int) ($patch[$format] ?? $before[$format] ?? FORMAT_ => 'format' => (int) ($before[$format] ?? $patch[$format] ?? FORMAT_`
+- 260 CastInt: `$text, 'format' => (int) ($patch[$format] ?? $before[$format] ?? FORMAT_HTML), 'itemid' => $draft => $text, 'format' => $patch[$format] ?? $before[$format] ?? FORMAT_HTML, 'itemid' => $draft`
+- 279 LogicalOr: `'resource'], true) || array_key_exists('f => 'resource'], true) && array_key_exists('f`
+- 283 DecrementInteger: `moduleinfo->files = 0; => moduleinfo->files = -1;`
+- 307 LogicalOr: `odname !== 'choice' || array_key_exists('o => odname !== 'choice' && array_key_exists('o`
+- 310 ArrayItemRemoval: `('choice_options', ['choiceid' => $cm->instance], 'id', 'id,text'); => ('choice_options', [], 'id', 'id,text');`
+- 311 ArrayItemRemoval: `('choice_options', ['choiceid' => $cm->instance], 'id', 'id,maxansw => ('choice_options', [], 'id', 'id,maxansw`
+- 315 UnwrapArrayKeys: `$ids = array_keys($texts); => $ids = $texts;`
+- 316 UnwrapArrayValues: `oduleinfo->option = array_values($texts); => oduleinfo->option = $texts;`
+- 317 UnwrapArrayValues: `moduleinfo->limit = array_values($limits); => moduleinfo->limit = $limits;`
+
+## Plugin/src/local_coursepilot/classes/catalog/quiz.php (337 überlebt, 337 offen)
+
+- 132 TrueValue: `tro) of the quiz.', true, null, null, null, => tro) of the quiz.', false, null, null, null,`
+- 142 FalseValue: `mat of the intro.', false, FORMAT_HTML, null => mat of the intro.', true, FORMAT_HTML, null`
+- 151 Concat: `pen', 'PARAM_INT', 'Unix timestamp: quiz opens. 0 = no opening time. Creates a calendar event ' . '(see side effects).', false, 0, null, n => pen', 'PARAM_INT', '(see side effects).' . 'Unix timestamp`
+- 151 ConcatOperandRemoval: `pen', 'PARAM_INT', 'Unix timestamp: quiz opens. 0 = no opening time. Creates a calendar event ' . '(see side effects).' => pen', 'PARAM_INT', '(see side effects).'`
+- 151 ConcatOperandRemoval: `s a calendar event ' . '(see side effects).', false, 0, null, nu => s a calendar event ', false, 0, null, nu`
+- 153 FalseValue: `ee side effects).', false, 0, null, null, 'm => ee side effects).', true, 0, null, null, 'm`
+- 157 Concat: `ll, null, 'mod/quiz/mod_form.php:92-94 (date_time_selector, optional); column ' . 'mod/quiz/db/install.xml (quiz.timeopen)'), new field('timec => ll, null, 'mod/quiz/db/install.xml (quiz.timeopen)' . `
+- 157 ConcatOperandRemoval: `ll, null, 'mod/quiz/mod_form.php:92-94 (date_time_selector, optional); column ' . 'mod/quiz/db/install.xml (quiz => ll, null, 'mod/quiz/db/install.xml (quiz`
+- 157 ConcatOperandRemoval: `optional); column ' . 'mod/quiz/db/install.xml (quiz.timeopen)'), new field('timecl => optional); column '), new field('timecl`
+- 163 Concat: `ose', 'PARAM_INT', 'Unix timestamp: quiz closes. 0 = no closing time. Creates a calendar event ' . '(see side effects).', false, 0, null, n => ose', 'PARAM_INT', '(see side effects).' . 'Unix timestam`
+- 163 ConcatOperandRemoval: `ose', 'PARAM_INT', 'Unix timestamp: quiz closes. 0 = no closing time. Creates a calendar event ' . '(see side effects).' => ose', 'PARAM_INT', '(see side effects).'`
+- 163 ConcatOperandRemoval: `s a calendar event ' . '(see side effects).', false, 0, null, nu => s a calendar event ', false, 0, null, nu`
+- 165 FalseValue: `ee side effects).', false, 0, null, null, 'm => ee side effects).', true, 0, null, null, 'm`
+- 169 Concat: `ll, null, 'mod/quiz/mod_form.php:96-97 (date_time_selector, optional); column ' . 'mod/quiz/db/install.xml (quiz.timeclose)'), new field('timel => ll, null, 'mod/quiz/db/install.xml (quiz.timeclose)' `
+- 169 ConcatOperandRemoval: `ll, null, 'mod/quiz/mod_form.php:96-97 (date_time_selector, optional); column ' . 'mod/quiz/db/install.xml (quiz => ll, null, 'mod/quiz/db/install.xml (quiz`
+- 169 ConcatOperandRemoval: `optional); column ' . 'mod/quiz/db/install.xml (quiz.timeclose)'), new field('timeli => optional); column '), new field('timeli`
+- 175 Concat: `mit', 'PARAM_INT', 'Time limit in seconds from attempt start. 0 = no time limit. Same field as for ' . 'an assignment (assign::timelimit).', false, 0, null, n => mit', 'PARAM_INT', 'an assignment (ass`
+- 175 ConcatOperandRemoval: `mit', 'PARAM_INT', 'Time limit in seconds from attempt start. 0 = no time limit. Same field as for ' . 'an assignment (assig => mit', 'PARAM_INT', 'an assignment (assig`
+- 175 ConcatOperandRemoval: `Same field as for ' . 'an assignment (assign::timelimit).', false, 0, null, nu => Same field as for ', false, 0, null, nu`
+- 177 FalseValue: `sign::timelimit).', false, 0, null, null, 'm => sign::timelimit).', true, 0, null, null, 'm`
+- 181 Concat: `ll, null, 'mod/quiz/mod_form.php:100-102 (duration, optional); column ' . 'mod/quiz/db/install.xml (quiz.timelimit)'), new field('overd => ll, null, 'mod/quiz/db/install.xml (quiz.timelimit)' . 'mod/q`
+- 181 ConcatOperandRemoval: `ll, null, 'mod/quiz/mod_form.php:100-102 (duration, optional); column ' . 'mod/quiz/db/install.xml (quiz => ll, null, 'mod/quiz/db/install.xml (quiz`
+- 181 ConcatOperandRemoval: `optional); column ' . 'mod/quiz/db/install.xml (quiz.timelimit)'), new field('overdu => optional); column '), new field('overdu`
+- 187 Concat: `g', 'PARAM_ALPHA', 'Overdue attempt handling: automatically submit, allow a grace period, or ' . 'abandon the attempt.', false, 'autoaband => g', 'PARAM_ALPHA', 'abandon the attempt.' . 'Overdue attem`
+- 187 ConcatOperandRemoval: `g', 'PARAM_ALPHA', 'Overdue attempt handling: automatically submit, allow a grace period, or ' . 'abandon the attempt. => g', 'PARAM_ALPHA', 'abandon the attempt.`
+- 187 ConcatOperandRemoval: `a grace period, or ' . 'abandon the attempt.', false, 'autoabando => a grace period, or ', false, 'autoabando`
+- 189 FalseValue: `ndon the attempt.', false, 'autoabandon', [' => ndon the attempt.', true, 'autoabandon', ['`
+- 191 ArrayItemRemoval: `e, 'autoabandon', ['autosubmit', 'graceperiod', 'autoa => e, 'autoabandon', ['graceperiod', 'autoa`
+- 193 Concat: `tions()', 'mod/quiz/locallib.php:939 (quiz_get_overdue_handling_options()); column ' . 'mod/quiz/db/install.xml (quiz.overduehandling, DEFAULT=autoabandon)'), new field('grace => tions()', 'mod/quiz/d`
+- 193 ConcatOperandRemoval: `tions()', 'mod/quiz/locallib.php:939 (quiz_get_overdue_handling_options()); column ' . 'mod/quiz/db/install.xml (quiz => tions()', 'mod/quiz/db/install.xml (quiz`
+- 193 ConcatOperandRemoval: `options()); column ' . 'mod/quiz/db/install.xml (quiz.overduehandling, DEFAULT=autoabandon)'), new field('gracep => options()); column '), new field('gracep`
+- 199 Concat: `iod', 'PARAM_INT', 'Grace period in seconds after the time limit, during which submission is still accepted. ' . 'Only effective for "overduehandling"="graceperiod"; must exceed a ' . 'server-wide mi `
+- 199 ConcatOperandRemoval: `iod', 'PARAM_INT', 'Grace period in seconds after the time limit, during which submission is still accepted. ' . 'Only effective for " => iod', 'PARAM_INT', 'Only effective for "`
+- 199 ConcatOperandRemoval: `till accepted. ' . 'Only effective for "overduehandling"="graceperiod"; must exceed a ' . 'server-wide minimum => till accepted. ' . 'server-wide minimum`
+- 199 Concat: `till accepted. ' . 'Only effective for "overduehandling"="graceperiod"; must exceed a ' . 'server-wide minimum duration (see combination rules).', false, 0, null, n => till accepted. ' . 'server-wide `
+- 199 ConcatOperandRemoval: `od"; must exceed a ' . 'server-wide minimum duration (see combination rules).', false, 0, null, nu => od"; must exceed a ', false, 0, null, nu`
+- 202 FalseValue: `mbination rules).', false, 0, null, null, 'm => mbination rules).', true, 0, null, null, 'm`
+- 203 DecrementInteger: `on rules).', false, 0, null, null, 'mod/q => on rules).', false, -1, null, null, 'mod/q`
+- 203 IncrementInteger: `on rules).', false, 0, null, null, 'mod/q => on rules).', false, 1, null, null, 'mod/q`
+- 206 Concat: `se, 0, null, null, 'mod/quiz/mod_form.php:113-116 (duration, optional, hideIf overduehandling neq graceperiod); ' . 'column mod/quiz/db/install.xml (quiz.graceperiod)'), new field('prefe => se, 0, nul`
+- 206 ConcatOperandRemoval: `se, 0, null, null, 'mod/quiz/mod_form.php:113-116 (duration, optional, hideIf overduehandling neq graceperiod); ' . 'column mod/quiz/db/i => se, 0, null, null, 'column mod/quiz/db/i`
+- 206 ConcatOperandRemoval: `neq graceperiod); ' . 'column mod/quiz/db/install.xml (quiz.graceperiod)'), new field('prefer => neq graceperiod); '), new field('prefer`
+- 212 Concat: `r', 'PARAM_ALPHA', 'Question behaviour: how and when an answer is graded and feedback given (e.g. ' . 'immediate feedback, deferred feedback, deferred feedback with certainty-based marking).', true, n`
+- 212 ConcatOperandRemoval: `r', 'PARAM_ALPHA', 'Question behaviour: how and when an answer is graded and feedback given (e.g. ' . 'immediate feedback, => r', 'PARAM_ALPHA', 'immediate feedback,`
+- 212 ConcatOperandRemoval: `edback given (e.g. ' . 'immediate feedback, deferred feedback, deferred feedback with certainty-based marking).', true, null, null, => edback given (e.g. ', true, null, null,`
+- 214 TrueValue: `y-based marking).', true, null, null, '\que => y-based marking).', false, null, null, '\que`
+- 218 Concat: `aviour_options()', 'question/engine/lib.php (question_engine::get_behaviour_options()); ' . 'mod/quiz/mod_form.php:202-205; column mod/quiz/db/install.xml ' . '(quiz.preferre => aviour_options()', 'mo`
+- 218 ConcatOperandRemoval: `aviour_options()', 'question/engine/lib.php (question_engine::get_behaviour_options()); ' . 'mod/quiz/mod_form.ph => aviour_options()', 'mod/quiz/mod_form.ph`
+- 218 ConcatOperandRemoval: `ur_options()); ' . 'mod/quiz/mod_form.php:202-205; column mod/quiz/db/install.xml ' . '(quiz.preferredbehav => ur_options()); ' . '(quiz.preferredbehav`
+- 218 Concat: `ur_options()); ' . 'mod/quiz/mod_form.php:202-205; column mod/quiz/db/install.xml ' . '(quiz.preferredbehaviour, NOTNULL without DB default)'), new field('canre => ur_options()); ' . '(quiz.preferredb`
+- 218 ConcatOperandRemoval: `uiz/db/install.xml ' . '(quiz.preferredbehaviour, NOTNULL without DB default)'), new field('canred => uiz/db/install.xml '), new field('canred`
+- 225 Concat: `ns', 'PARAM_BOOL', 'Learners may redo a question already completed within the attempt. ' . 'Only effective for behaviours that allow a question to finish during the attempt.', false, 0, [0, 1], => ns'`
+- 225 ConcatOperandRemoval: `ns', 'PARAM_BOOL', 'Learners may redo a question already completed within the attempt. ' . 'Only effective for b => ns', 'PARAM_BOOL', 'Only effective for b`
+- 225 ConcatOperandRemoval: `ithin the attempt. ' . 'Only effective for behaviours that allow a question to finish during the attempt.', false, 0, [0, 1], => ithin the attempt. ', false, 0, [0, 1],`
+- 227 FalseValue: `ring the attempt.', false, 0, [0, 1], null, => ring the attempt.', true, 0, [0, 1], null,`
+- 228 DecrementInteger: `e attempt.', false, 0, [0, 1], null, 'mod => e attempt.', false, -1, [0, 1], null, 'mod`
+- 228 IncrementInteger: `e attempt.', false, 0, [0, 1], null, 'mod => e attempt.', false, 1, [0, 1], null, 'mod`
+- 229 DecrementInteger: `tempt.', false, 0, [0, 1], null, 'mod/qui => tempt.', false, 0, [-1, 1], null, 'mod/qui`
+- 229 IncrementInteger: `tempt.', false, 0, [0, 1], null, 'mod/qui => tempt.', false, 0, [1, 1], null, 'mod/qui`
+- 229 DecrementInteger: `pt.', false, 0, [0, 1], null, 'mod/quiz/m => pt.', false, 0, [0, 0], null, 'mod/quiz/m`
+- 229 IncrementInteger: `pt.', false, 0, [0, 1], null, 'mod/quiz/m => pt.', false, 0, [0, 2], null, 'mod/quiz/m`
+- 229 ArrayItemRemoval: `tempt.', false, 0, [0, 1], null, 'mod/quiz/ => tempt.', false, 0, [1], null, 'mod/quiz/`
+- 237 FalseValue: `s. 0 = unlimited.', false, 0, null, null, 'm => s. 0 = unlimited.', true, 0, null, null, 'm`
+- 238 DecrementInteger: `unlimited.', false, 0, null, null, 'mod/q => unlimited.', false, -1, null, null, 'mod/q`
+- 241 Concat: `ll, null, 'mod/quiz/mod_form.php:151-156 (select, 0-QUIZ_MAX_ATTEMPT_OPTION); column ' . 'mod/quiz/db/install.xml (quiz.attempts)'), new field('attem => ll, null, 'mod/quiz/db/install.xml (quiz.attemp`
+- 241 ConcatOperandRemoval: `ll, null, 'mod/quiz/mod_form.php:151-156 (select, 0-QUIZ_MAX_ATTEMPT_OPTION); column ' . 'mod/quiz/db/install.xml (quiz => ll, null, 'mod/quiz/db/install.xml (quiz`
+- 241 ConcatOperandRemoval: `PT_OPTION); column ' . 'mod/quiz/db/install.xml (quiz.attempts)'), new field('attemp => PT_OPTION); column '), new field('attemp`
+- 247 Concat: `st', 'PARAM_BOOL', 'A new attempt carries forward the last attempt\'s answers (1) instead of starting empty ' . '(0). Only visible when more than one attempt is allowed.', false, 0, [0, 1], => st', 'P`
+- 247 ConcatOperandRemoval: `st', 'PARAM_BOOL', 'A new attempt carries forward the last attempt\'s answers (1) instead of starting empty ' . '(0). Only visible wh => st', 'PARAM_BOOL', '(0). Only visible wh`
+- 247 ConcatOperandRemoval: `of starting empty ' . '(0). Only visible when more than one attempt is allowed.', false, 0, [0, 1], => of starting empty ', false, 0, [0, 1],`
+- 249 FalseValue: `tempt is allowed.', false, 0, [0, 1], null, => tempt is allowed.', true, 0, [0, 1], null,`
+- 250 DecrementInteger: `s allowed.', false, 0, [0, 1], null, 'mod => s allowed.', false, -1, [0, 1], null, 'mod`
+- 250 IncrementInteger: `s allowed.', false, 0, [0, 1], null, 'mod => s allowed.', false, 1, [0, 1], null, 'mod`
+- 251 DecrementInteger: `ed.', false, 0, [0, 1], null, 'mod/quiz/m => ed.', false, 0, [0, 0], null, 'mod/quiz/m`
+- 251 IncrementInteger: `ed.', false, 0, [0, 1], null, 'mod/quiz/m => ed.', false, 0, [0, 2], null, 'mod/quiz/m`
+- 253 Concat: `1], null, 'mod/quiz/mod_form.php:218-223 (selectyesno, hideIf attempts eq 1); column ' . 'mod/quiz/db/install.xml (quiz.attemptonlast)'), new field('grade => 1], null, 'mod/quiz/db/install.xml (quiz.a`
+- 253 ConcatOperandRemoval: `1], null, 'mod/quiz/mod_form.php:218-223 (selectyesno, hideIf attempts eq 1); column ' . 'mod/quiz/db/install.xml (quiz => 1], null, 'mod/quiz/db/install.xml (quiz`
+- 253 ConcatOperandRemoval: `mpts eq 1); column ' . 'mod/quiz/db/install.xml (quiz.attemptonlast)'), new field('gradem => mpts eq 1); column '), new field('gradem`
+- 259 Concat: `hod', 'PARAM_INT', 'How the quiz grade is calculated across attempts: highest grade, average, first ' . 'or last attempt.', false, 1, [1, 2, => hod', 'PARAM_INT', 'or last attempt.' . 'How the quiz gr`
+- 259 ConcatOperandRemoval: `hod', 'PARAM_INT', 'How the quiz grade is calculated across attempts: highest grade, average, first ' . 'or last attempt.', f => hod', 'PARAM_INT', 'or last attempt.', f`
+- 259 ConcatOperandRemoval: `de, average, first ' . 'or last attempt.', false, 1, [1, 2, 3 => de, average, first ', false, 1, [1, 2, 3`
+- 261 FalseValue: `'or last attempt.', false, 1, [1, 2, 3, 4], => 'or last attempt.', true, 1, [1, 2, 3, 4],`
+- 262 DecrementInteger: `t attempt.', false, 1, [1, 2, 3, 4], 'qui => t attempt.', false, 0, [1, 2, 3, 4], 'qui`
+- 262 IncrementInteger: `t attempt.', false, 1, [1, 2, 3, 4], 'qui => t attempt.', false, 2, [1, 2, 3, 4], 'qui`
+- 263 DecrementInteger: `', false, 1, [1, 2, 3, 4], 'quiz_get_grad => ', false, 1, [1, 2, 2, 4], 'quiz_get_grad`
+- 263 IncrementInteger: `', false, 1, [1, 2, 3, 4], 'quiz_get_grad => ', false, 1, [1, 2, 4, 4], 'quiz_get_grad`
+- 263 DecrementInteger: `false, 1, [1, 2, 3, 4], 'quiz_get_grading => false, 1, [1, 2, 3, 3], 'quiz_get_grading`
+- 263 IncrementInteger: `false, 1, [1, 2, 3, 4], 'quiz_get_grading => false, 1, [1, 2, 3, 5], 'quiz_get_grading`
+- 265 Concat: `ions()', 'mod/quiz/lib.php:61-64 (QUIZ_GRADEHIGHEST/AVERAGE/ATTEMPTFIRST/ATTEMPTLAST); ' . 'mod/quiz/locallib.php:916 (quiz_get_grading_options()); column ' . 'mod/quiz/db/in => ions()', 'mod/quiz/loc`
+- 265 ConcatOperandRemoval: `ions()', 'mod/quiz/lib.php:61-64 (QUIZ_GRADEHIGHEST/AVERAGE/ATTEMPTFIRST/ATTEMPTLAST); ' . 'mod/quiz/locallib.php:916 (qui => ions()', 'mod/quiz/locallib.php:916 (qui`
+- 265 ConcatOperandRemoval: `AST); ' . 'mod/quiz/locallib.php:916 (quiz_get_grading_options()); column ' . 'mod/quiz/db/install.xml (quiz => AST); ' . 'mod/quiz/db/install.xml (quiz`
+- 265 Concat: `AST); ' . 'mod/quiz/locallib.php:916 (quiz_get_grading_options()); column ' . 'mod/quiz/db/install.xml (quiz.grademethod, DEFAULT=1)'), new field('decim => AST); ' . 'mod/quiz/db/install.xml (quiz.gra`
+- 265 ConcatOperandRemoval: `options()); column ' . 'mod/quiz/db/install.xml (quiz.grademethod, DEFAULT=1)'), new field('decima => options()); column '), new field('decima`
+- 273 FalseValue: `he overall grade.', false, 2, null, null, 'm => he overall grade.', true, 2, null, null, 'm`
+- 274 DecrementInteger: `all grade.', false, 2, null, null, 'mod/q => all grade.', false, 1, null, null, 'mod/q`
+- 274 IncrementInteger: `all grade.', false, 2, null, null, 'mod/q => all grade.', false, 3, null, null, 'mod/q`
+- 277 Concat: `ll, null, 'mod/quiz/mod_form.php:264-269 (select, 0-QUIZ_MAX_DECIMAL_OPTION); column ' . 'mod/quiz/db/install.xml (quiz.decimalpoints, DEFAULT=2)'), new field('quest => ll, null, 'mod/quiz/db/install.`
+- 277 ConcatOperandRemoval: `ll, null, 'mod/quiz/mod_form.php:264-269 (select, 0-QUIZ_MAX_DECIMAL_OPTION); column ' . 'mod/quiz/db/install.xml (quiz => ll, null, 'mod/quiz/db/install.xml (quiz`
+- 277 ConcatOperandRemoval: `AL_OPTION); column ' . 'mod/quiz/db/install.xml (quiz.decimalpoints, DEFAULT=2)'), new field('questi => AL_OPTION); column '), new field('questi`
+- 284 FalseValue: `"decimalpoints".', false, -1, null, null, ' => "decimalpoints".', true, -1, null, null, '`
+- 285 DecrementInteger: `lpoints".', false, -1, null, null, 'mod/q => lpoints".', false, -2, null, null, 'mod/q`
+- 285 IncrementInteger: `lpoints".', false, -1, null, null, 'mod/q => lpoints".', false, -0, null, null, 'mod/q`
+- 288 Concat: `ll, null, 'mod/quiz/mod_form.php:272-278 (select, -1 to QUIZ_MAX_Q_DECIMAL_OPTION); column ' . 'mod/quiz/db/install.xml (quiz.questiondecimalpoints, DEFAULT=-1)'), new field('quest => ll, null, 'mod/q`
+- 288 ConcatOperandRemoval: `ll, null, 'mod/quiz/mod_form.php:272-278 (select, -1 to QUIZ_MAX_Q_DECIMAL_OPTION); column ' . 'mod/quiz/db/install.xml (quiz => ll, null, 'mod/quiz/db/install.xml (quiz`
+- 288 ConcatOperandRemoval: `AL_OPTION); column ' . 'mod/quiz/db/install.xml (quiz.questiondecimalpoints, DEFAULT=-1)'), new field('questi => AL_OPTION); column '), new field('questi`
+- 294 Concat: `age', 'PARAM_INT', 'Number of questions before a new page starts when editing/shuffling. 0 = all questions on ' . 'one page.', false, 0, null, ' => age', 'PARAM_INT', 'one page.' . 'Number of question`
+- 294 ConcatOperandRemoval: `age', 'PARAM_INT', 'Number of questions before a new page starts when editing/shuffling. 0 = all questions on ' . 'one page.', false, 0 => age', 'PARAM_INT', 'one page.', false, 0`
+- 294 ConcatOperandRemoval: `= all questions on ' . 'one page.', false, 0, null, 'q => = all questions on ', false, 0, null, 'q`
+- 296 FalseValue: `on ' . 'one page.', false, 0, null, 'quiz_qu => on ' . 'one page.', true, 0, null, 'quiz_qu`
+- 297 DecrementInteger: `'one page.', false, 0, null, 'quiz_questi => 'one page.', false, -1, null, 'quiz_questi`
+- 297 IncrementInteger: `'one page.', false, 0, null, 'quiz_questi => 'one page.', false, 1, null, 'quiz_questi`
+- 300 Concat: `tions()', 'mod/quiz/locallib.php:1001 (quiz_questions_per_page_options()); column ' . 'mod/quiz/db/install.xml (quiz.questionsperpage)'), new field('navme => tions()', 'mod/quiz/db/install.xml (quiz.q`
+- 300 ConcatOperandRemoval: `tions()', 'mod/quiz/locallib.php:1001 (quiz_questions_per_page_options()); column ' . 'mod/quiz/db/install.xml (quiz => tions()', 'mod/quiz/db/install.xml (quiz`
+- 300 ConcatOperandRemoval: `options()); column ' . 'mod/quiz/db/install.xml (quiz.questionsperpage)'), new field('navmet => options()); column '), new field('navmet`
+- 306 Concat: `d', 'PARAM_ALPHA', 'Quiz navigation: jump freely between questions ("free") or proceed in order only ' . '("sequential").', false, 'free', [' => d', 'PARAM_ALPHA', '("sequential").' . 'Quiz navigation`
+- 306 ConcatOperandRemoval: `d', 'PARAM_ALPHA', 'Quiz navigation: jump freely between questions ("free") or proceed in order only ' . '("sequential").', fa => d', 'PARAM_ALPHA', '("sequential").', fa`
+- 306 ConcatOperandRemoval: `ceed in order only ' . '("sequential").', false, 'free', ['f => ceed in order only ', false, 'free', ['f`
+- 308 FalseValue: `'("sequential").', false, 'free', ['free', => '("sequential").', true, 'free', ['free',`
+- 312 Concat: `tions()', 'mod/quiz/lib.php:76-77,1849 (QUIZ_NAVMETHOD_FREE/SEQ, quiz_get_navigation_options()); column ' . 'mod/quiz/db/install.xml (quiz.navmethod, DEFAULT=free)'), new field('shuff => tions()', 'mo`
+- 312 ConcatOperandRemoval: `tions()', 'mod/quiz/lib.php:76-77,1849 (QUIZ_NAVMETHOD_FREE/SEQ, quiz_get_navigation_options()); column ' . 'mod/quiz/db/install.xml (quiz => tions()', 'mod/quiz/db/install.xml (quiz`
+- 312 ConcatOperandRemoval: `options()); column ' . 'mod/quiz/db/install.xml (quiz.navmethod, DEFAULT=free)'), new field('shuffl => options()); column '), new field('shuffl`
+- 319 FalseValue: `rted by its type.', false, 0, [0, 1], null, => rted by its type.', true, 0, [0, 1], null,`
+- 320 DecrementInteger: `its type.', false, 0, [0, 1], null, 'mod => its type.', false, -1, [0, 1], null, 'mod`
+- 320 IncrementInteger: `its type.', false, 0, [0, 1], null, 'mod => its type.', false, 1, [0, 1], null, 'mod`
+- 321 DecrementInteger: `type.', false, 0, [0, 1], null, 'mod/qui => type.', false, 0, [-1, 1], null, 'mod/qui`
+- 321 IncrementInteger: `type.', false, 0, [0, 1], null, 'mod/qui => type.', false, 0, [1, 1], null, 'mod/qui`
+- 321 ArrayItemRemoval: `type.', false, 0, [0, 1], null, 'mod/quiz/ => type.', false, 0, [1], null, 'mod/quiz/`
+- 328 Concat: `net', 'PARAM_RAW', 'Allowed IP addresses/ranges from which a quiz attempt may be started (format as in ' . 'address_in_subnet()). Empty = unrestricted.', true, null, null, => net', 'PARAM_RAW', 'addre`
+- 328 ConcatOperandRemoval: `net', 'PARAM_RAW', 'Allowed IP addresses/ranges from which a quiz attempt may be started (format as in ' . 'address_in_subnet()) => net', 'PARAM_RAW', 'address_in_subnet())`
+- 328 ConcatOperandRemoval: `rted (format as in ' . 'address_in_subnet()). Empty = unrestricted.', true, null, null, => rted (format as in ', true, null, null,`
+- 330 TrueValue: `y = unrestricted.', true, null, null, null, => y = unrestricted.', false, null, null, null,`
+- 334 Concat: `null, null, null, 'mod/quiz/mod_form.php:294-296 (text); column mod/quiz/db/install.xml ' . '(quiz.subnet, NOTNULL without DB default)'), new field('brows => null, null, null, '(quiz.subnet, NOTNULL w`
+- 334 ConcatOperandRemoval: `null, null, null, 'mod/quiz/mod_form.php:294-296 (text); column mod/quiz/db/install.xml ' . '(quiz.subnet, NOTNUL => null, null, null, '(quiz.subnet, NOTNUL`
+- 334 ConcatOperandRemoval: `uiz/db/install.xml ' . '(quiz.subnet, NOTNULL without DB default)'), new field('browse => uiz/db/install.xml '), new field('browse`
+- 340 Concat: `ARAM_ALPHANUMEXT', 'Browser restriction during the attempt, e.g. secure fullscreen mode. ' . '"-" = unrestricted.', true, null, null, => ARAM_ALPHANUMEXT', '"-" = unrestricted.' . 'Browser restriction`
+- 340 ConcatOperandRemoval: `ARAM_ALPHANUMEXT', 'Browser restriction during the attempt, e.g. secure fullscreen mode. ' . '"-" = unrestricted.' => ARAM_ALPHANUMEXT', '"-" = unrestricted.'`
+- 340 ConcatOperandRemoval: `e fullscreen mode. ' . '"-" = unrestricted.', true, null, null, => e fullscreen mode. ', true, null, null,`
+- 342 TrueValue: `" = unrestricted.', true, null, null, '\mod => " = unrestricted.', false, null, null, '\mod`
+- 346 Concat: `oices()', 'mod/quiz/classes/access_manager.php:128 (get_browser_security_choices()); ' . 'mod/quiz/mod_form.php:315-317; column mod/quiz/db/install.xml ' . '(quiz.browsers => oices()', 'mod/quiz/mod_f`
+- 346 ConcatOperandRemoval: `oices()', 'mod/quiz/classes/access_manager.php:128 (get_browser_security_choices()); ' . 'mod/quiz/mod_form.php:315-317 => oices()', 'mod/quiz/mod_form.php:315-317`
+- 346 ConcatOperandRemoval: `ty_choices()); ' . 'mod/quiz/mod_form.php:315-317; column mod/quiz/db/install.xml ' . '(quiz.browsersecurit => ty_choices()); ' . '(quiz.browsersecurit`
+- 346 Concat: `ty_choices()); ' . 'mod/quiz/mod_form.php:315-317; column mod/quiz/db/install.xml ' . '(quiz.browsersecurity, NOTNULL without DB default)'), new field('delay => ty_choices()); ' . '(quiz.browsersecuri`
+- 346 ConcatOperandRemoval: `uiz/db/install.xml ' . '(quiz.browsersecurity, NOTNULL without DB default)'), new field('delay1 => uiz/db/install.xml '), new field('delay1`
+- 354 FalseValue: `second attempts.', false, 0, null, null, 'm => second attempts.', true, 0, null, null, 'm`
+- 355 DecrementInteger: `attempts.', false, 0, null, null, 'mod/q => attempts.', false, -1, null, null, 'mod/q`
+- 355 IncrementInteger: `attempts.', false, 0, null, null, 'mod/q => attempts.', false, 1, null, null, 'mod/q`
+- 358 Concat: `ll, null, 'mod/quiz/mod_form.php:299-304 (duration, optional, hideIf attempts eq 1); column ' . 'mod/quiz/db/install.xml (quiz.delay1)'), new field('delay => ll, null, 'mod/quiz/db/install.xml (quiz.d`
+- 358 ConcatOperandRemoval: `ll, null, 'mod/quiz/mod_form.php:299-304 (duration, optional, hideIf attempts eq 1); column ' . 'mod/quiz/db/install.xml (quiz => ll, null, 'mod/quiz/db/install.xml (quiz`
+- 358 ConcatOperandRemoval: `mpts eq 1); column ' . 'mod/quiz/db/install.xml (quiz.delay1)'), new field('delay2 => mpts eq 1); column '), new field('delay2`
+- 365 FalseValue: `sequent attempts.', false, 0, null, null, 'm => sequent attempts.', true, 0, null, null, 'm`
+- 366 DecrementInteger: `attempts.', false, 0, null, null, 'mod/q => attempts.', false, -1, null, null, 'mod/q`
+- 366 IncrementInteger: `attempts.', false, 0, null, null, 'mod/q => attempts.', false, 1, null, null, 'mod/q`
+- 369 Concat: `ll, null, 'mod/quiz/mod_form.php:306-312 (duration, optional, hideIf attempts eq 1 or eq 2); column ' . 'mod/quiz/db/install.xml (quiz.delay2)'), new field('showu => ll, null, 'mod/quiz/db/install.xml`
+- 369 ConcatOperandRemoval: `ll, null, 'mod/quiz/mod_form.php:306-312 (duration, optional, hideIf attempts eq 1 or eq 2); column ' . 'mod/quiz/db/install.xml (quiz => ll, null, 'mod/quiz/db/install.xml (quiz`
+- 369 ConcatOperandRemoval: `1 or eq 2); column ' . 'mod/quiz/db/install.xml (quiz.delay2)'), new field('showus => 1 or eq 2); column '), new field('showus`
+- 376 FalseValue: `, small or large.', false, 0, [0, 1, 2], 'qu => , small or large.', true, 0, [0, 1, 2], 'qu`
+- 377 DecrementInteger: `or large.', false, 0, [0, 1, 2], 'quiz_g => or large.', false, -1, [0, 1, 2], 'quiz_g`
+- 377 IncrementInteger: `or large.', false, 0, [0, 1, 2], 'quiz_g => or large.', false, 1, [0, 1, 2], 'quiz_g`
+- 378 DecrementInteger: `large.', false, 0, [0, 1, 2], 'quiz_get_u => large.', false, 0, [-1, 1, 2], 'quiz_get_u`
+- 378 IncrementInteger: `large.', false, 0, [0, 1, 2], 'quiz_get_u => large.', false, 0, [1, 1, 2], 'quiz_get_u`
+- 378 DecrementInteger: `ge.', false, 0, [0, 1, 2], 'quiz_get_user => ge.', false, 0, [0, 0, 2], 'quiz_get_user`
+- 378 IncrementInteger: `ge.', false, 0, [0, 1, 2], 'quiz_get_user => ge.', false, 0, [0, 2, 2], 'quiz_get_user`
+- 378 DecrementInteger: `', false, 0, [0, 1, 2], 'quiz_get_user_im => ', false, 0, [0, 1, 1], 'quiz_get_user_im`
+- 378 IncrementInteger: `', false, 0, [0, 1, 2], 'quiz_get_user_im => ', false, 0, [0, 1, 3], 'quiz_get_user_im`
+- 378 ArrayItemRemoval: `large.', false, 0, [0, 1, 2], 'quiz_get_use => large.', false, 0, [1, 2], 'quiz_get_use`
+- 380 Concat: `_image_options()', 'mod/quiz/locallib.php:69-79 (QUIZ_SHOWIMAGE_NONE/SMALL/LARGE), :951 ' . '(quiz_get_user_image_options()); column mod/quiz/db/install.xml (quiz.showuserpicture)'), new field('showb `
+- 380 ConcatOperandRemoval: `_image_options()', 'mod/quiz/locallib.php:69-79 (QUIZ_SHOWIMAGE_NONE/SMALL/LARGE), :951 ' . '(quiz_get_user_image => _image_options()', '(quiz_get_user_image`
+- 380 ConcatOperandRemoval: `SMALL/LARGE), :951 ' . '(quiz_get_user_image_options()); column mod/quiz/db/install.xml (quiz.showuserpicture)'), new field('showbl => SMALL/LARGE), :951 '), new field('showbl`
+- 387 FalseValue: `the quiz attempt.', false, 0, [0, 1], null, => the quiz attempt.', true, 0, [0, 1], null,`
+- 388 DecrementInteger: `z attempt.', false, 0, [0, 1], null, 'mod => z attempt.', false, -1, [0, 1], null, 'mod`
+- 388 IncrementInteger: `z attempt.', false, 0, [0, 1], null, 'mod => z attempt.', false, 1, [0, 1], null, 'mod`
+- 389 DecrementInteger: `tempt.', false, 0, [0, 1], null, 'mod/qui => tempt.', false, 0, [-1, 1], null, 'mod/qui`
+- 389 IncrementInteger: `tempt.', false, 0, [0, 1], null, 'mod/qui => tempt.', false, 0, [1, 1], null, 'mod/qui`
+- 389 DecrementInteger: `pt.', false, 0, [0, 1], null, 'mod/quiz/m => pt.', false, 0, [0, 0], null, 'mod/quiz/m`
+- 389 IncrementInteger: `pt.', false, 0, [0, 1], null, 'mod/quiz/m => pt.', false, 0, [0, 2], null, 'mod/quiz/m`
+- 389 ArrayItemRemoval: `tempt.', false, 0, [0, 1], null, 'mod/quiz/ => tempt.', false, 0, [1], null, 'mod/quiz/`
+- 396 Concat: `ts', 'PARAM_BOOL', 'Allow offline quiz attempts in the Moodle app. Provided by access rule plugin ' . 'quizaccess_offlineattempts, not the form core itself.', false, 0, [0, 1], => ts', 'PARAM_BOOL', '`
+- 396 ConcatOperandRemoval: `ts', 'PARAM_BOOL', 'Allow offline quiz attempts in the Moodle app. Provided by access rule plugin ' . 'quizaccess_offlineat => ts', 'PARAM_BOOL', 'quizaccess_offlineat`
+- 396 ConcatOperandRemoval: `access rule plugin ' . 'quizaccess_offlineattempts, not the form core itself.', false, 0, [0, 1], => access rule plugin ', false, 0, [0, 1],`
+- 398 FalseValue: `form core itself.', false, 0, [0, 1], null, => form core itself.', true, 0, [0, 1], null,`
+- 399 DecrementInteger: `re itself.', false, 0, [0, 1], null, 'mod => re itself.', false, -1, [0, 1], null, 'mod`
+- 399 IncrementInteger: `re itself.', false, 0, [0, 1], null, 'mod => re itself.', false, 1, [0, 1], null, 'mod`
+- 400 DecrementInteger: `tself.', false, 0, [0, 1], null, 'mod/qui => tself.', false, 0, [-1, 1], null, 'mod/qui`
+- 400 IncrementInteger: `tself.', false, 0, [0, 1], null, 'mod/qui => tself.', false, 0, [1, 1], null, 'mod/qui`
+- 400 DecrementInteger: `lf.', false, 0, [0, 1], null, 'mod/quiz/a => lf.', false, 0, [0, 0], null, 'mod/quiz/a`
+- 400 IncrementInteger: `lf.', false, 0, [0, 1], null, 'mod/quiz/a => lf.', false, 0, [0, 2], null, 'mod/quiz/a`
+- 400 ArrayItemRemoval: `tself.', false, 0, [0, 1], null, 'mod/quiz/ => tself.', false, 0, [1], null, 'mod/quiz/`
+- 402 Concat: `1], null, 'mod/quiz/accessrule/offlineattempts/rule.php:100-107 (add_settings_form_fields()); column ' . 'mod/quiz/db/install.xml (quiz.allowofflineattempts)'), new field('precr => 1], null, 'mod/quiz`
+- 402 ConcatOperandRemoval: `1], null, 'mod/quiz/accessrule/offlineattempts/rule.php:100-107 (add_settings_form_fields()); column ' . 'mod/quiz/db/install.xml (quiz => 1], null, 'mod/quiz/db/install.xml (quiz`
+- 402 ConcatOperandRemoval: `_fields()); column ' . 'mod/quiz/db/install.xml (quiz.allowofflineattempts)'), new field('precre => _fields()); column '), new field('precre`
+- 408 Concat: `ts', 'PARAM_BOOL', 'Precreate attempts for learners. Only visible when administration has configured a ' . 'precreation time window AND "timeopen" is set.', false, null, [0, => ts', 'PARAM_BOOL', 'pre`
+- 408 ConcatOperandRemoval: `ts', 'PARAM_BOOL', 'Precreate attempts for learners. Only visible when administration has configured a ' . 'precreation time win => ts', 'PARAM_BOOL', 'precreation time win`
+- 408 ConcatOperandRemoval: `n has configured a ' . 'precreation time window AND "timeopen" is set.', false, null, [0, 1 => n has configured a ', false, null, [0, 1`
+- 412 DecrementInteger: `et.', false, null, [0, 1], null, 'mod/qui => et.', false, null, [-1, 1], null, 'mod/qui`
+- 412 IncrementInteger: `et.', false, null, [0, 1], null, 'mod/qui => et.', false, null, [1, 1], null, 'mod/qui`
+- 412 DecrementInteger: `', false, null, [0, 1], null, 'mod/quiz/m => ', false, null, [0, 0], null, 'mod/quiz/m`
+- 412 IncrementInteger: `', false, null, [0, 1], null, 'mod/quiz/m => ', false, null, [0, 2], null, 'mod/quiz/m`
+- 412 ArrayItemRemoval: `et.', false, null, [0, 1], null, 'mod/quiz/ => et.', false, null, [1], null, 'mod/quiz/`
+- 414 Concat: `1], null, 'mod/quiz/mod_form.php:118-135 (select, conditionally visible); column ' . 'mod/quiz/db/install.xml (quiz.precreateattempts, NULLable)')]; => 1], null, 'mod/quiz/db/install.xml (quiz.precrea`
+- 414 ConcatOperandRemoval: `1], null, 'mod/quiz/mod_form.php:118-135 (select, conditionally visible); column ' . 'mod/quiz/db/install.xml (quiz => 1], null, 'mod/quiz/db/install.xml (quiz`
+- 414 ConcatOperandRemoval: `y visible); column ' . 'mod/quiz/db/install.xml (quiz.precreateattempts, NULLable)')]; => y visible); column ')];`
+- 418 CastInt: `if ((int) $CFG->branch >= 503) => if ($CFG->branch >= 503)`
+- 418 GreaterThanOrEqualTo: `(int) $CFG->branch >= 503) { => (int) $CFG->branch > 503) {`
+- 448 ArrayItemRemoval: `get_record('quiz', ['id' => $instanceid], 'id, name, intro, => get_record('quiz', [], 'id, name, intro,`
+- 455 CastInt: `elf::grade_settings((int) $quiz->id); => elf::grade_settings($quiz->id);`
+- 456 CastString: `$details['name'] = (string) $quiz->name; => $details['name'] = $quiz->name;`
+- 457 CastString: `tate::content_field((string) $quiz->intro, $fullc => tate::content_field($quiz->intro, $fullc`
+- 459 CastString: `ferredbehaviour' => (string) $quiz->preferredbeha => ferredbehaviour' => $quiz->preferredbeha`
+- 459 CastInt: `tempts' => (string) (int) $quiz->attempts, 'gr => tempts' => (string) $quiz->attempts, 'gr`
+- 459 CastString: `our, 'attempts' => (string) (int) $quiz->attempts => our, 'attempts' => (int) $quiz->attempts`
+- 460 CastInt: `method' => (string) (int) $quiz->grademethod, => method' => (string) $quiz->grademethod,`
+- 460 CastString: `, 'grademethod' => (string) (int) $quiz->grademet => , 'grademethod' => (int) $quiz->grademet`
+- 460 CastInt: `elimit' => (string) (int) $quiz->timelimit, 'g => elimit' => (string) $quiz->timelimit, 'g`
+- 460 CastString: `od, 'timelimit' => (string) (int) $quiz->timelimi => od, 'timelimit' => (int) $quiz->timelimi`
+- 461 CastFloat: `'grade' => (string) (float) $quiz->grade, 'grade => 'grade' => (string) $quiz->grade, 'grade`
+- 461 CastString: `elimit, 'grade' => (string) (float) $quiz->grade, => elimit, 'grade' => (float) $quiz->grade,`
+- 461 CastString: `ade, 'gradepass' => (string) $gradesettings['grad => ade, 'gradepass' => $gradesettings['grad`
+- 462 CastString: `ss'], 'grademax' => (string) $gradesettings['grad => ss'], 'grademax' => $gradesettings['grad`
+- 464 CastInt: `= self::quiz_slots((int) $quiz->id); => = self::quiz_slots($quiz->id);`
+- 524 CastInt: `elf::grade_settings((int) $instance->id), ['qu => elf::grade_settings($instance->id), ['qu`
+- 525 ArrayItemRemoval: `) $instance->id), ['quizpassword' => (string) $instance->password, 'visible' => (int) $c => ) $instance->id), ['visible' => (int) $c`
+- 526 CastString: `['quizpassword' => (string) $instance->password, => ['quizpassword' => $instance->password,`
+- 527 CastInt: `sword, 'visible' => (int) $cm->visible, 'visib => sword, 'visible' => $cm->visible, 'visib`
+- 528 CastInt: `bleoncoursepage' => (int) $cm->visibleoncourse => bleoncoursepage' => $cm->visibleoncourse`
+- 529 CastInt: `age, 'groupmode' => (int) groups_get_activity_ => age, 'groupmode' => groups_get_activity_`
+- 530 CastInt: `m), 'groupingid' => (int) $cm->groupingid, 'id => m), 'groupingid' => $cm->groupingid, 'id`
+- 531 CastString: `ngid, 'idnumber' => (string) $cm->idnumber], quiz => ngid, 'idnumber' => $cm->idnumber], quiz`
+- 534 CastInt: `idge::read_feedback((int) $instance->id)); => idge::read_feedback($instance->id));`
+- 546 ArrayItemRemoval: `grade_items', ['itemtype' => 'mod', 'itemmodule' => 'quiz', ' => grade_items', ['itemmodule' => 'quiz', '`
+- 563 ArrayItemRemoval: `$daterules = [['reference' => 'timeopen', 'field' => 'timeclose', 'mode' => 'not_before']]; => $daterules = [];`
+- 564 CastInt: `if ((int) $CFG->branch >= 503) => if ($CFG->branch >= 503)`
+- 564 GreaterThanOrEqualTo: `(int) $CFG->branch >= 503) { => (int) $CFG->branch > 503) {`
+- 568 ArrayItemRemoval: `'restores_arrangement' => true, => `
+- 569 TrueValue: `res_arrangement' => true, => res_arrangement' => false,`
+- 583 ArrayItemRemoval: `return ['name', 'intro', 'timeopen', => return ['intro', 'timeopen',`
+- 608 FalseValue: `ocal_coursepilot'), false, 0, null, null, 'c => ocal_coursepilot'), true, 0, null, null, 'c`
+- 609 DecrementInteger: `ursepilot'), false, 0, null, null, 'cours => ursepilot'), false, -1, null, null, 'cours`
+- 609 IncrementInteger: `ursepilot'), false, 0, null, null, 'cours => ursepilot'), false, 1, null, null, 'cours`
+- 617 Concat: `rd', 'PARAM_TEXT', 'Password required before starting/resuming a quiz attempt. Empty = no ' . 'password. Form name for the "password" column (see blocklist) - both refer to the same ' . 'field, but on`
+- 617 ConcatOperandRemoval: `rd', 'PARAM_TEXT', 'Password required before starting/resuming a quiz attempt. Empty = no ' . 'password. Form name => rd', 'PARAM_TEXT', 'password. Form name`
+- 617 ConcatOperandRemoval: `pt. Empty = no ' . 'password. Form name for the "password" column (see blocklist) - both refer to the same ' . 'field, but only "qui => pt. Empty = no ' . 'field, but only "qui`
+- 617 Concat: `pt. Empty = no ' . 'password. Form name for the "password" column (see blocklist) - both refer to the same ' . 'field, but only "quizpassword" is writable through the form path.', false, '', null, => `
+- 617 ConcatOperandRemoval: `refer to the same ' . 'field, but only "quizpassword" is writable through the form path.', false, '', null, n => refer to the same ', false, '', null, n`
+- 620 FalseValue: `gh the form path.', false, '', null, null, ' => gh the form path.', true, '', null, null, '`
+- 624 Concat: `e, '', null, null, 'mod/quiz/mod_form.php:289-291 (passwordunmask "quizpassword"); data_preprocessing()/' . 'data_postprocessing() mirror to the "password" column'), new field('feedb => e, '', null, n`
+- 624 ConcatOperandRemoval: `e, '', null, null, 'mod/quiz/mod_form.php:289-291 (passwordunmask "quizpassword"); data_preprocessing()/' . 'data_postprocessing( => e, '', null, null, 'data_postprocessing(`
+- 624 ConcatOperandRemoval: `ta_preprocessing()/' . 'data_postprocessing() mirror to the "password" column'), new field('feedba => ta_preprocessing()/'), new field('feedba`
+- 630 Concat: `acktext', 'array', 'Overall feedback texts by grade band, sorted descending - ONE field, not a field sequence: ' . 'feedbacktext[0] is feedback for 100% down to the first boundary. Only effective when`
+- 630 ConcatOperandRemoval: `acktext', 'array', 'Overall feedback texts by grade band, sorted descending - ONE field, not a field sequence: ' . 'feedbacktext[0] is f => acktext', 'array', 'feedbacktext[0] is f`
+- 630 ConcatOperandRemoval: `ield sequence: ' . 'feedbacktext[0] is feedback for 100% down to the first boundary. Only effective when ' . '"grade" (blocklist) => ield sequence: ' . '"grade" (blocklist)`
+- 630 Concat: `ield sequence: ' . 'feedbacktext[0] is feedback for 100% down to the first boundary. Only effective when ' . '"grade" (blocklist) is greater than 0.', false, null, null => ield sequence: ' . '"grade" `
+- 630 ConcatOperandRemoval: `nly effective when ' . '"grade" (blocklist) is greater than 0.', false, null, null, => nly effective when ', false, null, null,`
+- 642 Concat: `aries', 'float[]', 'Grade boundaries for feedback bands, linked by the same key as "feedbacktext" - ' . 'one fewer than feedbacktext entries. Absolute or percentage (e.g. "50%"), must be ' . 'sorted d`
+- 642 ConcatOperandRemoval: `aries', 'float[]', 'Grade boundaries for feedback bands, linked by the same key as "feedbacktext" - ' . 'one fewer than feedb => aries', 'float[]', 'one fewer than feedb`
+- 642 ConcatOperandRemoval: `eedbacktext" - ' . 'one fewer than feedbacktext entries. Absolute or percentage (e.g. "50%"), must be ' . 'sorted descending an => eedbacktext" - ' . 'sorted descending an`
+- 642 Concat: `eedbacktext" - ' . 'one fewer than feedbacktext entries. Absolute or percentage (e.g. "50%"), must be ' . 'sorted descending and between 0 and "grade" (see combination rules).', false, null, null => e`
+- 642 ConcatOperandRemoval: `g. "50%"), must be ' . 'sorted descending and between 0 and "grade" (see combination rules).', false, null, null, => g. "50%"), must be ', false, null, null,`
+- 658 Concat: `ming, 'PARAM_BOOL', $typemeaning . ' Timing: ' . $timingmeaning . => ming, 'PARAM_BOOL', ' Timing: ' . $typemeaning . $timingmeaning .`
+- 658 ConcatOperandRemoval: `ming, 'PARAM_BOOL', $typemeaning . ' Timing: ' . $timin => ming, 'PARAM_BOOL', ' Timing: ' . $timin`
+- 658 ConcatOperandRemoval: `OL', $typemeaning . ' Timing: ' . $timingmeaning . '. => OL', $typemeaning . $timingmeaning . '.`
+- 658 Concat: `OL', $typemeaning . ' Timing: ' . $timingmeaning . '. One of 32 indi => OL', $typemeaning . $timingmeaning . ' Timing: ' . '. One of 32 indi`
+- 658 ConcatOperandRemoval: `ing . ' Timing: ' . $timingmeaning . '. One of 32 individ => ing . ' Timing: ' . '. One of 32 individ`
+- 658 Concat: `ing . ' Timing: ' . $timingmeaning . '. One of 32 individual checkboxes from ' . 'which Moodle com => ing . ' Timing: ' . '. One of 32 individual checkboxes from ' . $timingmeaning . 'which Moodle com`
+- 658 ConcatOperandRemoval: `. $timingmeaning . '. One of 32 individual checkboxes from ' . 'which Moodle compute => . $timingmeaning . 'which Moodle compute`
+- 658 Concat: `. $timingmeaning . '. One of 32 individual checkboxes from ' . 'which Moodle computes the "review' . $type . '" bitma => . $timingmeaning . 'which Moodle computes the "review' . '. One of 32 individua`
+- 658 ConcatOperandRemoval: `checkboxes from ' . 'which Moodle computes the "review' . $type . '" bitmask ( => checkboxes from ' . $type . '" bitmask (`
+- 658 Concat: `checkboxes from ' . 'which Moodle computes the "review' . $type . '" bitmask (block => checkboxes from ' . $type . 'which Moodle computes the "review' . '" bitmask (block`
+- 658 ConcatOperandRemoval: `utes the "review' . $type . '" bitmask (blocklis => utes the "review' . '" bitmask (blocklis`
+- 658 Concat: `utes the "review' . $type . '" bitmask (blocklist) - the same ' . 'vocabulary as th => utes the "review' . '" bitmask (blocklist) - the same ' . $type . 'vocabulary as th`
+- 658 ConcatOperandRemoval: `"review' . $type . '" bitmask (blocklist) - the same ' . 'vocabulary as the ei => "review' . $type . 'vocabulary as the ei`
+- 658 Concat: `"review' . $type . '" bitmask (blocklist) - the same ' . 'vocabulary as the eight blocked columns, broken down by review time.', false, 0, [0, 1], => "review' . $type . 'vocabulary as the eight blocke`
+- 658 ConcatOperandRemoval: `cklist) - the same ' . 'vocabulary as the eight blocked columns, broken down by review time.', false, 0, [0, 1], => cklist) - the same ', false, 0, [0, 1],`
+- 661 FalseValue: `n by review time.', false, 0, [0, 1], null, => n by review time.', true, 0, [0, 1], null,`
+- 662 DecrementInteger: `view time.', false, 0, [0, 1], null, 'mod => view time.', false, -1, [0, 1], null, 'mod`
+- 662 IncrementInteger: `view time.', false, 0, [0, 1], null, 'mod => view time.', false, 1, [0, 1], null, 'mod`
+- 665 Concat: `1], null, 'mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); ' . 'mod/quiz/lib.php: quiz_process_options() (bitmask assembly)'); => 1], null, 'mod/quiz/lib.php: quiz_process_opt`
+- 665 ConcatOperandRemoval: `1], null, 'mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); ' . 'mod/quiz/lib.php: quiz_proces => 1], null, 'mod/quiz/lib.php: quiz_proces`
+- 665 ConcatOperandRemoval: `_options_group()); ' . 'mod/quiz/lib.php: quiz_process_options() (bitmask assembly)'); => _options_group()); ');`
+- 702 Concat: `return ['"timeclose" must not precede "timeopen" when both are set (mod/quiz/mod_form.php: ' . 'validation()).', '"graceperiod" mu => return ['validation()).' . '"timeclose" must not precede "timeopen`
+- 702 ConcatOperandRemoval: `quiz/mod_form.php: ' . 'validation()).', '"graceperiod" mus => quiz/mod_form.php: ', '"graceperiod" mus`
+- 704 Concat: `()).', '"graceperiod" must exceed a server-wide minimum duration (admin setting ' . '"graceperiodmin") when "overduehandling"="graceperiod" (validation()).', '"feedbackboundar => ()).', '"graceperiodm`
+- 704 ConcatOperandRemoval: `()).', '"graceperiod" must exceed a server-wide minimum duration (admin setting ' . '"graceperiodmin") when "overdueh => ()).', '"graceperiodmin") when "overdueh`
+- 704 ConcatOperandRemoval: `ion (admin setting ' . '"graceperiodmin") when "overduehandling"="graceperiod" (validation()).', '"feedbackboundari => ion (admin setting ', '"feedbackboundari`
+- 706 Concat: `(validation()).', '"feedbackboundaries[]" must be sorted descending and each value must be between 0 and "grade" ' . '; the count must be exactly one fewer than "feedbacktext[]" (validation()).', get_`
+- 706 ConcatOperandRemoval: `(validation()).', '"feedbackboundaries[]" must be sorted descending and each value must be between 0 and "grade" ' . '; the count must be => (validation()).', '; the count must be`
+- 706 ConcatOperandRemoval: `ween 0 and "grade" ' . '; the count must be exactly one fewer than "feedbacktext[]" (validation()).', get_string('quizgr => ween 0 and "grade" ', get_string('quizgr`
+- 719 Concat: `return ['"timeopen"/"timeclose" each create or update a calendar event ' . '(mod/quiz/lib.php: quiz_update_events()).']; => return ['(mod/quiz/lib.php: quiz_update_events()).' . '"timeopen"/"timeclose`
+- 719 ConcatOperandRemoval: `e a calendar event ' . '(mod/quiz/lib.php: quiz_update_events()).']; => e a calendar event '];`
+- 731 UnwrapArrayMerge: `rn ['mini-check' => array_merge([ 'preferredbehaviour' => 'immediatefeedback', 'attempts' => 0, 'grademethod' => 1, // QUIZ_GRADEHIGHEST. 'timelimit' => 0, 'questionsperpage' => 1, 'navmethod' => 'fre`
+- 736 DecrementInteger: `uestionsperpage' => 1, => uestionsperpage' => 0,`
+- 736 IncrementInteger: `uestionsperpage' => 1, => uestionsperpage' => 2,`
+- 738 DecrementInteger: `'shuffleanswers' => 1, => 'shuffleanswers' => 0,`
+- 739 IncrementInteger: `'attemptonlast' => 0, => 'attemptonlast' => 1,`
+- 740 DecrementInteger: `'delay1' => 0, => 'delay1' => -1,`
+- 740 IncrementInteger: `'delay1' => 0, => 'delay1' => 1,`
+- 741 DecrementInteger: `'delay2' => 0, => 'delay2' => -1,`
+- 741 IncrementInteger: `'delay2' => 0, => 'delay2' => 1,`
+- 742 DecrementInteger: `'decimalpoints' => 2, => 'decimalpoints' => 1,`
+- 742 IncrementInteger: `'decimalpoints' => 2, => 'decimalpoints' => 3,`
+- 745 ArrayItemRemoval: `['attempt', 'correctness', 'maxma => ['correctness', 'maxma`
+- 747 ArrayItemRemoval: `['overallfeedback'] => []`
+- 749 UnwrapArrayMerge: `'progress-check' => array_merge([ 'preferredbehaviour' => 'deferredcbm', 'attempts' => 0, 'grademethod' => 1, // QUIZ_GRADEHIGHEST. 'timelimit' => 0, 'questionsperpage' => 0, 'navmethod' => 'free', 's`
+- 751 DecrementInteger: `'attempts' => 0, => 'attempts' => -1,`
+- 754 DecrementInteger: `uestionsperpage' => 0, => uestionsperpage' => -1,`
+- 754 IncrementInteger: `uestionsperpage' => 0, => uestionsperpage' => 1,`
+- 756 DecrementInteger: `'shuffleanswers' => 1, => 'shuffleanswers' => 0,`
+- 757 IncrementInteger: `'attemptonlast' => 0, => 'attemptonlast' => 1,`
+- 759 DecrementInteger: `'delay2' => 300, => 'delay2' => 299,`
+- 759 IncrementInteger: `'delay2' => 300, => 'delay2' => 301,`
+- 760 DecrementInteger: `'decimalpoints' => 2, => 'decimalpoints' => 1,`
+- 760 IncrementInteger: `'decimalpoints' => 2, => 'decimalpoints' => 3,`
+- 762 ArrayItemRemoval: `w_bundle_fields(['maxmarks', 'marks'], ['attempt', ' => w_bundle_fields(['marks'], ['attempt', '`
+- 763 ArrayItemRemoval: `marks', 'marks'], ['attempt', 'correctness', 'maxma => marks', 'marks'], ['correctness', 'maxma`
+- 765 UnwrapArrayMerge: `)), 'final-test' => array_merge([ 'preferredbehaviour' => 'deferredfeedback', 'attempts' => 2, 'grademethod' => 2, // QUIZ_GRADEAVERAGE. 'timelimit' => 0, 'questionsperpage' => 0, 'navmethod' => 'free`
+- 770 DecrementInteger: `uestionsperpage' => 0, => uestionsperpage' => -1,`
+- 770 IncrementInteger: `uestionsperpage' => 0, => uestionsperpage' => 1,`
+- 772 DecrementInteger: `'shuffleanswers' => 1, => 'shuffleanswers' => 0,`
+- 773 IncrementInteger: `'attemptonlast' => 0, => 'attemptonlast' => 1,`
+- 774 DecrementInteger: `'delay1' => 900, => 'delay1' => 899,`
+- 774 IncrementInteger: `'delay1' => 900, => 'delay1' => 901,`
+- 775 DecrementInteger: `'delay2' => 900, => 'delay2' => 899,`
+- 775 IncrementInteger: `'delay2' => 900, => 'delay2' => 901,`
+- 776 DecrementInteger: `'decimalpoints' => 2, => 'decimalpoints' => 1,`
+- 776 IncrementInteger: `'decimalpoints' => 2, => 'decimalpoints' => 3,`
+- 779 ArrayItemRemoval: `bundle_fields([], ['attempt', 'correctness', 'maxma => bundle_fields([], ['correctness', 'maxma`
+- 797 Foreach_: `foreach (array_keys(self::REVIEW_TYPES) as $type) { => foreach ([] as $type) {`
+- 798 DecrementInteger: `uringtypes, true) ? 1 : 0; => uringtypes, true) ? 0 : 0;`
+- 798 IncrementInteger: `gtypes, true) ? 1 : 0; => gtypes, true) ? 1 : 1;`
+- 798 Ternary: `uringtypes, true) ? 1 : 0; => uringtypes, true) ? 0 : 1;`
+- 799 DecrementInteger: `tempttypes, true) ? 1 : 0; => tempttypes, true) ? 0 : 0;`
+- 799 IncrementInteger: `ttypes, true) ? 1 : 0; => ttypes, true) ? 1 : 1;`
+- 799 Ternary: `tempttypes, true) ? 1 : 0; => tempttypes, true) ? 0 : 1;`
+- 804 ArrayOneItem: `return $result; => return count($result) > 1 ? array_slice($result, 0, 1, true) : $result;`
+- 855 DecrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = -1): string`
+- 855 IncrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = 1): string`
+- 858 GreaterThan: `if ($instanceid > 0) { => if ($instanceid >= 0) {`
+- 861 FalseValue: `ype($slot['qtype'], false)->is_manual_graded => ype($slot['qtype'], true)->is_manual_graded`
+
+## Plugin/src/local_coursepilot/classes/catalog/quiz_write.php (14 überlebt, 0 offen)
+
+- 70 CastInt (ignoriert): `oduleinfo->module = (int) $module->id; => oduleinfo->module = $module->id;`
+- 91 CastInt (ignoriert): `$cmid = (int) $created->coursemodu => $cmid = $created->coursemodu`
+- 135 CastFloat (ignoriert): `ade >= 0 ? $grade : (float) $quiz->grade; => ade >= 0 ? $grade : $quiz->grade;`
+- 138 CastFloat (ignoriert): `= 0 && abs($grade - (float) $quiz->grade) > 1.0E => = 0 && abs($grade - $quiz->grade) > 1.0E`
+- 143 CastInt (ignoriert): `:apply_grade_change((int) $quiz->id, $grade); => :apply_grade_change($quiz->id, $grade);`
+- 146 CastInt (ignoriert): `course = get_course((int) $cm->course); => course = get_course($cm->course);`
+- 203 CastString (ignoriert): `nfo->quizpassword = (string) $quiz->password; => nfo->quizpassword = $quiz->password;`
+- 206 CastInt (ignoriert): `edback($moduleinfo, (int) $quiz->id, $feedback => edback($moduleinfo, $quiz->id, $feedback`
+- 211 MethodCallRemoval (ignoriert): `// Get_moduleinfo_data() returns gradepass in display format // ("0,00"). Writing it back unchecked fails at the database after the // change has already persisted. pseudofield_carry_forward::unformat`
+- 279 BitwiseOr (ignoriert): `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 330 UnwrapArrayUnique (ignoriert): `foreach (array_unique($fieldnames) as $fieldname) { => foreach ($fieldnames as $fieldname) {`
+- 367 CastInt (ignoriert): `eopen', $merged) && (int) $after['timeopen'] > => eopen', $merged) && $after['timeopen'] >`
+- 368 CastInt (ignoriert): `close', $merged) && (int) $after['timeclose'] => close', $merged) && $after['timeclose']`
+- 393 CastObject (ignoriert): `local_coursepilot', (object) ['field' => $change[ => local_coursepilot', ['field' => $change[`
+
+## Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php (27 überlebt, 26 offen)
+
+- 75 DecrementInteger: `review' . $type} ?? 0); => review' . $type} ?? -1);`
+- 75 IncrementInteger: `review' . $type} ?? 0); => review' . $type} ?? 1);`
+- 75 CastInt: `$mask = (int) ($quiz->{'review' . $type} ?? 0); => $mask = $quiz->{'review' . $type} ?? 0;`
+- 77 IncrementInteger: `g] = $mask & $bit ? 1 : 0; => g] = $mask & $bit ? 2 : 0;`
+- 93 ArrayItemRemoval: `s('quiz_feedback', ['quizid' => $quizid], 'mingrade DESC, i => s('quiz_feedback', [], 'mingrade DESC, i`
+- 97 CastString: `$texts[] = (string) $record->feedbacktex => $texts[] = $record->feedbacktex`
+- 99 CastFloat: `$boundaries[] = (float) $record->mingrade; => $boundaries[] = $record->mingrade;`
+- 118 UnwrapArrayValues: `foreach (array_values($texts) as $index => $text) => foreach ($texts as $index => $text)`
+- 119 CastString: `index] = ['text' => (string) $text, 'format' => F => index] = ['text' => $text, 'format' => F`
+- 119 DecrementInteger: `T_HTML, 'itemid' => 0]; => T_HTML, 'itemid' => -1];`
+- 119 IncrementInteger: `T_HTML, 'itemid' => 0]; => T_HTML, 'itemid' => 1];`
+- 121 UnwrapArrayValues: `foreach (array_values($boundaries) as $index => $bound => foreach ($boundaries as $index => $bound`
+- 133 CastFloat: `$configured = (float) get_config('quiz', ' => $configured = get_config('quiz', '`
+- 134 GreaterThan: `return $configured > 0 ? $configured : 1 => return $configured >= 0 ? $configured : 1`
+- 215 CastInt (ignoriert): `$min = (int) get_config('quiz', ' => $min = get_config('quiz', '`
+- 262 GreaterThanOrEqualTo: `c <= 0 || $numeric >= $grade) { => c <= 0 || $numeric > $grade) {`
+- 267 GreaterThanOrEqualTo: `= null && $numeric >= $previous) { => = null && $numeric > $previous) {`
+- 282 ArrayItemRemoval: `oursepilot', '', ['modname' => 'quiz', 'message' => $message] => oursepilot', '', ['message' => $message]`
+- 298 CastString: `$value = trim((string) $boundary); => $value = trim($boundary);`
+- 298 UnwrapTrim: `$value = trim((string) $boundary); => $value = (string) $boundary;`
+- 299 NotIdentical: `if ($value !== '' && $value[strl => if ($value === '' && $value[strl`
+- 299 IncrementInteger: `ue[strlen($value) - 1] === '%') { => ue[strlen($value) - 2] === '%') {`
+- 299 LogicalAndAllSubExprNegation: `if ($value !== '' && $value[strlen($value) - 1] === '%') { => if (!($value !== '') && !($value[strlen($value) - 1] === '%')) {`
+- 300 UnwrapSubstr: `return (float) trim(substr($value, 0, -1)) * $grade / 100.0; => return (float) trim($value) * $grade / 100.0;`
+- 300 UnwrapTrim: `return (float) trim(substr($value, 0, -1)) * $grade / 100.0; => return (float) substr($value, 0, -1) * $grade / 100.0;`
+- 300 CastFloat: `return (float) trim(substr($value, => return trim(substr($value,`
+- 302 CastFloat: `return (float) $value; => return $value;`
+
+## Plugin/src/local_coursepilot/classes/catalog/registry.php (4 überlebt, 4 offen)
+
+- 102 ArrayItemRemoval: `_exists('modules', ['name' => $modname]) || !plugin_suppor => _exists('modules', []) || !plugin_suppor`
+- 102 LogicalOr: `name' => $modname]) || !plugin_supports('m => name' => $modname]) && !plugin_supports('m`
+- 103 FalseValue: `URE_BACKUP_MOODLE2, false)) { => URE_BACKUP_MOODLE2, true)) {`
+- 124 ArrayItem: `modname, 'modnames' => implode(', ', self => modname, 'modnames' > implode(', ', self`
+
+## Plugin/src/local_coursepilot/classes/catalog/resource.php (108 überlebt, 108 offen)
+
+- 66 TrueValue: `he file activity.', true, null, null, null, => he file activity.', false, null, null, null,`
+- 75 Concat: `tro', 'PARAM_RAW', 'Description (intro), optionally shown above the file (pseudofield "printintro" ' . 'controls whether it is shown; only effective for certain display values).', false, null, null =>`
+- 75 ConcatOperandRemoval: `tro', 'PARAM_RAW', 'Description (intro), optionally shown above the file (pseudofield "printintro" ' . 'controls whether it => tro', 'PARAM_RAW', 'controls whether it`
+- 75 ConcatOperandRemoval: `field "printintro" ' . 'controls whether it is shown; only effective for certain display values).', false, null, null, => field "printintro" ', false, null, null,`
+- 87 FalseValue: `mat of the intro.', false, FORMAT_HTML, null => mat of the intro.', true, FORMAT_HTML, null`
+- 96 Concat: `lay', 'PARAM_INT', 'File display (e.g. automatic, embedded, new window, popup, direct ' . 'open/download). Available options are a subset ' . 'configured by => lay', 'PARAM_INT', 'open/download). Avai`
+- 96 ConcatOperandRemoval: `lay', 'PARAM_INT', 'File display (e.g. automatic, embedded, new window, popup, direct ' . 'open/download). Avai => lay', 'PARAM_INT', 'open/download). Avai`
+- 96 ConcatOperandRemoval: `popup, direct ' . 'open/download). Available options are a subset ' . 'configured by Moodle => popup, direct ' . 'configured by Moodle`
+- 96 Concat: `popup, direct ' . 'open/download). Available options are a subset ' . 'configured by Moodle administration, not a fixed list.', false, 0, null, ' => popup, direct ' . 'configured by Moodle administrat`
+- 96 ConcatOperandRemoval: `tions are a subset ' . 'configured by Moodle administration, not a fixed list.', false, 0, null, 'r => tions are a subset ', false, 0, null, 'r`
+- 99 FalseValue: `not a fixed list.', false, 0, null, 'resourc => not a fixed list.', true, 0, null, 'resourc`
+- 100 DecrementInteger: `ixed list.', false, 0, null, 'resourcelib => ixed list.', false, -1, null, 'resourcelib`
+- 100 IncrementInteger: `ixed list.', false, 0, null, 'resourcelib => ixed list.', false, 1, null, 'resourcelib`
+- 103 Concat: `displayoptions()', 'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-constants), :111 (resourcelib_get_displayoptions()); ' . 'Subset from admin_setting_configmultiselect(\'resource/displayoptions\', `
+- 103 ConcatOperandRemoval: `displayoptions()', 'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-constants), :111 (resourcelib_get_displayoptions()); ' . 'Subset from admin_se => displayoptions()', 'Subset from admin_se`
+- 103 ConcatOperandRemoval: `layoptions()); ' . 'Subset from admin_setting_configmultiselect(\'resource/displayoptions\', ...) in ' . 'mod/resource/setting => layoptions()); ' . 'mod/resource/setting`
+- 103 Concat: `layoptions()); ' . 'Subset from admin_setting_configmultiselect(\'resource/displayoptions\', ...) in ' . 'mod/resource/settings.php:28-42; column mod/resource/db/install.xml (resource.display)'), new `
+- 103 ConcatOperandRemoval: `options\', ...) in ' . 'mod/resource/settings.php:28-42; column mod/resource/db/install.xml (resource.display)'), new field('filter => options\', ...) in '), new field('filter`
+- 110 Concat: `les', 'PARAM_INT', 'Apply text filters to file content: no filter (0), all files (1), or HTML files only ' . '(2).', false, 0, [0, 1, => les', 'PARAM_INT', '(2).' . 'Apply text filters to file content`
+- 110 ConcatOperandRemoval: `les', 'PARAM_INT', 'Apply text filters to file content: no filter (0), all files (1), or HTML files only ' . '(2).', false, 0, [0, => les', 'PARAM_INT', '(2).', false, 0, [0,`
+- 110 ConcatOperandRemoval: `or HTML files only ' . '(2).', false, 0, [0, 1, 2 => or HTML files only ', false, 0, [0, 1, 2`
+- 112 FalseValue: `es only ' . '(2).', false, 0, [0, 1, 2], nul => es only ' . '(2).', true, 0, [0, 1, 2], nul`
+- 113 DecrementInteger: `' . '(2).', false, 0, [0, 1, 2], null, ' => ' . '(2).', false, -1, [0, 1, 2], null, '`
+- 113 IncrementInteger: `' . '(2).', false, 0, [0, 1, 2], null, ' => ' . '(2).', false, 1, [0, 1, 2], null, '`
+- 114 DecrementInteger: `'(2).', false, 0, [0, 1, 2], null, 'mod/ => '(2).', false, 0, [-1, 1, 2], null, 'mod/`
+- 114 IncrementInteger: `'(2).', false, 0, [0, 1, 2], null, 'mod/ => '(2).', false, 0, [1, 1, 2], null, 'mod/`
+- 114 DecrementInteger: `2).', false, 0, [0, 1, 2], null, 'mod/res => 2).', false, 0, [0, 0, 2], null, 'mod/res`
+- 114 IncrementInteger: `2).', false, 0, [0, 1, 2], null, 'mod/res => 2).', false, 0, [0, 2, 2], null, 'mod/res`
+- 114 DecrementInteger: `', false, 0, [0, 1, 2], null, 'mod/resour => ', false, 0, [0, 1, 1], null, 'mod/resour`
+- 114 IncrementInteger: `', false, 0, [0, 1, 2], null, 'mod/resour => ', false, 0, [0, 1, 3], null, 'mod/resour`
+- 114 ArrayItemRemoval: `'(2).', false, 0, [0, 1, 2], null, 'mod/re => '(2).', false, 0, [1, 2], null, 'mod/re`
+- 116 Concat: `null, 'mod/resource/mod_form.php:132-134 (option list none/allfiles/htmlfilesonly); column ' . 'mod/resource/db/install.xml (resource.filterfiles)')]; => null, 'mod/resource/db/install.xml (resource.f`
+- 116 ConcatOperandRemoval: `null, 'mod/resource/mod_form.php:132-134 (option list none/allfiles/htmlfilesonly); column ' . 'mod/resource/db/install.xml (reso => null, 'mod/resource/db/install.xml (reso`
+- 116 ConcatOperandRemoval: `filesonly); column ' . 'mod/resource/db/install.xml (resource.filterfiles)')]; => filesonly); column ')];`
+- 149 UnwrapArrayMap: `return array_map(static fn(field $f): string => $f->name, self::fields()); => return self::fields();`
+- 162 Concat: `ths (JSON array)', 'Files to attach, including the main file - each entry is a path in the material store ' . '(Spec 0018 §4.2, e.g. ["worksheet.pdf"]), uploaded there first ' . 'using upload_m => ths`
+- 162 ConcatOperandRemoval: `ths (JSON array)', 'Files to attach, including the main file - each entry is a path in the material store ' . '(Spec 0018 §4.2, e.g => ths (JSON array)', '(Spec 0018 §4.2, e.g`
+- 162 ConcatOperandRemoval: `material store ' . '(Spec 0018 §4.2, e.g. ["worksheet.pdf"]), uploaded there first ' . 'using upload_materia => material store ' . 'using upload_materia`
+- 162 Concat: `material store ' . '(Spec 0018 §4.2, e.g. ["worksheet.pdf"]), uploaded there first ' . 'using upload_material_file. REQUIRED FIELD: WITHOUT a main file, resource creates a broken ' . 'activity page =>`
+- 162 ConcatOperandRemoval: `ed there first ' . 'using upload_material_file. REQUIRED FIELD: WITHOUT a main file, resource creates a broken ' . 'activity page - unli => ed there first ' . 'activity page - unli`
+- 162 Concat: `ed there first ' . 'using upload_material_file. REQUIRED FIELD: WITHOUT a main file, resource creates a broken ' . 'activity page - unlike folder, an empty state is invalid here.', true, null, null, =`
+- 162 ConcatOperandRemoval: `e creates a broken ' . 'activity page - unlike folder, an empty state is invalid here.', true, null, null, => e creates a broken ', true, null, null,`
+- 170 Concat: `null, null, null, 'mod/resource/locallib.php: resource_set_mainfile(); mod/resource/view.php:69-71 ' . '(resource_print_filenotfound() without a file); local_coursepilot\material_files::resolve_into_d`
+- 170 ConcatOperandRemoval: `null, null, null, 'mod/resource/locallib.php: resource_set_mainfile(); mod/resource/view.php:69-71 ' . '(resource_print_file => null, null, null, '(resource_print_file`
+- 170 ConcatOperandRemoval: `rce/view.php:69-71 ' . '(resource_print_filenotfound() without a file); local_coursepilot\material_files::resolve_into_draft()'), new field('printi => rce/view.php:69-71 '), new field('printi`
+- 176 Concat: `ro', 'PARAM_BOOL', 'Show intro as well - only effective for display=0 (auto), 1 (embed) or 2 (frame). Not a ' . 'DB field - stored in the serialized "displayoptions" column.', false, 0, [0, 1], => ro'`
+- 176 ConcatOperandRemoval: `ro', 'PARAM_BOOL', 'Show intro as well - only effective for display=0 (auto), 1 (embed) or 2 (frame). Not a ' . 'DB field - stored in => ro', 'PARAM_BOOL', 'DB field - stored in`
+- 176 ConcatOperandRemoval: `r 2 (frame). Not a ' . 'DB field - stored in the serialized "displayoptions" column.', false, 0, [0, 1], => r 2 (frame). Not a ', false, 0, [0, 1],`
+- 178 FalseValue: `yoptions" column.', false, 0, [0, 1], null, => yoptions" column.', true, 0, [0, 1], null,`
+- 179 DecrementInteger: `s" column.', false, 0, [0, 1], null, 'mod => s" column.', false, -1, [0, 1], null, 'mod`
+- 179 IncrementInteger: `s" column.', false, 0, [0, 1], null, 'mod => s" column.', false, 1, [0, 1], null, 'mod`
+- 180 DecrementInteger: `olumn.', false, 0, [0, 1], null, 'mod/res => olumn.', false, 0, [-1, 1], null, 'mod/res`
+- 180 IncrementInteger: `olumn.', false, 0, [0, 1], null, 'mod/res => olumn.', false, 0, [1, 1], null, 'mod/res`
+- 180 DecrementInteger: `mn.', false, 0, [0, 1], null, 'mod/resour => mn.', false, 0, [0, 0], null, 'mod/resour`
+- 180 IncrementInteger: `mn.', false, 0, [0, 1], null, 'mod/resour => mn.', false, 0, [0, 2], null, 'mod/resour`
+- 180 ArrayItemRemoval: `olumn.', false, 0, [0, 1], null, 'mod/resou => olumn.', false, 0, [1], null, 'mod/resou`
+- 182 Concat: `, 0, [0, 1], null, 'mod/resource/lib.php (resource_set_display_options(): only set when display in ' . '[AUTO, EMBED, FRAME])'), new field('popup => , 0, [0, 1], null, '[AUTO, EMBED, FRAME])' . 'mod/r`
+- 182 ConcatOperandRemoval: `, 0, [0, 1], null, 'mod/resource/lib.php (resource_set_display_options(): only set when display in ' . '[AUTO, EMBED, FRAME] => , 0, [0, 1], null, '[AUTO, EMBED, FRAME]`
+- 182 ConcatOperandRemoval: `et when display in ' . '[AUTO, EMBED, FRAME])'), new field('popupw => et when display in '), new field('popupw`
+- 188 Concat: `dth', 'PARAM_INT', 'Window width in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', false, 620, null, => dth', 'PARAM_INT', '"displayoptions".' . 'Win`
+- 188 ConcatOperandRemoval: `dth', 'PARAM_INT', 'Window width in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', => dth', 'PARAM_INT', '"displayoptions".',`
+- 188 ConcatOperandRemoval: `field - stored in ' . '"displayoptions".', false, 620, null, => field - stored in ', false, 620, null,`
+- 190 FalseValue: `"displayoptions".', false, 620, null, null, => "displayoptions".', true, 620, null, null,`
+- 191 DecrementInteger: `options".', false, 620, null, null, 'mod/r => options".', false, 619, null, null, 'mod/r`
+- 191 IncrementInteger: `ptions".', false, 620, null, null, 'mod/r => ptions".', false, 621, null, null, 'mod/r`
+- 194 Concat: `, 620, null, null, 'mod/resource/lib.php (resource_set_display_options(): only set when ' . 'display==RESOURCELIB_DISPLAY_POPUP)'), new field('popup => , 620, null, null, 'display==RESOURCELIB_DISPLAY`
+- 194 ConcatOperandRemoval: `, 620, null, null, 'mod/resource/lib.php (resource_set_display_options(): only set when ' . 'display==RESOURCELIB => , 620, null, null, 'display==RESOURCELIB`
+- 194 ConcatOperandRemoval: `s(): only set when ' . 'display==RESOURCELIB_DISPLAY_POPUP)'), new field('popuph => s(): only set when '), new field('popuph`
+- 200 Concat: `ght', 'PARAM_INT', 'Window height in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', false, 450, null, => ght', 'PARAM_INT', '"displayoptions".' . 'Wi`
+- 200 ConcatOperandRemoval: `ght', 'PARAM_INT', 'Window height in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', => ght', 'PARAM_INT', '"displayoptions".',`
+- 200 ConcatOperandRemoval: `field - stored in ' . '"displayoptions".', false, 450, null, => field - stored in ', false, 450, null,`
+- 202 FalseValue: `"displayoptions".', false, 450, null, null, => "displayoptions".', true, 450, null, null,`
+- 203 DecrementInteger: `options".', false, 450, null, null, 'mod/r => options".', false, 449, null, null, 'mod/r`
+- 203 IncrementInteger: `ptions".', false, 450, null, null, 'mod/r => ptions".', false, 451, null, null, 'mod/r`
+- 206 Concat: `, 450, null, null, 'mod/resource/lib.php (resource_set_display_options(): only set when ' . 'display==RESOURCELIB_DISPLAY_POPUP)'), new field( => , 450, null, null, 'display==RESOURCELIB_DISPLAY_POPUP`
+- 206 ConcatOperandRemoval: `, 450, null, null, 'mod/resource/lib.php (resource_set_display_options(): only set when ' . 'display==RESOURCELIB => , 450, null, null, 'display==RESOURCELIB`
+- 206 ConcatOperandRemoval: `s(): only set when ' . 'display==RESOURCELIB_DISPLAY_POPUP)'), new field( => s(): only set when '), new field(`
+- 213 FalseValue: `false, => true,`
+- 214 DecrementInteger: `0, => -1,`
+- 214 IncrementInteger: `0, => 1,`
+- 215 DecrementInteger: `[0, 1], => [-1, 1],`
+- 215 IncrementInteger: `[0, 1], => [1, 1],`
+- 215 DecrementInteger: `[0, 1], => [0, 0],`
+- 215 IncrementInteger: `[0, 1], => [0, 2],`
+- 215 ArrayItemRemoval: `[0, 1], => [1],`
+- 224 FalseValue: `false, => true,`
+- 225 DecrementInteger: `0, => -1,`
+- 225 IncrementInteger: `0, => 1,`
+- 226 DecrementInteger: `[0, 1], => [-1, 1],`
+- 226 IncrementInteger: `[0, 1], => [1, 1],`
+- 226 DecrementInteger: `[0, 1], => [0, 0],`
+- 226 IncrementInteger: `[0, 1], => [0, 2],`
+- 226 ArrayItemRemoval: `[0, 1], => [1],`
+- 235 FalseValue: `false, => true,`
+- 236 DecrementInteger: `0, => -1,`
+- 236 IncrementInteger: `0, => 1,`
+- 237 DecrementInteger: `[0, 1], => [-1, 1],`
+- 237 IncrementInteger: `[0, 1], => [1, 1],`
+- 237 DecrementInteger: `[0, 1], => [0, 0],`
+- 237 IncrementInteger: `[0, 1], => [0, 2],`
+- 237 ArrayItemRemoval: `[0, 1], => [1],`
+- 276 Concat: `return ['resource requires "files" on creation (list of material store paths, Spec 0018 ' . '§4.2): without a main file, the activity page is broken (Spec 0015 §4.3), so create_module ' . 'fails witho`
+- 276 ConcatOperandRemoval: `return ['resource requires "files" on creation (list of material store paths, Spec 0018 ' . '§4.2): without a mai => return ['§4.2): without a mai`
+- 276 ConcatOperandRemoval: `ths, Spec 0018 ' . '§4.2): without a main file, the activity page is broken (Spec 0015 §4.3), so create_module ' . 'fails without "files => ths, Spec 0018 ' . 'fails without "files`
+- 276 Concat: `ths, Spec 0018 ' . '§4.2): without a main file, the activity page is broken (Spec 0015 §4.3), so create_module ' . 'fails without "files" before anything is created.']; => ths, Spec 0018 ' . 'fails wi`
+- 276 ConcatOperandRemoval: `, so create_module ' . 'fails without "files" before anything is created.']; => , so create_module '];`
+- 324 DecrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = -1): string`
+- 324 IncrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = 1): string`
+
+## Plugin/src/local_coursepilot/classes/catalog/shared_block.php (56 überlebt, 56 offen)
+
+- 66 ArrayItemRemoval: `coursepilot', '', ['field' => $fieldname, 'modname' => $modname => coursepilot', '', ['modname' => $modname`
+- 85 Throw_: `throw new \moodle_exceptio => new \moodle_exceptio`
+- 110 FalseValue: `rom learners (0).', false, 1, [0, 1], null, => rom learners (0).', true, 1, [0, 1], null,`
+- 111 DecrementInteger: `rners (0).', false, 1, [0, 1], null, 'lib => rners (0).', false, 0, [0, 1], null, 'lib`
+- 111 IncrementInteger: `rners (0).', false, 1, [0, 1], null, 'lib => rners (0).', false, 2, [0, 1], null, 'lib`
+- 119 Concat: `ge', 'PARAM_BOOL', 'Stealth: at 0 the activity is accessible (when linked or used as a prerequisite ' . '), but is absent from the course page list.', false, 1, [0, 1], => ge', 'PARAM_BOOL', '), but i`
+- 119 ConcatOperandRemoval: `ge', 'PARAM_BOOL', 'Stealth: at 0 the activity is accessible (when linked or used as a prerequisite ' . '), but is absent fro => ge', 'PARAM_BOOL', '), but is absent fro`
+- 119 ConcatOperandRemoval: `as a prerequisite ' . '), but is absent from the course page list.', false, 1, [0, 1], => as a prerequisite ', false, 1, [0, 1],`
+- 121 FalseValue: `course page list.', false, 1, [0, 1], null, => course page list.', true, 1, [0, 1], null,`
+- 122 DecrementInteger: `page list.', false, 1, [0, 1], null, 'lib => page list.', false, 0, [0, 1], null, 'lib`
+- 122 IncrementInteger: `page list.', false, 1, [0, 1], null, 'lib => page list.', false, 2, [0, 1], null, 'lib`
+- 131 FalseValue: `r visible groups.', false, 0, [0, 1, 2], nul => r visible groups.', true, 0, [0, 1, 2], nul`
+- 132 DecrementInteger: `le groups.', false, 0, [0, 1, 2], null, ' => le groups.', false, -1, [0, 1, 2], null, '`
+- 132 IncrementInteger: `le groups.', false, 0, [0, 1, 2], null, ' => le groups.', false, 1, [0, 1, 2], null, '`
+- 133 DecrementInteger: `roups.', false, 0, [0, 1, 2], null, 'lib/ => roups.', false, 0, [-1, 1, 2], null, 'lib/`
+- 133 IncrementInteger: `roups.', false, 0, [0, 1, 2], null, 'lib/ => roups.', false, 0, [1, 1, 2], null, 'lib/`
+- 133 DecrementInteger: `', false, 0, [0, 1, 2], null, 'lib/groupl => ', false, 0, [0, 1, 1], null, 'lib/groupl`
+- 133 IncrementInteger: `', false, 0, [0, 1, 2], null, 'lib/groupl => ', false, 0, [0, 1, 3], null, 'lib/groupl`
+- 133 ArrayItemRemoval: `roups.', false, 0, [0, 1, 2], null, 'lib/gr => roups.', false, 0, [1, 2], null, 'lib/gr`
+- 141 FalseValue: `only, not names.', false, 0, null, null, 'l => only, not names.', true, 0, null, null, 'l`
+- 142 DecrementInteger: `not names.', false, 0, null, null, 'lib/d => not names.', false, -1, null, null, 'lib/d`
+- 142 IncrementInteger: `not names.', false, 0, null, null, 'lib/d => not names.', false, 1, null, null, 'lib/d`
+- 151 FalseValue: `ade calculations.', false, '', null, null, ' => ade calculations.', true, '', null, null, '`
+- 180 Concat: `bility', 'string', 'READ ONLY. State derived from visible/visibleoncoursepage and used by read tools. ' . 'Values: "shown" (normally listed on the course page) or "stealth" (available but not ' . 'lis`
+- 180 ConcatOperandRemoval: `bility', 'string', 'READ ONLY. State derived from visible/visibleoncoursepage and used by read tools. ' . 'Values: "shown" (nor => bility', 'string', 'Values: "shown" (nor`
+- 180 ConcatOperandRemoval: `by read tools. ' . 'Values: "shown" (normally listed on the course page) or "stealth" (available but not ' . 'listed). To write, u => by read tools. ' . 'listed). To write, u`
+- 180 Concat: `by read tools. ' . 'Values: "shown" (normally listed on the course page) or "stealth" (available but not ' . 'listed). To write, use "visibleoncoursepage" 1 or 0 instead.', false, 'shown', [ => by rea`
+- 180 ConcatOperandRemoval: `(available but not ' . 'listed). To write, use "visibleoncoursepage" 1 or 0 instead.', false, 'shown', [' => (available but not ', false, 'shown', ['`
+- 183 FalseValue: `" 1 or 0 instead.', false, 'shown', ['shown' => " 1 or 0 instead.', true, 'shown', ['shown'`
+- 185 ArrayItemRemoval: `false, 'shown', ['shown', 'stealth'], null, 'Plu => false, 'shown', ['stealth'], null, 'Plu`
+- 187 Concat: `'stealth'], null, 'Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot vocabulary, ' . 'no separate Moodle column; affects visibleoncoursepage)'), new field`
+- 187 ConcatOperandRemoval: `'stealth'], null, 'Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot vocabulary, ' . 'no separate Moodle c => 'stealth'], null, 'no separate Moodle c`
+- 187 ConcatOperandRemoval: `epilot vocabulary, ' . 'no separate Moodle column; affects visibleoncoursepage)'), new field('availa => epilot vocabulary, '), new field('availa`
+- 193 Concat: `status', 'string', 'READ ONLY. State derived from visible/visibleoncoursepage and used by read tools. ' . 'Includes a third value: "hidden" (visible=0), otherwise "stealth" as in coursepagevisibility `
+- 193 ConcatOperandRemoval: `status', 'string', 'READ ONLY. State derived from visible/visibleoncoursepage and used by read tools. ' . 'Includes a third val => status', 'string', 'Includes a third val`
+- 193 ConcatOperandRemoval: `by read tools. ' . 'Includes a third value: "hidden" (visible=0), otherwise "stealth" as in coursepagevisibility ' . 'or "shown". To write => by read tools. ' . 'or "shown". To write`
+- 193 Concat: `by read tools. ' . 'Includes a third value: "hidden" (visible=0), otherwise "stealth" as in coursepagevisibility ' . 'or "shown". To write, use "visible" and "visibleoncoursepage" instead.', false, 's`
+- 193 ConcatOperandRemoval: `ursepagevisibility ' . 'or "shown". To write, use "visible" and "visibleoncoursepage" instead.', false, 'shown', [' => ursepagevisibility ', false, 'shown', ['`
+- 196 FalseValue: `rsepage" instead.', false, 'shown', ['shown' => rsepage" instead.', true, 'shown', ['shown'`
+- 198 ArrayItemRemoval: `false, 'shown', ['shown', 'stealth', 'hidden'], => false, 'shown', ['stealth', 'hidden'],`
+- 200 Concat: `, 'hidden'], null, 'Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot vocabulary, ' . 'no separate Moodle column; combines visible and visibleoncoursepage`
+- 200 ConcatOperandRemoval: `, 'hidden'], null, 'Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot vocabulary, ' . 'no separate Moodle c => , 'hidden'], null, 'no separate Moodle c`
+- 200 ConcatOperandRemoval: `epilot vocabulary, ' . 'no separate Moodle column; combines visible and visibleoncoursepage)')]; => epilot vocabulary, ')];`
+- 219 DecrementInteger: `us' => $visible === 0 ? 'hidden' : ($visi => us' => $visible === -1 ? 'hidden' : ($visi`
+- 219 Identical: `status' => $visible === 0 ? 'hidden' : ($ => status' => $visible !== 0 ? 'hidden' : ($`
+- 219 DecrementInteger: `bleoncoursepage === 0 ? 'stealth' : 'show => bleoncoursepage === -1 ? 'stealth' : 'show`
+- 219 Identical: `visibleoncoursepage === 0 ? 'stealth' : ' => visibleoncoursepage !== 0 ? 'stealth' : '`
+- 219 Ternary: `oursepage === 0 ? 'stealth' : 'shown')]; => oursepage === 0 ? 'shown' : 'stealth')];`
+- 219 Ternary: `=> $visible === 0 ? 'hidden' : ($visibleoncoursepage === 0 ? 'stealth' : 'shown')]; => => $visible === 0 ? $visibleoncoursepage === 0 ? 'stealth' : 'shown' : 'hidden'];`
+- 229 ArrayItemRemoval: `return ['Stealth requires allowstealth on the instance; when disabled, the ' . 'write fails with a clear message instead of silently doing nothing (Spec 0015 §7).', 'A hidden section hid => return ['A`
+- 230 Concat: `return ['Stealth requires allowstealth on the instance; when disabled, the ' . 'write fails with a clear message instead of silently doing nothing (Spec 0015 §7).', 'A hidden section => return ['write`
+- 230 ConcatOperandRemoval: `return ['Stealth requires allowstealth on the instance; when disabled, the ' . 'write fails with a c => return ['write fails with a c`
+- 230 ConcatOperandRemoval: `when disabled, the ' . 'write fails with a clear message instead of silently doing nothing (Spec 0015 §7).', 'A hidden section => when disabled, the ', 'A hidden section`
+- 232 Concat: `(Spec 0015 §7).', 'A hidden section hides its activities regardless of their ' . 'own visible value (Spec 0015 §6).']; => (Spec 0015 §7).', 'own visible value (Spec 0015 §6).' . 'A hidden section hide`
+- 232 ConcatOperandRemoval: `(Spec 0015 §7).', 'A hidden section hides its activities regardless of their ' . 'own visible value (S => (Spec 0015 §7).', 'own visible value (S`
+- 232 ConcatOperandRemoval: `egardless of their ' . 'own visible value (Spec 0015 §6).']; => egardless of their '];`
+
+## Plugin/src/local_coursepilot/classes/catalog/url.php (66 überlebt, 66 offen)
+
+- 62 TrueValue: `name of the link.', true, null, null, null, => name of the link.', false, null, null, null,`
+- 71 Concat: `tro', 'PARAM_RAW', 'Description (intro), optionally shown above the link (pseudofield "printintro" ' . 'controls whether it is shown; only effective for certain display values).', false, null, null =>`
+- 71 ConcatOperandRemoval: `tro', 'PARAM_RAW', 'Description (intro), optionally shown above the link (pseudofield "printintro" ' . 'controls whether it => tro', 'PARAM_RAW', 'controls whether it`
+- 71 ConcatOperandRemoval: `field "printintro" ' . 'controls whether it is shown; only effective for certain display values).', false, null, null, => field "printintro" ', false, null, null,`
+- 83 FalseValue: `mat of the intro.', false, FORMAT_HTML, null => mat of the intro.', true, FORMAT_HTML, null`
+- 92 Concat: `ARAM_RAW_TRIMMED', 'Target URL. NOT PARAM_URL (see class comment) - validated against ' . 'url_appears_valid_url().', true, null, null, => ARAM_RAW_TRIMMED', 'url_appears_valid_url().' . 'Target URL. `
+- 92 ConcatOperandRemoval: `ARAM_RAW_TRIMMED', 'Target URL. NOT PARAM_URL (see class comment) - validated against ' . 'url_appears_valid_ur => ARAM_RAW_TRIMMED', 'url_appears_valid_ur`
+- 92 ConcatOperandRemoval: `validated against ' . 'url_appears_valid_url().', true, null, null, => validated against ', true, null, null,`
+- 94 TrueValue: `ears_valid_url().', true, null, null, 'url_ => ears_valid_url().', false, null, null, 'url_`
+- 98 Concat: `ears_valid_url()', 'mod/url/locallib.php:39-46 (url_appears_valid_url()); type mod/url/mod_form.php:50 ' . '(PARAM_RAW_TRIMMED); column mod/url/db/install.xml (url.externalurl, NOTNULL)'), new field('`
+- 98 ConcatOperandRemoval: `ears_valid_url()', 'mod/url/locallib.php:39-46 (url_appears_valid_url()); type mod/url/mod_form.php:50 ' . '(PARAM_RAW_TRIMMED); => ears_valid_url()', '(PARAM_RAW_TRIMMED);`
+- 98 ConcatOperandRemoval: `rl/mod_form.php:50 ' . '(PARAM_RAW_TRIMMED); column mod/url/db/install.xml (url.externalurl, NOTNULL)'), new field('displa => rl/mod_form.php:50 '), new field('displa`
+- 104 Concat: `lay', 'PARAM_INT', 'Link display (e.g. embedded, new window, popup). Available ' . 'options are a subset configured by Moodle administration, not a fixed list.', false, 0, null, ' => lay', 'PARAM_INT'`
+- 104 ConcatOperandRemoval: `lay', 'PARAM_INT', 'Link display (e.g. embedded, new window, popup). Available ' . 'options are a subset => lay', 'PARAM_INT', 'options are a subset`
+- 104 ConcatOperandRemoval: `popup). Available ' . 'options are a subset configured by Moodle administration, not a fixed list.', false, 0, null, 'r => popup). Available ', false, 0, null, 'r`
+- 106 FalseValue: `not a fixed list.', false, 0, null, 'resourc => not a fixed list.', true, 0, null, 'resourc`
+- 107 DecrementInteger: `ixed list.', false, 0, null, 'resourcelib => ixed list.', false, -1, null, 'resourcelib`
+- 107 IncrementInteger: `ixed list.', false, 0, null, 'resourcelib => ixed list.', false, 1, null, 'resourcelib`
+- 110 Concat: `displayoptions()', 'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-constants), :111 (resourcelib_get_displayoptions()); ' . 'Subset from admin_setting_configmultiselect(\'url/displayoptions\', ...) `
+- 110 ConcatOperandRemoval: `displayoptions()', 'lib/resourcelib.php:30-42 (RESOURCELIB_DISPLAY_*-constants), :111 (resourcelib_get_displayoptions()); ' . 'Subset from admin_se => displayoptions()', 'Subset from admin_se`
+- 110 ConcatOperandRemoval: `layoptions()); ' . 'Subset from admin_setting_configmultiselect(\'url/displayoptions\', ...) in ' . 'mod/url/settings.php => layoptions()); ' . 'mod/url/settings.php`
+- 110 Concat: `layoptions()); ' . 'Subset from admin_setting_configmultiselect(\'url/displayoptions\', ...) in ' . 'mod/url/settings.php:31-39; column mod/url/db/install.xml (url.display)')]; => layoptions()); ' . '`
+- 110 ConcatOperandRemoval: `options\', ...) in ' . 'mod/url/settings.php:31-39; column mod/url/db/install.xml (url.display)')]; => options\', ...) in ')];`
+- 129 ArrayItemRemoval: `>get_record('url', ['id' => $instanceid], 'name, intro, ext => >get_record('url', [], 'name, intro, ext`
+- 131 CastString: `$details['name'] = (string) $url->name; => $details['name'] = $url->name;`
+- 132 CastString: `tate::content_field((string) $url->intro, $fullco => tate::content_field($url->intro, $fullco`
+- 133 CastString: `s(['externalurl' => (string) $url->externalurl]); => s(['externalurl' => $url->externalurl]);`
+- 153 UnwrapArrayMap: `return array_map(static fn(field $f): string => $f->name, self::fields()); => return self::fields();`
+- 162 ArrayItemRemoval: `return [new field('printintro', 'PARAM_BOOL', 'Show intro as well - only effective for display=0 (auto), 1 (embed) or 2 (frame). Not a ' . 'DB field - stored in the serialized "displayoptions" column.`
+- 166 Concat: `ro', 'PARAM_BOOL', 'Show intro as well - only effective for display=0 (auto), 1 (embed) or 2 (frame). Not a ' . 'DB field - stored in the serialized "displayoptions" column.', false, 0, [0, 1], => ro'`
+- 166 ConcatOperandRemoval: `ro', 'PARAM_BOOL', 'Show intro as well - only effective for display=0 (auto), 1 (embed) or 2 (frame). Not a ' . 'DB field - stored in => ro', 'PARAM_BOOL', 'DB field - stored in`
+- 166 ConcatOperandRemoval: `r 2 (frame). Not a ' . 'DB field - stored in the serialized "displayoptions" column.', false, 0, [0, 1], => r 2 (frame). Not a ', false, 0, [0, 1],`
+- 168 FalseValue: `yoptions" column.', false, 0, [0, 1], null, => yoptions" column.', true, 0, [0, 1], null,`
+- 169 DecrementInteger: `s" column.', false, 0, [0, 1], null, 'mod => s" column.', false, -1, [0, 1], null, 'mod`
+- 169 IncrementInteger: `s" column.', false, 0, [0, 1], null, 'mod => s" column.', false, 1, [0, 1], null, 'mod`
+- 170 DecrementInteger: `olumn.', false, 0, [0, 1], null, 'mod/url => olumn.', false, 0, [-1, 1], null, 'mod/url`
+- 170 IncrementInteger: `olumn.', false, 0, [0, 1], null, 'mod/url => olumn.', false, 0, [1, 1], null, 'mod/url`
+- 170 DecrementInteger: `mn.', false, 0, [0, 1], null, 'mod/url/li => mn.', false, 0, [0, 0], null, 'mod/url/li`
+- 170 IncrementInteger: `mn.', false, 0, [0, 1], null, 'mod/url/li => mn.', false, 0, [0, 2], null, 'mod/url/li`
+- 170 ArrayItemRemoval: `olumn.', false, 0, [0, 1], null, 'mod/url/l => olumn.', false, 0, [1], null, 'mod/url/l`
+- 177 Concat: `dth', 'PARAM_INT', 'Window width in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', false, 620, null, => dth', 'PARAM_INT', '"displayoptions".' . 'Win`
+- 177 ConcatOperandRemoval: `dth', 'PARAM_INT', 'Window width in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', => dth', 'PARAM_INT', '"displayoptions".',`
+- 177 ConcatOperandRemoval: `field - stored in ' . '"displayoptions".', false, 620, null, => field - stored in ', false, 620, null,`
+- 179 FalseValue: `"displayoptions".', false, 620, null, null, => "displayoptions".', true, 620, null, null,`
+- 180 DecrementInteger: `options".', false, 620, null, null, 'mod/u => options".', false, 619, null, null, 'mod/u`
+- 180 IncrementInteger: `ptions".', false, 620, null, null, 'mod/u => ptions".', false, 621, null, null, 'mod/u`
+- 183 Concat: `, 620, null, null, 'mod/url/lib.php (url_update_instance(): only set when display==RESOURCELIB_DISPLAY_POPUP); ' . 'Default mod/url/settings.php'), new field('popup => , 620, null, null, 'Default mod/`
+- 183 ConcatOperandRemoval: `, 620, null, null, 'mod/url/lib.php (url_update_instance(): only set when display==RESOURCELIB_DISPLAY_POPUP); ' . 'Default mod/url/sett => , 620, null, null, 'Default mod/url/sett`
+- 183 ConcatOperandRemoval: `IB_DISPLAY_POPUP); ' . 'Default mod/url/settings.php'), new field('popuph => IB_DISPLAY_POPUP); '), new field('popuph`
+- 189 Concat: `ght', 'PARAM_INT', 'Window height in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', false, 450, null, => ght', 'PARAM_INT', '"displayoptions".' . 'Wi`
+- 189 ConcatOperandRemoval: `ght', 'PARAM_INT', 'Window height in pixels, only effective for display=6 (popup). Not a DB field - stored in ' . '"displayoptions".', => ght', 'PARAM_INT', '"displayoptions".',`
+- 189 ConcatOperandRemoval: `field - stored in ' . '"displayoptions".', false, 450, null, => field - stored in ', false, 450, null,`
+- 191 FalseValue: `"displayoptions".', false, 450, null, null, => "displayoptions".', true, 450, null, null,`
+- 192 DecrementInteger: `options".', false, 450, null, null, 'mod/u => options".', false, 449, null, null, 'mod/u`
+- 192 IncrementInteger: `ptions".', false, 450, null, null, 'mod/u => ptions".', false, 451, null, null, 'mod/u`
+- 200 Concat: `r_N', 'PARAM_RAW', 'Name of the Nth URL parameter (N=0..99, paired with variable_N). WITHOUT this field on update, ' . 'Moodle deletes all existing parameters - url_update_instance() rebuilds them com`
+- 200 ConcatOperandRemoval: `r_N', 'PARAM_RAW', 'Name of the Nth URL parameter (N=0..99, paired with variable_N). WITHOUT this field on update, ' . 'Moodle deletes all e => r_N', 'PARAM_RAW', 'Moodle deletes all e`
+- 200 ConcatOperandRemoval: `eld on update, ' . 'Moodle deletes all existing parameters - url_update_instance() rebuilds them completely on each ' . 'call from parameter_ => eld on update, ' . 'call from parameter_`
+- 200 Concat: `eld on update, ' . 'Moodle deletes all existing parameters - url_update_instance() rebuilds them completely on each ' . 'call from parameter_N/variable_N.', false, null, null => eld on update, ' . 'ca`
+- 200 ConcatOperandRemoval: `completely on each ' . 'call from parameter_N/variable_N.', false, null, null, => completely on each ', false, null, null,`
+- 240 ArrayItemRemoval: `return ['parameter_N and variable_N must both be set, otherwise the pair is ignored ' . '(mod/url/lib.php: url_add_instance()/url_update_instance()).']; => return [];`
+- 241 Concat: `return ['parameter_N and variable_N must both be set, otherwise the pair is ignored ' . '(mod/url/lib.php: url_add_instance()/url_update_instance()).']; => return ['(mod/url/lib.php: url_add_instance(`
+- 241 ConcatOperandRemoval: `return ['parameter_N and variable_N must both be set, otherwise the pair is ignored ' . '(mod/url/lib.php: ur => return ['(mod/url/lib.php: ur`
+- 241 ConcatOperandRemoval: `he pair is ignored ' . '(mod/url/lib.php: url_add_instance()/url_update_instance()).']; => he pair is ignored '];`
+- 297 DecrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = -1): string`
+- 297 IncrementInteger: `n(int $instanceid = 0): string => n(int $instanceid = 1): string`
+
+## Plugin/src/local_coursepilot/classes/catalog/write_target.php (39 überlebt, 39 offen)
+
+- 146 CastInt: `name(), 'module' => (int) $module->id, 'sectio => name(), 'module' => $module->id, 'sectio`
+- 161 FalseValue: `se->id), $location, false); => se->id), $location, true);`
+- 162 CastInt: `return (int) \add_moduleinfo($mod => return \add_moduleinfo($mod`
+- 192 MethodCallRemoval: `pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $patch); => `
+- 221 UnwrapArrayDiffKey: `return array_diff_key($this->state, $this->changes); => return $this->state;`
+- 257 Continue_: `continue; => break;`
+- 261 LogicalAnd: `if (is_array($reference) && is_array($field) && count($referenc => if ((is_array($reference) || is_array($field)) && count($referenc`
+- 262 Concat: `tion($catalogclass, '"' . $rule['field'] . '" must have as m => tion($catalogclass, $rule['field'] . '"' . '" must have as m`
+- 262 ConcatOperandRemoval: `tion($catalogclass, '"' . $rule['field'] . '" => tion($catalogclass, $rule['field'] . '"`
+- 262 Concat: `catalogclass, '"' . $rule['field'] . '" must have as many entries as "' . $rule['reference' => catalogclass, '"' . '" must have as many entries as "' . $rule['field'] . $rule['reference'`
+- 262 ConcatOperandRemoval: `. $rule['field'] . '" must have as many entries as "' . $rule['reference'] . => . $rule['field'] . $rule['reference'] .`
+- 262 Concat: `. $rule['field'] . '" must have as many entries as "' . $rule['reference'] . '".'); => . $rule['field'] . $rule['reference'] . '" must have as many entries as "' . '".');`
+- 262 Concat: `any entries as "' . $rule['reference'] . '".'); => any entries as "' . '".' . $rule['reference']);`
+- 262 ConcatOperandRemoval: `. $rule['reference'] . '".'); => . $rule['reference']);`
+- 279 DecrementInteger: `le['reference']] ?? 0); => le['reference']] ?? -1);`
+- 279 IncrementInteger: `le['reference']] ?? 0); => le['reference']] ?? 1);`
+- 280 DecrementInteger: `[$rule['field']] ?? 0); => [$rule['field']] ?? -1);`
+- 280 IncrementInteger: `[$rule['field']] ?? 0); => [$rule['field']] ?? 1);`
+- 311 ArrayItemRemoval: `oursepilot', '', ['modname' => $catalogclass::modname(), 'message' => $message] => oursepilot', '', ['message' => $message]`
+- 335 CastBool: `ield->name] = (int) (bool) get_config($adminfie => ield->name] = (int) get_config($adminfie`
+- 335 CastInt: `ts[$field->name] = (int) (bool) get_config($ad => ts[$field->name] = (bool) get_config($ad`
+- 354 Concat: `$missing[] = '"' . $field->name . '"'; => $missing[] = $field->name . '"' . '"';`
+- 354 ConcatOperandRemoval: `$missing[] = '"' . $field->name . '"'; => $missing[] = $field->name . '"';`
+- 354 Concat: `$missing[] = '"' . $field->name . '"'; => $missing[] = '"' . '"' . $field->name;`
+- 354 ConcatOperandRemoval: `= '"' . $field->name . '"'; => = '"' . $field->name;`
+- 408 LogicalNot: `fo->introeditor) || !is_array($moduleinfo => fo->introeditor) || is_array($moduleinfo`
+- 409 ArrayItemRemoval: `fo->introeditor = ['text' => $moduleinfo->intro ?? '', 'format' => $modulein => fo->introeditor = ['format' => $modulein`
+- 410 Coalesce: `editor = ['text' => $moduleinfo->intro ?? '', 'format' => $modul => editor = ['text' => '' ?? $moduleinfo->intro, 'format' => $modul`
+- 411 Coalesce: `?? '', 'format' => $moduleinfo->introformat ?? FORMAT_HTML]; => ?? '', 'format' => FORMAT_HTML ?? $moduleinfo->introformat];`
+- 435 UnwrapArrayMap: `$newnames = array_map(static fn($entry): string => basename(material_files::entry_path($entry)), $paths); => $newnames = $paths;`
+- 442 FalseValue: `a'], 0, 'filename', false); => a'], 0, 'filename', true);`
+- 496 CastObject: `l_coursepilot', '', (object) ['filename' => is_st => l_coursepilot', '', ['filename' => is_st`
+- 498 ArrayItem: `ath : '', 'allowed' => implode(', ', mate => ath : '', 'allowed' > implode(', ', mate`
+- 542 CastInt: `ields[$reference]), (int) $fields[$field]); => ields[$reference]), $fields[$field]);`
+- 558 Continue_: `continue; => break;`
+- 561 CastString: `ields[$textfield] = (string) ($fields[$editor]['text'] ?? ''); => ields[$textfield] = $fields[$editor]['text'] ?? '';`
+- 563 LogicalNot: `if (!array_key_exists($fo => if (array_key_exists($fo`
+- 564 Coalesce: `rmatfield] = (int) ($fields[$editor]['format'] ?? FORMAT_HTML); => rmatfield] = (int) (FORMAT_HTML ?? $fields[$editor]['format']);`
+- 564 CastInt: `lds[$formatfield] = (int) ($fields[$editor]['format'] ?? FORMAT_HTML); => lds[$formatfield] = $fields[$editor]['format'] ?? FORMAT_HTML;`
+
+## Plugin/src/local_coursepilot/classes/check/personal_data_hosts_check.php (1 überlebt, 1 offen)
+
+- 59 ArrayItemRemoval: `min/settings.php', ['section' => 'local_coursepilot']), get_string('webd => min/settings.php', []), get_string('webd`
+
+## Plugin/src/local_coursepilot/classes/check/webdav_capability_check.php (5 überlebt, 5 offen)
+
+- 65 CastInt: `etup_steps::catalog((int) $USER->id); => etup_steps::catalog($USER->id);`
+- 73 UnwrapArrayUnique: `cteduserids = array_unique(array_map(static fn(\stdClass $token): int => (int) $token->userid, connection::active_tokens())); => cteduserids = array_map(static fn(\stdClass $token): int => (int) $toke`
+- 74 CastInt: `ass $token): int => (int) $token->userid, conn => ass $token): int => $token->userid, conn`
+- 87 CastString: `? fullname($user) : (string) $userid; => ? fullname($user) : $userid;`
+- 97 CastObject: `local_coursepilot', (object) ['missing' => count( => local_coursepilot', ['missing' => count(`
+
+## Plugin/src/local_coursepilot/classes/check/webdav_repository_check.php (1 überlebt, 1 offen)
+
+- 65 CastInt: `etup_steps::catalog((int) $USER->id)[webdav_se => etup_steps::catalog($USER->id)[webdav_se`
+
+## Plugin/src/local_coursepilot/classes/check/webdav_user_instances_check.php (1 überlebt, 1 offen)
+
+- 61 CastInt: `etup_steps::catalog((int) $USER->id); => etup_steps::catalog($USER->id);`
+
+## Plugin/src/local_coursepilot/classes/client_registry.php (8 überlebt, 8 offen)
+
+- 74 ArrayOneItem: `return $error; => return count($error) > 1 ? array_slice($error, 0, 1, true) : $error;`
+- 79 ArrayItemRemoval: `rray($authmethod, ['none', 'client_secret_post'] => rray($authmethod, ['client_secret_post']`
+- 85 DecrementInteger: `n2hex(random_bytes(24)), $clientname, $re => n2hex(random_bytes(23)), $clientname, $re`
+- 85 IncrementInteger: `n2hex(random_bytes(24)), $clientname, $re => n2hex(random_bytes(25)), $clientname, $re`
+- 111 Concat: `or_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / ' . 'http://localhost).']; => or_description' => 'http://localhost).' . 'redirect_uri must use https or a loop`
+- 111 ConcatOperandRemoval: `or_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / ' . 'http://localhost).'] => or_description' => 'http://localhost).']`
+- 111 ConcatOperandRemoval: `http://127.0.0.1 / ' . 'http://localhost).']; => http://127.0.0.1 / '];`
+- 279 ArrayItemRemoval: `elf::CLIENT_TABLE, ['clientid' => $url], '*', MUST_EXIST); => elf::CLIENT_TABLE, [], '*', MUST_EXIST);`
+
+## Plugin/src/local_coursepilot/classes/cm_references.php (15 überlebt, 15 offen)
+
+- 56 CastString: `elf::tree_points_at((string) $other->availability => elf::tree_points_at($other->availability`
+- 73 CastString: `elf::tree_points_at((string) $section->availabili => elf::tree_points_at($section->availabili`
+- 82 ArrayItemRemoval: `etion_criteria', ['course' => $cm->course, 'criteriatype' => COMP => etion_criteria', ['criteriatype' => COMP`
+- 95 ArrayOneItem: `return $found; => return count($found) > 1 ? array_slice($found, 0, 1, true) : $found;`
+- 112 UnwrapArrayMerge: `$nodes = array_merge($nodes, self::completion_conditions($child)); => $nodes = self::completion_conditions($child);`
+- 115 ArrayOneItem: `return $nodes; => return count($nodes) > 1 ? array_slice($nodes, 0, 1, true) : $nodes;`
+- 128 CastInt: `$pairs[] = (int) $node['cm'] . ':' . => $pairs[] = $node['cm'] . ':' .`
+- 128 CastInt: `$node['cm'] . ':' . (int) $node['e']; => $node['cm'] . ':' . $node['e'];`
+- 131 ArrayOneItem: `return $pairs; => return count($pairs) > 1 ? array_slice($pairs, 0, 1, true) : $pairs;`
+- 141 DecrementInteger: `t) ($node['cm'] ?? -1) === 0; => t) ($node['cm'] ?? -2) === 0;`
+- 141 IncrementInteger: `t) ($node['cm'] ?? -1) === 0; => t) ($node['cm'] ?? -0) === 0;`
+- 141 CastInt: `== 'completion' && (int) ($node['cm'] ?? -1) = => == 'completion' && ($node['cm'] ?? -1) =`
+- 157 DecrementInteger: `t) ($node['cm'] ?? -1) === $cmid) { => t) ($node['cm'] ?? -2) === $cmid) {`
+- 157 IncrementInteger: `t) ($node['cm'] ?? -1) === $cmid) { => t) ($node['cm'] ?? -0) === $cmid) {`
+- 157 CastInt: `if ((int) ($node['cm'] ?? -1) = => if (($node['cm'] ?? -1) =`
+
+## Plugin/src/local_coursepilot/classes/connection.php (35 überlebt, 35 offen)
+
+- 65 DecrementInteger: `n2hex(random_bytes(32)); => n2hex(random_bytes(31));`
+- 95 CastInt: `if (!$record || (int) $record->used === 1 => if (!$record || $record->used === 1`
+- 95 IncrementInteger: `) $record->used === 1 || $record->expires => ) $record->used === 2 || $record->expires`
+- 95 LessThan: `| $record->expires < time()) { => | $record->expires <= time()) {`
+- 112 CastInt: `ken_pair($clientid, (int) $record->userid); => ken_pair($clientid, $record->userid);`
+- 157 CastInt: `lf::lock_connection((int) $record->connectioni => lf::lock_connection($record->connectioni`
+- 163 CastInt: `e_locked_connection((int) $record->connectioni => e_locked_connection($record->connectioni`
+- 166 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 171 CastInt: `ken_pair($clientid, (int) $record->userid, (in => ken_pair($clientid, $record->userid, (in`
+- 171 CastInt: `t) $record->userid, (int) $record->connectioni => t) $record->userid, $record->connectioni`
+- 287 ArrayItemRemoval: `self::result(405, ['Allow' => 'POST'], ['error' => 'inva => self::result(405, [], ['error' => 'inva`
+- 332 CastString: `$refreshtoken = (string) ($body['refresh_token'] ?? ''); => $refreshtoken = $body['refresh_token'] ?? '';`
+- 447 ArrayItemRemoval: `elf::TOKEN_TABLE, ['id' => $id, 'userid' => $owneruse => elf::TOKEN_TABLE, ['userid' => $owneruse`
+- 448 LogicalAnd: `return $record && !empty($record->connectionid) && self::grant_act => return ($record || !empty($record->connectionid)) && self::grant_act`
+- 449 CastInt: `self::grant_active((int) $record->connectioni => self::grant_active($record->connectioni`
+- 449 CastInt: `cord->connectionid, (int) $record->userid); => cord->connectionid, $record->userid);`
+- 464 ArrayItemRemoval: `elf::GRANT_TABLE, ['userid' => $userid, 'revoked' => 0]); => elf::GRANT_TABLE, ['revoked' => 0]);`
+- 478 DecrementInteger: `$count = 0; => $count = -1;`
+- 483 DecrementInteger: `n2hex(random_bytes(32)); => n2hex(random_bytes(31));`
+- 484 ArrayItemRemoval: `atehash', $marker, ['revoked' => 0]); => atehash', $marker, []);`
+- 485 ArrayItemRemoval: `elf::GRANT_TABLE, ['statehash' => $marker, 'revoked' => 0]); => elf::GRANT_TABLE, ['revoked' => 0]);`
+- 486 IncrementInteger: `T_TABLE, 'revoked', 1, ['statehash' => $m => T_TABLE, 'revoked', 2, ['statehash' => $m`
+- 486 ArrayItemRemoval: `LE, 'revoked', 1, ['statehash' => $marker, 'revoked' => 0]); => LE, 'revoked', 1, ['revoked' => 0]);`
+- 488 IncrementInteger: `N_TABLE, 'revoked', 1, ['revoked' => 0]); => N_TABLE, 'revoked', 2, ['revoked' => 0]);`
+- 488 ArrayItemRemoval: `BLE, 'revoked', 1, ['revoked' => 0]); => BLE, 'revoked', 1, []);`
+- 495 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 515 ArrayItemRemoval: `$conditions = ['id' => $id]; => $conditions = [];`
+- 520 LogicalOr: `if (!$record || empty($record->conn => if (!$record && empty($record->conn`
+- 525 CastInt: `lf::lock_connection((int) $record->connectioni => lf::lock_connection($record->connectioni`
+- 526 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 529 CastInt: `e_locked_connection((int) $record->connectioni => e_locked_connection($record->connectioni`
+- 533 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 570 FalseValue: `ame()->get_sql('u', false, '', '', false)->s => ame()->get_sql('u', true, '', '', false)->s`
+- 626 IncrementInteger: `T_TABLE, 'revoked', 1, ['id' => $id]); => T_TABLE, 'revoked', 2, ['id' => $id]);`
+- 639 CastInt: `eate(['objectid' => (int) $grant->id, 'related => eate(['objectid' => $grant->id, 'related`
+
+## Plugin/src/local_coursepilot/classes/context_area.php (18 überlebt, 17 offen)
+
+- 130 FalseValue: `=> '', 'locked' => false]; => => '', 'locked' => true];`
+- 135 UnwrapStrToLower: `$ismarkdown = strtolower(pathinfo($entry['name'], PATHINFO_EXTENSION)) === 'md'; => $ismarkdown = pathinfo($entry['name'], PATHINFO_EXTENSION) === 'md';`
+- 154 Identical: `vepath = $directory === '' ? $entry['name => vepath = $directory !== '' ? $entry['name`
+- 154 Concat: `? $entry['name'] : $directory . '/' . $entry['name']; => ? $entry['name'] : '/' . $directory . $entry['name'];`
+- 154 ConcatOperandRemoval: `? $entry['name'] : $directory . '/' . $entry['name'] => ? $entry['name'] : '/' . $entry['name']`
+- 154 ConcatOperandRemoval: `me'] : $directory . '/' . $entry['name']; => me'] : $directory . $entry['name'];`
+- 154 Concat: `me'] : $directory . '/' . $entry['name']; => me'] : $directory . $entry['name'] . '/';`
+- 154 ConcatOperandRemoval: `] : $directory . '/' . $entry['name']; => ] : $directory . '/';`
+- 154 Ternary: `directory === '' ? $entry['name'] : $directory . '/' . $entry['name']; => directory === '' ? $directory . '/' . $entry['name'] : $entry['name'];`
+- 181 TrueValue: `ontent, createonly: true); => ontent, createonly: false);`
+- 209 FalseValue: `bool $createonly = false, int $courseid = 0 => bool $createonly = true, int $courseid = 0`
+- 210 DecrementInteger: `se, int $courseid = 0): array => se, int $courseid = -1): array`
+- 210 IncrementInteger: `se, int $courseid = 0): array => se, int $courseid = 1): array`
+- 218 Throw_: `throw $e; => $e;`
+- 325 DecrementInteger: `'', int $courseid = 0): array => '', int $courseid = -1): array`
+- 325 IncrementInteger: `'', int $courseid = 0): array => '', int $courseid = 1): array`
+- 333 Throw_: `throw $e; => $e;`
+- 374 MethodCallRemoval (ignoriert): `context_files::guard_existing_locked($existing['content'] ?? null, $path); => `
+
+## Plugin/src/local_coursepilot/classes/context_files.php (36 überlebt, 36 offen)
+
+- 71 PregMatchRemoveCaret: `if (!preg_match('/^[A-Za-z0-9_-]+\.md$/ => if (!preg_match('/[A-Za-z0-9_-]+\.md$/`
+- 71 PregMatchRemoveDollar: `/^[A-Za-z0-9_-]+\.md$/', $filename)) { => /^[A-Za-z0-9_-]+\.md/', $filename)) {`
+- 146 ArrayItemRemoval: `ot', '', (object) ['size' => $size, 'max' => self::MAX_WR => ot', '', (object) ['max' => self::MAX_WR`
+- 146 CastObject: `l_coursepilot', '', (object) ['size' => $size, 'm => l_coursepilot', '', ['size' => $size, 'm`
+- 223 ArrayItemRemoval: `ecordset('files', ['component' => self::LEGACY_COMPONENT, 'filearea' => self::L => ecordset('files', ['filearea' => self::L`
+- 231 Continue_: `// Folder placeholder: create_file_from_storedfile() creates the // required directories for copied files automatically. continue; => break;`
+- 234 Concat: `mtrace('local_coursepilot: Context file skipped (outside "' . $root . '"): ' . $record- => mtrace($root . 'local_coursepilot: Context file skipped (outside "' . '"): ' . $record-`
+- 234 ConcatOperandRemoval: `mtrace('local_coursepilot: Context file skipped (outside "' . $root . '"): ' . $re => mtrace($root . '"): ' . $re`
+- 234 ConcatOperandRemoval: `ipped (outside "' . $root . '"): ' . $record->fi => ipped (outside "' . '"): ' . $record->fi`
+- 234 Concat: `ipped (outside "' . $root . '"): ' . $record->filepath => ipped (outside "' . '"): ' . $root . $record->filepath`
+- 234 ConcatOperandRemoval: `utside "' . $root . '"): ' . $record->filepath . => utside "' . $root . $record->filepath .`
+- 234 Concat: `utside "' . $root . '"): ' . $record->filepath . $record->filename => utside "' . $root . $record->filepath . '"): ' . $record->filename`
+- 234 ConcatOperandRemoval: `): ' . $record->filepath . $record->filename . ' (context ' => ): ' . $record->filename . ' (context '`
+- 234 Concat: `): ' . $record->filepath . $record->filename . ' (context ' . $r => ): ' . $record->filename . $record->filepath . ' (context ' . $r`
+- 234 Concat: `$record->filepath . $record->filename . ' (context ' . $record->contexti => $record->filepath . ' (context ' . $record->filename . $record->contexti`
+- 234 ConcatOperandRemoval: `$record->filename . ' (context ' . $record->contextid . => $record->filename . $record->contextid .`
+- 234 Concat: `$record->filename . ' (context ' . $record->contextid . ')'); => $record->filename . $record->contextid . ' (context ' . ')');`
+- 234 ConcatOperandRemoval: `me . ' (context ' . $record->contextid . ')'); => me . ' (context ' . ')');`
+- 234 Concat: `me . ' (context ' . $record->contextid . ')'); => me . ' (context ' . ')' . $record->contextid);`
+- 234 ConcatOperandRemoval: `. $record->contextid . ')'); => . $record->contextid);`
+- 236 Continue_: `continue; => break;`
+- 244 ArrayItem: `ilepath, 'filename' => $record->filename] => ilepath, 'filename' > $record->filename]`
+- 246 UnwrapArrayValues: `$fs->file_exists(...array_values($target))) { => $fs->file_exists(...$target)) {`
+- 247 Concat: `mtrace('local_coursepilot: Context file skipped (already exists in Private Files): ' . $record->filepath . $record->filename => mtrace($record->filepath . 'local_coursepilot: Context file skipped (alr`
+- 247 ConcatOperandRemoval: `mtrace('local_coursepilot: Context file skipped (already exists in Private Files): ' . $record->filepath . => mtrace($record->filepath .`
+- 247 ConcatOperandRemoval: `): ' . $record->filepath . $record->filename . ' (context ' => ): ' . $record->filename . ' (context '`
+- 247 Concat: `): ' . $record->filepath . $record->filename . ' (context ' . $r => ): ' . $record->filename . $record->filepath . ' (context ' . $r`
+- 247 Concat: `$record->filepath . $record->filename . ' (context ' . $record->contexti => $record->filepath . ' (context ' . $record->filename . $record->contexti`
+- 247 ConcatOperandRemoval: `$record->filename . ' (context ' . $record->contextid . => $record->filename . $record->contextid .`
+- 247 Concat: `$record->filename . ' (context ' . $record->contextid . ')'); => $record->filename . $record->contextid . ' (context ' . ')');`
+- 247 ConcatOperandRemoval: `me . ' (context ' . $record->contextid . ')'); => me . ' (context ' . ')');`
+- 247 Concat: `me . ' (context ' . $record->contextid . ')'); => me . ' (context ' . ')' . $record->contextid);`
+- 247 ConcatOperandRemoval: `. $record->contextid . ')'); => . $record->contextid);`
+- 249 Continue_: `continue; => break;`
+- 251 CastInt: `storedfile($target, (int) $record->id); => storedfile($target, $record->id);`
+- 254 MethodCallRemoval: `$legacy->close(); => `
+
+## Plugin/src/local_coursepilot/classes/context_pointer.php (16 überlebt, 16 offen)
+
+- 89 LogicalAnd: `(is_string($value) && in_array($key, ['lo => (is_string($value) || in_array($key, ['lo`
+- 121 FalseValue: `erprint['iserv'] ?? false) === true) { => erprint['iserv'] ?? true) === true) {`
+- 122 CastString: `$first = strtok((string) $location->relativep => $first = strtok($location->relativep`
+- 210 FalseValue: `erprint['iserv'] ?? false) === true) { => erprint['iserv'] ?? true) === true) {`
+- 211 CastString: `$first = strtok((string) $location->relativep => $first = strtok($location->relativep`
+- 229 ArrayItemRemoval: `ot', '', (object) ['page' => \local_coursepilot\webdav\webdav_setup_steps::LOCATION_SELECTION_PAGE, 'server' => $location => ot', '', (object) ['server' => $location`
+- 229 CastObject: `l_coursepilot', '', (object) ['page' => \local_co => l_coursepilot', '', ['page' => \local_co`
+- 231 Coalesce: `N_PAGE, 'server' => $location->fingerprint['server'] ?? '', 'instanceid' => $l => N_PAGE, 'server' => '' ?? $location->fingerprint['server'], 'instanceid' => $l`
+- 232 ArrayItem: `?? '', 'instanceid' => $location->instanc => ?? '', 'instanceid' > $location->instanc`
+- 260 CastInt: `ric($instanceid) || (int) $instanceid <= 0 || => ric($instanceid) || $instanceid <= 0 ||`
+- 270 CastInt: `_location::external((int) $instanceid, self::v => _location::external($instanceid, self::v`
+- 276 CastBool: `'iserv' => (bool) ($fingerprint['iserv'] ?? false), => 'iserv' => $fingerprint['iserv'] ?? false,`
+- 289 UnwrapStrReplace: `$normalised = str_replace('\\', '/', $value); => $normalised = $value;`
+- 290 UnwrapTrim: `if (trim($normalised, '/') === '') { => if ($normalised === '') {`
+- 291 MethodCallRemoval: `self::incomplete(); => `
+- 293 UnwrapTrim: `$trimmed = trim($normalised, '/'); => $trimmed = $normalised;`
+
+## Plugin/src/local_coursepilot/classes/course_module_placement.php (15 überlebt, 15 offen)
+
+- 41 PublicVisibility: `public static function mov => protected static function mov`
+- 66 FalseValue: `if ($position === false) { => if ($position === true) {`
+- 70 CastInt: `elf::move_to($cmid, (int) $after->section, $su => elf::move_to($cmid, $after->section, $su`
+- 70 CastInt: `r === null ? null : (int) $successor); => r === null ? null : $successor);`
+- 81 ArrayItemRemoval: `odules', 'course', ['id' => $cmid], MUST_EXIST); => odules', 'course', [], MUST_EXIST);`
+- 81 CastInt: `return (int) $DB->get_field('cour => return $DB->get_field('cour`
+- 121 ArrayItemRemoval: `nce', $instanceid, ['id' => $cmid]); => nce', $instanceid, []);`
+- 126 IfNegation: `if ($context) { => if (!$context) {`
+- 127 MethodCallRemoval: `$context->delete(); => `
+- 131 FunctionCallRemoval: `rebuild_course_cache($cm->course, true); => `
+- 134 FunctionCallRemoval: `rebuild_course_cache($cm->course, true); => `
+- 138 UnwrapFinally: `try { course_get_format($cm->course)->delete_module($info, false); } finally { if ($forced === null) { unset($CFG->forced_plugin_settings['tool_recyclebin']); } else { $CFG->forced_plugin_settings['to`
+- 139 FalseValue: `elete_module($info, false); => elete_module($info, true);`
+- 141 Identical: `if ($forced === null) { => if ($forced !== null) {`
+- 146 FunctionCallRemoval: `rebuild_course_cache($cm->course, true); => `
+
+## Plugin/src/local_coursepilot/classes/dispatcher.php (56 überlebt, 56 offen)
+
+- 79 UnwrapRtrim: `owed = array_merge([rtrim($CFG->wwwroot, '/')], self::EXTRA_ALLOW => owed = array_merge([$CFG->wwwroot], self::EXTRA_ALLOW`
+- 79 ArrayItemRemoval: `owed = array_merge([rtrim($CFG->wwwroot, '/')], self::EXTRA_ALLOW => owed = array_merge([], self::EXTRA_ALLOW`
+- 79 UnwrapArrayMerge: `$allowed = array_merge([rtrim($CFG->wwwroot, '/')], self::EXTRA_ALLOWED_ORIGINS); => $allowed = self::EXTRA_ALLOWED_ORIGINS;`
+- 80 UnwrapRtrim: `if (!in_array(rtrim($origin, '/'), $allowed, true)) { => if (!in_array($origin, $allowed, true)) {`
+- 84 ArrayItemRemoval: `f::result(403, [], ['error' => 'Origin not allowed']); => f::result(403, [], []);`
+- 140 ArrayItemRemoval: `Allow' => 'POST'], ['error' => 'Method Not Allowed - MCP over HTTP is POST only']); => Allow' => 'POST'], []);`
+- 144 DecrementInteger: `return self::error(400, null, -32700, 'Par => return self::error(399, null, -32700, 'Par`
+- 144 IncrementInteger: `eturn self::error(400, null, -32700, 'Par => eturn self::error(401, null, -32700, 'Par`
+- 144 DecrementInteger: `ror(400, null, -32700, 'Parse error'); => ror(400, null, -32701, 'Parse error');`
+- 144 IncrementInteger: `error(400, null, -32700, 'Parse error'); => error(400, null, -32699, 'Parse error');`
+- 167 ArrayItemRemoval: `NTICATION_FAILED', ['WWW-Authenticate' => 'Bearer resource_metadata="' . $CFG->wwwroot . '/local/coursepilot/oauth/protected-resource.php"']); => NTICATION_FAILED', []);`
+- 168 Concat: `WW-Authenticate' => 'Bearer resource_metadata="' . $CFG->wwwroot . '/local/coursepil => WW-Authenticate' => $CFG->wwwroot . 'Bearer resource_metadata="' . '/local/coursepil`
+- 168 ConcatOperandRemoval: `WW-Authenticate' => 'Bearer resource_metadata="' . $CFG->wwwroot . '/lo => WW-Authenticate' => $CFG->wwwroot . '/lo`
+- 168 ConcatOperandRemoval: `ource_metadata="' . $CFG->wwwroot . '/local/coursepilot/ => ource_metadata="' . '/local/coursepilot/`
+- 168 Concat: `ource_metadata="' . $CFG->wwwroot . '/local/coursepilot/oauth/protected-resource.php"']); => ource_metadata="' . '/local/coursepilot/oauth/protected-resource.php"' . $CFG->wwwroot]);`
+- 168 ConcatOperandRemoval: `a="' . $CFG->wwwroot . '/local/coursepilot/oauth/protected-resource.php"']); => a="' . $CFG->wwwroot]);`
+- 200 DecrementInteger: `return self::result(200, [], ['jsonrpc' => => return self::result(199, [], ['jsonrpc' =>`
+- 200 IncrementInteger: `turn self::result(200, [], ['jsonrpc' => => turn self::result(201, [], ['jsonrpc' =>`
+- 200 ArrayItemRemoval: `::result(200, [], ['jsonrpc' => '2.0', 'id' => $id, 'result' => ::result(200, [], ['id' => $id, 'result'`
+- 215 ArrayItemRemoval: `::result(200, [], ['jsonrpc' => '2.0', 'id' => $id, 'result' => ::result(200, [], ['id' => $id, 'result'`
+- 222 ArrayItemRemoval: `::result(200, [], ['jsonrpc' => '2.0', 'id' => $id, 'result' => ::result(200, [], ['id' => $id, 'result'`
+- 229 ArrayItemRemoval: `::result(200, [], ['jsonrpc' => '2.0', 'id' => $id, 'result' => ::result(200, [], ['id' => $id, 'result'`
+- 236 Concat: `r(404, $id, -32601, 'Method not found: ' . $rpcmethod); => r(404, $id, -32601, $rpcmethod . 'Method not found: ');`
+- 236 ConcatOperandRemoval: `r(404, $id, -32601, 'Method not found: ' . $rpcmethod); => r(404, $id, -32601, $rpcmethod);`
+- 236 ConcatOperandRemoval: `'Method not found: ' . $rpcmethod); => 'Method not found: ');`
+- 250 Coalesce: `$params = $request['params'] ?? []; => $params = [] ?? $request['params'];`
+- 256 ArrayItemRemoval: `::result(200, [], ['jsonrpc' => '2.0', 'id' => $id, 'result' => ::result(200, [], ['id' => $id, 'result'`
+- 259 ArrayItemRemoval: `$id, 'result' => ['protocolVersion' => $params['protocolVersion'] ?? self::LEGACY_VERSION, 'capabilities' => ['t => $id, 'result' => ['capabilities' => ['t`
+- 260 Coalesce: `protocolVersion' => $params['protocolVersion'] ?? self::LEGACY_VERSION, 'capabilities' => => protocolVersion' => self::LEGACY_VERSION ?? $params['protocolVersion'], 'capabilities' =>`
+- 261 ArrayItemRemoval: `'capabilities' => ['tools' => new \stdClass()], 'serverInfo' => $ => 'capabilities' => [], 'serverInfo' => $`
+- 271 DecrementInteger: `return self::result(200, [], ['jsonrpc' => => return self::result(199, [], ['jsonrpc' =>`
+- 271 IncrementInteger: `turn self::result(200, [], ['jsonrpc' => => turn self::result(201, [], ['jsonrpc' =>`
+- 271 ArrayItemRemoval: `::result(200, [], ['jsonrpc' => '2.0', 'id' => $id, 'result' => ::result(200, [], ['id' => $id, 'result'`
+- 279 ArrayItemRemoval: `::result(200, [], ['jsonrpc' => '2.0', 'id' => $id, 'result' => ::result(200, [], ['id' => $id, 'result'`
+- 284 ArrayItemRemoval: `'capabilities' => ['tools' => new \stdClass()], 'serverInfo' => $ => 'capabilities' => [], 'serverInfo' => $`
+- 305 CastString: `$toolname = (string) ($params['name'] ?? ''); => $toolname = $params['name'] ?? '';`
+- 308 Concat: `r(404, $id, -32601, 'Unknown tool: ' . $toolname); => r(404, $id, -32601, $toolname . 'Unknown tool: ');`
+- 308 ConcatOperandRemoval: `r(404, $id, -32601, 'Unknown tool: ' . $toolname); => r(404, $id, -32601, $toolname);`
+- 308 ConcatOperandRemoval: `01, 'Unknown tool: ' . $toolname); => 01, 'Unknown tool: ');`
+- 317 MethodCallRemoval: `access_log::log_failure($message, $toolname, null, null, self::diagnostic_detail($response['exception'] ?? null)); => `
+- 324 ArrayItemRemoval: `'jsonrpc' => '2.0', => `
+- 332 ArrayItemRemoval: `e, 'content' => [['type' => 'text', 'text' => $message]]] => e, 'content' => [['text' => $message]]]`
+- 352 LogicalAnd: `if (is_string($imagebase64) && $imagebase64 !== '' && is_string($mimet => if ((is_string($imagebase64) || $imagebase64 !== '') && is_string($mimet`
+- 352 LogicalAnd: `if (is_string($imagebase64) && $imagebase64 !== '' && is_string($mimetype) && $mimetype !== ' => if ((is_string($imagebase64) && $imagebase64 !== '' || is_string($mimetype)) && $mimetype !== '`
+- 360 BitwiseOr: `N_UNESCAPED_SLASHES | JSON_UNESCAPED_UNIC => N_UNESCAPED_SLASHES & JSON_UNESCAPED_UNIC`
+- 360 BitwiseOr: `n_encode($textdata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_S => n_encode($textdata, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) & JSON_INVALID_UTF8_S`
+- 363 ArrayItemRemoval: `::result(200, [], ['jsonrpc' => '2.0', 'id' => $id, 'result' => ::result(200, [], ['id' => $id, 'result'`
+- 394 CastString: `ode: \S+\s*$/', '', (string) ($exception->debuginfo ?? ''))); => ode: \S+\s*$/', '', $exception->debuginfo ?? ''));`
+- 394 UnwrapTrim: `$debuginfo = trim(preg_replace('/\n+Error code: \S+\s*$/', '', (string) ($exception->debuginfo ?? ''))); => $debuginfo = preg_replace('/\n+Error code: \S+\s*$/', '', (string) ($exception->debuginfo ??`
+- 395 LogicalAnd: `'invalidparameter' && $debuginfo !== '') => 'invalidparameter' || $debuginfo !== '')`
+- 412 LogicalOr: `$exception === null || ($exception->errorc => $exception === null && ($exception->errorc`
+- 415 CastString: `ode: \S+\s*$/', '', (string) ($exception->debuginfo ?? ''))); => ode: \S+\s*$/', '', $exception->debuginfo ?? ''));`
+- 415 UnwrapTrim: `$detail = trim(preg_replace('/\n+Error code: \S+\s*$/', '', (string) ($exception->debuginfo ?? ''))); => $detail = preg_replace('/\n+Error code: \S+\s*$/', '', (string) ($exception->debuginfo ?? ''));`
+- 494 MethodCallRemoval: `external_api::set_context_restriction(\context_system::instance()); => `
+- 506 CastString: `return (string) plugin_meta::current => return plugin_meta::current`
+- 554 ArrayItemRemoval: `s, $extraheaders, ['jsonrpc' => '2.0', 'id' => $id, 'error' => s, $extraheaders, ['id' => $id, 'error'`
+
+## Plugin/src/local_coursepilot/classes/event/tool_access_failed.php (1 überlebt, 1 offen)
+
+- 77 MethodCallRemoval: `parent::validate_data(); => `
+
+## Plugin/src/local_coursepilot/classes/event/tool_access_succeeded.php (1 überlebt, 1 offen)
+
+- 72 MethodCallRemoval: `parent::validate_data(); => `
+
+## Plugin/src/local_coursepilot/classes/external/add_glossary_entries.php (14 überlebt, 14 offen)
+
+- 93 PublicVisibility: `public static function exe => protected static function exe`
+- 96 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 98 MethodCallRemoval: `self::validate_context($context); => `
+- 99 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 103 ArrayItemRemoval: `record('glossary', ['id' => $cm->instance], '*', MUST_EXIST); => record('glossary', [], '*', MUST_EXIST);`
+- 105 Concat: `sepilot')->get_lock('glossary:' . $glossary->id, 10); => sepilot')->get_lock($glossary->id . 'glossary:', 10);`
+- 105 ConcatOperandRemoval: `sepilot')->get_lock('glossary:' . $glossary->id, 10); => sepilot')->get_lock($glossary->id, 10);`
+- 105 ConcatOperandRemoval: `get_lock('glossary:' . $glossary->id, 10); => get_lock('glossary:', 10);`
+- 105 DecrementInteger: `:' . $glossary->id, 10); => :' . $glossary->id, 9);`
+- 105 IncrementInteger: `' . $glossary->id, 10); => ' . $glossary->id, 11);`
+- 115 CastInt: `return ['cmid' => (int) $cm->id, 'entries' = => return ['cmid' => $cm->id, 'entries' =`
+- 129 PublicVisibility: `public static function exe => protected static function exe`
+- 130 ArrayItemRemoval: `_single_structure(['cmid' => new external_value(PARAM_INT, 'Glossary course module ID'), 'entries' => new exte => _single_structure(['entries' => new exte`
+- 132 ArrayItemRemoval: `_single_structure(['index' => new external_value(PARAM_INT, 'Zero-based input index'), 'success' => new exte => _single_structure(['success' => new exte`
+
+## Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php (54 überlebt, 54 offen)
+
+- 64 PublicVisibility: `public static function exe => protected static function exe`
+- 89 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 91 MethodCallRemoval: `self::validate_context($context); => `
+- 92 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 99 ArrayItemRemoval: `get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST); => get_record('quiz', [], '*', MUST_EXIST);`
+- 103 CastInt: `(quiz_has_attempts((int) $quiz->id)) { => (quiz_has_attempts($quiz->id)) {`
+- 104 ArrayItem: `lot', '', ['quizid' => $quiz->id]); => lot', '', ['quizid' > $quiz->id]);`
+- 104 ArrayItemRemoval: `_coursepilot', '', ['quizid' => $quiz->id]); => _coursepilot', '', []);`
+- 107 CastInt: `$quiz->cmid = (int) $cm->id; => $quiz->cmid = $cm->id;`
+- 112 CastInt: `question', ['id' => (int) $questionid], '*', M => question', ['id' => $questionid], '*', M`
+- 113 FunctionCallRemoval: `question_require_capability_on($question, 'use'); => `
+- 119 CastInt: `z_add_quiz_question((int) $questionid, $quiz); => z_add_quiz_question($questionid, $quiz);`
+- 122 CastInt: `question_bank_entry((int) $questionid); => question_bank_entry($questionid);`
+- 125 CastInt: `= ['questionid' => (int) $questionid, 'questi => = ['questionid' => $questionid, 'questi`
+- 126 CastInt: `tionbankentryid' => (int) $entry->id, 'name' = => tionbankentryid' => $entry->id, 'name' =`
+- 127 CastString: `ntry->id, 'name' => (string) $question->name, 'ad => ntry->id, 'name' => $question->name, 'ad`
+- 128 CastBool: `n->name, 'added' => (bool) $added]; => n->name, 'added' => $added];`
+- 133 CastInt: `::capture_on_update((int) $cm->id, (int) $USER => ::capture_on_update($cm->id, (int) $USER`
+- 133 CastInt: `date((int) $cm->id, (int) $USER->id); => date((int) $cm->id, $USER->id);`
+- 137 CastInt: `return ['cmid' => (int) $cm->id, 'message' = => return ['cmid' => $cm->id, 'message' =`
+- 140 CastInt: `=> self::slot_state((int) $quiz->id)]; => => self::slot_state($quiz->id)];`
+- 151 UnwrapArrayFilter: `$added = array_filter($appended, static fn(array $item): bool => $item['added']); => $added = $appended;`
+- 152 UnwrapArrayFilter: `$skipped = array_filter($appended, static fn(array $item): bool => !$item['added']); => $skipped = $appended;`
+- 155 IfNegation: `if ($added) { => if (!$added) {`
+- 156 Concat: `y $item): string => '"' . $item['name'] . '"', $added); => y $item): string => $item['name'] . '"' . '"', $added);`
+- 156 ConcatOperandRemoval: `y $item): string => '"' . $item['name'] . '"', => y $item): string => $item['name'] . '"',`
+- 156 ConcatOperandRemoval: `m): string => '"' . $item['name'] . '"', $added); => m): string => '"' . '"', $added);`
+- 156 Concat: `m): string => '"' . $item['name'] . '"', $added); => m): string => '"' . '"' . $item['name'], $added);`
+- 156 ConcatOperandRemoval: `'"' . $item['name'] . '"', $added); => '"' . $item['name'], $added);`
+- 157 Concat: `$parts[] = count($added) . ' question(s) appended: ' . implode(', ', $na => $parts[] = ' question(s) appended: ' . count($added) . implode(', ', $na`
+- 157 ConcatOperandRemoval: `$parts[] = count($added) . ' question(s) append => $parts[] = ' question(s) append`
+- 157 ConcatOperandRemoval: `] = count($added) . ' question(s) appended: ' . implode(', ', $names => ] = count($added) . implode(', ', $names`
+- 157 Concat: `] = count($added) . ' question(s) appended: ' . implode(', ', $names) . '.'; => ] = count($added) . implode(', ', $names) . ' question(s) appended: ' . '.';`
+- 157 ConcatOperandRemoval: `on(s) appended: ' . implode(', ', $names) . '.'; => on(s) appended: ' . '.';`
+- 157 Concat: `on(s) appended: ' . implode(', ', $names) . '.'; => on(s) appended: ' . '.' . implode(', ', $names);`
+- 157 ConcatOperandRemoval: `mplode(', ', $names) . '.'; => mplode(', ', $names);`
+- 160 Concat: `y $item): string => '"' . $item['name'] . '"', $skipped); => y $item): string => $item['name'] . '"' . '"', $skipped);`
+- 160 ConcatOperandRemoval: `y $item): string => '"' . $item['name'] . '"', => y $item): string => $item['name'] . '"',`
+- 160 ConcatOperandRemoval: `m): string => '"' . $item['name'] . '"', $skipped); => m): string => '"' . '"', $skipped);`
+- 160 Concat: `m): string => '"' . $item['name'] . '"', $skipped); => m): string => '"' . '"' . $item['name'], $skipped);`
+- 160 ConcatOperandRemoval: `'"' . $item['name'] . '"', $skipped); => '"' . $item['name'], $skipped);`
+- 161 Concat: `$parts[] = count($skipped) . ' already present, skipped: ' . implode(', ', $na => $parts[] = ' already present, skipped: ' . count($skipped) . implode(', ', $na`
+- 161 ConcatOperandRemoval: `$parts[] = count($skipped) . ' already present, s => $parts[] = ' already present, s`
+- 161 Concat: `= count($skipped) . ' already present, skipped: ' . implode(', ', $names) . '.'; => = count($skipped) . implode(', ', $names) . ' already present, skipped: ' . '.';`
+- 161 ConcatOperandRemoval: `esent, skipped: ' . implode(', ', $names) . '.'; => esent, skipped: ' . '.';`
+- 161 Concat: `esent, skipped: ' . implode(', ', $names) . '.'; => esent, skipped: ' . '.' . implode(', ', $names);`
+- 161 ConcatOperandRemoval: `mplode(', ', $names) . '.'; => mplode(', ', $names);`
+- 197 CastInt: `lots[] = ['slot' => (int) $row->slot, 'questio => lots[] = ['slot' => $row->slot, 'questio`
+- 198 CastInt: `tionbankentryid' => (int) $row->questionbanken => tionbankentryid' => $row->questionbanken`
+- 199 CastInt: `id, 'questionid' => (int) $row->questionid, 'v => id, 'questionid' => $row->questionid, 'v`
+- 200 CastInt: `ionid, 'version' => (int) $row->version, 'name => ionid, 'version' => $row->version, 'name`
+- 201 CastString: `>version, 'name' => (string) $row->questionname]; => >version, 'name' => $row->questionname];`
+- 213 ArrayItemRemoval: `_single_structure(['cmid' => new external_value(PARAM_INT, 'Course module ID of the quiz'), 'message' => new exte => _single_structure(['message' => new exte`
+- 216 ArrayItemRemoval: `structure(['questionid' => new external_value(PARAM_INT, 'Requested questionid'), 'questionbankentryid' => new => structure(['questionbankentryid' => new`
+
+## Plugin/src/local_coursepilot/classes/external/append_context_file.php (22 überlebt, 22 offen)
+
+- 56 Concat: `PARAM_ALPHANUMEXT, 'Optional: identifier of an open pending entry (from coursepilot_list_skills) - if the write ' . 'succeeds, the entry disappears within the same call', VALUE_DEFAULT, '' => PARAM_AL`
+- 56 ConcatOperandRemoval: `PARAM_ALPHANUMEXT, 'Optional: identifier of an open pending entry (from coursepilot_list_skills) - if the write ' . 'succeeds, the entry => PARAM_ALPHANUMEXT, 'succeeds, the entry`
+- 56 ConcatOperandRemoval: `ls) - if the write ' . 'succeeds, the entry disappears within the same call', VALUE_DEFAULT, '') => ls) - if the write ', VALUE_DEFAULT, '')`
+- 63 Concat: `PARAM_ALPHANUMEXT, 'Optional, only effective at the external location: contenthash of the target file from the last ' . 'read - if it does not match, the operation aborts. Without an ETag (IServ) the `
+- 63 ConcatOperandRemoval: `PARAM_ALPHANUMEXT, 'Optional, only effective at the external location: contenthash of the target file from the last ' . 'read - if it does no => PARAM_ALPHANUMEXT, 'read - if it does no`
+- 63 ConcatOperandRemoval: `rom the last ' . 'read - if it does not match, the operation aborts. Without an ETag (IServ) the comparison ' . 'relies on the modifica => rom the last ' . 'relies on the modifica`
+- 63 Concat: `rom the last ' . 'read - if it does not match, the operation aborts. Without an ETag (IServ) the comparison ' . 'relies on the modification time (second resolution).', VALUE_DEFAULT, '' => rom the las`
+- 63 ConcatOperandRemoval: `rv) the comparison ' . 'relies on the modification time (second resolution).', VALUE_DEFAULT, '') => rv) the comparison ', VALUE_DEFAULT, '')`
+- 71 Concat: `l_value(PARAM_INT, 'Optional: course ID, if the content belongs to a specific course - only used for a possible entry ' . 'in the "not yet saved" notice if the storage/connection/location fails', VALU`
+- 71 ConcatOperandRemoval: `l_value(PARAM_INT, 'Optional: course ID, if the content belongs to a specific course - only used for a possible entry ' . 'in the "not yet save => l_value(PARAM_INT, 'in the "not yet save`
+- 71 ConcatOperandRemoval: `r a possible entry ' . 'in the "not yet saved" notice if the storage/connection/location fails', VALUE_DEFAULT, 0)] => r a possible entry ', VALUE_DEFAULT, 0)]`
+- 74 DecrementInteger: `ls', VALUE_DEFAULT, 0)]); => ls', VALUE_DEFAULT, -1)]);`
+- 74 IncrementInteger: `ls', VALUE_DEFAULT, 0)]); => ls', VALUE_DEFAULT, 1)]);`
+- 98 DecrementInteger: `'', int $courseid = 0): array => '', int $courseid = -1): array`
+- 98 IncrementInteger: `'', int $courseid = 0): array => '', int $courseid = 1): array`
+- 108 MethodCallRemoval: `self::validate_context(context_files::own_context()); => `
+- 136 CastObject: `local_coursepilot', (object) ['path' => $result[' => local_coursepilot', ['path' => $result['`
+- 140 GreaterThan: `f ($result['size'] > context_files::MAX_ => f ($result['size'] >= context_files::MAX_`
+- 141 Concat: `$message .= ' ' . get_string('contextfilerotation', 'local_coursepilot'); => $message .= get_string('contextfilerotation', 'local_coursepilot') . ' ';`
+- 141 ConcatOperandRemoval: `$message .= ' ' . get_string('contextf => $message .= get_string('contextf`
+- 141 Assignment: `$message .= ' ' . get_string(' => $message = ' ' . get_string('`
+- 158 ArrayItemRemoval: `_single_structure(['path' => new external_value(PARAM_TEXT, 'Resolved file path, relative to the context area'), 'created' => new exte => _single_structure(['created' => new exte`
+
+## Plugin/src/local_coursepilot/classes/external/clone_activity.php (47 überlebt, 47 offen)
+
+- 71 PublicVisibility: `public static function exe => protected static function exe`
+- 82 DecrementInteger: `se', VALUE_DEFAULT, 0), 'visible' => new => se', VALUE_DEFAULT, -1), 'visible' => new`
+- 82 IncrementInteger: `se', VALUE_DEFAULT, 0), 'visible' => new => se', VALUE_DEFAULT, 1), 'visible' => new`
+- 88 TrueValue: `et', VALUE_DEFAULT, true)]); => et', VALUE_DEFAULT, false)]);`
+- 104 DecrementInteger: `t $targetcourseid = 0, bool $visible = tr => t $targetcourseid = -1, bool $visible = tr`
+- 104 TrueValue: `0, bool $visible = true): array => 0, bool $visible = false): array`
+- 119 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 120 CastInt: `$sourcecourseid = (int) $cm->course; => $sourcecourseid = $cm->course;`
+- 131 MethodCallRemoval: `course_module_placement::set_visible($newcmid, $visible); => `
+- 138 FunctionCallRemoval: `rebuild_course_cache($newtargetcourseid, true); => `
+- 143 CastInt: `::capture($newcmid, (int) $USER->id, version_w => ::capture($newcmid, $USER->id, version_w`
+- 143 CastInt: `ter::SOURCE_CLONED, (int) $cm->id); => ter::SOURCE_CLONED, $cm->id);`
+- 170 MethodCallRemoval: `self::validate_context($sourcecontext); => `
+- 171 FunctionCallRemoval: `require_capability('local/coursepilot:use', $sourcecontext); => `
+- 172 FunctionCallRemoval: `require_capability('moodle/course:manageactivities', $sourcecontext); => `
+- 175 MethodCallRemoval: `self::validate_context($targetcontext); => `
+- 176 FunctionCallRemoval: `require_capability('local/coursepilot:use', $targetcontext); => `
+- 177 FunctionCallRemoval: `require_capability('moodle/course:manageactivities', $targetcontext); => `
+- 179 IfNegation: `if ($crosscourse) { => if (!$crosscourse) {`
+- 180 FunctionCallRemoval: `require_capability('moodle/backup:backuptargetimport', $sourcecontext); => `
+- 181 FunctionCallRemoval: `require_capability('moodle/restore:restoretargetimport', $targetcontext); => `
+- 204 CastString: `if ((string) $newcm->availability => if ($newcm->availability`
+- 208 CastString: `$tree = json_decode((string) $newcm->availability => $tree = json_decode($newcm->availability`
+- 214 CastString: `if ((string) ($sourcecm->availabil => if (($sourcecm->availabil`
+- 215 CastString: `coded = json_decode((string) $sourcecm->availabil => coded = json_decode($sourcecm->availabil`
+- 227 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 228 ArrayItemRemoval: `bility', $newjson, ['id' => $newcmid]); => bility', $newjson, []);`
+- 260 TrueValue: `ode['showc'][$i] ?? true; => ode['showc'][$i] ?? false;`
+- 260 Coalesce: `$newshowc[] = $node['showc'][$i] ?? true; => $newshowc[] = true ?? $node['showc'][$i];`
+- 301 DecrementInteger: `sourcechild['e'] ?? 1)); => sourcechild['e'] ?? 0));`
+- 301 IncrementInteger: `sourcechild['e'] ?? 1)); => sourcechild['e'] ?? 2));`
+- 301 CastInt: `f::completion_label((int) ($sourcechild['e'] ?? 1)); => f::completion_label($sourcechild['e'] ?? 1);`
+- 303 LogicalAnd: `ourcechild !== null && !empty($sourcechild => ourcechild !== null || !empty($sourcechild`
+- 304 CastInt: `emodule_from_id('', (int) $sourcechild['cm'], => emodule_from_id('', $sourcechild['cm'],`
+- 304 FalseValue: `urcechild['cm'], 0, false, IGNORE_MISSING); => urcechild['cm'], 0, true, IGNORE_MISSING);`
+- 306 Concat: `return "Completion condition on \"{$sourceactivity->name}\" ({$status}) - " . 'the referenced activity was not copied along when cloning across courses'; => return 'the referenced activity was not cop`
+- 306 ConcatOperandRemoval: `e}\" ({$status}) - " . 'the referenced activity was not copied along when cloning across courses'; => e}\" ({$status}) - ";`
+- 337 Concat: `t($removed) === 1 ? '1 kaputte Voraussetzung entfernt: ' . $removed[0] . '.' : count($remo => t($removed) === 1 ? $removed[0] . '1 kaputte Voraussetzung entfernt: ' . '.' : count($remo`
+- 337 Concat: `tzung entfernt: ' . $removed[0] . '.' : count($removed) . => tzung entfernt: ' . '.' . $removed[0] : count($removed) .`
+- 337 ConcatOperandRemoval: `nt: ' . $removed[0] . '.' : count($removed) . => nt: ' . $removed[0] : count($removed) .`
+- 338 Concat: `ungen entfernt: ' . implode('; ', $removed) . '.'; => ungen entfernt: ' . '.' . implode('; ', $removed);`
+- 338 ConcatOperandRemoval: `lode('; ', $removed) . '.'; => lode('; ', $removed);`
+- 350 Ternary: `d as \"{$title}\" into the target course." : "Activity cloned as \"{$title}\" in the same course."; => d as \"{$title}\" in the same course." : "Activity cloned as \"{$title}\" into the target course.`
+- 354 Concat: `dmessage !== null ? $basis . ' ' . $removedmessage : => dmessage !== null ? ' ' . $basis . $removedmessage :`
+- 354 ConcatOperandRemoval: `dmessage !== null ? $basis . ' ' . $removedmessag => dmessage !== null ? ' ' . $removedmessag`
+- 354 ConcatOperandRemoval: `!== null ? $basis . ' ' . $removedmessage : $b => !== null ? $basis . $removedmessage : $b`
+- 354 Concat: `!== null ? $basis . ' ' . $removedmessage : $basis; => !== null ? $basis . $removedmessage . ' ' : $basis;`
+
+## Plugin/src/local_coursepilot/classes/external/compare_activity_versions.php (8 überlebt, 8 offen)
+
+- 43 PublicVisibility: `public static function exe => protected static function exe`
+- 66 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 68 MethodCallRemoval: `self::validate_context($context); => `
+- 86 Concat: `l_value(PARAM_INT, 'Reference course module ID: clone origin (source = "cloned") or replacing activity ' . '(source = "superseded"), null otherwise', VALUE_DEFAULT, nu => l_value(PARAM_INT, '(source =`
+- 86 ConcatOperandRemoval: `l_value(PARAM_INT, 'Reference course module ID: clone origin (source = "cloned") or replacing activity ' . '(source = "supersede => l_value(PARAM_INT, '(source = "supersede`
+- 86 ConcatOperandRemoval: `replacing activity ' . '(source = "superseded"), null otherwise', VALUE_DEFAULT, nul => replacing activity ', VALUE_DEFAULT, nul`
+- 97 ArrayItemRemoval: `_single_structure(['cmid' => new external_value(PARAM_INT, 'Course module ID'), 'modname' => new exte => _single_structure(['modname' => new exte`
+- 111 ArrayItemRemoval: `_single_structure(['change_type' => new external_value(PARAM_TEXT, '"added" (added) or "removed" (removed)'), 'filename' => new ext => _single_structure(['filename' => new ext`
+
+## Plugin/src/local_coursepilot/classes/external/compose_material_file.php (14 überlebt, 14 offen)
+
+- 42 PublicVisibility: `public static function exe => protected static function exe`
+- 88 MethodCallRemoval: `self::validate_context(material_files::own_context()); => `
+- 89 MethodCallRemoval: `material_files::require_manage_own_files(); => `
+- 97 UnwrapStrToLower: `if (strtolower(pathinfo($filename, PATHINFO_EXTENSION)) !== 'png') { => if (pathinfo($filename, PATHINFO_EXTENSION) !== 'png') {`
+- 117 ArrayItemRemoval: `epilot', (object) ['path' => $path, 'width' => $width, 'h => epilot', (object) ['width' => $width, 'h`
+- 117 CastObject: `local_coursepilot', (object) ['path' => $path, 'w => local_coursepilot', ['path' => $path, 'w`
+- 122 Identical: `message . ($warning === null ? '' : ' ' . => message . ($warning !== null ? '' : ' ' .`
+- 122 Concat: `ing === null ? '' : ' ' . $warning)]; => ing === null ? '' : $warning . ' ')];`
+- 122 ConcatOperandRemoval: `ing === null ? '' : ' ' . $warning)]; => ing === null ? '' : $warning)];`
+- 122 ConcatOperandRemoval: `=== null ? '' : ' ' . $warning)]; => === null ? '' : ' ')];`
+- 122 Ternary: `warning === null ? '' : ' ' . $warning)]; => warning === null ? ' ' . $warning : '')];`
+- 122 Concat: `tent), 'message' => $message . ($warning === null ? '' : ' ' . $warning)]; => tent), 'message' => ($warning === null ? '' : ' ' . $warning) . $message];`
+- 122 ConcatOperandRemoval: `ent), 'message' => $message . ($warning === null ? '' : ' ' . $warning)]; => ent), 'message' => $warning === null ? '' : ' ' . $warning];`
+- 122 ConcatOperandRemoval: `message' => $message . ($warning === null ? '' : ' ' . $warning)]; => message' => $message];`
+
+## Plugin/src/local_coursepilot/classes/external/create_activity_from_xml.php (28 überlebt, 28 offen)
+
+- 51 FalseValue: `ck', VALUE_DEFAULT, false), 'replaces_cmid' => ck', VALUE_DEFAULT, true), 'replaces_cmid'`
+- 54 Concat: `l_value(PARAM_INT, 'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only ' . 'hidden. 0 = create only', VALUE_DEFAULT, 0) => l_value(PARAM_IN`
+- 54 ConcatOperandRemoval: `l_value(PARAM_INT, 'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only ' . 'hidden. 0 = create o => l_value(PARAM_INT, 'hidden. 0 = create `
+- 54 ConcatOperandRemoval: `he old one is only ' . 'hidden. 0 = create only', VALUE_DEFAULT, 0), => he old one is only ', VALUE_DEFAULT, 0),`
+- 63 FalseValue: `w)', VALUE_DEFAULT, false), 'files' => new e => w)', VALUE_DEFAULT, true), 'files' => new e`
+- 66 ArrayItemRemoval: `_single_structure(['path' => new external_value(PARAM_RAW, 'Path in the material store; binary contents stay on the server'), 'filearea' => new ext => _single_structure(['filearea' => new ext`
+- 117 LessThan: `$params['section'] < 0) { => $params['section'] <= 0) {`
+- 121 MethodCallRemoval: `self::validate_context($context); => `
+- 122 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 123 FunctionCallRemoval: `require_capability('moodle/course:manageactivities', $context); => `
+- 124 FunctionCallRemoval: `require_capability('moodle/backup:backupactivity', $context); => `
+- 125 FunctionCallRemoval: `require_capability('moodle/restore:restoreactivity', $context); => `
+- 126 FunctionCallRemoval: `require_capability('mod/' . $params['modname'] . ':addinstance', $context); => `
+- 130 FunctionCallRemoval: `require_capability('moodle/course:manageactivities', $oldcontext); => `
+- 131 FunctionCallRemoval: `require_capability('moodle/course:activityvisibility', $oldcontext); => `
+- 169 Concat: `ap(static fn($r) => $r['kind'] . ' (' . $r['location'] . => ap(static fn($r) => ' (' . $r['kind'] . $r['location'] .`
+- 169 ConcatOperandRemoval: `$r) => $r['kind'] . ' (' . $r['location'] . ')' => $r) => $r['kind'] . $r['location'] . ')'`
+- 169 Concat: `$r) => $r['kind'] . ' (' . $r['location'] . ')', $result['ref => $r) => $r['kind'] . $r['location'] . ' (' . ')', $result['ref`
+- 169 ConcatOperandRemoval: `$r['kind'] . ' (' . $r['location'] . ')', $result['refere => $r['kind'] . ' (' . ')', $result['refere`
+- 169 Concat: `$r['kind'] . ' (' . $r['location'] . ')', $result['reference => $r['kind'] . ' (' . ')' . $r['location'], $result['reference`
+- 169 ConcatOperandRemoval: `(' . $r['location'] . ')', $result['reference => (' . $r['location'], $result['reference`
+- 201 ArrayItemRemoval: `_single_structure(['kind' => new external_value(PARAM_ALPHANUMEXT, 'activity_availability, section_availability or course_completion'), 'location_id' => new => _single_structure(['location_id' => new`
+- 213 Concat: `l_value(PARAM_INT, 'Newest activity that already supersedes replaces_cmid (ask the teacher whether to supersede that one instead), ' . '0 if none'), 'hidden_predeces => l_value(PARAM_INT, '0 if none' `
+- 213 ConcatOperandRemoval: `l_value(PARAM_INT, 'Newest activity that already supersedes replaces_cmid (ask the teacher whether to supersede that one instead), ' . '0 if none'), 'hidden => l_value(PARAM_INT, '0 if none'), 'hidden`
+- 213 ConcatOperandRemoval: `that one instead), ' . '0 if none'), 'hidden_predecess => that one instead), '), 'hidden_predecess`
+- 218 Concat: `l_value(PARAM_INT, 'Hidden earlier versions in the chain behind the new activity: replaces_cmid (hidden by superseding) ' . 'plus its hidden predecessors; 0 without replaces_cmid'), 'message' => new =`
+- 218 ConcatOperandRemoval: `l_value(PARAM_INT, 'Hidden earlier versions in the chain behind the new activity: replaces_cmid (hidden by superseding) ' . 'plus its hidden pred => l_value(PARAM_INT, 'plus its hidden pred`
+- 218 ConcatOperandRemoval: `en by superseding) ' . 'plus its hidden predecessors; 0 without replaces_cmid'), 'message' => new => en by superseding) '), 'message' => new`
+
+## Plugin/src/local_coursepilot/classes/external/create_mc_question.php (41 überlebt, 40 offen)
+
+- 45 PublicVisibility: `public static function exe => protected static function exe`
+- 56 OneZeroFloat: `on', VALUE_DEFAULT, 1.0), 'generalfeedbac => on', VALUE_DEFAULT, 0.0), 'generalfeedbac`
+- 60 Concat: `value(PARAM_BOOL, 'true explicitly confirms a previously reported suspect case (same-named entry in the ' . 'target category) and creates the question anyway as a new entry. Omit or false on the ' . '`
+- 60 ConcatOperandRemoval: `value(PARAM_BOOL, 'true explicitly confirms a previously reported suspect case (same-named entry in the ' . 'target category) and => value(PARAM_BOOL, 'target category) and`
+- 60 ConcatOperandRemoval: `d entry in the ' . 'target category) and creates the question anyway as a new entry. Omit or false on the ' . 'first call.', VALUE_ => d entry in the ' . 'first call.', VALUE_`
+- 60 Concat: `d entry in the ' . 'target category) and creates the question anyway as a new entry. Omit or false on the ' . 'first call.', VALUE_DEFAULT, fa => d entry in the ' . 'first call.' . 'target category) a`
+- 60 ConcatOperandRemoval: `it or false on the ' . 'first call.', VALUE_DEFAULT, fal => it or false on the ', VALUE_DEFAULT, fal`
+- 64 FalseValue: `l.', VALUE_DEFAULT, false)]); => l.', VALUE_DEFAULT, true)]);`
+- 88 OneZeroFloat: `loat $defaultmark = 1.0, string $generalf => loat $defaultmark = 0.0, string $generalf`
+- 106 CastInt: `ext::instance_by_id((int) $category->contextid => ext::instance_by_id($category->contextid`
+- 107 MethodCallRemoval: `self::validate_context($context); => `
+- 108 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 109 FunctionCallRemoval: `require_capability('moodle/question:add', $context); => `
+- 116 CastInt: `ind_name_candidates((int) $params['categoryid' => ind_name_candidates($params['categoryid'`
+- 123 DecrementInteger: `=> 0, 'version' => 0, 'status' => 'suspe => => 0, 'version' => -1, 'status' => 'suspe`
+- 123 IncrementInteger: `=> 0, 'version' => 0, 'status' => 'suspe => => 0, 'version' => 1, 'status' => 'suspe`
+- 127 ArrayItemRemoval: `params['name'])], ['idnumber' => '', 'categoryid' => (int) => params['name'])], ['categoryid' => (int)`
+- 129 CastInt: `'', 'categoryid' => (int) $params['categoryid' => '', 'categoryid' => $params['categoryid'`
+- 139 CastInt (ignoriert): `tion_import::import((int) $params['categoryid' => tion_import::import($params['categoryid'`
+- 143 CastInt: `st_version_question((int) $entry->id); => st_version_question($entry->id);`
+- 145 UnwrapArrayMerge: `return array_merge(['name' => $question['name'], 'questionid' => (int) $latest->id, 'questionbankentryid' => (int) $question['questionbankentryid'], 'version' => (int) $question['version'], 'status' =`
+- 148 CastInt: `'], 'questionid' => (int) $latest->id, 'questi => '], 'questionid' => $latest->id, 'questi`
+- 149 CastInt: `tionbankentryid' => (int) $question['questionb => tionbankentryid' => $question['questionb`
+- 150 CastInt: `yid'], 'version' => (int) $question['version'] => yid'], 'version' => $question['version']`
+- 155 ArrayItemRemoval: `epilot', (object) ['name' => $params['name'], 'entryid' => $questio => epilot', (object) ['entryid' => $questio`
+- 155 CastObject: `local_coursepilot', (object) ['name' => $params[' => local_coursepilot', ['name' => $params['`
+- 179 CastFloat: `tionpercent = round((float) $answer['fraction'] => tionpercent = round($answer['fraction']`
+- 179 DecrementInteger: `['fraction'] * 100, 5); => ['fraction'] * 100, 4);`
+- 179 IncrementInteger: `['fraction'] * 100, 5); => ['fraction'] * 100, 6);`
+- 180 Concat: `$fractionpercent . '" format="html">' . "\n" . ' <text><![CDATA[ => $fractionpercent . "\n" . '" format="html">' . ' <text><![CDATA[`
+- 180 ConcatOperandRemoval: `" format="html">' . "\n" . ' <text><![CDATA[' . => " format="html">' . ' <text><![CDATA[' .`
+- 180 Concat: `" format="html">' . "\n" . ' <text><![CDATA[' . self::cdata($answ => " format="html">' . ' <text><![CDATA[' . "\n" . self::cdata($answ`
+- 180 Concat: `answer['answer']) . ']]></text>' . "\n" . ' <feedback forma => answer['answer']) . "\n" . ']]></text>' . ' <feedback forma`
+- 180 ConcatOperandRemoval: `]) . ']]></text>' . "\n" . ' <feedback format=" => ]) . ']]></text>' . ' <feedback format="`
+- 180 Concat: `]) . ']]></text>' . "\n" . ' <feedback format="html"><text><![CDATA[' . self::cdata($answ => ]) . ']]></text>' . ' <feedback format="html"><text><![CDATA[' . "\n" . self::cdata($answ`
+- 180 Concat: `feedback'] ?? '') . ']]></text></feedback>' . "\n" . ' </answer>' . "\ => feedback'] ?? '') . "\n" . ']]></text></feedback>' . ' </answer>' . "\`
+- 180 ConcatOperandRemoval: `text></feedback>' . "\n" . ' </answer>' . "\n"; => text></feedback>' . ' </answer>' . "\n";`
+- 180 Concat: `text></feedback>' . "\n" . ' </answer>' . "\n"; => text></feedback>' . ' </answer>' . "\n" . "\n";`
+- 180 Concat: `feedback>' . "\n" . ' </answer>' . "\n"; => feedback>' . "\n" . "\n" . ' </answer>';`
+- 180 ConcatOperandRemoval: `"\n" . ' </answer>' . "\n"; => "\n" . ' </answer>';`
+- 188 BitwiseOr: `s['name'], ENT_XML1 | ENT_QUOTES, 'UTF-8' => s['name'], ENT_XML1 & ENT_QUOTES, 'UTF-8'`
+
+## Plugin/src/local_coursepilot/classes/external/create_module.php (33 überlebt, 33 offen)
+
+- 65 PublicVisibility: `public static function exe => protected static function exe`
+- 72 Concat: `l_value(PARAM_RAW, 'JSON object field name => value - missing fields are filled with the catalog form default. ' . 'A field bundle (describe_module_fields) is mixed in here BEFORE the call (Spec 0015 `
+- 72 ConcatOperandRemoval: `l_value(PARAM_RAW, 'JSON object field name => value - missing fields are filled with the catalog form default. ' . 'A field bundle (desc => l_value(PARAM_RAW, 'A field bundle (desc`
+- 72 ConcatOperandRemoval: `form default. ' . 'A field bundle (describe_module_fields) is mixed in here BEFORE the call (Spec 0015 §2.4: ' . 'bundles are not an e => form default. ' . 'bundles are not an e`
+- 72 Concat: `form default. ' . 'A field bundle (describe_module_fields) is mixed in here BEFORE the call (Spec 0015 §2.4: ' . 'bundles are not an endpoint parameter) - a bundle value only applies to fields this ob`
+- 72 ConcatOperandRemoval: `pec 0015 §2.4: ' . 'bundles are not an endpoint parameter) - a bundle value only applies to fields this object ' . 'does not already nam => pec 0015 §2.4: ' . 'does not already nam`
+- 72 Concat: `pec 0015 §2.4: ' . 'bundles are not an endpoint parameter) - a bundle value only applies to fields this object ' . 'does not already name itself.'), 'location' => ma => pec 0015 §2.4: ' . 'does not al`
+- 72 ConcatOperandRemoval: `fields this object ' . 'does not already name itself.'), 'location' => mat => fields this object '), 'location' => mat`
+- 110 MethodCallRemoval: `self::authorise($params['courseid']); => `
+- 120 LogicalOr: `(!is_array($merged) || json_last_error() ! => (!is_array($merged) && json_last_error() !`
+- 154 MethodCallRemoval: `self::validate_context($coursecontext); => `
+- 155 FunctionCallRemoval: `require_capability('local/coursepilot:use', $coursecontext); => `
+- 159 FunctionCallRemoval: `// Check native editing permissions early (Spec 0015 §3.4), as in // update_module_settings. can_add_moduleinfo checks again later; // this prevents field validation from masking missing permissions. `
+- 181 ArrayItemRemoval: `coursepilot', '', ['modname' => $modname, 'write_route' => $wri => coursepilot', '', ['write_route' => $wri`
+- 234 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 257 Concat: `$parts[] = '"' . $field['field'] . '" = ' . $field[' => $parts[] = $field['field'] . '"' . '" = ' . $field['`
+- 257 ConcatOperandRemoval: `$parts[] = '"' . $field['field'] . '" => $parts[] = $field['field'] . '"`
+- 257 ConcatOperandRemoval: `$parts[] = '"' . $field['field'] . '" = ' . $field['val => $parts[] = '"' . '" = ' . $field['val`
+- 257 Concat: `$parts[] = '"' . $field['field'] . '" = ' . $field['value_jso => $parts[] = '"' . '" = ' . $field['field'] . $field['value_jso`
+- 257 ConcatOperandRemoval: `. $field['field'] . '" = ' . $field['value_json'] => . $field['field'] . $field['value_json']`
+- 257 Concat: `. $field['field'] . '" = ' . $field['value_json']; => . $field['field'] . $field['value_json'] . '" = ';`
+- 259 Concat: `$message = 'Activity "' . $modname . '" created'; => $message = $modname . 'Activity "' . '" created';`
+- 259 ConcatOperandRemoval: `$message = 'Activity "' . $modname . '" create => $message = $modname . '" create`
+- 259 ConcatOperandRemoval: `ge = 'Activity "' . $modname . '" created'; => ge = 'Activity "' . '" created';`
+- 259 Concat: `ge = 'Activity "' . $modname . '" created'; => ge = 'Activity "' . '" created' . $modname;`
+- 259 ConcatOperandRemoval: `tivity "' . $modname . '" created'; => tivity "' . $modname;`
+- 260 Concat: `message .= $parts ? ': ' . implode(', ', $parts) . '.' : '.'; => message .= $parts ? implode(', ', $parts) . ': ' . '.' : '.';`
+- 260 ConcatOperandRemoval: `message .= $parts ? ': ' . implode(', ', $parts => message .= $parts ? implode(', ', $parts`
+- 260 Concat: `.= $parts ? ': ' . implode(', ', $parts) . '.' : '.'; => .= $parts ? ': ' . '.' . implode(', ', $parts) : '.';`
+- 260 ConcatOperandRemoval: `plode(', ', $parts) . '.' : '.'; => plode(', ', $parts) : '.';`
+- 260 Assignment: `$message .= $parts ? ': ' . im => $message = $parts ? ': ' . im`
+- 263 Concat: `$message .= ' ' . implode(' ', $sideeffects); => $message .= implode(' ', $sideeffects) . ' ';`
+- 263 ConcatOperandRemoval: `$message .= ' ' . implode(' ', $sideef => $message .= implode(' ', $sideef`
+
+## Plugin/src/local_coursepilot/classes/external/create_quiz.php (19 überlebt, 19 offen)
+
+- 43 PublicVisibility: `public static function exe => protected static function exe`
+- 49 Concat: `l_value(PARAM_RAW, 'JSON object field name => value - missing fields come from the form default. Required fields ' . 'without a form default must be named: "name", "intro", "subnet" (empty = no restri`
+- 49 ConcatOperandRemoval: `l_value(PARAM_RAW, 'JSON object field name => value - missing fields come from the form default. Required fields ' . 'without a form defau => l_value(PARAM_RAW, 'without a form defau`
+- 49 ConcatOperandRemoval: `equired fields ' . 'without a form default must be named: "name", "intro", "subnet" (empty = no restriction), ' . '"browsersecurity" (" => equired fields ' . '"browsersecurity" ("`
+- 49 Concat: `equired fields ' . 'without a form default must be named: "name", "intro", "subnet" (empty = no restriction), ' . '"browsersecurity" ("-" = no restriction); "preferredbehaviour" otherwise comes from "`
+- 49 ConcatOperandRemoval: `restriction), ' . '"browsersecurity" ("-" = no restriction); "preferredbehaviour" otherwise comes from "mode". ' . '"grade"/"sumgrades" a => restriction), ' . '"grade"/"sumgrades" a`
+- 49 Concat: `restriction), ' . '"browsersecurity" ("-" = no restriction); "preferredbehaviour" otherwise comes from "mode". ' . '"grade"/"sumgrades" are NOT possible here (blocked), see the "grade" parameter.'), '`
+- 49 ConcatOperandRemoval: `comes from "mode". ' . '"grade"/"sumgrades" are NOT possible here (blocked), see the "grade" parameter.'), 'mode' => new ext => comes from "mode". '), 'mode' => new ext`
+- 56 Concat: `PARAM_ALPHANUMEXT, 'Mode bundle: "mini-check", "progress-check" or "final-test". Bundle values apply only ' . 'to fields not explicitly supplied in fields_json. Empty = no bundle.', VALUE_DEFAULT, '' `
+- 56 ConcatOperandRemoval: `PARAM_ALPHANUMEXT, 'Mode bundle: "mini-check", "progress-check" or "final-test". Bundle values apply only ' . 'to fields not explic => PARAM_ALPHANUMEXT, 'to fields not explic`
+- 56 ConcatOperandRemoval: `values apply only ' . 'to fields not explicitly supplied in fields_json. Empty = no bundle.', VALUE_DEFAULT, '') => values apply only ', VALUE_DEFAULT, '')`
+- 63 Concat: `value(PARAM_FLOAT, 'Maximum quiz grade. -1 = use the Moodle form default (admin setting quiz/maximumgrade)' . '.', VALUE_DEFAULT, -1 => value(PARAM_FLOAT, '.' . 'Maximum quiz grade. -1 = use the Moodl`
+- 63 ConcatOperandRemoval: `value(PARAM_FLOAT, 'Maximum quiz grade. -1 = use the Moodle form default (admin setting quiz/maximumgrade)' . '.', VALUE_DEFAULT, - => value(PARAM_FLOAT, '.', VALUE_DEFAULT, -`
+- 63 ConcatOperandRemoval: `quiz/maximumgrade)' . '.', VALUE_DEFAULT, -1. => quiz/maximumgrade)', VALUE_DEFAULT, -1.`
+- 66 OneZeroFloat: `.', VALUE_DEFAULT, -1.0), learner_locks:: => .', VALUE_DEFAULT, -0.0), learner_locks::`
+- 88 OneZeroFloat: `'', float $grade = -1.0, array $confirmle => '', float $grade = -0.0, array $confirmle`
+- 101 MethodCallRemoval: `self::validate_context($coursecontext); => `
+- 103 FunctionCallRemoval: `require_capability('moodle/course:manageactivities', $coursecontext); => `
+- 108 LogicalOr: `(!is_array($patch) || json_last_error() ! => (!is_array($patch) && json_last_error() !`
+
+## Plugin/src/local_coursepilot/classes/external/create_workbench_download_links.php (3 überlebt, 3 offen)
+
+- 47 PublicVisibility: `public static function exe => protected static function exe`
+- 67 MethodCallRemoval: `self::validate_context($context); => `
+- 68 MethodCallRemoval: `material_files::require_manage_own_files(); => `
+
+## Plugin/src/local_coursepilot/classes/external/crop_material_file.php (67 überlebt, 67 offen)
+
+- 56 PublicVisibility: `public static function exe => protected static function exe`
+- 114 MethodCallRemoval: `self::validate_context($context); => `
+- 115 MethodCallRemoval: `material_files::require_manage_own_files(); => `
+- 155 UnwrapStrToLower: `$sourceextension = strtolower(pathinfo(basename($sourcerelative), PATHINFO_EXTENSION)); => $sourceextension = pathinfo(basename($sourcerelative), PATHINFO_EXTENSION);`
+- 157 Throw_: `throw new \moodle_exceptio => new \moodle_exceptio`
+- 173 UnwrapStrToLower: `$targetextension = strtolower(pathinfo($targetfilename, PATHINFO_EXTENSION)); => $targetextension = pathinfo($targetfilename, PATHINFO_EXTENSION);`
+- 183 Identical: `== '' && ($existing === null || $existing => == '' && ($existing !== null || $existing`
+- 183 LogicalOrAllSubExprNegation: `nthash'] !== '' && ($existing === null || $existing['contenthash'] !== $params['expected_contenthash'])) { => nthash'] !== '' && (!($existing === null) || !($existing['contenthash'] !== $params['expec`
+- 254 FalseValue: `if ($source === false) { => if ($source === true) {`
+- 270 FunctionCallRemoval: `imagedestroy($source); => `
+- 305 NotIdentical: `et_string($existing !== null ? 'materialc => et_string($existing === null ? 'materialc`
+- 305 Ternary: `null ? 'materialcropoverwritten' : 'materialcropcreated', 'local_coursepilo => null ? 'materialcropcreated' : 'materialcropoverwritten', 'local_coursepilo`
+- 307 ArrayItemRemoval: `epilot', (object) ['path' => $targetrelative, 'source' => $sourcere => epilot', (object) ['source' => $sourcere`
+- 307 CastObject: `local_coursepilot', (object) ['path' => $targetre => local_coursepilot', ['path' => $targetre`
+- 309 NotIdentical: `if ($warning !== null) { => if ($warning === null) {`
+- 337 Concat: `_value(PARAM_TEXT, 'Location and fingerprint of the source file: "<location>:<path> (<size> byte, changed <timestamp>)" - ' . 'the material store carries no contenthash, this fingerprint replaces it h`
+- 337 ConcatOperandRemoval: `_value(PARAM_TEXT, 'Location and fingerprint of the source file: "<location>:<path> (<size> byte, changed <timestamp>)" - ' . 'the material store c => _value(PARAM_TEXT, 'the material store c`
+- 337 ConcatOperandRemoval: `ed <timestamp>)" - ' . 'the material store carries no contenthash, this fingerprint replaces it here'), 'created' => new => ed <timestamp>)" - '), 'created' => new`
+- 382 LessThanOrEqualTo: `=> $v >= 0.0 && $v <= 1.0; => => $v >= 0.0 && $v < 1.0;`
+- 384 ArrayItemRemoval: `ot', '', (object) ['x0' => $x0, 'y0' => $y0, 'x1' => => ot', '', (object) ['y0' => $y0, 'x1' =>`
+- 384 CastObject: `l_coursepilot', '', (object) ['x0' => $x0, 'y0' = => l_coursepilot', '', ['x0' => $x0, 'y0' =`
+- 421 FunctionCallRemoval: `imagedestroy($canvas); => `
+- 445 RoundingFamily: `$px0 = (int) round($x0 * $origwidth); => $px0 = (int) floor($x0 * $origwidth);`
+- 445 RoundingFamily: `$px0 = (int) round($x0 * $origwidth); => $px0 = (int) ceil($x0 * $origwidth);`
+- 445 CastInt: `$px0 = (int) round($x0 * $origwid => $px0 = round($x0 * $origwid`
+- 446 RoundingFamily: `$py0 = (int) round($y0 * $origheight); => $py0 = (int) floor($y0 * $origheight);`
+- 446 RoundingFamily: `$py0 = (int) round($y0 * $origheight); => $py0 = (int) ceil($y0 * $origheight);`
+- 446 CastInt: `$py0 = (int) round($y0 * $orighei => $py0 = round($y0 * $orighei`
+- 447 RoundingFamily: `$px1 = (int) round($x1 * $origwidth); => $px1 = (int) floor($x1 * $origwidth);`
+- 447 RoundingFamily: `$px1 = (int) round($x1 * $origwidth); => $px1 = (int) ceil($x1 * $origwidth);`
+- 447 CastInt: `$px1 = (int) round($x1 * $origwid => $px1 = round($x1 * $origwid`
+- 448 RoundingFamily: `$py1 = (int) round($y1 * $origheight); => $py1 = (int) floor($y1 * $origheight);`
+- 448 RoundingFamily: `$py1 = (int) round($y1 * $origheight); => $py1 = (int) ceil($y1 * $origheight);`
+- 448 CastInt: `$py1 = (int) round($y1 * $orighei => $py1 = round($y1 * $orighei`
+- 455 DecrementInteger: `$width = max(1, min($origwidth - $ => $width = max(0, min($origwidth - $`
+- 455 IncrementInteger: `$width = max(1, min($origwidth - $ => $width = max(2, min($origwidth - $`
+- 455 Minus: `x(1, min($origwidth - $px0, $px1 - $px0)) => x(1, min($origwidth + $px0, $px1 - $px0))`
+- 456 DecrementInteger: `$height = max(1, min($origheight - => $height = max(0, min($origheight -`
+- 456 IncrementInteger: `$height = max(1, min($origheight - => $height = max(2, min($origheight -`
+- 456 Minus: `(1, min($origheight - $py0, $py1 - $py0)) => (1, min($origheight + $py0, $py1 - $py0))`
+- 480 ArrayItemRemoval: `argetextension, ['jpg', 'jpeg'], true); => argetextension, ['jpeg'], true);`
+- 481 IfNegation: `if ($isjpeg) { => if (!$isjpeg) {`
+- 483 DecrementInteger: `imagefill($canvas, 0, 0, imagecoloralloc => imagefill($canvas, -1, 0, imagecoloralloc`
+- 483 IncrementInteger: `imagefill($canvas, 0, 0, imagecoloralloc => imagefill($canvas, 1, 0, imagecoloralloc`
+- 483 DecrementInteger: `agefill($canvas, 0, 0, imagecolorallocate => agefill($canvas, 0, -1, imagecolorallocate`
+- 483 IncrementInteger: `agefill($canvas, 0, 0, imagecolorallocate => agefill($canvas, 0, 1, imagecolorallocate`
+- 483 DecrementInteger: `allocate($canvas, 255, 255, 255)); => allocate($canvas, 254, 255, 255));`
+- 483 DecrementInteger: `ate($canvas, 255, 255, 255)); => ate($canvas, 255, 254, 255));`
+- 483 DecrementInteger: `canvas, 255, 255, 255)); => canvas, 255, 255, 254));`
+- 483 FunctionCallRemoval: `// JPEG has no transparency; use a white canvas as in image_preview::build(). imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255)); => `
+- 485 FalseValue: `hablending($canvas, false); => hablending($canvas, true);`
+- 485 FunctionCallRemoval: `imagealphablending($canvas, false); => `
+- 486 FunctionCallRemoval: `imagesavealpha($canvas, true); => `
+- 487 DecrementInteger: `imagefill($canvas, 0, 0, imagecoloralloc => imagefill($canvas, -1, 0, imagecoloralloc`
+- 487 IncrementInteger: `imagefill($canvas, 0, 0, imagecoloralloc => imagefill($canvas, 1, 0, imagecoloralloc`
+- 487 DecrementInteger: `agefill($canvas, 0, 0, imagecolorallocate => agefill($canvas, 0, -1, imagecolorallocate`
+- 487 IncrementInteger: `agefill($canvas, 0, 0, imagecolorallocate => agefill($canvas, 0, 1, imagecolorallocate`
+- 487 IncrementInteger: `ocatealpha($canvas, 0, 0, 0, 127)); => ocatealpha($canvas, 1, 0, 0, 127));`
+- 487 IncrementInteger: `tealpha($canvas, 0, 0, 0, 127)); => tealpha($canvas, 0, 1, 0, 127));`
+- 487 IncrementInteger: `lpha($canvas, 0, 0, 0, 127)); => lpha($canvas, 0, 0, 1, 127));`
+- 487 DecrementInteger: `$canvas, 0, 0, 0, 127)); => $canvas, 0, 0, 0, 126));`
+- 487 FunctionCallRemoval: `imagefill($canvas, 0, 0, imagecolorallocatealpha($canvas, 0, 0, 0, 127)); => `
+- 489 DecrementInteger: `y($canvas, $source, 0, 0, $px0, $py0, $wi => y($canvas, $source, -1, 0, $px0, $py0, $wi`
+- 489 IncrementInteger: `y($canvas, $source, 0, 0, $px0, $py0, $wi => y($canvas, $source, 1, 0, $px0, $py0, $wi`
+- 489 DecrementInteger: `canvas, $source, 0, 0, $px0, $py0, $width => canvas, $source, 0, -1, $px0, $py0, $width`
+- 489 IncrementInteger: `canvas, $source, 0, 0, $px0, $py0, $width => canvas, $source, 0, 1, $px0, $py0, $width`
+- 489 FunctionCallRemoval: `imagecopy($canvas, $source, 0, 0, $px0, $py0, $width, $height); => `
+
+## Plugin/src/local_coursepilot/classes/external/delete_material_files.php (13 überlebt, 13 offen)
+
+- 43 PublicVisibility: `public static function exe => protected static function exe`
+- 63 MethodCallRemoval: `self::validate_context($context); => `
+- 64 MethodCallRemoval: `material_files::require_manage_own_files(); => `
+- 88 Assignment: `$freedbytes += $size; => $freedbytes = $size;`
+- 97 ArrayItemRemoval: `epilot', (object) ['count' => count($deleted), 'freed' => format_flo => epilot', (object) ['freed' => format_flo`
+- 97 CastObject: `local_coursepilot', (object) ['count' => count($d => local_coursepilot', ['count' => count($d`
+- 98 ArrayItem: `, (object) ['count' => count($deleted), ' => , (object) ['count' > count($deleted), '`
+- 99 DecrementInteger: `$freedbytes / 1048576, 1)]), => $freedbytes / 1048575, 1)]),`
+- 99 IncrementInteger: `$freedbytes / 1048576, 1)]), => $freedbytes / 1048577, 1)]),`
+- 99 Division: `t_float($freedbytes / 1048576, 1)]), => t_float($freedbytes * 1048576, 1)]),`
+- 99 DecrementInteger: `eedbytes / 1048576, 1)]), => eedbytes / 1048576, 0)]),`
+- 99 IncrementInteger: `eedbytes / 1048576, 1)]), => eedbytes / 1048576, 2)]),`
+- 99 ArrayItem: `($deleted), 'freed' => format_float($free => ($deleted), 'freed' > format_float($free`
+
+## Plugin/src/local_coursepilot/classes/external/describe_module_fields.php (33 überlebt, 32 offen)
+
+- 64 PublicVisibility: `public static function exe => protected static function exe`
+- 74 Concat: `_value(PARAM_BOOL, 'true for all five categories (fields, pseudo fields, blocked fields, combination rules, ' . 'side effects); otherwise only the commonly set fields plus field bundles.', VALUE_DEFAU`
+- 74 ConcatOperandRemoval: `_value(PARAM_BOOL, 'true for all five categories (fields, pseudo fields, blocked fields, combination rules, ' . 'side effects); other => _value(PARAM_BOOL, 'side effects); other`
+- 74 ConcatOperandRemoval: `combination rules, ' . 'side effects); otherwise only the commonly set fields plus field bundles.', VALUE_DEFAULT, fal => combination rules, ', VALUE_DEFAULT, fal`
+- 77 FalseValue: `s.', VALUE_DEFAULT, false)]); => s.', VALUE_DEFAULT, true)]);`
+- 96 MethodCallRemoval: `self::validate_context(context_system::instance()); => `
+- 99 UnwrapTrim: `$modname = trim($params['modname']); => $modname = $params['modname'];`
+- 104 Concat: `dnames, 'notice' => 'Coursepilot knows these activity types: ' . implode(', ', $knownmodnames) . '. describe_modul => dnames, 'notice' => implode(', ', $knownmodnames) . 'Coursepilot knows these activ`
+- 104 ConcatOperandRemoval: `dnames, 'notice' => 'Coursepilot knows these activity types: ' . implode(', ', $known => dnames, 'notice' => implode(', ', $known`
+- 104 ConcatOperandRemoval: `activity types: ' . implode(', ', $knownmodnames) . '. describe_module_f => activity types: ' . '. describe_module_f`
+- 104 Concat: `activity types: ' . implode(', ', $knownmodnames) . '. describe_module_fields(modname) queries one of them.', 'module' => null]; => activity types: ' . '. describe_module_fields(modname) queries one o`
+- 104 ConcatOperandRemoval: `, ', $knownmodnames) . '. describe_module_fields(modname) queries one of them.', 'module' => null]; => , ', $knownmodnames), 'module' => null];`
+- 116 ArrayItem: `modname, 'modnames' => implode(', ', $kno => modname, 'modnames' > implode(', ', $kno`
+- 116 ArrayItemRemoval: `ilot', '', ['modname' => $modname, 'modnames' => implode(', ', => ilot', '', ['modnames' => implode(', ',`
+- 120 CastBool: `$full = (bool) $params['full']; => $full = $params['full'];`
+- 127 UnwrapArrayValues: `odulefields = array_values(array_filter($modulefields, static fn(field $f): bool => in_array($f->name, $commonnames, true))); => odulefields = array_filter($modulefields, static fn(field $f): bool => `
+- 138 Coalesce: `e, 'write_route' => $catalogclass::write_route() ?? self::VEHICLE_WRITE_ROUTE, 'grade_origin' => => e, 'write_route' => self::VEHICLE_WRITE_ROUTE ?? $catalogclass::write_route(), 'grade_origin' =>`
+- 151 UnwrapArrayValues (ignoriert): `ed_fields'] = array_values(array_unique(array_merge(shared_block::blocked_fields(), $catalogclass::blocklist()))); => ed_fields'] = array_unique(array_merge(shared_block::blocked_fields(), $catalogcla`
+- 155 UnwrapArrayMerge: `e['side_effects'] = array_merge(shared_block::side_effects(), $catalogclass::side_effects()); => e['side_effects'] = shared_block::side_effects();`
+- 155 UnwrapArrayMerge: `e['side_effects'] = array_merge(shared_block::side_effects(), $catalogclass::side_effects()); => e['side_effects'] = $catalogclass::side_effects();`
+- 162 Concat: `log categories.' : 'Short form: only the frequently set fields and field bundles. Pseudo fields, blocklist, ' . 'combination rules and side effects are missing - retrieve with full:true.', 'module' =>`
+- 162 ConcatOperandRemoval: `log categories.' : 'Short form: only the frequently set fields and field bundles. Pseudo fields, blocklist, ' . 'combination rules an => log categories.' : 'combination rules an`
+- 179 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 196 ArrayItemRemoval: `_single_structure(['values_json' => new external_value(PARAM_RAW, 'JSON-encoded list of allowed values, "null" if only determinable via source_callable'), 'source_callable' => => _single_structure(['s`
+- 209 Concat: `l_value(PARAM_RAW, 'JSON-encoded learner lock condition {op, value, reason}: when the written value meets it, learners ' . 'need an action by the teacher to continue or resubmit, and write tools rejec`
+- 209 ConcatOperandRemoval: `l_value(PARAM_RAW, 'JSON-encoded learner lock condition {op, value, reason}: when the written value meets it, learners ' . 'need an action by th => l_value(PARAM_RAW, 'need an action by th`
+- 209 ConcatOperandRemoval: `s it, learners ' . 'need an action by the teacher to continue or resubmit, and write tools reject the call unless ' . 'confirm_learner_lock => s it, learners ' . 'confirm_learner_lock`
+- 209 Concat: `s it, learners ' . 'need an action by the teacher to continue or resubmit, and write tools reject the call unless ' . 'confirm_learner_locks names the field. "null" if the field cannot be a lock.')]);`
+- 209 ConcatOperandRemoval: `ct the call unless ' . 'confirm_learner_locks names the field. "null" if the field cannot be a lock.')]); => ct the call unless ')]);`
+- 221 ArrayItemRemoval: `_single_structure(['modname' => new external_value(PARAM_TEXT, 'Activity type'), 'write_route' => new => _single_structure(['write_route' => new`
+- 229 Concat: `value(PARAM_ALPHA, 'Who produces the grade: "teacher", "automatic" or "none". A quiz containing a manually graded ' . 'question counts as "teacher" in the write tools.'), 'fields' => new => value(PARA`
+- 229 ConcatOperandRemoval: `value(PARAM_ALPHA, 'Who produces the grade: "teacher", "automatic" or "none". A quiz containing a manually graded ' . 'question counts as " => value(PARAM_ALPHA, 'question counts as "`
+- 229 ConcatOperandRemoval: `a manually graded ' . 'question counts as "teacher" in the write tools.'), 'fields' => new e => a manually graded '), 'fields' => new e`
+
+## Plugin/src/local_coursepilot/classes/external/dismiss_pending_entry.php (2 überlebt, 2 offen)
+
+- 46 PublicVisibility: `public static function exe => protected static function exe`
+- 64 MethodCallRemoval: `self::validate_context($context); => `
+
+## Plugin/src/local_coursepilot/classes/external/dismiss_previous_location.php (3 überlebt, 3 offen)
+
+- 43 PublicVisibility: `public static function exe => protected static function exe`
+- 57 MethodCallRemoval: `self::validate_parameters(self::execute_parameters(), []); => `
+- 60 MethodCallRemoval: `self::validate_context($context); => `
+
+## Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php (15 überlebt, 15 offen)
+
+- 55 PublicVisibility: `public static function exe => protected static function exe`
+- 79 MethodCallRemoval: `self::validate_context($coursecontext); => `
+- 80 FunctionCallRemoval: `require_capability('local/coursepilot:use', $coursecontext); => `
+- 82 FunctionCallRemoval: `// Native permission check: a question bank is an activity. require_capability('moodle/course:manageactivities', $coursecontext); => `
+- 103 CastInt: `xt_module::instance((int) $existing->id); => xt_module::instance($existing->id);`
+- 104 MethodCallRemoval: `self::validate_context($bankcontext); => `
+- 105 FunctionCallRemoval: `require_capability('local/coursepilot:use', $bankcontext); => `
+- 109 CastInt: `'questionbankid' => (int) $existing->id, 'name => 'questionbankid' => $existing->id, 'name`
+- 111 CastInt: `e'], 'contextid' => (int) $bankcontext->id, 't => e'], 'contextid' => $bankcontext->id, 't`
+- 112 CastInt: `'topcategoryid' => (int) $topcategory->id, 'c => 'topcategoryid' => $topcategory->id, 'c`
+- 124 MethodCallRemoval: `self::validate_context($bankcontext); => `
+- 125 FunctionCallRemoval: `require_capability('local/coursepilot:use', $bankcontext); => `
+- 129 CastInt: `'questionbankid' => (int) $bankcm->id, 'name' => 'questionbankid' => $bankcm->id, 'name'`
+- 131 CastInt: `e'], 'contextid' => (int) $bankcontext->id, 't => e'], 'contextid' => $bankcontext->id, 't`
+- 132 CastInt: `'topcategoryid' => (int) $topcategory->id, 'c => 'topcategoryid' => $topcategory->id, 'c`
+
+## Plugin/src/local_coursepilot/classes/external/ensure_question_category.php (11 überlebt, 11 offen)
+
+- 56 PublicVisibility: `public static function exe => protected static function exe`
+- 82 CastInt: `ext::instance_by_id((int) $parentcategory->con => ext::instance_by_id($parentcategory->con`
+- 83 MethodCallRemoval: `self::validate_context($context); => `
+- 84 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 87 ArrayItemRemoval: `tion_categories', ['contextid' => $context->id, 'parent' => $parentca => tion_categories', ['parent' => $parentca`
+- 95 CastInt: `return ['id' => (int) $existing->id, 'name => return ['id' => $existing->id, 'name`
+- 97 CastInt: `->name, 'parent' => (int) $existing->parent, ' => ->name, 'parent' => $existing->parent, '`
+- 98 CastInt: `ent, 'contextid' => (int) $context->id, 'creat => ent, 'contextid' => $context->id, 'creat`
+- 117 CastInt: `return ['id' => (int) $newid, 'name' => $p => return ['id' => $newid, 'name' => $p`
+- 119 CastInt: `name'], 'parent' => (int) $parentcategory->id, => name'], 'parent' => $parentcategory->id,`
+- 120 CastInt: `>id, 'contextid' => (int) $context->id, 'creat => >id, 'contextid' => $context->id, 'creat`
+
+## Plugin/src/local_coursepilot/classes/external/ensure_quiz_question_categories.php (10 überlebt, 10 offen)
+
+- 46 PublicVisibility: `public static function exe => protected static function exe`
+- 65 MethodCallRemoval: `self::validate_context($coursecontext); => `
+- 66 FunctionCallRemoval: `require_capability('local/coursepilot:use', $coursecontext); => `
+- 73 MethodCallRemoval: `self::validate_context($context); => `
+- 78 ArrayItemRemoval: `stion_categories', ['contextid' => $context->id]); => stion_categories', []);`
+- 80 ArrayItemRemoval: `stion_categories', ['contextid' => $context->id], 'parent ASC, sort => stion_categories', [], 'parent ASC, sort`
+- 87 CastInt: `result[] = ['id' => (int) $category->id, 'name => result[] = ['id' => $category->id, 'name`
+- 87 CastInt: `->name, 'parent' => (int) $category->parent]; => ->name, 'parent' => $category->parent];`
+- 90 CastInt: `urn ['contextid' => (int) $context->id, 'defau => urn ['contextid' => $context->id, 'defau`
+- 91 CastInt: `faultcategoryid' => (int) $default->id, 'categ => faultcategoryid' => $default->id, 'categ`
+
+## Plugin/src/local_coursepilot/classes/external/ensure_section.php (15 überlebt, 15 offen)
+
+- 47 PublicVisibility: `public static function exe => protected static function exe`
+- 74 MethodCallRemoval: `self::validate_context($context); => `
+- 75 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 80 LessThan: `rams['sectionnum'] < 0) { => rams['sectionnum'] <= 0) {`
+- 81 ArrayItemRemoval: `_coursepilot', '', ['sectionnum' => $params['sectionnum']]); => _coursepilot', '', []);`
+- 96 CastString: `$oldname = (string) ($sectioninfo->name ?? ''); => $oldname = $sectioninfo->name ?? '';`
+- 104 ArrayItemRemoval: `rse, $sectioninfo, ['name' => $wantedname]); => rse, $sectioninfo, []);`
+- 104 FunctionCallRemoval: `// Note: course_update_section() (course/lib.php) is the thin, // stable wrapper around sectionactions::update() - identical to // what course/editsection.php calls when saving the form. course_update`
+- 111 CastInt: `return ['id' => (int) $sectioninfo->id, 's => return ['id' => $sectioninfo->id, 's`
+- 112 CastInt: `id, 'sectionnum' => (int) $params['sectionnum' => id, 'sectionnum' => $params['sectionnum'`
+- 136 ArrayItemRemoval: `$a = (object) ['sectionnum' => $sectionnum, 'oldname' => $oldname => $a = (object) ['oldname' => $oldname`
+- 136 CastObject: `$a = (object) ['sectionnum' => $se => $a = ['sectionnum' => $se`
+- 137 LogicalNot: `if (!$existed) { => if ($existed) {`
+- 138 Ternary: `ring('sectioncreatednamed', 'local_coursepilot', $a) : get_string('sectioncreated', 'local_coursepi => ring('sectioncreated', 'local_coursepilot', $a) : get_string('sectioncreatednamed', 'local_course`
+- 142 IfNegation: `if ($namechanged) { => if (!$namechanged) {`
+
+## Plugin/src/local_coursepilot/classes/external/export_activity_backup.php (7 überlebt, 7 offen)
+
+- 42 PublicVisibility: `public static function exe => protected static function exe`
+- 58 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 60 MethodCallRemoval: `self::validate_context($context); => `
+- 61 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 62 FunctionCallRemoval: `require_capability('moodle/backup:backupactivity', $context); => `
+- 68 CastInt: `return ['cmid' => (int) $cm->id, 'modname' = => return ['cmid' => $cm->id, 'modname' =`
+- 80 ArrayItemRemoval: `_single_structure(['cmid' => new external_value(PARAM_INT, 'Course module ID of the exported activity'), 'modname' => new exte => _single_structure(['modname' => new exte`
+
+## Plugin/src/local_coursepilot/classes/external/export_default_activity.php (17 überlebt, 17 offen)
+
+- 47 PublicVisibility: `public static function exe => protected static function exe`
+- 69 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 70 FunctionCallRemoval: `require_capability('moodle/course:manageactivities', $context); => `
+- 73 FunctionCallRemoval: `require_capability("mod/{$modname}:addinstance", $context); => `
+- 81 FalseValue: `odule, $course->id, false, MUST_EXIST); => odule, $course->id, true, MUST_EXIST);`
+- 87 CastInt: `ent::discard_failed((int) $moduleinfo->coursem => ent::discard_failed($moduleinfo->coursem`
+- 88 CastInt: `>instance) ? null : (int) $moduleinfo->instanc => >instance) ? null : $moduleinfo->instanc`
+- 88 Ternary: `leinfo->instance) ? null : (int) $moduleinfo->instance); => leinfo->instance) ? (int) $moduleinfo->instance : null);`
+- 102 CastInt: `turn ['courseid' => (int) $course->id, 'modnam => turn ['courseid' => $course->id, 'modnam`
+- 124 IfNegation: `if ($this->_form->elemen => if (!$this->_form->elemen`
+- 125 MethodCallRemoval: `$this->_form->removeElement('visible'); => `
+- 131 UnwrapArrayMerge: `duleinfo = (object) array_merge((array) $data, $values); => duleinfo = (object) $values;`
+- 133 CastInt: `oduleinfo->module = (int) $module->id; => oduleinfo->module = $module->id;`
+- 135 AssignCoalesce: `uleinfo->cmidnumber ??= ''; => uleinfo->cmidnumber = '';`
+- 136 DecrementInteger: `duleinfo->visible = 0; => duleinfo->visible = -1;`
+- 137 DecrementInteger: `sibleoncoursepage = 0; => sibleoncoursepage = -1;`
+- 147 ArrayItemRemoval: `_single_structure(['courseid' => new external_value(PARAM_INT, 'Course ID the default activity was created in temporarily'), 'modname' => new exte => _single_structure(['modname' => new exte`
+
+## Plugin/src/local_coursepilot/classes/external/export_questions_xml.php (52 überlebt, 52 offen)
+
+- 44 PublicVisibility: `public static function exe => protected static function exe`
+- 52 Concat: `_value(PARAM_PATH, 'Material folder path of the XML file to write, e.g. "export.xml" - required in the standard mode ' . '(placeholder=false), ignored in the placeholder mode.', VALUE_DEFAULT, '' => _`
+- 52 ConcatOperandRemoval: `_value(PARAM_PATH, 'Material folder path of the XML file to write, e.g. "export.xml" - required in the standard mode ' . '(placeholder=false), => _value(PARAM_PATH, '(placeholder=false),`
+- 52 ConcatOperandRemoval: `the standard mode ' . '(placeholder=false), ignored in the placeholder mode.', VALUE_DEFAULT, '') => the standard mode ', VALUE_DEFAULT, '')`
+- 59 Concat: `_value(PARAM_BOOL, 'Switch (Spec 0018 §7.2), default false: the complete, standard-conformant XML with real base64 is ' . 'written to the material folder, the response only names the path. true instea`
+- 59 ConcatOperandRemoval: `_value(PARAM_BOOL, 'Switch (Spec 0018 §7.2), default false: the complete, standard-conformant XML with real base64 is ' . 'written to the mater => _value(PARAM_BOOL, 'written to the mater`
+- 59 ConcatOperandRemoval: `real base64 is ' . 'written to the material folder, the response only names the path. true instead returns the ' . 'XML directly in the => real base64 is ' . 'XML directly in the`
+- 59 Concat: `real base64 is ' . 'written to the material folder, the response only names the path. true instead returns the ' . 'XML directly in the response as before, with named placeholders instead of embedded `
+- 59 ConcatOperandRemoval: `ad returns the ' . 'XML directly in the response as before, with named placeholders instead of embedded files - ' . 'only for the templat => ad returns the ' . 'only for the templat`
+- 59 Concat: `ad returns the ' . 'XML directly in the response as before, with named placeholders instead of embedded files - ' . 'only for the template purpose (learning the structure), NOT suitable for sharing.',`
+- 59 ConcatOperandRemoval: `f embedded files - ' . 'only for the template purpose (learning the structure), NOT suitable for sharing.', VALUE_DEFAULT, fal => f embedded files - ', VALUE_DEFAULT, fal`
+- 64 FalseValue: `g.', VALUE_DEFAULT, false)]); => g.', VALUE_DEFAULT, true)]);`
+- 86 Throw_: `throw new \invalid_paramet => new \invalid_paramet`
+- 88 UnwrapTrim: `s['placeholder'] && trim($params['targetpath']) === '') { => s['placeholder'] && $params['targetpath'] === '') {`
+- 90 Concat: `arameter_exception('targetpath is required in standard mode (material store path of the XML file to write), ' . 'e.g. "export.xml". For placeholder mode, set placeholder=true instead.'); => arameter_e`
+- 90 ConcatOperandRemoval: `arameter_exception('targetpath is required in standard mode (material store path of the XML file to write), ' . 'e.g. "export.xml". F => arameter_exception('e.g. "export.xml". F`
+- 90 ConcatOperandRemoval: `ML file to write), ' . 'e.g. "export.xml". For placeholder mode, set placeholder=true instead.'); => ML file to write), ');`
+- 98 CastInt: `= self::export_one((int) $questionid, $params => = self::export_one($questionid, $params`
+- 100 LogicalAnd: `rams['placeholder'] && !empty($filenames)) => rams['placeholder'] || !empty($filenames))`
+- 105 ConcatOperandRemoval: `mplode("\n", $parts) . "\n</quiz>\n"; => mplode("\n", $parts);`
+- 131 Concat: `$message = self::build_message($count, [], false) . ' ' . get_string('quest => $message = ' ' . self::build_message($count, [], false) . get_string('quest`
+- 131 ConcatOperandRemoval: `$message = self::build_message($count, [], false) . ' ' . get_string('qu => $message = ' ' . get_string('qu`
+- 131 ConcatOperandRemoval: `count, [], false) . ' ' . get_string('question => count, [], false) . get_string('question`
+- 131 Concat: `count, [], false) . ' ' . get_string('questionexportpath', 'local_coursepilot', $path); => count, [], false) . get_string('questionexportpath', 'local_coursepilot', $path) . ' ';`
+- 132 NotIdentical: `if ($warning !== null) { => if ($warning === null) {`
+- 136 ArrayItemRemoval: `return ['xml' => '', 'path' => $path, 'cou => return ['path' => $path, 'cou`
+- 156 MethodCallRemoval: `self::validate_context($context); => `
+- 157 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 165 CastString: `return [$xml, (string) $question->name, $fi => return [$xml, $question->name, $fi`
+- 184 MethodCallRemoval: `self::validate_context($context); => `
+- 185 MethodCallRemoval: `material_files::require_manage_own_files(); => `
+- 203 IncrementInteger: `$base = $count === 1 ? get_string('quest => $base = $count === 2 ? get_string('quest`
+- 203 Identical: `$base = $count === 1 ? get_string('q => $base = $count !== 1 ? get_string('q`
+- 203 Ternary: `ring('questionexportone', 'local_coursepilot') : get_string('questionexportmany', 'local_coursepilot', $count); => ring('questionexportmany', 'local_coursepilot', $count) : get_string('questionexporto`
+- 210 Concat: `$base .= ' ' . get_string('questionexportplaceholder', 'local_coursepilot'); => $base .= get_string('questionexportplaceholder', 'local_coursepilot') . ' ';`
+- 210 ConcatOperandRemoval: `$base .= ' ' . get_string('question => $base .= get_string('question`
+- 210 Assignment: `$base .= ' ' . get_string(' => $base = ' ' . get_string('`
+- 222 CastObject: `local_coursepilot', (object) ['name' => $entry['n => local_coursepilot', ['name' => $entry['n`
+- 226 Concat: `return $base . ' ' . get_string('quest => return ' ' . $base . get_string('quest`
+- 226 ConcatOperandRemoval: `return $base . ' ' . get_string('question => return $base . get_string('question`
+- 226 Concat: `return $base . ' ' . get_string('questionexportmissing', 'local_coursepilot', implode('; ', $details)); => return $base . get_string('questionexportmissing', 'local_coursepilot', implode('; ', $detail`
+- 238 Concat: `l_value(PARAM_RAW, 'ONLY filled in the placeholder mode: Moodle question XML export (a <quiz> root element with one ' . '<question> per requested question), embedded files replaced by named comment pl`
+- 238 ConcatOperandRemoval: `l_value(PARAM_RAW, 'ONLY filled in the placeholder mode: Moodle question XML export (a <quiz> root element with one ' . '<question> per reque => l_value(PARAM_RAW, '<question> per reque`
+- 238 ConcatOperandRemoval: `ement with one ' . '<question> per requested question), embedded files replaced by named comment placeholders. ' . 'Empty in the standar => ement with one ' . 'Empty in the standar`
+- 238 Concat: `ement with one ' . '<question> per requested question), embedded files replaced by named comment placeholders. ' . 'Empty in the standard mode - the complete XML is in "path".', VALUE_DEFAULT, '' => e`
+- 238 ConcatOperandRemoval: `ment placeholders. ' . 'Empty in the standard mode - the complete XML is in "path".', VALUE_DEFAULT, '') => ment placeholders. ', VALUE_DEFAULT, '')`
+- 246 Concat: `_value(PARAM_TEXT, 'ONLY filled in the standard mode: material folder path of the written, complete XML file (real ' . 'base64 in <file> blocks). Empty in the placeholder mode.', VALUE_DEFAULT, '' => `
+- 246 ConcatOperandRemoval: `_value(PARAM_TEXT, 'ONLY filled in the standard mode: material folder path of the written, complete XML file (real ' . 'base64 in <file> blo => _value(PARAM_TEXT, 'base64 in <file> blo`
+- 246 ConcatOperandRemoval: `ete XML file (real ' . 'base64 in <file> blocks). Empty in the placeholder mode.', VALUE_DEFAULT, '') => ete XML file (real ', VALUE_DEFAULT, '')`
+- 254 Concat: `l_value(PARAM_RAW, 'Teacher-facing message; explicitly names in the placeholder mode that the output is ' . 'incomplete and not suitable for sharing, and which question is affected for missing files')`
+- 254 ConcatOperandRemoval: `l_value(PARAM_RAW, 'Teacher-facing message; explicitly names in the placeholder mode that the output is ' . 'incomplete and not s => l_value(PARAM_RAW, 'incomplete and not s`
+- 254 ConcatOperandRemoval: `that the output is ' . 'incomplete and not suitable for sharing, and which question is affected for missing files')]); => that the output is ')]);`
+
+## Plugin/src/local_coursepilot/classes/external/get_course_catalog.php (64 überlebt, 64 offen)
+
+- 54 PublicVisibility: `public static function exe => protected static function exe`
+- 57 DecrementInteger: `)', VALUE_DEFAULT, -1), 'modname' => new => )', VALUE_DEFAULT, -2), 'modname' => new`
+- 57 IncrementInteger: `)', VALUE_DEFAULT, -1), 'modname' => new => )', VALUE_DEFAULT, -0), 'modname' => new`
+- 79 DecrementInteger: `int $sectionnum = -1, string $modname = => int $sectionnum = -2, string $modname =`
+- 79 IncrementInteger: `int $sectionnum = -1, string $modname = => int $sectionnum = -0, string $modname =`
+- 91 MethodCallRemoval: `self::validate_context($context); => `
+- 94 UnwrapStrToLower: `$fullcontent = strtolower($params['detail']) === 'full'; => $fullcontent = $params['detail'] === 'full';`
+- 95 UnwrapTrim: `$modulefilter = trim($params['modname']); => $modulefilter = $params['modname'];`
+- 99 CastInt: `sen', 'courseid' => (int) $params['courseid'], => sen', 'courseid' => $params['courseid'],`
+- 101 CastInt: `=> ['sectionnum' => (int) $params['sectionnum' => => ['sectionnum' => $params['sectionnum'`
+- 103 Ternary: `=> $fullcontent ? 'full' : 'compact'], 'sections' => se => => $fullcontent ? 'compact' : 'full'], 'sections' => se`
+- 106 CastInt: `' => self::sections((int) $params['courseid'], => ' => self::sections($params['courseid'],`
+- 107 CastInt: `params['courseid'], (int) $params['sectionnum' => params['courseid'], $params['sectionnum'`
+- 128 GreaterThanOrEqualTo: `if ($sectionnum >= 0) { => if ($sectionnum > 0) {`
+- 144 CastInt: `result[] = ['id' => (int) $section->id, 'secti => result[] = ['id' => $section->id, 'secti`
+- 146 Coalesce: `>section, 'name' => $section->name ?? '', 'summary' => self: => >section, 'name' => '' ?? $section->name, 'summary' => self:`
+- 147 CastString: `self::content_field((string) ($section->summary ?? ''), $fullcontent), 'vi => self::content_field($section->summary ?? '', $fullcontent), 'vi`
+- 148 CastInt: `tent), 'visible' => (int) $section->visible, ' => tent), 'visible' => $section->visible, '`
+- 149 Coalesce: `:sanitize((string) ($section->availability ?? '')), 'modules' => sel => :sanitize((string) ('' ?? $section->availability)), 'modules' => sel`
+- 149 CastString: `y_privacy::sanitize((string) ($section->availability ?? '')), 'modules' => self => y_privacy::sanitize($section->availability ?? ''), 'modules' => self`
+- 150 CastInt: `s' => self::modules((int) $section->id, $modul => s' => self::modules($section->id, $modul`
+- 153 ArrayOneItem: `return $result; => return count($result) > 1 ? array_slice($result, 0, 1, true) : $result;`
+- 185 UnwrapArrayValues: `$rows = array_values($rows); => $rows = $rows;`
+- 186 FunctionCallRemoval: `usort($rows, function ($a, $b) use ($section) { return self::sequence_index((string) $section->sequence, (int) $a->cmid) <=> self::sequence_index((string) $section->sequence, (int) $b->cmid); }); => `
+- 187 CastString: `elf::sequence_index((string) $section->sequence, => elf::sequence_index($section->sequence,`
+- 187 CastInt: `$section->sequence, (int) $a->cmid) <=> self:: => $section->sequence, $a->cmid) <=> self::`
+- 187 Spaceship: `n->sequence, (int) $a->cmid) <=> self::sequence_index((string) $section->sequence, (int) $b->cmid); => n->sequence, (int) $b->cmid) <=> self::sequence_index((string) $section->sequence, (int) $a->cmid`
+- 188 CastString: `elf::sequence_index((string) $section->sequence, => elf::sequence_index($section->sequence,`
+- 188 CastInt: `$section->sequence, (int) $b->cmid); => $section->sequence, $b->cmid);`
+- 193 CastString: `elf::module_details((string) $row->modname, (int) => elf::module_details($row->modname, (int)`
+- 193 CastInt: `ing) $row->modname, (int) $row->instance, (int => ing) $row->modname, $row->instance, (int`
+- 193 CastInt: `nt) $row->instance, (int) $row->cmid, $fullcon => nt) $row->instance, $row->cmid, $fullcon`
+- 196 CastString: `>cmid, 'modname' => (string) $row->modname, 'name => >cmid, 'modname' => $row->modname, 'name`
+- 198 CastInt: `ame'], 'visible' => (int) $row->visible, 'visi => ame'], 'visible' => $row->visible, 'visi`
+- 199 CastInt: `bleoncoursepage' => (int) $row->visibleoncours => bleoncoursepage' => $row->visibleoncours`
+- 202 CastInt: `=> ['completion' => (int) $row->completion, 'c => => ['completion' => $row->completion, 'c`
+- 203 CastInt: `'completionview' => (int) $row->completionview => 'completionview' => $row->completionview`
+- 204 CastInt: `letionpassgrade' => (int) $row->completionpass => letionpassgrade' => $row->completionpass`
+- 206 CastString: `y_privacy::sanitize((string) ($row->availability ?? '')), 'content' => $det => y_privacy::sanitize($row->availability ?? ''), 'content' => $det`
+- 210 CastInt: `::derive_visibility((int) $row->visible, (int) => ::derive_visibility($row->visible, (int)`
+- 210 CastInt: `int) $row->visible, (int) $row->visibleoncours => int) $row->visible, $row->visibleoncours`
+- 223 UnwrapArrayMap: `values(array_filter(array_map('intval', explode(',', $sequence)))); => values(array_filter(explode(',', $sequence)));`
+- 223 UnwrapArrayFilter: `array_values(array_filter(array_map('intval', explode(',', $sequence)))); => array_values(array_map('intval', explode(',', $sequence)));`
+- 223 UnwrapArrayValues: `$ids = array_values(array_filter(array_map('intval', explode(',', $sequence)))); => $ids = array_filter(array_map('intval', explode(',', $sequence)));`
+- 225 FalseValue: `return $index === false ? PHP_INT_MAX : $i => return $index === true ? PHP_INT_MAX : $i`
+- 225 Identical: `return $index === false ? PHP_INT_M => return $index !== false ? PHP_INT_M`
+- 225 Ternary: `$index === false ? PHP_INT_MAX : $index; => $index === false ? $index : PHP_INT_MAX;`
+- 254 Ternary: `' => $fullcontent ? $html : '', 'preview' => self: => ' => $fullcontent ? '' : $html, 'preview' => self:`
+- 256 LogicalNot: `nt), 'truncated' => !$fullcontent && trim => nt), 'truncated' => $fullcontent && trim`
+- 256 UnwrapTrim: `=> !$fullcontent && trim($html) !== '']; => => !$fullcontent && $html !== ''];`
+- 256 NotIdentical: `tent && trim($html) !== '']; => tent && trim($html) === ''];`
+- 256 LogicalAnd: `d' => !$fullcontent && trim($html) !== ''] => d' => !$fullcontent || trim($html) !== '']`
+- 256 LogicalAndAllSubExprNegation: `nt), 'truncated' => !$fullcontent && trim($html) !== '']; => nt), 'truncated' => $fullcontent && !(trim($html) !== '')];`
+- 256 LogicalAndNegation: `t), 'truncated' => !$fullcontent && trim($html) !== '']; => t), 'truncated' => !(!$fullcontent && trim($html) !== '')];`
+- 268 UnwrapTrim: `$text = trim(preg_replace('/\s+/', ' ', strip_tags($html))); => $text = preg_replace('/\s+/', ' ', strip_tags($html));`
+- 269 LessThanOrEqualTo: `t || strlen($text) <= 280) { => t || strlen($text) < 280) {`
+- 269 LogicalOr: `if ($fullcontent || strlen($text) <= 28 => if ($fullcontent && strlen($text) <= 28`
+- 272 IncrementInteger: `eturn substr($text, 0, 277) . '...'; => eturn substr($text, 1, 277) . '...';`
+- 281 ArrayItemRemoval: `_single_structure(['html' => new external_value(PARAM_RAW, 'Full HTML content when detail=full, otherwise empty'), 'preview' => new exte => _single_structure(['preview' => new exte`
+- 288 ArrayItemRemoval: `_single_structure(['name' => new external_value(PARAM_TEXT, 'Setting name'), 'value' => new extern => _single_structure(['value' => new extern`
+- 298 ArrayItemRemoval: `_single_structure(['sectionnum' => new external_value(PARAM_INT, 'Applied section filter'), 'modname' => new exte => _single_structure(['modname' => new exte`
+- 304 ArrayItemRemoval: `_single_structure(['id' => new external_value(PARAM_INT, 'Section DB ID'), 'sectionnum' => new e => _single_structure(['sectionnum' => new e`
+- 324 ArrayItemRemoval: `ructure(['completion' => new external_value(PARAM_INT, 'Completion mode'), 'completionview' => new externa => ructure(['completionview' => new externa`
+- 333 ArrayItemRemoval: `_single_structure(['slot' => new external_value(PARAM_INT, 'Quiz slot number'), 'categoryid' => new e => _single_structure(['categoryid' => new e`
+
+## Plugin/src/local_coursepilot/classes/external/get_modules.php (22 überlebt, 22 offen)
+
+- 46 PublicVisibility: `public static function exe => protected static function exe`
+- 49 DecrementInteger: `)', VALUE_DEFAULT, -1)]); => )', VALUE_DEFAULT, -2)]);`
+- 49 IncrementInteger: `)', VALUE_DEFAULT, -1)]); => )', VALUE_DEFAULT, -0)]);`
+- 60 DecrementInteger: `int $sectionnum = -1): array => int $sectionnum = -2): array`
+- 69 MethodCallRemoval: `self::validate_context($context); => `
+- 75 GreaterThanOrEqualTo: `rams['sectionnum'] >= 0) { => rams['sectionnum'] > 0) {`
+- 75 GreaterThanOrEqualToNegotiation: `arams['sectionnum'] >= 0) { => arams['sectionnum'] < 0) {`
+- 78 ArrayItemRemoval: `course_sections', ['course' => $params['courseid'], 'section' => $params[ => course_sections', ['section' => $params[`
+- 81 IfNegation: `if ($section) { => if (!$section) {`
+- 95 UnwrapArrayValues: `$rows = array_values($DB->get_records_sql($sql, $sqlparams)); => $rows = $DB->get_records_sql($sql, $sqlparams);`
+- 97 CastString: `elf::sequence_index((string) $a->sequence, (int) => elf::sequence_index($a->sequence, (int)`
+- 97 CastInt: `ring) $a->sequence, (int) $a->cmid)] <=> [$b-> => ring) $a->sequence, $a->cmid)] <=> [$b->`
+- 98 CastString: `elf::sequence_index((string) $b->sequence, (int) => elf::sequence_index($b->sequence, (int)`
+- 98 CastInt: `ring) $b->sequence, (int) $b->cmid)]; => ring) $b->sequence, $b->cmid)];`
+- 113 CastInt: `id, 'sectionnum' => (int) $row->sectionnum, 'm => id, 'sectionnum' => $row->sectionnum, 'm`
+- 116 CastInt: `yname, 'visible' => (int) $row->visible, 'visi => yname, 'visible' => $row->visible, 'visi`
+- 117 CastInt: `bleoncoursepage' => (int) $row->visibleoncours => bleoncoursepage' => $row->visibleoncours`
+- 118 CastInt: `::derive_visibility((int) $row->visible, (int) => ::derive_visibility($row->visible, (int)`
+- 118 CastInt: `int) $row->visible, (int) $row->visibleoncours => int) $row->visible, $row->visibleoncours`
+- 132 UnwrapArrayFilter: `array_values(array_filter(array_map('intval', explode(',', $sequence)))); => array_values(array_map('intval', explode(',', $sequence)));`
+- 132 UnwrapArrayValues: `$ids = array_values(array_filter(array_map('intval', explode(',', $sequence)))); => $ids = array_filter(array_map('intval', explode(',', $sequence)));`
+- 134 FalseValue: `return $index === false ? PHP_INT_MAX : $i => return $index === true ? PHP_INT_MAX : $i`
+
+## Plugin/src/local_coursepilot/classes/external/get_question.php (47 überlebt, 47 offen)
+
+- 52 PublicVisibility: `public static function exe => protected static function exe`
+- 60 DecrementInteger: `e)', VALUE_DEFAULT, 0)]); => e)', VALUE_DEFAULT, -1)]);`
+- 60 IncrementInteger: `e)', VALUE_DEFAULT, 0)]); => e)', VALUE_DEFAULT, 1)]);`
+- 95 MethodCallRemoval: `self::validate_context($context); => `
+- 99 FunctionCallRemoval: `// Note: moodle/question:view does not exist (any more); Moodle only knows // viewmine/viewall. viewall fits the read capability here. require_capability('moodle/question:viewall', $context); => `
+- 102 CastInt: `_id_from_questionid((int) $params['questionid' => _id_from_questionid($params['questionid'`
+- 103 CastInt: `:entry_id_from_name((int) $params['categoryid' => :entry_id_from_name($params['categoryid'`
+- 103 CastString: `rams['categoryid'], (string) $params['name']); => rams['categoryid'], $params['name']);`
+- 105 DecrementInteger: `if ($entryid === 0) { => if ($entryid === -1) {`
+- 106 Throw_: `throw new \moodle_exceptio => new \moodle_exceptio`
+- 134 ArrayItemRemoval: `record('question', ['id' => $latest->questionid], '*', MUST_EXIST); => record('question', [], '*', MUST_EXIST);`
+- 141 ArrayItemRemoval: `question_answers', ['question' => $question->id], 'id ASC'); => question_answers', [], 'id ASC');`
+- 146 IncrementInteger: `$correctindex = -1; => $correctindex = -0;`
+- 150 CastInt: `erlist[] = ['id' => (int) $a->id, 'answer' => => erlist[] = ['id' => $a->id, 'answer' =>`
+- 151 CastString: `$a->id, 'answer' => (string) $a->answer, 'fractio => $a->id, 'answer' => $a->answer, 'fractio`
+- 152 CastFloat: `swer, 'fraction' => (float) $a->fraction, 'feedb => swer, 'fraction' => $a->fraction, 'feedb`
+- 153 CastString: `tion, 'feedback' => (string) $a->feedback, 'corre => tion, 'feedback' => $a->feedback, 'corre`
+- 154 CastFloat: `dback, 'correct' => (float) $a->fraction > 0]; => dback, 'correct' => $a->fraction > 0];`
+- 154 GreaterThan: `loat) $a->fraction > 0]; => loat) $a->fraction >= 0];`
+- 154 GreaterThanNegotiation: `float) $a->fraction > 0]; => float) $a->fraction <= 0];`
+- 156 CastFloat: `if ((float) $a->fraction >= 1.0 => if ($a->fraction >= 1.0`
+- 156 GreaterThanOrEqualToNegotiation: `float) $a->fraction >= 1.0 && $correctinde => float) $a->fraction < 1.0 && $correctinde`
+- 156 LogicalAnd: `$a->fraction >= 1.0 && $correctindex === - => $a->fraction >= 1.0 || $correctindex === -`
+- 156 LogicalAndNegation: `if ((float) $a->fraction >= 1.0 && $correctindex === -1) { => if (!((float) $a->fraction >= 1.0 && $correctindex === -1)) {`
+- 159 Increment: `$i++; => $i--;`
+- 161 ArrayItemRemoval: `tichoice_options', ['questionid' => $question->id]); => tichoice_options', []);`
+- 162 LogicalAnd: `mode = $multichoice && empty($multichoice- => mode = $multichoice || empty($multichoice-`
+- 162 LogicalAndAllSubExprNegation: `$selectionmode = $multichoice && empty($multichoice-> => $selectionmode = !$multichoice && !empty($multichoice->`
+- 162 LogicalAndNegation: `$selectionmode = $multichoice && empty($multichoice->single) ? 'multiple' : 'si => $selectionmode = !($multichoice && empty($multichoice->single)) ? 'multiple' : 'si`
+- 162 LogicalAndSingleSubExprNegation: `$selectionmode = $multichoice && empt => $selectionmode = !$multichoice && empt`
+- 162 Ternary: `ichoice->single) ? 'multiple' : 'single'; => ichoice->single) ? 'single' : 'multiple';`
+- 166 CastInt: `tionbankentryid' => (int) $entryid, 'categoryi => tionbankentryid' => $entryid, 'categoryi`
+- 170 ArrayItemRemoval: `estioncategoryid', ['id' => $entryid], MUST_EXIST), 'ver => estioncategoryid', [], MUST_EXIST), 'ver`
+- 173 CastInt: `XIST), 'version' => (int) $latest->version, 'n => XIST), 'version' => $latest->version, 'n`
+- 174 CastString: `>version, 'name' => (string) $question->name, 'qu => >version, 'name' => $question->name, 'qu`
+- 175 CastString: `, 'questiontext' => (string) $question->questiont => , 'questiontext' => $question->questiont`
+- 176 CastString: `generalfeedback' => (string) $question->generalfe => generalfeedback' => $question->generalfe`
+- 177 CastString: `eedback, 'qtype' => (string) $question->qtype, 'd => eedback, 'qtype' => $question->qtype, 'd`
+- 178 CastFloat: `e, 'defaultmark' => (float) $question->defaultma => e, 'defaultmark' => $question->defaultma`
+- 193 ArrayItemRemoval: `uestion_versions', ['questionid' => $questionid]); => uestion_versions', []);`
+- 194 CastInt: `return $v ? (int) $v->questionbankentr => return $v ? $v->questionbankentr`
+- 194 DecrementInteger: `estionbankentryid : 0; => estionbankentryid : -1;`
+- 194 IncrementInteger: `estionbankentryid : 0; => estionbankentryid : 1;`
+- 217 DecrementInteger: `return 0; => return -1;`
+- 217 IncrementInteger: `return 0; => return 1;`
+- 220 CastInt: `return (int) $first->entryid; => return $first->entryid;`
+- 240 ArrayItemRemoval: `_single_structure(['id' => new external_value(PARAM_INT, 'question_answers.id'), 'answer' => new exter => _single_structure(['answer' => new exter`
+
+## Plugin/src/local_coursepilot/classes/external/get_question_categories.php (5 überlebt, 5 offen)
+
+- 50 PublicVisibility: `public static function exe => protected static function exe`
+- 75 FunctionCallRemoval: `// Make sure the top category exists (creates it if necessary). question_get_top_category($qbankcontext->id, true); => `
+- 79 ArrayItemRemoval: `stion_categories', ['contextid' => $qbankcontext->id], 'parent ASC, sort => stion_categories', [], 'parent ASC, sort`
+- 87 CastInt: `result[] = ['id' => (int) $c->id, 'name' => $c => result[] = ['id' => $c->id, 'name' => $c`
+- 89 CastInt: `->name, 'parent' => (int) $c->parent]; => ->name, 'parent' => $c->parent];`
+
+## Plugin/src/local_coursepilot/classes/external/get_question_category_cleanup_plan.php (1 überlebt, 1 offen)
+
+- 76 CastInt: `->name, 'parent' => (int) $category->parent, ' => ->name, 'parent' => $category->parent, '`
+
+## Plugin/src/local_coursepilot/classes/external/get_quiz_cleanup_plan.php (19 überlebt, 19 offen)
+
+- 54 PublicVisibility: `public static function exe => protected static function exe`
+- 78 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 80 MethodCallRemoval: `self::validate_context($context); => `
+- 82 FunctionCallRemoval: `require_capability('moodle/course:manageactivities', $context); => `
+- 84 ArrayItemRemoval: `get_record('quiz', ['id' => $cm->instance], 'id, name', MUST_ => get_record('quiz', [], 'id, name', MUST_`
+- 85 UnwrapArrayMap: `$keep = array_flip(array_map('intval', $params['keep_questionbankentryids'])); => $keep = array_flip($params['keep_questionbankentryids']);`
+- 105 CastInt: `if (isset($keep[(int) $row->questionbanken => if (isset($keep[$row->questionbanken`
+- 106 Continue_: `continue; => break;`
+- 109 CastInt: `vals[] = ['slot' => (int) $row->slot, 'questio => vals[] = ['slot' => $row->slot, 'questio`
+- 110 CastInt: `tionbankentryid' => (int) $row->questionbanken => tionbankentryid' => $row->questionbanken`
+- 111 CastInt: `id, 'questionid' => (int) $row->questionid, 'v => id, 'questionid' => $row->questionid, 'v`
+- 112 CastInt: `ionid, 'version' => (int) $row->version, 'ques => ionid, 'version' => $row->version, 'ques`
+- 113 CastString: `, 'questionname' => (string) $row->questionname, => , 'questionname' => $row->questionname,`
+- 114 CastInt: `me, 'categoryid' => (int) $row->questioncatego => me, 'categoryid' => $row->questioncatego`
+- 115 CastString: `, 'categoryname' => (string) $row->categoryname, => , 'categoryname' => $row->categoryname,`
+- 122 CastString: `turn ['quizname' => (string) $quiz->name, 'editur => turn ['quizname' => $quiz->name, 'editur`
+- 123 ConcatOperandRemoval: `>name, 'editurl' => $CFG->wwwroot . '/mod/quiz/edit.php? => >name, 'editurl' => '/mod/quiz/edit.php?`
+- 134 ArrayItemRemoval: `_single_structure(['quizname' => new external_value(PARAM_TEXT, 'Quiz name'), 'editurl' => new exte => _single_structure(['editurl' => new exte`
+- 137 ArrayItemRemoval: `_single_structure(['slot' => new external_value(PARAM_INT, 'Quiz slot that can be manually removed from the quiz'), 'questionbankentryid' => _single_structure(['questionbankentryid'`
+
+## Plugin/src/local_coursepilot/classes/external/get_sections.php (7 überlebt, 7 offen)
+
+- 45 PublicVisibility: `public static function exe => protected static function exe`
+- 65 MethodCallRemoval: `self::validate_context($context); => `
+- 70 ArrayItemRemoval: `'course_sections', ['course' => $params['courseid']], 'section ASC', 'i => 'course_sections', [], 'section ASC', 'i`
+- 78 CastInt: `result[] = ['id' => (int) $s->id, 'sectionnum' => result[] = ['id' => $s->id, 'sectionnum'`
+- 79 CastInt: `id, 'sectionnum' => (int) $s->section, 'name' => id, 'sectionnum' => $s->section, 'name'`
+- 81 Coalesce: `?? '', 'summary' => $s->summary ?? '', 'visible' => (int) => ?? '', 'summary' => '' ?? $s->summary, 'visible' => (int)`
+- 82 CastInt: `?? '', 'visible' => (int) $s->visible]; => ?? '', 'visible' => $s->visible];`
+
+## Plugin/src/local_coursepilot/classes/external/get_skill.php (2 überlebt, 2 offen)
+
+- 54 PublicVisibility: `public static function exe => protected static function exe`
+- 69 MethodCallRemoval: `self::validate_context(context_system::instance()); => `
+
+## Plugin/src/local_coursepilot/classes/external/get_version_info.php (19 überlebt, 19 offen)
+
+- 61 MethodCallRemoval: `self::validate_context(\context_system::instance()); => `
+- 70 CastInt: `$pluginversion = (int) $plugin->version; => $pluginversion = $plugin->version;`
+- 71 CastString: `$pluginrelease = (string) $plugin->release; => $pluginrelease = $plugin->release;`
+- 73 CastObject: `local_coursepilot', (object) ['moodlerelease' => => local_coursepilot', ['moodlerelease' =>`
+- 75 ArrayItem: `->release, 'branch' => $CFG->branch, 'plu => ->release, 'branch' > $CFG->branch, 'plu`
+- 79 FalseValue: `if ($installed !== false && (int) $installe => if ($installed !== true && (int) $installe`
+- 79 CastInt: `talled !== false && (int) $installed !== $plug => talled !== false && $installed !== $plug`
+- 79 LogicalAnd: `installed !== false && (int) $installed != => installed !== false || (int) $installed !=`
+- 80 CastInt: `local_coursepilot', (int) $installed); => local_coursepilot', $installed);`
+- 80 Concat: `$message .= ' ' . get_string('versioninfoupgradewarning', 'local_coursepilot', (int) $installed); => $message .= get_string('versioninfoupgradewarning', 'local_coursepilot', (int) $installed) . ' ';`
+- 80 ConcatOperandRemoval: `$message .= ' ' . get_string('versioni => $message .= get_string('versioni`
+- 80 Assignment: `$message .= ' ' . get_string(' => $message = ' ' . get_string('`
+- 84 CastString: `'moodle_release' => (string) $CFG->release, 'mood => 'moodle_release' => $CFG->release, 'mood`
+- 85 CastString: `'moodle_version' => (string) $CFG->version, 'mood => 'moodle_version' => $CFG->version, 'mood`
+- 86 CastString: `'moodle_branch' => (string) $CFG->branch, 'plugi => 'moodle_branch' => $CFG->branch, 'plugi`
+- 89 FalseValue: `' => $installed === false ? 0 : (int) $insta => ' => $installed === true ? 0 : (int) $insta`
+- 89 DecrementInteger: `stalled === false ? 0 : (int) $installed, => stalled === false ? -1 : (int) $installed,`
+- 89 IncrementInteger: `stalled === false ? 0 : (int) $installed, => stalled === false ? 1 : (int) $installed,`
+- 89 CastInt: `led === false ? 0 : (int) $installed, 'date' = => led === false ? 0 : $installed, 'date' =`
+
+## Plugin/src/local_coursepilot/classes/external/import_questions_xml.php (16 überlebt, 15 offen)
+
+- 44 PublicVisibility: `public static function exe => protected static function exe`
+- 49 Concat: `l_value(PARAM_RAW, 'Moodle question XML export as text (text door) - <file> blocks carry a ' . 'material="<material-folder-path>" attribute instead of real base64, the server resolves it ' . 'server-s`
+- 49 ConcatOperandRemoval: `l_value(PARAM_RAW, 'Moodle question XML export as text (text door) - <file> blocks carry a ' . 'material="<material- => l_value(PARAM_RAW, 'material="<material-`
+- 49 ConcatOperandRemoval: `blocks carry a ' . 'material="<material-folder-path>" attribute instead of real base64, the server resolves it ' . 'server-side. Give ex => blocks carry a ' . 'server-side. Give ex`
+- 49 Concat: `blocks carry a ' . 'material="<material-folder-path>" attribute instead of real base64, the server resolves it ' . 'server-side. Give exactly one of xmlcontent/xmlpath.', VALUE_DEFAULT, '' => blocks c`
+- 49 ConcatOperandRemoval: `server resolves it ' . 'server-side. Give exactly one of xmlcontent/xmlpath.', VALUE_DEFAULT, '') => server resolves it ', VALUE_DEFAULT, '')`
+- 57 Concat: `_value(PARAM_BOOL, 'true explicitly confirms a previously reported suspect case (an idnumber that came with no match ' . 'in the target category) and creates the question anyway as a new entry. Omit o`
+- 57 ConcatOperandRemoval: `_value(PARAM_BOOL, 'true explicitly confirms a previously reported suspect case (an idnumber that came with no match ' . 'in the target catego => _value(PARAM_BOOL, 'in the target catego`
+- 57 ConcatOperandRemoval: `with no match ' . 'in the target category) and creates the question anyway as a new entry. Omit or false on ' . 'the first call.', VA => with no match ' . 'the first call.', VA`
+- 57 Concat: `with no match ' . 'in the target category) and creates the question anyway as a new entry. Omit or false on ' . 'the first call.', VALUE_DEFAULT, fa => with no match ' . 'the first call.' . 'in the ta`
+- 57 ConcatOperandRemoval: `. Omit or false on ' . 'the first call.', VALUE_DEFAULT, fal => . Omit or false on ', VALUE_DEFAULT, fal`
+- 61 FalseValue: `l.', VALUE_DEFAULT, false), 'xmlpath' => new => l.', VALUE_DEFAULT, true), 'xmlpath' => new`
+- 65 Concat: `_value(PARAM_PATH, 'Reference to an XML file in the material folder (reference door, bulk import of a foreign export ' . 'with real base64 in <file> blocks) - e.g. "export.xml". Give exactly one of xm`
+- 65 ConcatOperandRemoval: `_value(PARAM_PATH, 'Reference to an XML file in the material folder (reference door, bulk import of a foreign export ' . 'with real base64 in => _value(PARAM_PATH, 'with real base64 in`
+- 65 ConcatOperandRemoval: `f a foreign export ' . 'with real base64 in <file> blocks) - e.g. "export.xml". Give exactly one of xmlcontent/xmlpath.', VALUE_DEFAULT, '') => f a foreign export ', VALUE_DEFAULT, '')`
+- 100 CastInt (ignoriert): `tion_import::import((int) $params['categoryid' => tion_import::import($params['categoryid'`
+
+## Plugin/src/local_coursepilot/classes/external/list_activity_versions.php (15 überlebt, 15 offen)
+
+- 44 PublicVisibility: `public static function exe => protected static function exe`
+- 59 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 61 MethodCallRemoval: `self::validate_context($context); => `
+- 77 ArrayItemRemoval: `_single_structure(['version' => new external_value(PARAM_INT, 'Consecutive version number per cmid, starting at 1'), 'source' => new exter => _single_structure(['source' => new exter`
+- 81 Concat: `value(PARAM_TEXT, '"moodle" (normal write), "discovered" (retroactively recorded starting state before Coursepilot), ' . '"cloned" (clone), "from_xml" (created from activity XML) or "superseded" ' . '`
+- 81 ConcatOperandRemoval: `value(PARAM_TEXT, '"moodle" (normal write), "discovered" (retroactively recorded starting state before Coursepilot), ' . '"cloned" (clone), "fr => value(PARAM_TEXT, '"cloned" (clone), "fr`
+- 81 ConcatOperandRemoval: `Coursepilot), ' . '"cloned" (clone), "from_xml" (created from activity XML) or "superseded" ' . '(marker on the old a => Coursepilot), ' . '(marker on the old a`
+- 81 Concat: `Coursepilot), ' . '"cloned" (clone), "from_xml" (created from activity XML) or "superseded" ' . '(marker on the old activity after replacement)'), 'discovered' => => Coursepilot), ' . '(marker on the `
+- 81 ConcatOperandRemoval: `L) or "superseded" ' . '(marker on the old activity after replacement)'), 'discovered' => n => L) or "superseded" '), 'discovered' => n`
+- 91 Concat: `l_value(PARAM_INT, 'Reference course module ID: clone origin (source = "cloned") or replacing activity ' . '(source = "superseded"), null otherwise', VALUE_DEFAULT, nu => l_value(PARAM_INT, '(source =`
+- 91 ConcatOperandRemoval: `l_value(PARAM_INT, 'Reference course module ID: clone origin (source = "cloned") or replacing activity ' . '(source = "supersede => l_value(PARAM_INT, '(source = "supersede`
+- 91 ConcatOperandRemoval: `replacing activity ' . '(source = "superseded"), null otherwise', VALUE_DEFAULT, nul => replacing activity ', VALUE_DEFAULT, nul`
+- 102 Concat: `_value(PARAM_TEXT, 'Server-computed teacher-facing change line against the direct predecessor ' . '(who, when, what)')]), 'One entry per => _value(PARAM_TEXT, '(who, when, what)' . 'Server-computed te`
+- 102 ConcatOperandRemoval: `_value(PARAM_TEXT, 'Server-computed teacher-facing change line against the direct predecessor ' . '(who, when, what)')] => _value(PARAM_TEXT, '(who, when, what)')]`
+- 102 ConcatOperandRemoval: `direct predecessor ' . '(who, when, what)')]), 'One entry per => direct predecessor ')]), 'One entry per`
+
+## Plugin/src/local_coursepilot/classes/external/list_context_files.php (8 überlebt, 8 offen)
+
+- 54 Concat: `_value(PARAM_BOOL, 'Optional: true lists the previous location instead of the current one (read-only switch for the ' . 'legacy stock, Issue #498) - only takes effect while a legacy stock is open', VA`
+- 54 ConcatOperandRemoval: `_value(PARAM_BOOL, 'Optional: true lists the previous location instead of the current one (read-only switch for the ' . 'legacy stock, Issue => _value(PARAM_BOOL, 'legacy stock, Issue`
+- 54 ConcatOperandRemoval: `nly switch for the ' . 'legacy stock, Issue #498) - only takes effect while a legacy stock is open', VALUE_DEFAULT, fal => nly switch for the ', VALUE_DEFAULT, fal`
+- 57 FalseValue: `en', VALUE_DEFAULT, false)]); => en', VALUE_DEFAULT, true)]);`
+- 83 MethodCallRemoval: `self::validate_context($context); => `
+- 102 Concat: `_value(PARAM_TEXT, 'Resolved subfolder, relative to the context root (empty = root) - the same notation the tools ' . 'accept'), 'entries' => new => _value(PARAM_TEXT, 'accept' . 'Resolved subfolder, `
+- 102 ConcatOperandRemoval: `_value(PARAM_TEXT, 'Resolved subfolder, relative to the context root (empty = root) - the same notation the tools ' . 'accept'), 'entries' => _value(PARAM_TEXT, 'accept'), 'entries'`
+- 102 ConcatOperandRemoval: `notation the tools ' . 'accept'), 'entries' => new => notation the tools '), 'entries' => new`
+
+## Plugin/src/local_coursepilot/classes/external/list_courses.php (6 überlebt, 6 offen)
+
+- 44 PublicVisibility: `public static function exe => protected static function exe`
+- 55 MethodCallRemoval: `self::validate_parameters(self::execute_parameters(), []); => `
+- 63 MethodCallRemoval: `self::validate_context($context); => `
+- 66 CastString: `->id, 'fullname' => (string) $course->fullname, ' => ->id, 'fullname' => $course->fullname, '`
+- 67 CastString: `ame, 'shortname' => (string) $course->shortname, => ame, 'shortname' => $course->shortname,`
+- 68 CastBool: `tname, 'visible' => (bool) $course->visible]; => tname, 'visible' => $course->visible];`
+
+## Plugin/src/local_coursepilot/classes/external/list_material_files.php (14 überlebt, 14 offen)
+
+- 44 PublicVisibility: `public static function exe => protected static function exe`
+- 66 MethodCallRemoval: `self::validate_context($context); => `
+- 78 DecrementInteger: `($remaining / 1048576, 1)]; => ($remaining / 1048575, 1)];`
+- 78 IncrementInteger: `($remaining / 1048576, 1)]; => ($remaining / 1048577, 1)];`
+- 78 Division: `at_float($remaining / 1048576, 1)]; => at_float($remaining * 1048576, 1)];`
+- 78 DecrementInteger: `emaining / 1048576, 1)]; => emaining / 1048576, 0)];`
+- 78 IncrementInteger: `emaining / 1048576, 1)]; => emaining / 1048576, 2)];`
+- 88 ArrayItemRemoval: `_single_structure(['path' => new external_value(PARAM_TEXT, 'Resolved subfolder relative to the material root (empty = root), using the same notation ' . 'accepted by the tools'), 'entries' => new ext`
+- 91 Concat: `_value(PARAM_TEXT, 'Resolved subfolder relative to the material root (empty = root), using the same notation ' . 'accepted by the tools'), 'entries' => new => _value(PARAM_TEXT, 'accepted by the tools`
+- 91 ConcatOperandRemoval: `_value(PARAM_TEXT, 'Resolved subfolder relative to the material root (empty = root), using the same notation ' . 'accepted by the tool => _value(PARAM_TEXT, 'accepted by the tool`
+- 91 ConcatOperandRemoval: `the same notation ' . 'accepted by the tools'), 'entries' => new => the same notation '), 'entries' => new`
+- 99 Concat: `value(PARAM_ALPHA, '"file", "folder" or "context_area" (context area - it physically lives here inside the ' . 'material store, but is not enterable via the material paths, see list_context_files)'), `
+- 99 ConcatOperandRemoval: `value(PARAM_ALPHA, '"file", "folder" or "context_area" (context area - it physically lives here inside the ' . 'material store, but => value(PARAM_ALPHA, 'material store, but`
+- 99 ConcatOperandRemoval: `es here inside the ' . 'material store, but is not enterable via the material paths, see list_context_files)'), 'size' => new ext => es here inside the '), 'size' => new ext`
+
+## Plugin/src/local_coursepilot/classes/external/list_skills.php (6 überlebt, 6 offen)
+
+- 51 PublicVisibility: `public static function exe => protected static function exe`
+- 61 MethodCallRemoval: `self::validate_parameters(self::execute_parameters(), []); => `
+- 62 MethodCallRemoval: `self::validate_context(context_system::instance()); => `
+- 67 UnwrapArrayMap: `$skills = array_map(static fn(array $entry): array => ['name' => $entry['name'], 'trigger' => $entry['trigger'], 'kind' => $entry['kind'], 'length' => $entry['length']], skill_corpus::list()); => $ski`
+- 75 FalseValue: `LECTION_PAGE))->out(false); => LECTION_PAGE))->out(true);`
+- 85 CastInt: `n::open_with_access((int) $USER->id)) { => n::open_with_access($USER->id)) {`
+
+## Plugin/src/local_coursepilot/classes/external/move_module.php (20 überlebt, 20 offen)
+
+- 54 PublicVisibility: `public static function exe => protected static function exe`
+- 60 Concat: `l_value(PARAM_INT, 'Optional zero-based index in the target section (before the activity currently at that index); ' . 'omit to append at the end of the target section', VALUE_DEFAULT, nu => l_value(P`
+- 60 ConcatOperandRemoval: `l_value(PARAM_INT, 'Optional zero-based index in the target section (before the activity currently at that index); ' . 'omit to append at th => l_value(PARAM_INT, 'omit to append at th`
+- 60 ConcatOperandRemoval: `ly at that index); ' . 'omit to append at the end of the target section', VALUE_DEFAULT, nul => ly at that index); ', VALUE_DEFAULT, nul`
+- 85 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 87 MethodCallRemoval: `self::validate_context($context); => `
+- 88 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 92 FunctionCallRemoval: `// Check native permissions even though stateactions::cm_move() repeats it. // This cheap check ensures a missing capability cannot be hidden behind // position validation. require_capability('moodle/`
+- 101 ArrayItemRemoval: `_coursepilot', '', ['sectionnum' => $params['sectionnum']]); => _coursepilot', '', []);`
+- 108 UnwrapArrayFilter: `mids = array_values(array_filter($targetcmids, static fn(int $id): bool => $id !== $cm->id)); => mids = array_values($targetcmids);`
+- 108 UnwrapArrayValues: `targetcmids = array_values(array_filter($targetcmids, static fn(int $id): bool => $id !== $cm->id)); => targetcmids = array_filter($targetcmids, static fn(int $id): bool => $id !== $cm->id);`
+- 112 GreaterThanOrEqualTo: `null && $position >= 0 && $position < co => null && $position > 0 && $position < co`
+- 112 LessThan: `>= 0 && $position < count($targetcmids) => >= 0 && $position <= count($targetcmids)`
+- 116 CastInt: `_placement::move_to((int) $cm->id, (int) $targ => _placement::move_to($cm->id, (int) $targ`
+- 116 CastInt: `e_to((int) $cm->id, (int) $targetsection->id, => e_to((int) $cm->id, $targetsection->id,`
+- 120 NotIdentical: `ssage = $targetcmid !== null ? " at posit => ssage = $targetcmid === null ? " at posit`
+- 120 Ternary: `rgetcmid !== null ? " at position {$position}" : ''; => rgetcmid !== null ? '' : " at position {$position}";`
+- 125 CastInt: `return ['cmid' => (int) $cm->id, 'sectionnum => return ['cmid' => $cm->id, 'sectionnum`
+- 126 CastInt: `id, 'sectionnum' => (int) $params['sectionnum' => id, 'sectionnum' => $params['sectionnum'`
+- 137 ArrayItemRemoval: `_single_structure(['cmid' => new external_value(PARAM_INT, 'Course module ID of the moved activity'), 'sectionnum' => new e => _single_structure(['sectionnum' => new e`
+
+## Plugin/src/local_coursepilot/classes/external/move_question.php (57 überlebt, 57 offen)
+
+- 62 PublicVisibility: `public static function exe => protected static function exe`
+- 68 Concat: `value(PARAM_BOOL, 'true explicitly confirms a previously reported suspect case (idnumber collision in the ' . 'target category) and moves it anyway. Omit or false on the first call.', VALUE_DEFAULT, f`
+- 68 ConcatOperandRemoval: `value(PARAM_BOOL, 'true explicitly confirms a previously reported suspect case (idnumber collision in the ' . 'target category) and => value(PARAM_BOOL, 'target category) and`
+- 68 ConcatOperandRemoval: `r collision in the ' . 'target category) and moves it anyway. Omit or false on the first call.', VALUE_DEFAULT, fal => r collision in the ', VALUE_DEFAULT, fal`
+- 71 FalseValue: `l.', VALUE_DEFAULT, false)]); => l.', VALUE_DEFAULT, true)]);`
+- 98 CastInt: `ext::instance_by_id((int) $sourcecategory->con => ext::instance_by_id($sourcecategory->con`
+- 99 MethodCallRemoval: `self::validate_context($sourcecontext); => `
+- 100 FunctionCallRemoval: `require_capability('local/coursepilot:use', $sourcecontext); => `
+- 102 CastInt: `ext::instance_by_id((int) $targetcategory->con => ext::instance_by_id($targetcategory->con`
+- 103 CastInt: `if ((int) $targetcontext->id ! => if ($targetcontext->id !`
+- 103 CastInt: `rgetcontext->id !== (int) $sourcecontext->id) => rgetcontext->id !== $sourcecontext->id)`
+- 103 NotIdentical: `$targetcontext->id !== (int) $sourcecont => $targetcontext->id === (int) $sourcecont`
+- 106 FunctionCallRemoval: `require_capability('local/coursepilot:use', $targetcontext); => `
+- 109 ArrayItemRemoval: `uestion_versions', ['questionbankentryid' => $entry->id], 'version ASC'); => uestion_versions', [], 'version ASC');`
+- 110 CastInt: `c fn($item): int => (int) $item->questionid, $ => c fn($item): int => $item->questionid, $`
+- 111 Foreach_: `foreach ($questionids as $versionquestion => foreach ([] as $versionquestion`
+- 113 FunctionCallRemoval: `question_require_capability_on($question, 'move'); => `
+- 116 CastString: `$idnumber = (string) ($entry->idnumber ?? ''); => $idnumber = $entry->idnumber ?? '';`
+- 118 CastInt: `_idnumber_collision((int) $targetcategory->id, => _idnumber_collision($targetcategory->id,`
+- 120 CastInt: `ory->id, $idnumber, (int) $entry->id); => ory->id, $idnumber, $entry->id);`
+- 126 Ternary: `= $latestversion ? (string) $DB->get_field('question', 'questiontext', ['id' => (int) $latestversion->questionid], MUST_EXIST) : ''; => = $latestversion ? '' : (string) $DB->get_field('question', 'que`
+- 127 CastInt: `tiontext', ['id' => (int) $latestversion->ques => tiontext', ['id' => $latestversion->ques`
+- 127 ArrayItemRemoval: `', 'questiontext', ['id' => (int) $latestversion->questionid], MUST_EXIST) : ''; => ', 'questiontext', [], MUST_EXIST) : '';`
+- 127 CastString: `= $latestversion ? (string) $DB->get_field('ques => = $latestversion ? $DB->get_field('ques`
+- 133 CastInt: `tionbankentryid' => (int) $entry->id, 'version => tionbankentryid' => $entry->id, 'version`
+- 135 FalseValue: `r_disambiguated' => false, 'message' => 'Sus => r_disambiguated' => true, 'message' => 'Sus`
+- 136 Concat: `alse, 'message' => 'Suspect case: the target category already has an entry with the ' . 'idnumber "' . $idnumber . '". => alse, 'message' => 'idnumber "' . 'Suspect case: the target category already h`
+- 136 ConcatOperandRemoval: `alse, 'message' => 'Suspect case: the target category already has an entry with the ' . 'idnumber "' . $idnum => alse, 'message' => 'idnumber "' . $idnum`
+- 136 ConcatOperandRemoval: `entry with the ' . 'idnumber "' . $idnumber . '". Noth => entry with the ' . $idnumber . '". Noth`
+- 136 Concat: `entry with the ' . 'idnumber "' . $idnumber . '". Nothing was m => entry with the ' . $idnumber . 'idnumber "' . '". Nothing was m`
+- 136 ConcatOperandRemoval: `' . 'idnumber "' . $idnumber . '". Nothing was move => ' . 'idnumber "' . '". Nothing was move`
+- 136 Concat: `' . 'idnumber "' . $idnumber . '". Nothing was moved. To move despite the collision, ' . 'call again with => ' . 'idnumber "' . '". Nothing was moved. To move despite the collision, ' . $idnumber . 'c`
+- 136 ConcatOperandRemoval: `r "' . $idnumber . '". Nothing was moved. To move despite the collision, ' . 'call again with conf => r "' . $idnumber . 'call again with conf`
+- 136 Concat: `r "' . $idnumber . '". Nothing was moved. To move despite the collision, ' . 'call again with confirmed=true.'], question_suspect => r "' . $idnumber . 'call again with confirmed=true.' . '". Nothing `
+- 136 ConcatOperandRemoval: `ite the collision, ' . 'call again with confirmed=true.'], question_suspect_ => ite the collision, '], question_suspect_`
+- 140 CastInt: `esponse($collision, (int) $targetcategory->id, => esponse($collision, $targetcategory->id,`
+- 163 CastString: `targetcategory->id, (string) $questionids[0], '/q => targetcategory->id, $questionids[0], '/q`
+- 169 Coalesce: `dnumber = (string) ($entry->idnumber ?? ''); => dnumber = (string) ('' ?? $entry->idnumber);`
+- 169 CastString: `$newidnumber = (string) ($entry->idnumber ?? ''); => $newidnumber = $entry->idnumber ?? '';`
+- 170 LogicalAnd: `$collision !== null && $newidnumber !== $i => $collision !== null || $newidnumber !== $i`
+- 173 IfNegation: `if ($idnumberdisambiguat => if (!$idnumberdisambiguat`
+- 174 Concat: `$message .= ' The idnumber "' . $idnumber . '" was already ta => $message .= $idnumber . ' The idnumber "' . '" was already ta`
+- 174 ConcatOperandRemoval: `$message .= ' The idnumber "' . $idnumber . '" was a => $message .= $idnumber . '" was a`
+- 174 ConcatOperandRemoval: `' The idnumber "' . $idnumber . '" was already taken => ' The idnumber "' . '" was already taken`
+- 174 Concat: `' The idnumber "' . $idnumber . '" was already taken in the target category and was ' . 'renamed to "' . => ' The idnumber "' . '" was already taken in the target category and was ' . $idnumber . 'ren`
+- 174 ConcatOperandRemoval: `r "' . $idnumber . '" was already taken in the target category and was ' . 'renamed to "' . $new => r "' . $idnumber . 'renamed to "' . $new`
+- 174 Concat: `r "' . $idnumber . '" was already taken in the target category and was ' . 'renamed to "' . $newidnumber . ' => r "' . $idnumber . 'renamed to "' . '" was already taken in the target category and was `
+- 174 ConcatOperandRemoval: `ategory and was ' . 'renamed to "' . $newidnumber . '".'; => ategory and was ' . $newidnumber . '".';`
+- 174 Concat: `ategory and was ' . 'renamed to "' . $newidnumber . '".'; => ategory and was ' . $newidnumber . 'renamed to "' . '".';`
+- 174 ConcatOperandRemoval: `. 'renamed to "' . $newidnumber . '".'; => . 'renamed to "' . '".';`
+- 174 Concat: `. 'renamed to "' . $newidnumber . '".'; => . 'renamed to "' . '".' . $newidnumber;`
+- 174 ConcatOperandRemoval: `to "' . $newidnumber . '".'; => to "' . $newidnumber;`
+- 174 Assignment: `$message .= ' The idnumber "' => $message = ' The idnumber "'`
+- 178 UnwrapArrayMerge: `return array_merge(['status' => 'moved', 'questionbankentryid' => (int) $entry->id, 'versionids' => array_values(array_map(static fn($item): int => (int) $item->questionid, $versions)), 'idnumber_disa`
+- 181 CastInt: `tionbankentryid' => (int) $entry->id, 'version => tionbankentryid' => $entry->id, 'version`
+- 182 CastInt: `c fn($item): int => (int) $item->questionid, $ => c fn($item): int => $item->questionid, $`
+- 182 UnwrapArrayValues: `ersionids' => array_values(array_map(static fn($item): int => (int) $item->questionid, $versions)), 'idnumber_disambi => ersionids' => array_map(static fn($item): int => (int) $item->questionid, $vers`
+
+## Plugin/src/local_coursepilot/classes/external/move_section.php (13 überlebt, 13 offen)
+
+- 53 PublicVisibility: `public static function exe => protected static function exe`
+- 78 MethodCallRemoval: `self::validate_context($context); => `
+- 79 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 84 FunctionCallRemoval: `// Native permission check: stateactions::section_move_after() // re-checks 'moodle/course:movesections' itself anyway - the // call here is cheap and ensures a missing permission is not // hidden beh`
+- 95 ArrayItemRemoval: `_coursepilot', '', ['sectionnum' => $from]); => _coursepilot', '', []);`
+- 97 GreaterThan: `if ($to < 1 || $to > $maxsectionnum) { => if ($to < 1 || $to >= $maxsectionnum) {`
+- 102 ArrayItemRemoval: `coursepilot', '', ['target' => $to, 'max' => $maxsectionn => coursepilot', '', ['max' => $maxsectionn`
+- 111 CastInt: `return ['id' => (int) $sections[$from]->id => return ['id' => $sections[$from]->id`
+- 112 CastInt: `id, 'sectionnum' => (int) $to, 'message' => "S => id, 'sectionnum' => $to, 'message' => "S`
+- 122 GreaterThan: `stinationnum = $to > $from ? $to : $to - => stinationnum = $to >= $from ? $to : $to -`
+- 130 CastInt: `return ['id' => (int) $sections[$from]->id => return ['id' => $sections[$from]->id`
+- 131 CastInt: `id, 'sectionnum' => (int) $to, 'message' => "S => id, 'sectionnum' => $to, 'message' => "S`
+- 142 ArrayItemRemoval: `_single_structure(['id' => new external_value(PARAM_INT, 'Section DB ID'), 'sectionnum' => new e => _single_structure(['sectionnum' => new e`
+
+## Plugin/src/local_coursepilot/classes/external/preview_material_file.php (8 überlebt, 8 offen)
+
+- 50 PublicVisibility: `public static function exe => protected static function exe`
+- 71 MethodCallRemoval: `self::validate_context($context); => `
+- 91 UnwrapStrToLower: `$extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION)); => $extension = pathinfo($filename, PATHINFO_EXTENSION);`
+- 140 ArrayItemRemoval: `return ['path' => $relativepath, 'available' => false, => return ['available' => false,`
+- 157 ArrayItemRemoval: `_single_structure(['path' => new external_value(PARAM_TEXT, 'Resolved file path relative to the material store'), 'available' => new ex => _single_structure(['available' => new ex`
+- 176 Concat: `l_value(PARAM_RAW, 'Base64-encoded JPEG preview; the dispatcher adds an MCP image block from it, ' . 'null when unavailable', VALUE_DEFAULT, nu => l_value(PARAM_RAW, 'null when unavailable' . 'Base64-`
+- 176 ConcatOperandRemoval: `l_value(PARAM_RAW, 'Base64-encoded JPEG preview; the dispatcher adds an MCP image block from it, ' . 'null when unavailabl => l_value(PARAM_RAW, 'null when unavailabl`
+- 176 ConcatOperandRemoval: `age block from it, ' . 'null when unavailable', VALUE_DEFAULT, nul => age block from it, ', VALUE_DEFAULT, nul`
+
+## Plugin/src/local_coursepilot/classes/external/read_context_file.php (5 überlebt, 5 offen)
+
+- 56 Concat: `_value(PARAM_BOOL, 'Optional: true reads from the previous location instead of the current one (read-only switch for ' . 'the legacy stock, Issue #498) - only takes effect while a legacy stock is open`
+- 56 ConcatOperandRemoval: `_value(PARAM_BOOL, 'Optional: true reads from the previous location instead of the current one (read-only switch for ' . 'the legacy stock, Is => _value(PARAM_BOOL, 'the legacy stock, Is`
+- 56 ConcatOperandRemoval: `ad-only switch for ' . 'the legacy stock, Issue #498) - only takes effect while a legacy stock is open', VALUE_DEFAULT, fal => ad-only switch for ', VALUE_DEFAULT, fal`
+- 59 FalseValue: `en', VALUE_DEFAULT, false)]); => en', VALUE_DEFAULT, true)]);`
+- 86 MethodCallRemoval: `self::validate_context($context); => `
+
+## Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php (34 überlebt, 34 offen)
+
+- 61 PublicVisibility: `public static function exe => protected static function exe`
+- 77 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 79 Concat: `parameter_exception('cmid must be a quiz (mod_quiz), got: "' . $cm->modname . '".'); => parameter_exception($cm->modname . 'cmid must be a quiz (mod_quiz), got: "' . '".');`
+- 79 ConcatOperandRemoval: `parameter_exception('cmid must be a quiz (mod_quiz), got: "' . $cm->modname . '".') => parameter_exception($cm->modname . '".')`
+- 79 ConcatOperandRemoval: `od_quiz), got: "' . $cm->modname . '".'); => od_quiz), got: "' . '".');`
+- 79 Concat: `od_quiz), got: "' . $cm->modname . '".'); => od_quiz), got: "' . '".' . $cm->modname);`
+- 79 ConcatOperandRemoval: `t: "' . $cm->modname . '".'); => t: "' . $cm->modname);`
+- 83 MethodCallRemoval: `self::validate_context($context); => `
+- 84 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 87 FunctionCallRemoval: `// Note: moodle/question:view no longer exists. Use moodle/question:viewall/viewmine, // as in get_question and export_questions_xml. require_capability('moodle/question:viewall', $context); => `
+- 89 CastInt: `::slot_lineage_rows((int) $cm->instance); => ::slot_lineage_rows($cm->instance);`
+- 95 CastInt: `::course_of_context((int) $row->categorycontex => ::course_of_context($row->categorycontex`
+- 96 DecrementInteger: `$entrycourseid !== 0 && $entrycourseid = => $entrycourseid !== -1 && $entrycourseid =`
+- 99 CastInt: `ions[] = ['slot' => (int) $row->slot, 'questio => ions[] = ['slot' => $row->slot, 'questio`
+- 100 CastInt: `tionbankentryid' => (int) $row->questionbanken => tionbankentryid' => $row->questionbanken`
+- 101 CastInt: `id, 'questionid' => (int) $row->questionid, 'n => id, 'questionid' => $row->questionid, 'n`
+- 102 CastString: `estionid, 'name' => (string) $row->questionname, => estionid, 'name' => $row->questionname,`
+- 103 Coalesce: `umber' => (string) ($row->entryidnumber ?? ''), 'status' => $ownc => umber' => (string) ('' ?? $row->entryidnumber), 'status' => $ownc`
+- 103 CastString: `name, 'idnumber' => (string) ($row->entryidnumber ?? ''), 'status' => $ownco => name, 'idnumber' => $row->entryidnumber ?? '', 'status' => $ownco`
+- 127 UnwrapArrayValues: `return array_values($DB->get_records_sql('SELECT qs.slot, qr.questionbankentryid, qbe.idnumber AS entryidnumber, qc.contextid AS categorycontextid, qv.questionid, q.name AS questionname FROM {quiz_slo`
+- 160 FalseValue: `>get_course_context(false) : false; => >get_course_context(true) : false;`
+- 160 FalseValue: `se_context(false) : false; => se_context(false) : true;`
+- 161 CastInt: `= $coursecontext ? (int) $coursecontext->inst => = $coursecontext ? $coursecontext->inst`
+- 161 DecrementInteger: `ntext->instanceid : 0; => ntext->instanceid : -1;`
+- 161 IncrementInteger: `ntext->instanceid : 0; => ntext->instanceid : 1;`
+- 192 ConcatOperandRemoval: `ce) - a correction ' . 'there also changes the question here.'; => ce) - a correction ';`
+- 196 Concat: `return $owncopies . ' question(s) created as their own copy, ' . $shared . ' quest => return ' question(s) created as their own copy, ' . $owncopies . $shared . ' quest`
+- 196 ConcatOperandRemoval: `return $owncopies . ' question(s) create => return ' question(s) create`
+- 196 Concat: `return $owncopies . ' question(s) created as their own copy, ' . $shared . ' question(s) sti => return $owncopies . $shared . ' question(s) created as their own copy, ' . ' question(s) sti`
+- 196 ConcatOperandRemoval: `their own copy, ' . $shared . ' question(s) still => their own copy, ' . ' question(s) still`
+- 196 Concat: `their own copy, ' . $shared . ' question(s) still point to ' . 'the source cours => their own copy, ' . ' question(s) still point to ' . $shared . 'the source cours`
+- 196 ConcatOperandRemoval: `opy, ' . $shared . ' question(s) still point to ' . 'the source course (s => opy, ' . $shared . 'the source course (s`
+- 196 Concat: `opy, ' . $shared . ' question(s) still point to ' . 'the source course (shared reference).'; => opy, ' . $shared . 'the source course (shared reference).' . ' question(s) still point to ';`
+- 208 ArrayItemRemoval: `_single_structure(['slot' => new external_value(PARAM_INT, 'Slot number in the quiz'), 'questionbankentryid' => _single_structure(['questionbankentryid'`
+
+## Plugin/src/local_coursepilot/classes/external/report_loose_material_files.php (16 überlebt, 16 offen)
+
+- 47 PublicVisibility: `public static function exe => protected static function exe`
+- 58 MethodCallRemoval: `self::validate_parameters(self::execute_parameters(), []); => `
+- 61 MethodCallRemoval: `self::validate_context($context); => `
+- 62 MethodCallRemoval: `material_files::require_manage_own_files(); => `
+- 74 Assignment: `$totalsize += $size; => $totalsize = $size;`
+- 78 DecrementInteger: `=> (int) floor(max(0, $now - $file['time => => (int) floor(max(-1, $now - $file['time`
+- 78 IncrementInteger: `=> (int) floor(max(0, $now - $file['time => => (int) floor(max(1, $now - $file['time`
+- 78 Division: `ile['timecreated']) / DAYSECS), 'contenth => ile['timecreated']) * DAYSECS), 'contenth`
+- 78 RoundingFamily: `'age_days' => (int) floor(max(0, $now - $file => 'age_days' => (int) ceil(max(0, $now - $file`
+- 78 RoundingFamily: `'age_days' => (int) floor(max(0, $now - $file => 'age_days' => (int) round(max(0, $now - $file`
+- 78 CastInt: `size, 'age_days' => (int) floor(max(0, $now - => size, 'age_days' => floor(max(0, $now -`
+- 88 DecrementInteger: `($remaining / 1048576, 1)]; => ($remaining / 1048575, 1)];`
+- 88 IncrementInteger: `($remaining / 1048576, 1)]; => ($remaining / 1048577, 1)];`
+- 88 Division: `at_float($remaining / 1048576, 1)]; => at_float($remaining * 1048576, 1)];`
+- 88 DecrementInteger: `emaining / 1048576, 1)]; => emaining / 1048576, 0)];`
+- 88 IncrementInteger: `emaining / 1048576, 1)]; => emaining / 1048576, 2)];`
+
+## Plugin/src/local_coursepilot/classes/external/set_completion.php (7 überlebt, 7 offen)
+
+- 53 Concat: `_value(PARAM_BOOL, 'true explicitly confirms deleting existing completion data of learners, if writing back the ' . 'completion fields would trigger that (two-step confirmation of set_completion). Omi`
+- 53 ConcatOperandRemoval: `_value(PARAM_BOOL, 'true explicitly confirms deleting existing completion data of learners, if writing back the ' . 'completion fields wo => _value(PARAM_BOOL, 'completion fields wo`
+- 53 ConcatOperandRemoval: `iting back the ' . 'completion fields would trigger that (two-step confirmation of set_completion). Omit or ' . 'false on the first c => iting back the ' . 'false on the first c`
+- 53 Concat: `iting back the ' . 'completion fields would trigger that (two-step confirmation of set_completion). Omit or ' . 'false on the first call.', VALUE_DEFAULT, fa => iting back the ' . 'false on the first `
+- 53 ConcatOperandRemoval: `mpletion). Omit or ' . 'false on the first call.', VALUE_DEFAULT, fal => mpletion). Omit or ', VALUE_DEFAULT, fal`
+- 57 FalseValue: `l.', VALUE_DEFAULT, false), learner_locks::P => l.', VALUE_DEFAULT, true), learner_locks::P`
+- 99 ArrayItemRemoval: `_single_structure(['cmid' => new external_value(PARAM_INT, 'Course module ID'), 'modname' => new exte => _single_structure(['modname' => new exte`
+
+## Plugin/src/local_coursepilot/classes/external/set_restriction.php (65 überlebt, 65 offen)
+
+- 101 PublicVisibility: `public static function exe => protected static function exe`
+- 106 Concat: `l_value(PARAM_RAW, 'JSON array of conditions (empty array removes all conditions). Each entry is an object ' . 'with "type": "completion" (fields "activity_cmid", "status": complete|incomplete|' . 'pa`
+- 106 ConcatOperandRemoval: `l_value(PARAM_RAW, 'JSON array of conditions (empty array removes all conditions). Each entry is an object ' . 'with "type": "comple => l_value(PARAM_RAW, 'with "type": "comple`
+- 106 ConcatOperandRemoval: `y is an object ' . 'with "type": "completion" (fields "activity_cmid", "status": complete|incomplete|' . 'pass|fail), "date" ( => y is an object ' . 'pass|fail), "date" (`
+- 106 Concat: `y is an object ' . 'with "type": "completion" (fields "activity_cmid", "status": complete|incomplete|' . 'pass|fail), "date" (fields "direction": from|until, "timestamp": Unix time) or ' . '"group" (f`
+- 106 ConcatOperandRemoval: `ete|incomplete|' . 'pass|fail), "date" (fields "direction": from|until, "timestamp": Unix time) or ' . '"group" (field "grou => ete|incomplete|' . '"group" (field "grou`
+- 106 Concat: `ete|incomplete|' . 'pass|fail), "date" (fields "direction": from|until, "timestamp": Unix time) or ' . '"group" (field "group_id", 0 or omitted = any group). All entries must be ' . 'satisfied at t =>`
+- 106 ConcatOperandRemoval: `Unix time) or ' . '"group" (field "group_id", 0 or omitted = any group). All entries must be ' . 'satisfied at the sam => Unix time) or ' . 'satisfied at the sam`
+- 106 Concat: `Unix time) or ' . '"group" (field "group_id", 0 or omitted = any group). All entries must be ' . 'satisfied at the same time (AND).'), learner_locks::P => Unix time) or ' . 'satisfied at the same time`
+- 106 ConcatOperandRemoval: `ll entries must be ' . 'satisfied at the same time (AND).'), learner_locks::PA => ll entries must be '), learner_locks::PA`
+- 133 FalseValue: `$params['cmid'], 0, false, MUST_EXIST); => $params['cmid'], 0, true, MUST_EXIST);`
+- 135 MethodCallRemoval: `self::validate_context($context); => `
+- 136 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 140 FunctionCallRemoval: `// Native permission check in the course context (Spec 0015 §3.3/§9.2), // identical to update_module_settings/set_completion - no dedicated // Coursepilot write capability. require_capability('moodle`
+- 149 CastString: `$modname = (string) $cm->modname; => $modname = $cm->modname;`
+- 153 LogicalOr: `ray($conditionsraw) || json_last_error() ! => ray($conditionsraw) && json_last_error() !`
+- 162 CastInt: `lf::build_condition((int) $cm->course, $condit => lf::build_condition($cm->course, $condit`
+- 168 CastString: `_locks($conditions, (string) ($cm->availability ?? '')), $params[learner_l => _locks($conditions, $cm->availability ?? ''), $params[learner_l`
+- 172 CastInt: `course = get_course((int) $cm->course); => course = get_course($cm->course);`
+- 179 CastInt: `self::read_settings((int) $cmid); => self::read_settings($cmid);`
+- 186 CastInt: `return ['cmid' => (int) $cmid, 'modname' => => return ['cmid' => $cmid, 'modname' =>`
+- 187 CastString: `$cmid, 'modname' => (string) $cm->modname, 'messa => $cmid, 'modname' => $cm->modname, 'messa`
+- 214 GreaterThan: `return $value > 0 ? $value : null; => return $value >= 0 ? $value : null;`
+- 216 PregMatchRemoveCaret: `ue) && preg_match('/^[1-9][0-9]*$/', $val => ue) && preg_match('/[1-9][0-9]*$/', $val`
+- 216 PregMatchRemoveDollar: `match('/^[1-9][0-9]*$/', $value) === 1) { => match('/^[1-9][0-9]*/', $value) === 1) {`
+- 216 LogicalAnd: `(is_string($value) && preg_match('/^[1-9] => (is_string($value) || preg_match('/^[1-9]`
+- 217 CastInt: `return (int) $value; => return $value;`
+- 259 ArrayItem: `=> 'type', 'value' => json_encode($type) => => 'type', 'value' > json_encode($type)`
+- 275 FalseValue: `itycmid, $courseid, false, IGNORE_MISSING)) => itycmid, $courseid, true, IGNORE_MISSING))`
+- 281 ArrayItem: `vity_cmid', 'value' => json_encode($activ => vity_cmid', 'value' > json_encode($activ`
+- 291 ArrayItem: `> 'status', 'value' => json_encode($statu => > 'status', 'value' > json_encode($statu`
+- 291 ArrayItemRemoval: `coursepilot', '', ['field' => 'status', 'value' => json_encod => coursepilot', '', ['value' => json_encod`
+- 312 ArrayItem: `timestamp', 'value' => json_encode($condi => timestamp', 'value' > json_encode($condi`
+- 312 ArrayItemRemoval: `coursepilot', '', ['field' => 'direction/timestamp', 'value' => json_encod => coursepilot', '', ['value' => json_encod`
+- 337 ArrayItem: `'group_id', 'value' => json_encode($rawgr => 'group_id', 'value' > json_encode($rawgr`
+- 337 ArrayItemRemoval: `coursepilot', '', ['field' => 'group_id', 'value' => json_encod => coursepilot', '', ['value' => json_encod`
+- 340 ArrayItemRemoval: `_exists('groups', ['id' => $groupid, 'courseid' => $course => _exists('groups', ['courseid' => $course`
+- 345 ArrayItem: `'group_id', 'value' => json_encode($group => 'group_id', 'value' > json_encode($group`
+- 345 ArrayItemRemoval: `coursepilot', '', ['field' => 'group_id', 'value' => json_encod => coursepilot', '', ['value' => json_encod`
+- 368 Continue_: `continue; => break;`
+- 370 FalseValue: `$condition->cm, 0, false, MUST_EXIST); => $condition->cm, 0, true, MUST_EXIST);`
+- 372 Continue_: `continue; => break;`
+- 376 Concat: `on->cm, 'detail' => '"teacher_grade:' . $condition->cm . '": the condition => on->cm, 'detail' => $condition->cm . '"teacher_grade:' . '": the condition`
+- 376 ConcatOperandRemoval: `on->cm, 'detail' => '"teacher_grade:' . $condition->cm . '": => on->cm, 'detail' => $condition->cm . '":`
+- 376 ConcatOperandRemoval: `'"teacher_grade:' . $condition->cm . '": the condition on => '"teacher_grade:' . '": the condition on`
+- 376 Concat: `'"teacher_grade:' . $condition->cm . '": the condition on ' . $target->modname => '"teacher_grade:' . '": the condition on ' . $condition->cm . $target->modname`
+- 376 ConcatOperandRemoval: `. $condition->cm . '": the condition on ' . $target->modname . ' => . $condition->cm . $target->modname . '`
+- 376 Concat: `. $condition->cm . '": the condition on ' . $target->modname . ' (cmid ' . $cond => . $condition->cm . $target->modname . '": the condition on ' . ' (cmid ' . $cond`
+- 376 ConcatOperandRemoval: `he condition on ' . $target->modname . ' (cmid ' . $conditi => he condition on ' . ' (cmid ' . $conditi`
+- 376 Concat: `he condition on ' . $target->modname . ' (cmid ' . $condition->cm . => he condition on ' . ' (cmid ' . $target->modname . $condition->cm .`
+- 376 ConcatOperandRemoval: `$target->modname . ' (cmid ' . $condition->cm . ') => $target->modname . $condition->cm . ')`
+- 376 Concat: `$target->modname . ' (cmid ' . $condition->cm . ') is only met on => $target->modname . $condition->cm . ' (cmid ' . ') is only met on`
+- 376 ConcatOperandRemoval: `dname . ' (cmid ' . $condition->cm . ') is only met once => dname . ' (cmid ' . ') is only met once`
+- 376 Concat: `dname . ' (cmid ' . $condition->cm . ') is only met once the teacher has graded the learner.']; => dname . ' (cmid ' . ') is only met once the teacher has graded the learner.' . $condition->cm];`
+- 376 ConcatOperandRemoval: `d ' . $condition->cm . ') is only met once the teacher has graded the learner.']; => d ' . $condition->cm];`
+- 380 ArrayOneItem: `return $locks; => return count($locks) > 1 ? array_slice($locks, 0, 1, true) : $locks;`
+- 436 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 449 IncrementInteger: `return $count === 1 ? 'Restriction set: => return $count === 2 ? 'Restriction set:`
+- 449 Identical: `return $count === 1 ? 'Restriction => return $count !== 1 ? 'Restriction`
+- 449 Ternary: `=== 1 ? 'Restriction set: 1 condition must be met.' : 'Restrictions set: ' . $count . ' conditions must all be met.'; => === 1 ? 'Restrictions set: ' . $count . ' conditions must all be met.' : 'Restr`
+- 451 Concat: `ion must be met.' : 'Restrictions set: ' . $count . ' conditions must => ion must be met.' : $count . 'Restrictions set: ' . ' conditions must`
+- 451 ConcatOperandRemoval: `ion must be met.' : 'Restrictions set: ' . $count . ' condition => ion must be met.' : $count . ' condition`
+- 451 ConcatOperandRemoval: `strictions set: ' . $count . ' conditions must al => strictions set: ' . ' conditions must al`
+- 451 Concat: `strictions set: ' . $count . ' conditions must all be met.'; => strictions set: ' . ' conditions must all be met.' . $count;`
+- 451 ConcatOperandRemoval: `ions set: ' . $count . ' conditions must all be met.'; => ions set: ' . $count;`
+
+## Plugin/src/local_coursepilot/classes/external/update_mc_question.php (117 überlebt, 116 offen)
+
+- 60 PublicVisibility: `public static function exe => protected static function exe`
+- 65 Concat: `l_value(PARAM_RAW, 'JSON object field name => new value - only the fields to change (a patch, not a full record). ' . 'Allowed: name, questiontext, selectionmode, answers, defaultmark, generalfeedback`
+- 65 ConcatOperandRemoval: `l_value(PARAM_RAW, 'JSON object field name => new value - only the fields to change (a patch, not a full record). ' . 'Allowed: name, quest => l_value(PARAM_RAW, 'Allowed: name, quest`
+- 65 ConcatOperandRemoval: `full record). ' . 'Allowed: name, questiontext, selectionmode, answers, defaultmark, generalfeedback, ' . 'questiontext_images. => full record). ' . 'questiontext_images.`
+- 65 Concat: `full record). ' . 'Allowed: name, questiontext, selectionmode, answers, defaultmark, generalfeedback, ' . 'questiontext_images. Fields not named stay unchanged. An image from the material folder is ' `
+- 65 ConcatOperandRemoval: `neralfeedback, ' . 'questiontext_images. Fields not named stay unchanged. An image from the material folder is ' . 'embedded by having q => neralfeedback, ' . 'embedded by having q`
+- 65 Concat: `neralfeedback, ' . 'questiontext_images. Fields not named stay unchanged. An image from the material folder is ' . 'embedded by having questiontext (or an answer\'s feedback in answers) contain an ' .`
+- 65 ConcatOperandRemoval: `rial folder is ' . 'embedded by having questiontext (or an answer\'s feedback in answers) contain an ' . '"<img src=\"@@PLUGIN => rial folder is ' . '"<img src=\"@@PLUGIN`
+- 65 Concat: `rial folder is ' . 'embedded by having questiontext (or an answer\'s feedback in answers) contain an ' . '"<img src=\"@@PLUGINFILE@@/<filename>\" alt=\"...\">" AND the filename additionally named in '`
+- 65 ConcatOperandRemoval: `rs) contain an ' . '"<img src=\"@@PLUGINFILE@@/<filename>\" alt=\"...\">" AND the filename additionally named in ' . 'questiontext_images => rs) contain an ' . 'questiontext_images`
+- 65 Concat: `rs) contain an ' . '"<img src=\"@@PLUGINFILE@@/<filename>\" alt=\"...\">" AND the filename additionally named in ' . 'questiontext_images (or, in the answers entry, under "feedback_images") as a list `
+- 65 ConcatOperandRemoval: `nally named in ' . 'questiontext_images (or, in the answers entry, under "feedback_images") as a list of ' . 'material folder path => nally named in ' . 'material folder path`
+- 65 Concat: `nally named in ' . 'questiontext_images (or, in the answers entry, under "feedback_images") as a list of ' . 'material folder paths.'), 'confirmed' => n => nally named in ' . 'material folder paths.' `
+- 65 ConcatOperandRemoval: `ges") as a list of ' . 'material folder paths.'), 'confirmed' => ne => ges") as a list of '), 'confirmed' => ne`
+- 75 Concat: `value(PARAM_BOOL, 'true explicitly confirms a previously reported suspect case from the XML core. Omit or false on ' . 'the first call.', VALUE_DEFAULT, fa => value(PARAM_BOOL, 'the first call.' . 'tr`
+- 75 ConcatOperandRemoval: `value(PARAM_BOOL, 'true explicitly confirms a previously reported suspect case from the XML core. Omit or false on ' . 'the first call.', VAL => value(PARAM_BOOL, 'the first call.', VAL`
+- 75 ConcatOperandRemoval: `. Omit or false on ' . 'the first call.', VALUE_DEFAULT, fal => . Omit or false on ', VALUE_DEFAULT, fal`
+- 78 FalseValue: `l.', VALUE_DEFAULT, false), 'location' => ma => l.', VALUE_DEFAULT, true), 'location' => ma`
+- 96 FalseValue: `, bool $confirmed = false, string $location => , bool $confirmed = true, string $location`
+- 110 CastInt: `$categoryid = (int) $category->id; => $categoryid = $category->id;`
+- 111 CastInt: `question_bank_entry((int) $question->id); => question_bank_entry($question->id);`
+- 165 MethodCallRemoval: `self::validate_context($context); => `
+- 166 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 170 FunctionCallRemoval: `// Same capability as for a new version in import_questions_xml/ // create_mc_question - writing a new version is the same write // operation, not a separate Coursepilot "edit" permission. require_cap`
+- 174 Concat: `arameter_exception('update_mc_question only works for multiple-choice questions (qtype "multichoice"); ' . 'this question is "' . $question->qtype => arameter_exception('this question is "' . 'update_`
+- 174 ConcatOperandRemoval: `"multichoice"); ' . 'this question is "' . $question->qtype . ' => "multichoice"); ' . $question->qtype . '`
+- 174 Concat: `"multichoice"); ' . 'this question is "' . $question->qtype . '".'); => "multichoice"); ' . $question->qtype . 'this question is "' . '".');`
+- 174 ConcatOperandRemoval: `is question is "' . $question->qtype . '".'); => is question is "' . '".');`
+- 174 Concat: `is question is "' . $question->qtype . '".'); => is question is "' . '".' . $question->qtype);`
+- 174 ConcatOperandRemoval: `' . $question->qtype . '".'); => ' . $question->qtype);`
+- 248 CastString: `$idnumber = trim((string) ($entry->idnumber ?? '')); => $idnumber = trim($entry->idnumber ?? '');`
+- 248 UnwrapTrim: `$idnumber = trim((string) ($entry->idnumber ?? '')); => $idnumber = (string) ($entry->idnumber ?? '');`
+- 259 ConcatOperandRemoval: `?>\n<quiz>\n" . $xml . "\n</quiz>\n"; => ?>\n<quiz>\n" . $xml;`
+- 263 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 293 CastInt: `st_version_question((int) $entry->id); => st_version_question($entry->id);`
+- 295 LogicalOrAllSubExprNegation: `if ($questiontextdraftitemid !== null || !empty($answerfeedbac => if (!($questiontextdraftitemid !== null) || empty($answerfeedbac`
+- 296 CastInt: `ed_images($context, (int) $latest->id, $questi => ed_images($context, $latest->id, $questi`
+- 299 Concat: `$message = 'MC question "' . $question->name . '" updated (bank => $message = $question->name . 'MC question "' . '" updated (bank`
+- 299 ConcatOperandRemoval: `$message = 'MC question "' . $question->name . '" => $message = $question->name . '"`
+- 299 ConcatOperandRemoval: `= 'MC question "' . $question->name . '" updated (bank ent => = 'MC question "' . '" updated (bank ent`
+- 299 Concat: `= 'MC question "' . $question->name . '" updated (bank entry ' . $result['question => = 'MC question "' . '" updated (bank entry ' . $question->name . $result['question`
+- 299 ConcatOperandRemoval: `. $question->name . '" updated (bank entry ' . $result['questionban => . $question->name . $result['questionban`
+- 299 Concat: `. $question->name . '" updated (bank entry ' . $result['questionbankentryid'] . ', new version ' => . $question->name . $result['questionbankentryid'] . '" updated (bank entry ' . ', new version '`
+- 299 ConcatOperandRemoval: `ted (bank entry ' . $result['questionbankentryid'] . ', new version ' . $ => ted (bank entry ' . ', new version ' . $`
+- 299 Concat: `ted (bank entry ' . $result['questionbankentryid'] . ', new version ' . $result['version' => ted (bank entry ' . ', new version ' . $result['questionbankentryid'] . $result['version'`
+- 299 ConcatOperandRemoval: `tionbankentryid'] . ', new version ' . $result['version'] . => tionbankentryid'] . $result['version'] .`
+- 299 Concat: `tionbankentryid'] . ', new version ' . $result['version'] . ').'; => tionbankentryid'] . $result['version'] . ', new version ' . ').';`
+- 299 ConcatOperandRemoval: `', new version ' . $result['version'] . ').'; => ', new version ' . ').';`
+- 299 Concat: `', new version ' . $result['version'] . ').'; => ', new version ' . ').' . $result['version'];`
+- 299 ConcatOperandRemoval: `. $result['version'] . ').'; => . $result['version'];`
+- 301 IfNegation: `if ($write['backfilled'] => if (!$write['backfilled']`
+- 302 Concat: `$message .= ' idnumber "' . $write['idnumber'] . '" was assigned r => $message .= $write['idnumber'] . ' idnumber "' . '" was assigned r`
+- 302 ConcatOperandRemoval: `$message .= ' idnumber "' . $write['idnumber'] . => $message .= $write['idnumber'] .`
+- 302 ConcatOperandRemoval: `.= ' idnumber "' . $write['idnumber'] . '" was assigned retr => .= ' idnumber "' . '" was assigned retr`
+- 302 Concat: `.= ' idnumber "' . $write['idnumber'] . '" was assigned retroactively (the question had none before).'; => .= ' idnumber "' . '" was assigned retroactively (the question had none before).' . $write['i`
+- 302 ConcatOperandRemoval: `. $write['idnumber'] . '" was assigned retroactively (the question had none before).'; => . $write['idnumber'];`
+- 302 Assignment: `$message .= ' idnumber "' . $w => $message = ' idnumber "' . $w`
+- 304 LogicalNot: `if (!empty($write['missin => if (empty($write['missin`
+- 312 UnwrapArrayMerge: `return array_merge(['name' => $result['name'], 'questionid' => (int) $latest->id, 'questionbankentryid' => (int) $result['questionbankentryid'], 'version' => (int) $result['version'], 'status' => 'upd`
+- 315 CastInt: `'], 'questionid' => (int) $latest->id, 'questi => '], 'questionid' => $latest->id, 'questi`
+- 316 CastInt: `tionbankentryid' => (int) $result['questionban => tionbankentryid' => $result['questionban`
+- 317 CastInt: `yid'], 'version' => (int) $result['version'], => yid'], 'version' => $result['version'],`
+- 335 LogicalOr: `(!is_array($patch) || json_last_error() ! => (!is_array($patch) && json_last_error() !`
+- 342 ConcatOperandRemoval: `_json. Allowed: ' . implode(', ', self::PATCHABLE_FIELDS) . '.'); => _json. Allowed: ' . '.');`
+- 342 Concat: `_json. Allowed: ' . implode(', ', self::PATCHABLE_FIELDS) . '.'); => _json. Allowed: ' . '.' . implode(', ', self::PATCHABLE_FIELDS));`
+- 342 ConcatOperandRemoval: `f::PATCHABLE_FIELDS) . '.'); => f::PATCHABLE_FIELDS));`
+- 365 CastFloat: `tion->defaultmark = (float) $patch['defaultmark' => tion->defaultmark = $patch['defaultmark'`
+- 368 CastString: `$mode = (string) $patch['selectionmod => $mode = $patch['selectionmod`
+- 369 ArrayItemRemoval: `(!in_array($mode, ['single', 'multiple'], true)) { => (!in_array($mode, ['multiple'], true)) {`
+- 372 DecrementInteger: `mode === 'single' ? 1 : 0; => mode === 'single' ? 0 : 0;`
+- 372 IncrementInteger: `mode === 'single' ? 1 : 0; => mode === 'single' ? 2 : 0;`
+- 397 CastString (ignoriert): `uestion->{$field} = (string) $patch[$field]; => uestion->{$field} = $patch[$field];`
+- 415 LogicalOrAllSubExprNegation: `if (array_key_exists('answers', $patch) || array_key_exists('se => if (!array_key_exists('answers', $patch) || !array_key_exists('se`
+- 415 LogicalOrSingleSubExprNegation: `nswers', $patch) || array_key_exists('se => nswers', $patch) || !array_key_exists('se`
+- 416 ArrayItemRemoval: `ass $a): array => ['answer' => $a->answer, 'fraction' => $a->fra => ass $a): array => ['fraction' => $a->fra`
+- 417 ArrayItem: `array => ['answer' => $a->answer, 'fract => array => ['answer' > $a->answer, 'fract`
+- 419 ArrayItem: `raction, 'feedback' => $a->feedback], arr => raction, 'feedback' > $a->feedback], arr`
+- 420 CastArray: `back], array_values((array) $question->options-> => back], array_values($question->options->`
+- 420 UnwrapArrayValues: `' => $a->feedback], array_values((array) $question->options->answers)); => ' => $a->feedback], (array) $question->options->answers);`
+- 440 UnwrapArrayValues: `foreach (array_values($answers) as $i => $answer) { => foreach ($answers as $i => $answer) {`
+- 447 DecrementInteger: `object->id = -($i + 1); => object->id = -($i + 0);`
+- 447 IncrementInteger: `object->id = -($i + 1); => object->id = -($i + 2);`
+- 447 Plus: `$object->id = -($i + 1); => $object->id = -($i - 1);`
+- 448 CastString: `$object->answer = (string) $answer['answer']; => $object->answer = $answer['answer'];`
+- 450 CastFloat: `$object->fraction = (float) $answer['fraction']; => $object->fraction = $answer['fraction'];`
+- 451 CastString: `swer['feedback']) ? (string) $answer['feedback'] => swer['feedback']) ? $answer['feedback']`
+- 472 UnwrapArrayValues: `foreach (array_values($patch['answers'] ?? []) as $i => $answer) { => foreach ($patch['answers'] ?? [] as $i => $answer) {`
+- 480 ArrayOneItem: `return $result; => return count($result) > 1 ? array_slice($result, 0, 1, true) : $result;`
+- 514 LogicalAndAllSubExprNegation: `if (empty($questiontextimages) && empty($answerfeedbac => if (!empty($questiontextimages) && !empty($answerfeedbac`
+- 518 MethodCallRemoval: `material_files::require_manage_own_files(); => `
+- 520 Foreach_: `foreach ($answerfeedbackimages as $images) { => foreach ([] as $images) {`
+- 521 MethodCallRemoval: `self::assert_allowed_embed_extensions($images); => `
+- 526 DecrementInteger: `n', 'questiontext', 0, $questiontextimage => n', 'questiontext', -1, $questiontextimage`
+- 526 IncrementInteger: `n', 'questiontext', 0, $questiontextimage => n', 'questiontext', 1, $questiontextimage`
+- 531 DecrementInteger: `, 'answerfeedback', 0, $images, $location => , 'answerfeedback', -1, $images, $location`
+- 531 IncrementInteger: `, 'answerfeedback', 0, $images, $location => , 'answerfeedback', 1, $images, $location`
+- 547 ArrayItemRemoval: `ot', '', (object) ['filename' => (string) $path, 'allowed' => implode( => ot', '', (object) ['allowed' => implode(`
+- 547 CastObject: `l_coursepilot', '', (object) ['filename' => (stri => l_coursepilot', '', ['filename' => (stri`
+- 548 CastString: `ect) ['filename' => (string) $path, 'allowed' => => ect) ['filename' => $path, 'allowed' =>`
+- 549 ArrayItem: `g) $path, 'allowed' => implode(', ', mate => g) $path, 'allowed' > implode(', ', mate`
+- 582 TrueValue: `ons = ['subdirs' => true, 'maxfiles' => -1, => ons = ['subdirs' => false, 'maxfiles' => -1,`
+- 582 DecrementInteger: `> -1, 'maxbytes' => 0]; => > -1, 'maxbytes' => -1];`
+- 582 ArrayItemRemoval: `$fileoptions = ['subdirs' => true, 'maxfiles' => -1, 'ma => $fileoptions = ['maxfiles' => -1, 'ma`
+- 595 FunctionCallRemoval: `file_clear_draft_area($questiontextdraftitemid); => `
+- 596 ArrayItemRemoval: `estiontext', $new, ['id' => $questionid]); => estiontext', $new, []);`
+- 596 MethodCallRemoval: `$DB->set_field('question', 'questiontext', $new, ['id' => $questionid]); => `
+- 614 CastInt: `, 'answerfeedback', (int) $answer->id, $fileop => , 'answerfeedback', $answer->id, $fileop`
+- 616 CastString: `->id, $fileoptions, (string) $answer->feedback); => ->id, $fileoptions, $answer->feedback);`
+- 618 FunctionCallRemoval: `file_clear_draft_area($draftitemid); => `
+- 619 MethodCallRemoval: `$DB->set_field('question_answers', 'feedback', $new, ['id' => $answer->id]); => `
+- 628 DecrementInteger: `in2hex(random_bytes(8)); => in2hex(random_bytes(7));`
+- 628 IncrementInteger: `in2hex(random_bytes(8)); => in2hex(random_bytes(9));`
+- 628 Concat: `return 'kp-' . bin2hex(random_bytes(8)); => return bin2hex(random_bytes(8)) . 'kp-';`
+- 628 ConcatOperandRemoval: `return 'kp-' . bin2hex(random_bytes => return bin2hex(random_bytes`
+- 628 ConcatOperandRemoval: `return 'kp-' . bin2hex(random_bytes(8)); => return 'kp-';`
+- 637 UnwrapArrayMerge: `al_single_structure(array_merge(['name' => new external_value(PARAM_TEXT, 'Name of the question'), 'questionid' => new external_value(PARAM_INT, 'ID of the new question row (0 for "suspect")'), 'quest`
+- 638 ArrayItemRemoval: `cture(array_merge(['name' => new external_value(PARAM_TEXT, 'Name of the question'), 'questionid' => new e => cture(array_merge(['questionid' => new e`
+
+## Plugin/src/local_coursepilot/classes/external/update_question_category.php (54 überlebt, 54 offen)
+
+- 54 PublicVisibility: `public static function exe => protected static function exe`
+- 62 DecrementInteger: `t)', VALUE_DEFAULT, 0)]); => t)', VALUE_DEFAULT, -1)]);`
+- 62 IncrementInteger: `t)', VALUE_DEFAULT, 0)]); => t)', VALUE_DEFAULT, 1)]);`
+- 75 DecrementInteger: `= '', int $parent = 0): array => = '', int $parent = -1): array`
+- 85 CastInt: `ext::instance_by_id((int) $category->contextid => ext::instance_by_id($category->contextid`
+- 86 MethodCallRemoval: `self::validate_context($sourcecontext); => `
+- 87 FunctionCallRemoval: `require_capability('local/coursepilot:use', $sourcecontext); => `
+- 100 GreaterThan: `$params['parent'] > 0 ? $DB->get_record => $params['parent'] >= 0 ? $DB->get_record`
+- 103 CastInt: `ext::instance_by_id((int) $targetparent->conte => ext::instance_by_id($targetparent->conte`
+- 105 CastInt: `if ((int) $targetcontext->id ! => if ($targetcontext->id !`
+- 105 CastInt: `rgetcontext->id !== (int) $sourcecontext->id) => rgetcontext->id !== $sourcecontext->id)`
+- 105 NotIdentical: `$targetcontext->id !== (int) $sourcecont => $targetcontext->id === (int) $sourcecont`
+- 106 MethodCallRemoval: `self::validate_context($targetcontext); => `
+- 107 FunctionCallRemoval: `require_capability('local/coursepilot:use', $targetcontext); => `
+- 108 FunctionCallRemoval: `require_capability('moodle/question:managecategory', $targetcontext); => `
+- 111 CastInt: `collect_subtree_ids((int) $category->id); => collect_subtree_ids($category->id);`
+- 116 UnwrapTrim: `$targetname = trim($params['name']) !== '' ? $params['n => $targetname = $params['name'] !== '' ? $params['n`
+- 118 ArrayItemRemoval: `tion_categories', ['contextid' => $targetcontext->id, 'parent' => $targetpa => tion_categories', ['parent' => $targetpa`
+- 129 CastInt: `gory->contextid !== (int) $targetcontext->id | => gory->contextid !== $targetcontext->id |`
+- 136 CastInt: `$update->id = (int) $category->id; => $update->id = $category->id;`
+- 140 CastInt: `if ($moved && (int) $category->contextid => if ($moved && $category->contextid`
+- 140 CastInt: `gory->contextid !== (int) $targetcontext->id) => gory->contextid !== $targetcontext->id)`
+- 140 LogicalAnd: `if ($moved && (int) $category->co => if ($moved || (int) $category->co`
+- 149 CastInt: `category_to_context((int) $category->id, (int) => category_to_context($category->id, (int)`
+- 150 CastInt: `int) $category->id, (int) $category->contextid => int) $category->id, $category->contextid`
+- 151 CastInt: `ategory->contextid, (int) $targetcontext->id); => ategory->contextid, $targetcontext->id);`
+- 156 FunctionCallRemoval: `// The core function sets the contextid only for the // subcategories, not for the passed category itself - // and it does not touch its slot references either. move_question_set_references((int) $cat`
+- 157 CastInt: `tion_set_references((int) $category->id, (int) => tion_set_references($category->id, (int)`
+- 158 CastInt: `int) $category->id, (int) $category->id, (int) => int) $category->id, $category->id, (int)`
+- 159 CastInt: `int) $category->id, (int) $category->contextid => int) $category->id, $category->contextid`
+- 160 CastInt: `ategory->contextid, (int) $targetcontext->id); => ategory->contextid, $targetcontext->id);`
+- 162 CastInt: `update->contextid = (int) $targetcontext->id; => update->contextid = $targetcontext->id;`
+- 167 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 172 CastInt: `return ['id' => (int) $category->id, 'name => return ['id' => $category->id, 'name`
+- 175 CastInt: `tid, 'contextid' => (int) $targetcontext->id, => tid, 'contextid' => $targetcontext->id,`
+- 191 LogicalAnd: `if ($renamed && $moved) { => if ($renamed || $moved) {`
+- 191 LogicalAndSingleSubExprNegation: `if ($renamed && $moved) => if (!$renamed && $moved)`
+- 191 LogicalAndSingleSubExprNegation: `if ($renamed && $moved) { => if ($renamed && !$moved) {`
+- 192 Concat: `return 'Category renamed to "' . $name . '" and moved.'; => return $name . 'Category renamed to "' . '" and moved.';`
+- 192 ConcatOperandRemoval: `return 'Category renamed to "' . $name . '" and moved => return $name . '" and moved`
+- 192 ConcatOperandRemoval: `ory renamed to "' . $name . '" and moved.'; => ory renamed to "' . '" and moved.';`
+- 192 Concat: `ory renamed to "' . $name . '" and moved.'; => ory renamed to "' . '" and moved.' . $name;`
+- 192 ConcatOperandRemoval: `enamed to "' . $name . '" and moved.'; => enamed to "' . $name;`
+- 195 Concat: `return 'Category renamed to "' . $name . '".'; => return $name . 'Category renamed to "' . '".';`
+- 195 ConcatOperandRemoval: `return 'Category renamed to "' . $name . '".'; => return $name . '".';`
+- 195 ConcatOperandRemoval: `ory renamed to "' . $name . '".'; => ory renamed to "' . '".';`
+- 195 Concat: `ory renamed to "' . $name . '".'; => ory renamed to "' . '".' . $name;`
+- 195 ConcatOperandRemoval: `enamed to "' . $name . '".'; => enamed to "' . $name;`
+- 198 Concat: `return 'Category "' . $name . '" moved.'; => return $name . 'Category "' . '" moved.';`
+- 198 ConcatOperandRemoval: `return 'Category "' . $name . '" moved.'; => return $name . '" moved.';`
+- 198 ConcatOperandRemoval: `turn 'Category "' . $name . '" moved.'; => turn 'Category "' . '" moved.';`
+- 198 Concat: `turn 'Category "' . $name . '" moved.'; => turn 'Category "' . '" moved.' . $name;`
+- 198 ConcatOperandRemoval: `'Category "' . $name . '" moved.'; => 'Category "' . $name;`
+- 234 ArrayItemRemoval: `_single_structure(['id' => new external_value(PARAM_INT, 'ID of the changed category'), 'name' => new externa => _single_structure(['name' => new externa`
+
+## Plugin/src/local_coursepilot/classes/external/update_section.php (50 überlebt, 50 offen)
+
+- 54 PublicVisibility: `public static function exe => protected static function exe`
+- 60 Concat: `l_value(PARAM_RAW, 'JSON object with "name" (string), "summary" (string) and/or "visible" (0|1) - only the named ' . 'fields change')]); => l_value(PARAM_RAW, 'fields change' . 'JSON object with "name`
+- 60 ConcatOperandRemoval: `l_value(PARAM_RAW, 'JSON object with "name" (string), "summary" (string) and/or "visible" (0|1) - only the named ' . 'fields change')]); => l_value(PARAM_RAW, 'fields change')]);`
+- 60 ConcatOperandRemoval: `) - only the named ' . 'fields change')]); => ) - only the named ')]);`
+- 84 MethodCallRemoval: `self::validate_context($context); => `
+- 85 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 91 LogicalOr: `(!is_array($patch) || json_last_error() ! => (!is_array($patch) && json_last_error() !`
+- 99 ArrayItemRemoval: `_coursepilot', '', ['sectionnum' => $params['sectionnum']]); => _coursepilot', '', []);`
+- 105 CastString: `before = ['name' => (string) ($sectioninfo->name ?? ''), 'summary' => (stri => before = ['name' => $sectioninfo->name ?? '', 'summary' => (stri`
+- 106 Coalesce: `mmary' => (string) ($sectioninfo->summary ?? ''), 'visible' => (int => mmary' => (string) ('' ?? $sectioninfo->summary), 'visible' => (int`
+- 106 CastString: `? ''), 'summary' => (string) ($sectioninfo->summary ?? ''), 'visible' => (int) => ? ''), 'summary' => $sectioninfo->summary ?? '', 'visible' => (int)`
+- 107 CastInt: `? ''), 'visible' => (int) $sectioninfo->visibl => ? ''), 'visible' => $sectioninfo->visibl`
+- 116 CastInt: `isible', $patch) && (int) $patch['visible'] == => isible', $patch) && $patch['visible'] ==`
+- 116 DecrementInteger: `fore['visible'] !== 0; => fore['visible'] !== -1;`
+- 119 CastInt: `return ['id' => (int) $after->id, 'section => return ['id' => $after->id, 'section`
+- 120 CastInt: `id, 'sectionnum' => (int) $params['sectionnum' => id, 'sectionnum' => $params['sectionnum'`
+- 145 ArrayItem: `fieldname, 'fields' => implode(', ', self => fieldname, 'fields' > implode(', ', self`
+- 145 ArrayItemRemoval: `epilot', '', ['field' => $fieldname, 'fields' => implode(', ', => epilot', '', ['fields' => implode(', ',`
+- 148 DecrementInteger: `n_array($value, [0, 1], true)) { => n_array($value, [0, 0], true)) {`
+- 149 ArrayItem: `ilot', '', ['value' => json_encode($value => ilot', '', ['value' > json_encode($value`
+- 149 ArrayItemRemoval: `_coursepilot', '', ['value' => json_encode($value)]); => _coursepilot', '', []);`
+- 153 LogicalNot: `mmary', $fields) && !array_key_exists('su => mmary', $fields) && array_key_exists('su`
+- 153 LogicalAnd: `'summary', $fields) && !array_key_exists(' => 'summary', $fields) || !array_key_exists('`
+- 153 LogicalAndAllSubExprNegation: `if (array_key_exists('summary', $fields) && !array_key_exists('su => if (!array_key_exists('summary', $fields) && array_key_exists('su`
+- 153 LogicalAndNegation: `if (array_key_exists('summary', $fields) && !array_key_exists('summaryformat', $fields)) { => if (!(array_key_exists('summary', $fields) && !array_key_exists('summaryformat', $fields))) {`
+- 153 LogicalAndSingleSubExprNegation: `if (array_key_exists('su => if (!array_key_exists('su`
+- 171 CastInt: `ame === 'visible' ? (int) $after->visible : (s => ame === 'visible' ? $after->visible : (s`
+- 171 CastString: `) $after->visible : (string) ($after->{$fieldname} ?? ''); => ) $after->visible : $after->{$fieldname} ?? '';`
+- 175 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 176 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 195 Foreach_: `foreach ($changes as $change) { => foreach ([] as $change) {`
+- 196 Concat: `$parts[] = '"' . $change['field'] . '" from ' . $chan => $parts[] = $change['field'] . '"' . '" from ' . $chan`
+- 196 ConcatOperandRemoval: `$parts[] = '"' . $change['field'] . ' => $parts[] = $change['field'] . '`
+- 196 ConcatOperandRemoval: `$parts[] = '"' . $change['field'] . '" from ' . $change[ => $parts[] = '"' . '" from ' . $change[`
+- 196 Concat: `$parts[] = '"' . $change['field'] . '" from ' . $change['before_j => $parts[] = '"' . '" from ' . $change['field'] . $change['before_j`
+- 196 ConcatOperandRemoval: `$change['field'] . '" from ' . $change['before_json => $change['field'] . $change['before_json`
+- 196 Concat: `$change['field'] . '" from ' . $change['before_json'] . ' to ' . $change[ => $change['field'] . $change['before_json'] . '" from ' . ' to ' . $change[`
+- 196 ConcatOperandRemoval: `eld'] . '" from ' . $change['before_json'] . ' to ' . $change['af => eld'] . '" from ' . ' to ' . $change['af`
+- 196 Concat: `eld'] . '" from ' . $change['before_json'] . ' to ' . $change['after_js => eld'] . '" from ' . ' to ' . $change['before_json'] . $change['after_js`
+- 196 ConcatOperandRemoval: `ge['before_json'] . ' to ' . $change['after_json' => ge['before_json'] . $change['after_json'`
+- 196 Concat: `ge['before_json'] . ' to ' . $change['after_json']; => ge['before_json'] . $change['after_json'] . ' to ';`
+- 196 ConcatOperandRemoval: `fore_json'] . ' to ' . $change['after_json']; => fore_json'] . ' to ';`
+- 198 Concat: `$message = 'Changed: ' . implode(', ', $parts) . '.'; => $message = implode(', ', $parts) . 'Changed: ' . '.';`
+- 198 ConcatOperandRemoval: `age = 'Changed: ' . implode(', ', $parts) . '.'; => age = 'Changed: ' . '.';`
+- 198 Concat: `age = 'Changed: ' . implode(', ', $parts) . '.'; => age = 'Changed: ' . '.' . implode(', ', $parts);`
+- 198 ConcatOperandRemoval: `mplode(', ', $parts) . '.'; => mplode(', ', $parts);`
+- 202 Concat: `$message .= ' All activities in this section are therefore hidden as well, ' . 'regardless of their own visibility setting.'; => $message .= 'regardless of their own visibility setting.' . ' All activ`
+- 202 ConcatOperandRemoval: `re hidden as well, ' . 'regardless of their own visibility setting.'; => re hidden as well, ';`
+- 215 ArrayItemRemoval: `_single_structure(['id' => new external_value(PARAM_INT, 'Section DB ID'), 'sectionnum' => new e => _single_structure(['sectionnum' => new e`
+- 220 ArrayItemRemoval: `_single_structure(['field' => new external_value(PARAM_TEXT, 'Field name'), 'before_json' => new => _single_structure(['before_json' => new`
+
+## Plugin/src/local_coursepilot/classes/external/upload_material_file.php (16 überlebt, 16 offen)
+
+- 44 PublicVisibility: `public static function exe => protected static function exe`
+- 77 MethodCallRemoval: `self::validate_context($context); => `
+- 78 MethodCallRemoval: `material_files::require_manage_own_files(); => `
+- 84 MethodCallRemoval: `self::guard_server_size_limit(strlen($content)); => `
+- 100 Ternary: `string('materialfilecreated', 'local_coursepilot', $written['path']) : get_string('materialfileoverwritten', 'local_coursepilot', (object) ['path' => $written['path'], 'before' => $written['oldsize'],`
+- 102 ArrayItemRemoval: `epilot', (object) ['path' => $written['path'], 'before' => $written[ => epilot', (object) ['before' => $written[`
+- 102 CastObject: `local_coursepilot', (object) ['path' => $written[ => local_coursepilot', ['path' => $written[`
+- 108 Concat: `$message .= ' ' . $written['warning']; => $message .= $written['warning'] . ' ';`
+- 108 ConcatOperandRemoval: `$message .= ' ' . $written['warning']; => $message .= $written['warning'];`
+- 108 Assignment: `$message .= ' ' . $written['wa => $message = ' ' . $written['wa`
+- 125 ArrayItemRemoval: `_single_structure(['path' => new external_value(PARAM_TEXT, 'Resolved file path relative to the material store'), 'created' => new exte => _single_structure(['created' => new exte`
+- 142 MethodCallRemoval: `self::guard_size_against_limit($bytes, get_max_upload_file_size()); => `
+- 155 LessThanOrEqualTo: `if ($maxbytes <= 0 || $bytes <= $max => if ($maxbytes < 0 || $bytes <= $max`
+- 155 LessThanOrEqualTo: `tes <= 0 || $bytes <= $maxbytes) { => tes <= 0 || $bytes < $maxbytes) {`
+- 158 ArrayItemRemoval: `ot', '', (object) ['size' => $bytes, 'max' => $maxbytes]); => ot', '', (object) ['max' => $maxbytes]);`
+- 158 CastObject: `l_coursepilot', '', (object) ['size' => $bytes, ' => l_coursepilot', '', ['size' => $bytes, '`
+
+## Plugin/src/local_coursepilot/classes/external/write_context_file.php (16 überlebt, 16 offen)
+
+- 67 Concat: `PARAM_ALPHANUMEXT, 'Optional: identifier of an open pending entry (from coursepilot_list_skills) - if the write ' . 'succeeds, the entry disappears within the same call', VALUE_DEFAULT, '' => PARAM_AL`
+- 67 ConcatOperandRemoval: `PARAM_ALPHANUMEXT, 'Optional: identifier of an open pending entry (from coursepilot_list_skills) - if the write ' . 'succeeds, the entry => PARAM_ALPHANUMEXT, 'succeeds, the entry`
+- 67 ConcatOperandRemoval: `ls) - if the write ' . 'succeeds, the entry disappears within the same call', VALUE_DEFAULT, '') => ls) - if the write ', VALUE_DEFAULT, '')`
+- 74 Concat: `_value(PARAM_BOOL, 'Optional: true only creates and never overwrites - for copying from the legacy stock (previous ' . 'location, from coursepilot_list_context_files/read_context_file) to the new loca`
+- 74 ConcatOperandRemoval: `_value(PARAM_BOOL, 'Optional: true only creates and never overwrites - for copying from the legacy stock (previous ' . 'location, from cours => _value(PARAM_BOOL, 'location, from cours`
+- 74 ConcatOperandRemoval: `cy stock (previous ' . 'location, from coursepilot_list_context_files/read_context_file) to the new location', VALUE_DEFAULT, fal => cy stock (previous ', VALUE_DEFAULT, fal`
+- 77 FalseValue: `on', VALUE_DEFAULT, false), 'courseid' => ne => on', VALUE_DEFAULT, true), 'courseid' => ne`
+- 81 Concat: `l_value(PARAM_INT, 'Optional: course ID, if the content belongs to a specific course - only used for a possible entry ' . 'in the "not yet saved" notice if the storage/connection/location fails', VALU`
+- 81 ConcatOperandRemoval: `l_value(PARAM_INT, 'Optional: course ID, if the content belongs to a specific course - only used for a possible entry ' . 'in the "not yet save => l_value(PARAM_INT, 'in the "not yet save`
+- 81 ConcatOperandRemoval: `r a possible entry ' . 'in the "not yet saved" notice if the storage/connection/location fails', VALUE_DEFAULT, 0)] => r a possible entry ', VALUE_DEFAULT, 0)]`
+- 84 DecrementInteger: `ls', VALUE_DEFAULT, 0)]); => ls', VALUE_DEFAULT, -1)]);`
+- 84 IncrementInteger: `ls', VALUE_DEFAULT, 0)]); => ls', VALUE_DEFAULT, 1)]);`
+- 110 DecrementInteger: `se, int $courseid = 0): array => se, int $courseid = -1): array`
+- 110 IncrementInteger: `se, int $courseid = 0): array => se, int $courseid = 1): array`
+- 121 MethodCallRemoval: `self::validate_context(context_files::own_context()); => `
+- 149 CastObject: `local_coursepilot', (object) ['path' => $result[' => local_coursepilot', ['path' => $result['`
+
+## Plugin/src/local_coursepilot/classes/external_schema_converter.php (6 überlebt, 6 offen)
+
+- 61 MatchArmRemoval: `PARAM_FLOAT => 'number', => `
+- 61 MatchArmRemoval: `PARAM_BOOL => 'boolean', => `
+- 67 ArrayItem: `}, 'description' => $description->desc => }, 'description' > $description->desc`
+- 70 ArrayItemRemoval: `$schema = ['type' => 'array', 'items' => self::from => $schema = ['items' => self::from`
+- 73 ArrayItem: `ent), 'description' => $description->desc => ent), 'description' > $description->desc`
+- 95 ArrayItemRemoval: `$schema = ['type' => 'object', 'properties' => []]; => $schema = ['properties' => []];`
+
+## Plugin/src/local_coursepilot/classes/gd_support.php (1 überlebt, 1 offen)
+
+- 49 LogicalAnd: `ension_loaded('gd') && function_exists('im => ension_loaded('gd') || function_exists('im`
+
+## Plugin/src/local_coursepilot/classes/glossary_entry_writer.php (37 überlebt, 37 offen)
+
+- 56 DecrementInteger: `false, 'entryid' => 0, 'approved' => fals => false, 'entryid' => -1, 'approved' => fals`
+- 56 IncrementInteger: `false, 'entryid' => 0, 'approved' => fals => false, 'entryid' => 1, 'approved' => fals`
+- 56 FalseValue: `=> 0, 'approved' => false, 'errorcode' => $e => => 0, 'approved' => true, 'errorcode' => $e`
+- 57 InstanceOf_: `rcode, 'message' => $e instanceof \dml_exception ? get_string('gloss => rcode, 'message' => true ? get_string('gloss`
+- 57 InstanceOf_: `rcode, 'message' => $e instanceof \dml_exception ? get_string('gloss => rcode, 'message' => false ? get_string('gloss`
+- 57 Ternary: `of \dml_exception ? get_string('glossaryentryfailed', 'local_coursepilot') : $e->getMessage()]; => of \dml_exception ? $e->getMessage() : get_string('glossaryentryfailed', 'local_coursepilot')];`
+- 201 CastBool: `proved', $input) || (bool) $entry->approved === => proved', $input) || $entry->approved ===`
+- 201 CastBool: `entry->approved === (bool) $input['approved']) => entry->approved === $input['approved'])`
+- 204 CastInt: `$entry->approved = (int) $input['approved']; => $entry->approved = $input['approved'];`
+- 206 CastObject: `'glossary_entries', (object) ['id' => $entry->id, => 'glossary_entries', ['id' => $entry->id,`
+- 207 ArrayItem: `ved, 'timemodified' => $entry->timemodifi => ved, 'timemodified' > $entry->timemodifi`
+- 209 ArrayItemRemoval: `_approved::create(['context' => $context, 'objectid' => $entry- => _approved::create(['objectid' => $entry-`
+- 209 Ternary: `lossary\event\entry_approved::create(['context' => $context, 'objectid' => $entry->id]) : \mod_glossary\event\entry_disapproved::create(['c => lossary\event\entry_disapproved::create(['context' => $co`
+- 210 ArrayItem: `context, 'objectid' => $entry->id]) : \mo => context, 'objectid' > $entry->id]) : \mo`
+- 212 ArrayItem: `context, 'objectid' => $entry->id]); => context, 'objectid' > $entry->id]);`
+- 214 MethodCallRemoval: `$event->add_record_snapshot('glossary_entries', $entry); => `
+- 215 MethodCallRemoval: `$event->trigger(); => `
+- 217 LogicalAnd: `_TRACKING_AUTOMATIC && $glossary->completi => _TRACKING_AUTOMATIC || $glossary->completi`
+- 222 MethodCallRemoval: `\mod_glossary\local\concept_cache::reset_glossary($glossary); => `
+- 245 MethodCallRemoval: `material_files::require_manage_own_files(); => `
+- 250 DecrementInteger: `d_glossary', $area, 0, $input[$field], $i => d_glossary', $area, -1, $input[$field], $i`
+- 250 IncrementInteger: `d_glossary', $area, 0, $input[$field], $i => d_glossary', $area, 1, $input[$field], $i`
+- 260 FalseValue: `t', $draftid, 'id', false); => t', $draftid, 'id', true);`
+- 263 GreaterThan: `if (count($files) > 99) { => if (count($files) >= 99) {`
+- 267 GreaterThan: `if ($maxbytes > 0 && $file->get_fil => if ($maxbytes >= 0 && $file->get_fil`
+- 267 GreaterThan: `le->get_filesize() > $maxbytes) { => le->get_filesize() >= $maxbytes) {`
+- 290 UnwrapArrayUnique: `foreach (array_unique($names) as $name) { => foreach ($names as $name) {`
+- 293 Throw_: `throw new \moodle_exceptio => new \moodle_exceptio`
+- 299 DecrementInteger: `e, 'usedynalink' => 0]; => e, 'usedynalink' => -1];`
+- 299 IncrementInteger: `e, 'usedynalink' => 0]; => e, 'usedynalink' => 1];`
+- 302 ArrayItem: `context, 'objectid' => $category->id]); => context, 'objectid' > $category->id]);`
+- 304 MethodCallRemoval: `$event->add_record_snapshot('glossary_categories', $category); => `
+- 305 MethodCallRemoval: `$event->add_record_snapshot('glossary', $glossary); => `
+- 306 MethodCallRemoval: `$event->trigger(); => `
+- 307 MethodCallRemoval: `\mod_glossary\local\concept_cache::reset_glossary($glossary); => `
+- 309 CastInt: `$ids[] = (int) $category->id; => $ids[] = $category->id;`
+- 311 UnwrapArrayValues: `return array_values(array_unique($ids)); => return array_unique($ids);`
+
+## Plugin/src/local_coursepilot/classes/history/retention.php (18 überlebt, 18 offen)
+
+- 58 CastInt: `$configured = (int) get_config('local_co => $configured = get_config('local_co`
+- 72 Multiplication: `me() - self::days() * DAYSECS; => me() - self::days() / DAYSECS;`
+- 109 UnwrapArrayValues: `DB->get_in_or_equal(array_values($userids)); => DB->get_in_or_equal($userids);`
+- 150 DecrementInteger: `$batches = 0; => $batches = -1;`
+- 151 LessThan: `while ($batches < $maxbatches && self => while ($batches <= $maxbatches && self`
+- 172 DecrementInteger: `$cutoff], '', 'id', 0, $limit)); => $cutoff], '', 'id', -1, $limit));`
+- 190 CastInt: `$cursor = (int) get_config('local_co => $cursor = get_config('local_co`
+- 197 DecrementInteger: `r], 'id ASC', 'id', 0, $limit)); => r], 'id ASC', 'id', -1, $limit));`
+- 222 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 224 DecrementInteger: `fileids) < $limit ? 0 : (int) end($fileid => fileids) < $limit ? -1 : (int) end($fileid`
+- 224 IncrementInteger: `fileids) < $limit ? 0 : (int) end($fileid => fileids) < $limit ? 1 : (int) end($fileid`
+- 224 CastInt: `ids) < $limit ? 0 : (int) end($fileids), 'loca => ids) < $limit ? 0 : end($fileids), 'loca`
+- 236 PublicVisibility: `public static function del => protected static function del`
+- 243 UnwrapArrayValues: `DB->get_in_or_equal(array_values($versionids)); => DB->get_in_or_equal($versionids);`
+- 249 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 264 UnwrapArrayValues: `DB->get_in_or_equal(array_values($fileids)); => DB->get_in_or_equal($fileids);`
+- 267 MethodCallRemoval: `// Capture takes the same row lock until its reference is inserted. Decide // orphan status only after any concurrent capture has committed its link. $DB->execute("UPDATE {local_coursepilot_cm_file} S`
+- 271 UnwrapArrayValues: `DB->get_in_or_equal(array_values($orphans)); => DB->get_in_or_equal($orphans);`
+
+## Plugin/src/local_coursepilot/classes/history/version_restore.php (22 überlebt, 0 offen)
+
+- 48 FalseValue (ignoriert): `om_id('', $cmid, 0, false, MUST_EXIST); => om_id('', $cmid, 0, true, MUST_EXIST);`
+- 55 CastString (ignoriert): `$modname = (string) $cm->modname; => $modname = $cm->modname;`
+- 75 BitwiseOr (ignoriert): `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 77 UnwrapArrayMerge (ignoriert): `$changes = array_merge($changes, $result['changes']); => $changes = $result['changes'];`
+- 87 BitwiseOr (ignoriert): `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 126 CastString (ignoriert): `$modname = (string) $cm->modname; => $modname = $cm->modname;`
+- 132 CastInt (ignoriert): `n_history::files_at((int) $cm->id, $targetvers => n_history::files_at($cm->id, $targetvers`
+- 139 Continue_ (ignoriert): `continue; => break;`
+- 146 Continue_ (ignoriert): `// Nothing actually differs - no unnecessary write. continue; => break;`
+- 155 CastInt (ignoriert): `e_pseudofield_draft((int) $cm->id, $fieldname, => e_pseudofield_draft($cm->id, $fieldname,`
+- 156 UnwrapArrayMerge (ignoriert): `restoredfilenames = array_merge($restoredfilenames, $changedfilenames); => restoredfilenames = $changedfilenames;`
+- 184 CastInt (ignoriert): `store($context->id, (int) $cm->id, $target->fi => store($context->id, $cm->id, $target->fi`
+- 237 CastInt (ignoriert): `ory::arrangement_at((int) $cm->id, $targetvers => ory::arrangement_at($cm->id, $targetvers`
+- 242 CastInt (ignoriert): `$quizid = (int) $cm->instance; => $quizid = $cm->instance;`
+- 282 UnwrapArrayMerge (ignoriert): `list = array_unique(array_merge(shared_block::blocked_fields(), $catalogclass::blocklist())); => list = array_unique(shared_block::blocked_fields());`
+- 282 UnwrapArrayMerge (ignoriert): `list = array_unique(array_merge(shared_block::blocked_fields(), $catalogclass::blocklist())); => list = array_unique($catalogclass::blocklist());`
+- 282 UnwrapArrayUnique (ignoriert): `$blocklist = array_unique(array_merge(shared_block::blocked_fields(), $catalogclass::blocklist())); => $blocklist = array_merge(shared_block::blocked_fields(), $catalogclass::blocklist());`
+- 311 CastString (ignoriert): `ngs::allowed_fields((string) $before['modulename' => ngs::allowed_fields($before['modulename'`
+- 314 DecrementInteger (ignoriert): `($before[$name] ?? 0) !== $newvalue) { => ($before[$name] ?? -1) !== $newvalue) {`
+- 314 IncrementInteger (ignoriert): `($before[$name] ?? 0) !== $newvalue) { => ($before[$name] ?? 1) !== $newvalue) {`
+- 387 CastObject (ignoriert): `local_coursepilot', (object) ['field' => $change[ => local_coursepilot', ['field' => $change[`
+- 392 CastObject (ignoriert): `local_coursepilot', (object) ['version' => $targe => local_coursepilot', ['version' => $targe`
+
+## Plugin/src/local_coursepilot/classes/history/version_source.php (3 überlebt, 3 offen)
+
+- 87 CastString: `return new self((string) $record->source, $re => return new self($record->source, $re`
+- 87 CastInt: `urcecmid !== null ? (int) $record->sourcecmid => urcecmid !== null ? $record->sourcecmid`
+- 121 CastString: `local_coursepilot', (string) ($this->refcmid ?? '?'), $lang); => local_coursepilot', $this->refcmid ?? '?', $lang);`
+
+## Plugin/src/local_coursepilot/classes/history/version_writer.php (50 überlebt, 50 offen)
+
+- 102 ArrayItemRemoval: `pilot_cm_version', ['cmid' => $cmid])) { => pilot_cm_version', [])) {`
+- 106 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 132 FalseValue: `om_id('', $cmid, 0, false, MUST_EXIST); => om_id('', $cmid, 0, true, MUST_EXIST);`
+- 137 CastInt: `$nextversion = (int) $DB->get_field_sql(' => $nextversion = $DB->get_field_sql('`
+- 142 CastObject: `epilot_cm_version', (object) ['cmid' => $cm->id, => epilot_cm_version', ['cmid' => $cm->id,`
+- 142 CastInt: `$versionid = (int) $DB->insert_record(' => $versionid = $DB->insert_record('`
+- 144 CastInt: `->id, 'courseid' => (int) $cm->course, 'versio => ->id, 'courseid' => $cm->course, 'versio`
+- 149 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 151 CastArray: `son' => json_encode((array) $DB->get_record('cou => son' => json_encode($DB->get_record('cou`
+- 158 CastString: `onid, $context->id, (string) $cm->modname); => onid, $context->id, $cm->modname);`
+- 162 MethodCallRemoval: `// Purge old states of this activity after recording the complete new state. // The scheduled task also covers activities without further writes. retention::purge_expired_for_cm($cm->id); => `
+- 185 CastInt: `rrangement::capture((int) $cm->instance), JSON => rrangement::capture($cm->instance), JSON`
+- 186 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 206 CastInt: `m->id, 'section' => (int) $cw->section, 'visib => m->id, 'section' => $cw->section, 'visib`
+- 207 CastInt: `ction, 'visible' => (int) $cm->visible, 'visib => ction, 'visible' => $cm->visible, 'visib`
+- 208 CastInt: `bleoncoursepage' => (int) $cm->visibleoncourse => bleoncoursepage' => $cm->visibleoncourse`
+- 209 CastString: `ge, 'cmidnumber' => (string) $cm->idnumber, 'grou => ge, 'cmidnumber' => $cm->idnumber, 'grou`
+- 210 CastInt: `ber, 'groupmode' => (int) groups_get_activity_ => ber, 'groupmode' => groups_get_activity_`
+- 211 CastInt: `m), 'groupingid' => (int) $cm->groupingid, 'co => m), 'groupingid' => $cm->groupingid, 'co`
+- 212 CastInt: `pingid, 'course' => (int) $cm->course, 'module => pingid, 'course' => $cm->course, 'module`
+- 213 CastInt: `course, 'module' => (int) $cm->module, 'module => course, 'module' => $cm->module, 'module`
+- 214 CastString: `le, 'modulename' => (string) $cm->modname, 'insta => le, 'modulename' => $cm->modname, 'insta`
+- 216 CastInt: `showdescription' => (int) $cm->showdescription => showdescription' => $cm->showdescription`
+- 217 ArrayItem: `, 'downloadcontent' => $cm->downloadconte => , 'downloadcontent' > $cm->downloadconte`
+- 218 CastString: `dcontent, 'lang' => (string) $cm->lang, 'tags' => => dcontent, 'lang' => $cm->lang, 'tags' =>`
+- 222 LogicalNot: `if (!empty($CFG->enableav => if (empty($CFG->enableav`
+- 226 Coalesce: `sjson'] = (string) ($cm->availability ?? ''); => sjson'] = (string) ('' ?? $cm->availability);`
+- 226 CastString: `yconditionsjson'] = (string) ($cm->availability ?? ''); => yconditionsjson'] = $cm->availability ?? '';`
+- 246 Concat: `$component = 'mod_' . $cm->modname; => $component = $cm->modname . 'mod_';`
+- 246 ConcatOperandRemoval: `$component = 'mod_' . $cm->modname; => $component = $cm->modname;`
+- 246 ConcatOperandRemoval: `$component = 'mod_' . $cm->modname; => $component = 'mod_';`
+- 247 ArrayItemRemoval: `em::fetch_all(['itemtype' => 'mod', 'itemmodule' => $cm->modn => em::fetch_all(['itemmodule' => $cm->modn`
+- 249 ArrayItem: `'mod', 'itemmodule' => $cm->modname, 'ite => 'mod', 'itemmodule' > $cm->modname, 'ite`
+- 250 ArrayItem: `ame, 'iteminstance' => $cm->instance, 'co => ame, 'iteminstance' > $cm->instance, 'co`
+- 251 ArrayItem: `nstance, 'courseid' => $cm->course]); => nstance, 'courseid' > $cm->course]);`
+- 272 Foreach_: `foreach ($items as $item) { => foreach ([] as $item) {`
+- 279 Foreach_: `foreach ($gradecat as $itemnumber => $ => foreach ([] as $itemnumber => $`
+- 280 FalseValue: `if ($cat !== false) { => if ($cat !== true) {`
+- 280 NotIdentical: `if ($cat !== false) { => if ($cat === false) {`
+- 306 Continue_: `continue; => break;`
+- 309 CastObject: `t_cm_version_file', (object) ['versionid' => $ver => t_cm_version_file', ['versionid' => $ver`
+- 313 FalseValue: `ileid, 'gap' => 0], false); => ileid, 'gap' => 0], true);`
+- 335 MethodCallRemoval: `// Share the metadata row lock with retention before deciding whether to reuse it. // Moodle transactions use READ COMMITTED: after waiting, the read sees a // cleanup deletion and recreates metadata `
+- 337 ArrayItemRemoval: `sepilot_cm_file', ['pathnamehash' => $file->pathnamehash, 'contenthash' => $fil => sepilot_cm_file', ['contenthash' => $fil`
+- 342 CastInt: `return (int) $existing->id; => return $existing->id;`
+- 345 CastObject: `ursepilot_cm_file', (object) ['pathnamehash' => $ => ursepilot_cm_file', ['pathnamehash' => $`
+- 345 CastInt: `return (int) $DB->insert_record(' => return $DB->insert_record('`
+- 351 ArrayItem: `>itemid, 'filepath' => $file->filepath, ' => >itemid, 'filepath' > $file->filepath, '`
+- 354 Coalesce: `etype' => (string) ($file->mimetype ?? ''), 'timemodified' => => etype' => (string) ('' ?? $file->mimetype), 'timemodified' =>`
+- 354 CastString: `size, 'mimetype' => (string) ($file->mimetype ?? ''), 'timemodified' => => size, 'mimetype' => $file->mimetype ?? '', 'timemodified' =>`
+
+## Plugin/src/local_coursepilot/classes/image_preview.php (27 überlebt, 27 offen)
+
+- 58 DecrementInteger: `$newwidth = max(1, (int) round($width => $newwidth = max(0, (int) round($width`
+- 58 IncrementInteger: `$newwidth = max(1, (int) round($width => $newwidth = max(2, (int) round($width`
+- 58 RoundingFamily: `idth = max(1, (int) round($width * $scale)); => idth = max(1, (int) floor($width * $scale));`
+- 58 RoundingFamily: `idth = max(1, (int) round($width * $scale)); => idth = max(1, (int) ceil($width * $scale));`
+- 59 DecrementInteger: `$newheight = max(1, (int) round($heigh => $newheight = max(0, (int) round($heigh`
+- 59 IncrementInteger: `$newheight = max(1, (int) round($heigh => $newheight = max(2, (int) round($heigh`
+- 59 RoundingFamily: `ight = max(1, (int) round($height * $scale)); => ight = max(1, (int) floor($height * $scale));`
+- 59 RoundingFamily: `ight = max(1, (int) round($height * $scale)); => ight = max(1, (int) ceil($height * $scale));`
+- 65 DecrementInteger: `imagefill($canvas, 0, 0, imagecoloralloc => imagefill($canvas, -1, 0, imagecoloralloc`
+- 65 IncrementInteger: `imagefill($canvas, 0, 0, imagecoloralloc => imagefill($canvas, 1, 0, imagecoloralloc`
+- 65 DecrementInteger: `agefill($canvas, 0, 0, imagecolorallocate => agefill($canvas, 0, -1, imagecolorallocate`
+- 65 IncrementInteger: `agefill($canvas, 0, 0, imagecolorallocate => agefill($canvas, 0, 1, imagecolorallocate`
+- 65 DecrementInteger: `allocate($canvas, 255, 255, 255)); => allocate($canvas, 254, 255, 255));`
+- 65 DecrementInteger: `ate($canvas, 255, 255, 255)); => ate($canvas, 255, 254, 255));`
+- 65 DecrementInteger: `canvas, 255, 255, 255)); => canvas, 255, 255, 254));`
+- 65 FunctionCallRemoval: `imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255)); => `
+- 66 DecrementInteger: `d($canvas, $source, 0, 0, 0, 0, $newwidth => d($canvas, $source, -1, 0, 0, 0, $newwidth`
+- 66 IncrementInteger: `d($canvas, $source, 0, 0, 0, 0, $newwidth => d($canvas, $source, 1, 0, 0, 0, $newwidth`
+- 66 DecrementInteger: `canvas, $source, 0, 0, 0, 0, $newwidth, $ => canvas, $source, 0, -1, 0, 0, $newwidth, $`
+- 66 IncrementInteger: `canvas, $source, 0, 0, 0, 0, $newwidth, $ => canvas, $source, 0, 1, 0, 0, $newwidth, $`
+- 66 DecrementInteger: `vas, $source, 0, 0, 0, 0, $newwidth, $new => vas, $source, 0, 0, -1, 0, $newwidth, $new`
+- 66 IncrementInteger: `vas, $source, 0, 0, 0, 0, $newwidth, $new => vas, $source, 0, 0, 1, 0, $newwidth, $new`
+- 66 DecrementInteger: `, $source, 0, 0, 0, 0, $newwidth, $newhei => , $source, 0, 0, 0, -1, $newwidth, $newhei`
+- 66 IncrementInteger: `, $source, 0, 0, 0, 0, $newwidth, $newhei => , $source, 0, 0, 0, 1, $newwidth, $newhei`
+- 66 FunctionCallRemoval: `imagecopyresampled($canvas, $source, 0, 0, 0, 0, $newwidth, $newheight, $width, $height); => `
+- 67 FunctionCallRemoval: `imagedestroy($source); => `
+- 72 FunctionCallRemoval: `imagedestroy($canvas); => `
+
+## Plugin/src/local_coursepilot/classes/instance_check.php (9 überlebt, 9 offen)
+
+- 126 DecrementInteger: `CURLOPT_TIMEOUT' => 5, 'CURLOPT_FOLLOWLOC => CURLOPT_TIMEOUT' => 4, 'CURLOPT_FOLLOWLOC`
+- 126 IncrementInteger: `CURLOPT_TIMEOUT' => 5, 'CURLOPT_FOLLOWLOC => CURLOPT_TIMEOUT' => 6, 'CURLOPT_FOLLOWLOC`
+- 126 TrueValue: `_FOLLOWLOCATION' => true]); => _FOLLOWLOCATION' => false]);`
+- 126 ArrayItemRemoval: `$url, [], ['CURLOPT_TIMEOUT' => 5, 'CURLOPT_FOLLOWLOCATION' => t => $url, [], ['CURLOPT_FOLLOWLOCATION' => t`
+- 128 DecrementInteger: `nfo['http_code'] ?? 0); => nfo['http_code'] ?? -1);`
+- 128 IncrementInteger: `nfo['http_code'] ?? 0); => nfo['http_code'] ?? 1);`
+- 128 CastInt: `et_errno() ? null : (int) ($info['http_code'] ?? 0); => et_errno() ? null : $info['http_code'] ?? 0;`
+- 129 DecrementInteger: `if ($httpcode === 0) { => if ($httpcode === -1) {`
+- 137 CastString: `evaluate($httpcode, (string) $body, $url); => evaluate($httpcode, $body, $url);`
+
+## Plugin/src/local_coursepilot/classes/mark_memory.php (7 überlebt, 7 offen)
+
+- 63 CastInt: `TABLE, ['userid' => (int) $USER->id, 'pathhash => TABLE, ['userid' => $USER->id, 'pathhash`
+- 70 CastString: `$record->etag !== (string) ($etag ?? '')) { => $record->etag !== ($etag ?? '')) {`
+- 74 CastBool: `return (bool) $record->ismarked; => return $record->ismarked;`
+- 95 CastInt: `bject) ['userid' => (int) $USER->id, 'path' => => bject) ['userid' => $USER->id, 'path' =>`
+- 101 IncrementInteger: `arked' => $marked ? 1 : 0]; => arked' => $marked ? 2 : 0];`
+- 104 CastInt: `'id', ['userid' => (int) $USER->id, 'pathhash => 'id', ['userid' => $USER->id, 'pathhash`
+- 104 ArrayItemRemoval: `elf::TABLE, 'id', ['userid' => (int) $USER->id, 'pathhash' => $pathha => elf::TABLE, 'id', ['pathhash' => $pathha`
+
+## Plugin/src/local_coursepilot/classes/material_composition.php (103 überlebt, 103 offen)
+
+- 49 LogicalOr: `sts('imagettftext') || !is_readable($font) => sts('imagettftext') && !is_readable($font)`
+- 54 UnwrapFinally: `try { foreach ($inputs as $input) { $parts[] = self::prepare_part($input, $font); } [$width, $height] = self::dimensions($parts, $arrangement); $canvas = imagecreatetruecolor($width, $height); imagesa`
+- 61 IncrementInteger: `imagefill($canvas, 0, 0, imagecoloralloc => imagefill($canvas, 1, 0, imagecoloralloc`
+- 61 IncrementInteger: `agefill($canvas, 0, 0, imagecolorallocate => agefill($canvas, 0, 1, imagecolorallocate`
+- 67 Foreach_: `foreach ($parts as $part) { => foreach ([] as $part) {`
+- 68 FunctionCallRemoval: `imagedestroy($part['image']); => `
+- 71 FunctionCallRemoval: `imagedestroy($canvas); => `
+- 84 UnwrapStrToLower: `$extension = strtolower(pathinfo($input['sourcepath'], PATHINFO_EXTENSION)); => $extension = pathinfo($input['sourcepath'], PATHINFO_EXTENSION);`
+- 86 Throw_: `throw new \moodle_exceptio => new \moodle_exceptio`
+- 94 RoundingFamily: `$x = (int) round($crop['x0'] * image => $x = (int) floor($crop['x0'] * image`
+- 94 RoundingFamily: `$x = (int) round($crop['x0'] * image => $x = (int) ceil($crop['x0'] * image`
+- 95 RoundingFamily: `$y = (int) round($crop['y0'] * image => $y = (int) floor($crop['y0'] * image`
+- 95 RoundingFamily: `$y = (int) round($crop['y0'] * image => $y = (int) ceil($crop['y0'] * image`
+- 96 DecrementInteger: `$cropwidth = max(1, min(imagesx($image => $cropwidth = max(0, min(imagesx($image`
+- 96 IncrementInteger: `$cropwidth = max(1, min(imagesx($image => $cropwidth = max(2, min(imagesx($image`
+- 96 Minus: `min(imagesx($image) - $x, (int) round($cr => min(imagesx($image) + $x, (int) round($cr`
+- 96 RoundingFamily: `$image) - $x, (int) round($crop['x1'] * image => $image) - $x, (int) floor($crop['x1'] * image`
+- 96 RoundingFamily: `$image) - $x, (int) round($crop['x1'] * image => $image) - $x, (int) ceil($crop['x1'] * image`
+- 96 CastInt: `agesx($image) - $x, (int) round($crop['x1'] * => agesx($image) - $x, round($crop['x1'] *`
+- 97 DecrementInteger: `$cropheight = max(1, min(imagesy($image => $cropheight = max(0, min(imagesy($image`
+- 97 IncrementInteger: `$cropheight = max(1, min(imagesy($image => $cropheight = max(2, min(imagesy($image`
+- 97 Minus: `min(imagesy($image) - $y, (int) round($cr => min(imagesy($image) + $y, (int) round($cr`
+- 97 RoundingFamily: `$image) - $y, (int) round($crop['y1'] * image => $image) - $y, (int) floor($crop['y1'] * image`
+- 97 RoundingFamily: `$image) - $y, (int) round($crop['y1'] * image => $image) - $y, (int) ceil($crop['y1'] * image`
+- 97 CastInt: `agesy($image) - $y, (int) round($crop['y1'] * => agesy($image) - $y, round($crop['y1'] *`
+- 100 Identical: `$box = $text === '' ? [0, 0, 0, 0, => $box = $text !== '' ? [0, 0, 0, 0,`
+- 100 DecrementInteger: `x = $text === '' ? [0, 0, 0, 0, 0, 0, 0, => x = $text === '' ? [-1, 0, 0, 0, 0, 0, 0,`
+- 100 IncrementInteger: `x = $text === '' ? [0, 0, 0, 0, 0, 0, 0, => x = $text === '' ? [1, 0, 0, 0, 0, 0, 0,`
+- 100 DecrementInteger: `$text === '' ? [0, 0, 0, 0, 0, 0, 0, 0] => $text === '' ? [0, -1, 0, 0, 0, 0, 0, 0]`
+- 100 IncrementInteger: `$text === '' ? [0, 0, 0, 0, 0, 0, 0, 0] => $text === '' ? [0, 1, 0, 0, 0, 0, 0, 0]`
+- 100 DecrementInteger: `ext === '' ? [0, 0, 0, 0, 0, 0, 0, 0] : i => ext === '' ? [0, 0, -1, 0, 0, 0, 0, 0] : i`
+- 100 IncrementInteger: `ext === '' ? [0, 0, 0, 0, 0, 0, 0, 0] : i => ext === '' ? [0, 0, 1, 0, 0, 0, 0, 0] : i`
+- 100 DecrementInteger: `=== '' ? [0, 0, 0, 0, 0, 0, 0, 0] : imag => === '' ? [0, 0, 0, -1, 0, 0, 0, 0] : imag`
+- 100 IncrementInteger: `=== '' ? [0, 0, 0, 0, 0, 0, 0, 0] : imag => === '' ? [0, 0, 0, 1, 0, 0, 0, 0] : imag`
+- 100 DecrementInteger: `= '' ? [0, 0, 0, 0, 0, 0, 0, 0] : imagett => = '' ? [0, 0, 0, 0, -1, 0, 0, 0] : imagett`
+- 100 IncrementInteger: `= '' ? [0, 0, 0, 0, 0, 0, 0, 0] : imagett => = '' ? [0, 0, 0, 0, 1, 0, 0, 0] : imagett`
+- 100 DecrementInteger: `' ? [0, 0, 0, 0, 0, 0, 0, 0] : imagettfbb => ' ? [0, 0, 0, 0, 0, -1, 0, 0] : imagettfbb`
+- 100 IncrementInteger: `' ? [0, 0, 0, 0, 0, 0, 0, 0] : imagettfbb => ' ? [0, 0, 0, 0, 0, 1, 0, 0] : imagettfbb`
+- 100 DecrementInteger: `[0, 0, 0, 0, 0, 0, 0, 0] : imagettfbbox( => [0, 0, 0, 0, 0, 0, -1, 0] : imagettfbbox(`
+- 100 IncrementInteger: `[0, 0, 0, 0, 0, 0, 0, 0] : imagettfbbox( => [0, 0, 0, 0, 0, 0, 1, 0] : imagettfbbox(`
+- 100 DecrementInteger: `, 0, 0, 0, 0, 0, 0, 0] : imagettfbbox(sel => , 0, 0, 0, 0, 0, 0, -1] : imagettfbbox(sel`
+- 100 IncrementInteger: `, 0, 0, 0, 0, 0, 0, 0] : imagettfbbox(sel => , 0, 0, 0, 0, 0, 0, 1] : imagettfbbox(sel`
+- 100 ArrayItemRemoval: `[0, 0, 0, 0, 0, 0, 0, 0] : imagettfbbox(sel => [0, 0, 0, 0, 0, 0, 0] : imagettfbbox(sel`
+- 100 DecrementInteger: `ox(self::FONT_SIZE, 0, $font, $text); => ox(self::FONT_SIZE, -1, $font, $text);`
+- 100 IncrementInteger: `ox(self::FONT_SIZE, 0, $font, $text); => ox(self::FONT_SIZE, 1, $font, $text);`
+- 100 Ternary: `ox = $text === '' ? [0, 0, 0, 0, 0, 0, 0, 0] : imagettfbbox(self::FONT_SIZE, 0, $font, $text); => ox = $text === '' ? imagettfbbox(self::FONT_SIZE, 0, $font, $text) : [0, 0, 0, 0, 0, 0, 0, 0];`
+- 101 IncrementInteger: `extwidth = max($box[0], $box[2], $box[4], => extwidth = max($box[1], $box[2], $box[4],`
+- 101 DecrementInteger: `= max($box[0], $box[2], $box[4], $box[6]) => = max($box[0], $box[1], $box[4], $box[6])`
+- 101 IncrementInteger: `= max($box[0], $box[2], $box[4], $box[6]) => = max($box[0], $box[3], $box[4], $box[6])`
+- 101 DecrementInteger: `x[0], $box[2], $box[4], $box[6]) - min($b => x[0], $box[2], $box[3], $box[6]) - min($b`
+- 101 IncrementInteger: `x[0], $box[2], $box[4], $box[6]) - min($b => x[0], $box[2], $box[5], $box[6]) - min($b`
+- 101 DecrementInteger: `x[2], $box[4], $box[6]) - min($box[0], $b => x[2], $box[4], $box[5]) - min($box[0], $b`
+- 101 IncrementInteger: `x[2], $box[4], $box[6]) - min($box[0], $b => x[2], $box[4], $box[7]) - min($box[0], $b`
+- 101 IncrementInteger: `$box[6]) - min($box[0], $box[2], $box[4], => $box[6]) - min($box[1], $box[2], $box[4],`
+- 101 DecrementInteger: `- min($box[0], $box[2], $box[4], $box[6]) => - min($box[0], $box[1], $box[4], $box[6])`
+- 101 IncrementInteger: `- min($box[0], $box[2], $box[4], $box[6]) => - min($box[0], $box[3], $box[4], $box[6])`
+- 101 DecrementInteger: `x[0], $box[2], $box[4], $box[6]); => x[0], $box[2], $box[3], $box[6]);`
+- 101 IncrementInteger: `x[0], $box[2], $box[4], $box[6]); => x[0], $box[2], $box[5], $box[6]);`
+- 101 DecrementInteger: `x[2], $box[4], $box[6]); => x[2], $box[4], $box[5]);`
+- 101 IncrementInteger: `x[2], $box[4], $box[6]); => x[2], $box[4], $box[7]);`
+- 101 Minus: `, $box[4], $box[6]) - min($box[0], $box[2 => , $box[4], $box[6]) + min($box[0], $box[2`
+- 103 Identical: `x($cropwidth, $text === '' ? 0 : $textwid => x($cropwidth, $text !== '' ? 0 : $textwid`
+- 103 DecrementInteger: `dth, $text === '' ? 0 : $textwidth + 2 * => dth, $text === '' ? -1 : $textwidth + 2 *`
+- 103 IncrementInteger: `dth, $text === '' ? 0 : $textwidth + 2 * => dth, $text === '' ? 1 : $textwidth + 2 *`
+- 103 DecrementInteger: `? 0 : $textwidth + 2 * self::PADDING), ' => ? 0 : $textwidth + 1 * self::PADDING), '`
+- 103 IncrementInteger: `? 0 : $textwidth + 2 * self::PADDING), ' => ? 0 : $textwidth + 3 * self::PADDING), '`
+- 103 Multiplication: `0 : $textwidth + 2 * self::PADDING), 'he => 0 : $textwidth + 2 / self::PADDING), 'he`
+- 103 Plus: `'' ? 0 : $textwidth + 2 * self::PADDING), => '' ? 0 : $textwidth - 2 * self::PADDING),`
+- 103 Ternary: `dth, $text === '' ? 0 : $textwidth + 2 * self::PADDING), 'height' => $crop => dth, $text === '' ? $textwidth + 2 * self::PADDING : 0), 'height' => $crop`
+- 116 CastObject: `l_coursepilot', '', (object) $crop); => l_coursepilot', '', $crop);`
+- 119 LessThanOrEqualTo: `0'] || $crop['y1'] <= $crop['y0']) { => 0'] || $crop['y1'] < $crop['y0']) {`
+- 120 CastObject: `l_coursepilot', '', (object) $crop); => l_coursepilot', '', $crop);`
+- 151 DecrementInteger: `rallocate($canvas, 21, 101, 192); => rallocate($canvas, 20, 101, 192);`
+- 151 IncrementInteger: `rallocate($canvas, 21, 101, 192); => rallocate($canvas, 22, 101, 192);`
+- 151 DecrementInteger: `cate($canvas, 21, 101, 192); => cate($canvas, 21, 100, 192);`
+- 151 IncrementInteger: `cate($canvas, 21, 101, 192); => cate($canvas, 21, 102, 192);`
+- 151 DecrementInteger: `$canvas, 21, 101, 192); => $canvas, 21, 101, 191);`
+- 151 IncrementInteger: `$canvas, 21, 101, 192); => $canvas, 21, 101, 193);`
+- 154 FunctionCallRemoval: `imagealphablending($canvas, true); => `
+- 156 IncrementInteger: `$left = min($box[0], $box[2], $box[4], => $left = min($box[1], $box[2], $box[4],`
+- 156 DecrementInteger: `= min($box[0], $box[2], $box[4], $box[6]) => = min($box[0], $box[1], $box[4], $box[6])`
+- 156 IncrementInteger: `= min($box[0], $box[2], $box[4], $box[6]) => = min($box[0], $box[3], $box[4], $box[6])`
+- 156 DecrementInteger: `x[0], $box[2], $box[4], $box[6]); => x[0], $box[2], $box[3], $box[6]);`
+- 157 DecrementInteger: `$top = min($box[1], $box[3], $box[5], => $top = min($box[0], $box[3], $box[5],`
+- 157 IncrementInteger: `$top = min($box[1], $box[3], $box[5], => $top = min($box[2], $box[3], $box[5],`
+- 157 DecrementInteger: `= min($box[1], $box[3], $box[5], $box[7]) => = min($box[1], $box[2], $box[5], $box[7])`
+- 157 IncrementInteger: `= min($box[1], $box[3], $box[5], $box[7]) => = min($box[1], $box[4], $box[5], $box[7])`
+- 157 DecrementInteger: `x[1], $box[3], $box[5], $box[7]); => x[1], $box[3], $box[4], $box[7]);`
+- 157 IncrementInteger: `x[1], $box[3], $box[5], $box[7]); => x[1], $box[3], $box[6], $box[7]);`
+- 157 DecrementInteger: `x[3], $box[5], $box[7]); => x[3], $box[5], $box[6]);`
+- 158 DecrementInteger: `$bottom = max($box[1], $box[3], $box[5], => $bottom = max($box[0], $box[3], $box[5],`
+- 158 IncrementInteger: `x[1], $box[3], $box[5], $box[7]); => x[1], $box[3], $box[6], $box[7]);`
+- 158 DecrementInteger: `x[3], $box[5], $box[7]); => x[3], $box[5], $box[6]);`
+- 159 DecrementInteger: `($bottom - $top)) / 2) - $top; => ($bottom - $top)) / 1) - $top;`
+- 159 IncrementInteger: `($bottom - $top)) / 2) - $top; => ($bottom - $top)) / 3) - $top;`
+- 159 RoundingFamily: `$baseline = (int) round((self::HEADER_HEIGH => $baseline = (int) floor((self::HEADER_HEIGH`
+- 159 RoundingFamily: `$baseline = (int) round((self::HEADER_HEIGH => $baseline = (int) ceil((self::HEADER_HEIGH`
+- 159 CastInt: `$baseline = (int) round((self::HEADER_ => $baseline = round((self::HEADER_`
+- 160 DecrementInteger: `s, self::FONT_SIZE, 0, $x + self::PADDING => s, self::FONT_SIZE, -1, $x + self::PADDING`
+- 160 IncrementInteger: `s, self::FONT_SIZE, 0, $x + self::PADDING => s, self::FONT_SIZE, 1, $x + self::PADDING`
+- 160 Minus: `$x + self::PADDING - $left, $y + $baseli => $x + self::PADDING + $left, $y + $baseli`
+- 174 Assignment: `$y += $part['height'] + => $y = $part['height'] +`
+- 176 Assignment: `$x += $part['width'] + s => $x = $part['width'] + s`
+
+## Plugin/src/local_coursepilot/classes/material_files.php (41 überlebt, 41 offen)
+
+- 138 PublicVisibility: `public static function are => protected static function are`
+- 145 PregMatchRemoveCaret: `if (!preg_match('/^[A-Za-z0-9_-]+\.[A-Z => if (!preg_match('/[A-Za-z0-9_-]+\.[A-Z`
+- 145 PregMatchRemoveDollar: `-9_-]+\.[A-Za-z0-9]+$/', $filename) || !s => -9_-]+\.[A-Za-z0-9]+/', $filename) || !s`
+- 146 ArrayItemRemoval: `ot', '', (object) ['filename' => $filename, 'allowed' => implode( => ot', '', (object) ['allowed' => implode(`
+- 146 CastObject: `l_coursepilot', '', (object) ['filename' => $file => l_coursepilot', '', ['filename' => $file`
+- 148 ArrayItem: `filename, 'allowed' => implode(', ', self => filename, 'allowed' > implode(', ', self`
+- 234 PublicVisibility: `public static function rel => protected static function rel`
+- 290 UnwrapArrayUnique: `array_values(array_unique(array_merge(self::ALLOWED_UPLOAD_EXTENSIONS, self::ALLOWED_IMAGE_EXTENSIONS))); => array_values(array_merge(self::ALLOWED_UPLOAD_EXTENSIONS, self::ALLOWED_IMAGE_EXTENSIONS));`
+- 290 UnwrapArrayValues: `return array_values(array_unique(array_merge(self::ALLOWED_UPLOAD_EXTENSIONS, self::ALLOWED_IMAGE_EXTENSIONS))); => return array_unique(array_merge(self::ALLOWED_UPLOAD_EXTENSIONS, self::ALLOWED_IMAGE`
+- 300 UnwrapStrToLower: `$extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION)); => $extension = pathinfo($filename, PATHINFO_EXTENSION);`
+- 425 Coalesce: `ocation::MOODLE && ($entry['type'] ?? 'file') !== 'folder'; => ocation::MOODLE && ('file' ?? $entry['type']) !== 'folder';`
+- 498 Identical: `dpath = $parentpath === '' ? $entry['name => dpath = $parentpath !== '' ? $entry['name`
+- 498 Concat: `? $entry['name'] : $parentpath . '/' . $entry['name']; => ? $entry['name'] : '/' . $parentpath . $entry['name'];`
+- 498 ConcatOperandRemoval: `? $entry['name'] : $parentpath . '/' . $entry['name'] => ? $entry['name'] : '/' . $entry['name']`
+- 498 ConcatOperandRemoval: `e'] : $parentpath . '/' . $entry['name']; => e'] : $parentpath . $entry['name'];`
+- 498 Concat: `e'] : $parentpath . '/' . $entry['name']; => e'] : $parentpath . $entry['name'] . '/';`
+- 498 ConcatOperandRemoval: `: $parentpath . '/' . $entry['name']; => : $parentpath . '/';`
+- 498 Ternary: `arentpath === '' ? $entry['name'] : $parentpath . '/' . $entry['name']; => arentpath === '' ? $parentpath . '/' . $entry['name'] : $entry['name'];`
+- 548 DecrementInteger: `($CFG->userquota ?? 0); => ($CFG->userquota ?? -1);`
+- 548 IncrementInteger: `($CFG->userquota ?? 0); => ($CFG->userquota ?? 1);`
+- 548 CastInt: `$quota = (int) ($CFG->userquota ?? 0); => $quota = $CFG->userquota ?? 0;`
+- 549 LessThanOrEqualTo: `=== null || $quota <= 0) { => === null || $quota < 0) {`
+- 549 LogicalOr: `$remaining === null || $quota <= 0) { => $remaining === null && $quota <= 0) {`
+- 552 DecrementInteger: `emainingafter = max(0, $remaining - $addi => emainingafter = max(-1, $remaining - $addi`
+- 552 IncrementInteger: `emainingafter = max(0, $remaining - $addi => emainingafter = max(1, $remaining - $addi`
+- 553 GreaterThanOrEqualTo: `ningafter / $quota >= self::QUOTA_WARNING => ningafter / $quota > self::QUOTA_WARNING`
+- 556 DecrementInteger: `ainingafter / 1048576, 1)); => ainingafter / 1048575, 1));`
+- 556 IncrementInteger: `ainingafter / 1048576, 1)); => ainingafter / 1048577, 1));`
+- 556 Division: `oat($remainingafter / 1048576, 1)); => oat($remainingafter * 1048576, 1));`
+- 556 IncrementInteger: `ingafter / 1048576, 1)); => ingafter / 1048576, 2));`
+- 573 DecrementInteger: `($CFG->maxbytes ?? 0); => ($CFG->maxbytes ?? -1);`
+- 573 IncrementInteger: `($CFG->maxbytes ?? 0); => ($CFG->maxbytes ?? 1);`
+- 573 CastInt: `$maxbytes = (int) ($CFG->maxbytes ?? 0); => $maxbytes = $CFG->maxbytes ?? 0;`
+- 574 LessThanOrEqualTo: `tes <= 0 || $bytes <= $maxbytes) { => tes <= 0 || $bytes < $maxbytes) {`
+- 577 ArrayItemRemoval: `ot', '', (object) ['size' => $bytes, 'max' => $maxbytes]); => ot', '', (object) ['max' => $maxbytes]);`
+- 577 CastObject: `l_coursepilot', '', (object) ['size' => $bytes, ' => l_coursepilot', '', ['size' => $bytes, '`
+- 696 NotIdentical: `$source['mimetype'] !== '' ? $source['mim => $source['mimetype'] === '' ? $source['mim`
+- 696 Ternary: `mimetype'] !== '' ? $source['mimetype'] : null], $source['content' => mimetype'] !== '' ? null : $source['mimetype']], $source['content'`
+- 734 PublicVisibility: `public static function ent => protected static function ent`
+- 762 Continue_: `continue; => break;`
+- 773 TrueValue: `row->contenthash] = true; => row->contenthash] = false;`
+
+## Plugin/src/local_coursepilot/classes/oauth_budget.php (36 überlebt, 36 offen)
+
+- 65 MethodCallRemoval: `$transaction->allow_commit(); => `
+- 70 DecrementInteger: `$allowed ? 0 : max(1, $expires - $now); => $allowed ? 0 : max(0, $expires - $now);`
+- 70 IncrementInteger: `$allowed ? 0 : max(1, $expires - $now); => $allowed ? 0 : max(2, $expires - $now);`
+- 70 Minus: `0 : max(1, $expires - $now); => 0 : max(1, $expires + $now);`
+- 97 ArrayItemRemoval: `lf::TABLE, 'hits', ['id' => $siteid]); => lf::TABLE, 'hits', []);`
+- 98 FalseValue: `if ($sitehits === false || (int) $sitehits => if ($sitehits === true || (int) $sitehits`
+- 98 CastInt: `tehits === false || (int) $sitehits > $sitelim => tehits === false || $sitehits > $sitelim`
+- 102 ArrayItemRemoval: `ord(self::TABLE, ['scope' => $scope, 'sourcekey' => $key, ' => ord(self::TABLE, ['sourcekey' => $key, '`
+- 104 CastObject: `record(self::TABLE, (object) ['scope' => $scope, => record(self::TABLE, ['scope' => $scope,`
+- 108 CastInt: `if ((int) $row->hits < $source => if ($row->hits < $source`
+- 109 CastInt: `elf::TABLE, 'hits', (int) $row->hits + 1, ['id => elf::TABLE, 'hits', $row->hits + 1, ['id`
+- 109 IncrementInteger: `(int) $row->hits + 1, ['id' => $row->id] => (int) $row->hits + 2, ['id' => $row->id]`
+- 109 ArrayItemRemoval: `t) $row->hits + 1, ['id' => $row->id]); => t) $row->hits + 1, []);`
+- 152 Coalesce: `$params = [$now ?? time()]; => $params = [time() ?? $now];`
+- 169 FalseValue: `et_pton($address) : false; => et_pton($address) : true;`
+- 170 FalseValue: `if ($packed !== false && strlen($packed) => if ($packed !== true && strlen($packed)`
+- 170 LogicalAnd: `($packed !== false && strlen($packed) === => ($packed !== false || strlen($packed) ===`
+- 171 DecrementInteger: `top(substr($packed, 0, 8) . str_repeat("\ => top(substr($packed, -1, 8) . str_repeat("\`
+- 171 DecrementInteger: `(substr($packed, 0, 8) . str_repeat("\x00 => (substr($packed, 0, 7) . str_repeat("\x00`
+- 171 IncrementInteger: `(substr($packed, 0, 8) . str_repeat("\x00 => (substr($packed, 0, 9) . str_repeat("\x00`
+- 171 UnwrapSubstr: `return inet_ntop(substr($packed, 0, 8) . str_repeat("\x00" => return inet_ntop($packed . str_repeat("\x00"`
+- 171 DecrementInteger: `str_repeat("\x00", 8)) . '/64'; => str_repeat("\x00", 7)) . '/64';`
+- 171 IncrementInteger: `str_repeat("\x00", 8)) . '/64'; => str_repeat("\x00", 9)) . '/64';`
+- 171 UnwrapStrRepeat: `tr($packed, 0, 8) . str_repeat("\x00", 8)) . '/64'; => tr($packed, 0, 8) . "\x00") . '/64';`
+- 171 Concat: `return inet_ntop(substr($packed, 0, 8) . str_repeat("\x00", 8)) . '/64'; => return inet_ntop(str_repeat("\x00", 8) . substr($packed, 0, 8)) . '/64';`
+- 171 ConcatOperandRemoval: `return inet_ntop(substr($packed, 0, 8) . str_repeat("\x00", 8) => return inet_ntop(str_repeat("\x00", 8)`
+- 171 ConcatOperandRemoval: `ubstr($packed, 0, 8) . str_repeat("\x00", 8)) . '/64'; => ubstr($packed, 0, 8)) . '/64';`
+- 171 Concat: `return inet_ntop(substr($packed, 0, 8) . str_repeat("\x00", 8)) . '/64'; => return '/64' . inet_ntop(substr($packed, 0, 8) . str_repeat("\x00", 8));`
+- 171 ConcatOperandRemoval: `return inet_ntop(substr($packed, 0, 8) . str_repeat("\x00", 8)) . '/64'; => return '/64';`
+- 171 ConcatOperandRemoval: `r_repeat("\x00", 8)) . '/64'; => r_repeat("\x00", 8));`
+- 189 CastInt: `return max(1, (int) $value); => return max(1, $value);`
+- 202 ArrayItemRemoval: `$conditions = ['scope' => $scope, 'sourcekey' => self::S => $conditions = ['sourcekey' => self::S`
+- 205 CastInt: `return (int) $id; => return $id;`
+- 208 ArrayItemRemoval: `ct) ($conditions + ['hits' => 0])); => ct) ($conditions + []));`
+- 208 CastObject: `record(self::TABLE, (object) ($conditions + ['hits' => 0])); => record(self::TABLE, $conditions + ['hits' => 0]);`
+- 208 CastInt: `return (int) $DB->insert_record(s => return $DB->insert_record(s`
+
+## Plugin/src/local_coursepilot/classes/oauth_cleanup.php (8 überlebt, 8 offen)
+
+- 49 AssignCoalesce: `$now ??= time(); => $now = time();`
+- 55 PlusEqual: `$deleted += self::delete_dead_ => $deleted -= self::delete_dead_`
+- 57 PlusEqual: `$deleted += self::delete_batch => $deleted -= self::delete_batch`
+- 63 Plus: `return $deleted + self::delete_unused => return $deleted - self::delete_unused`
+- 89 DecrementInteger: `', ['now' => $now], 0, $batch)); => ', ['now' => $now], -1, $batch));`
+- 100 Plus: `return count($ids) + $tokens; => return count($ids) - $tokens;`
+- 127 DecrementInteger: `TL, 'now' => $now], 0, $batch)); => TL, 'now' => $now], -1, $batch));`
+- 147 DecrementInteger: `params, 'id', 'id', 0, $batch)); => params, 'id', 'id', -1, $batch));`
+
+## Plugin/src/local_coursepilot/classes/oauth_lib.php (86 überlebt, 86 offen)
+
+- 70 PublicVisibility: `public static function aut => protected static function aut`
+- 70 PublicVisibility: `public static function aut => protected static function aut`
+- 71 ArrayItemRemoval: `// RFC 8414. 'issuer' => $wwwroot . '/local/coursepilot/oauth.php', => `
+- 71 ArrayItemRemoval: `// RFC 8414. 'issuer' => $wwwroot . '/local/coursepilot/oauth.php', => `
+- 73 Concat: `'issuer' => $wwwroot . '/local/coursepilot/oauth.php', => 'issuer' => '/local/coursepilot/oauth.php' . $wwwroot,`
+- 73 ConcatOperandRemoval: `'issuer' => $wwwroot . '/local/coursepilot/ => 'issuer' => '/local/coursepilot/`
+- 73 ConcatOperandRemoval: `'issuer' => $wwwroot . '/local/coursepilot/oauth.php', => 'issuer' => $wwwroot,`
+- 73 Concat: `'issuer' => $wwwroot . '/local/coursepilot/oauth.php', => 'issuer' => '/local/coursepilot/oauth.php' . $wwwroot,`
+- 73 ConcatOperandRemoval: `'issuer' => $wwwroot . '/local/coursepilot/ => 'issuer' => '/local/coursepilot/`
+- 73 ConcatOperandRemoval: `'issuer' => $wwwroot . '/local/coursepilot/oauth.php', => 'issuer' => $wwwroot,`
+- 74 Concat: `zation_endpoint' => $wwwroot . '/local/coursepilot/oauth/authorize.php', => zation_endpoint' => '/local/coursepilot/oauth/authorize.php' . $wwwroot,`
+- 74 ConcatOperandRemoval: `zation_endpoint' => $wwwroot . '/local/coursepilot/ => zation_endpoint' => '/local/coursepilot/`
+- 74 ConcatOperandRemoval: `ndpoint' => $wwwroot . '/local/coursepilot/oauth/authorize.php', => ndpoint' => $wwwroot,`
+- 74 Concat: `zation_endpoint' => $wwwroot . '/local/coursepilot/oauth/authorize.php', => zation_endpoint' => '/local/coursepilot/oauth/authorize.php' . $wwwroot,`
+- 74 ConcatOperandRemoval: `zation_endpoint' => $wwwroot . '/local/coursepilot/ => zation_endpoint' => '/local/coursepilot/`
+- 74 ConcatOperandRemoval: `ndpoint' => $wwwroot . '/local/coursepilot/oauth/authorize.php', => ndpoint' => $wwwroot,`
+- 75 Concat: `'token_endpoint' => $wwwroot . '/local/coursepilot/oauth/token.php', => 'token_endpoint' => '/local/coursepilot/oauth/token.php' . $wwwroot,`
+- 75 ConcatOperandRemoval: `'token_endpoint' => $wwwroot . '/local/coursepilot/ => 'token_endpoint' => '/local/coursepilot/`
+- 75 ConcatOperandRemoval: `ndpoint' => $wwwroot . '/local/coursepilot/oauth/token.php', => ndpoint' => $wwwroot,`
+- 75 Concat: `'token_endpoint' => $wwwroot . '/local/coursepilot/oauth/token.php', => 'token_endpoint' => '/local/coursepilot/oauth/token.php' . $wwwroot,`
+- 75 ConcatOperandRemoval: `'token_endpoint' => $wwwroot . '/local/coursepilot/ => 'token_endpoint' => '/local/coursepilot/`
+- 75 ConcatOperandRemoval: `ndpoint' => $wwwroot . '/local/coursepilot/oauth/token.php', => ndpoint' => $wwwroot,`
+- 77 ArrayItemRemoval: `ypes_supported' => ['code'], => ypes_supported' => [],`
+- 77 ArrayItemRemoval: `ypes_supported' => ['code'], => ypes_supported' => [],`
+- 78 ArrayItemRemoval: `pes_supported' => ['authorization_code', 'refresh_token'], => pes_supported' => ['refresh_token'],`
+- 78 ArrayItemRemoval: `pes_supported' => ['authorization_code', 'refresh_token'], => pes_supported' => ['refresh_token'],`
+- 79 ArrayItemRemoval: `hods_supported' => ['S256'], => hods_supported' => [],`
+- 79 ArrayItemRemoval: `hods_supported' => ['S256'], => hods_supported' => [],`
+- 80 ArrayItemRemoval: `ods_supported' => ['none', 'client_secret_post'] => ods_supported' => ['client_secret_post']`
+- 80 ArrayItemRemoval: `ods_supported' => ['none', 'client_secret_post'] => ods_supported' => ['client_secret_post']`
+- 81 ArrayItemRemoval: `opes_supported' => ['coursepilot.read'], => opes_supported' => [],`
+- 81 ArrayItemRemoval: `opes_supported' => ['coursepilot.read'], => opes_supported' => [],`
+- 84 Concat: `'jwks_uri' => $wwwroot . '/local/coursepilot/oauth/jwks.php', => 'jwks_uri' => '/local/coursepilot/oauth/jwks.php' . $wwwroot,`
+- 84 ConcatOperandRemoval: `'jwks_uri' => $wwwroot . '/local/coursepilot/ => 'jwks_uri' => '/local/coursepilot/`
+- 84 ConcatOperandRemoval: `wks_uri' => $wwwroot . '/local/coursepilot/oauth/jwks.php', => wks_uri' => $wwwroot,`
+- 84 Concat: `'jwks_uri' => $wwwroot . '/local/coursepilot/oauth/jwks.php', => 'jwks_uri' => '/local/coursepilot/oauth/jwks.php' . $wwwroot,`
+- 84 ConcatOperandRemoval: `'jwks_uri' => $wwwroot . '/local/coursepilot/ => 'jwks_uri' => '/local/coursepilot/`
+- 84 ConcatOperandRemoval: `wks_uri' => $wwwroot . '/local/coursepilot/oauth/jwks.php', => wks_uri' => $wwwroot,`
+- 85 ArrayItemRemoval: `ypes_supported' => ['public'], => ypes_supported' => [],`
+- 85 ArrayItemRemoval: `ypes_supported' => ['public'], => ypes_supported' => [],`
+- 86 ArrayItemRemoval: `lues_supported' => ['RS256'], => lues_supported' => [],`
+- 86 ArrayItemRemoval: `lues_supported' => ['RS256'], => lues_supported' => [],`
+- 101 Concat: `turn ['resource' => $wwwroot . '/local/coursepilot/mcp.php', 'authorization_ser => turn ['resource' => '/local/coursepilot/mcp.php' . $wwwroot, 'authorization_ser`
+- 101 ConcatOperandRemoval: `turn ['resource' => $wwwroot . '/local/coursepilot/ => turn ['resource' => '/local/coursepilot/`
+- 101 ConcatOperandRemoval: `esource' => $wwwroot . '/local/coursepilot/mcp.php', 'authorization_ser => esource' => $wwwroot, 'authorization_ser`
+- 101 Concat: `turn ['resource' => $wwwroot . '/local/coursepilot/mcp.php', 'authorization_ser => turn ['resource' => '/local/coursepilot/mcp.php' . $wwwroot, 'authorization_ser`
+- 101 ConcatOperandRemoval: `turn ['resource' => $wwwroot . '/local/coursepilot/ => turn ['resource' => '/local/coursepilot/`
+- 101 ConcatOperandRemoval: `esource' => $wwwroot . '/local/coursepilot/mcp.php', 'authorization_ser => esource' => $wwwroot, 'authorization_ser`
+- 102 Concat: `zation_servers' => [$wwwroot . '/local/coursepilot/oauth.php'], 'scopes_supported => zation_servers' => ['/local/coursepilot/oauth.php' . $wwwroot], 'scopes_supported`
+- 102 ConcatOperandRemoval: `zation_servers' => [$wwwroot . '/local/coursepilot/ => zation_servers' => ['/local/coursepilot/`
+- 102 ConcatOperandRemoval: `ervers' => [$wwwroot . '/local/coursepilot/oauth.php'], 'scopes_supported => ervers' => [$wwwroot], 'scopes_supported`
+- 102 ArrayItemRemoval: `zation_servers' => [$wwwroot . '/local/coursepilot/oauth.php'], 'scopes_supported => zation_servers' => [], 'scopes_supported`
+- 102 Concat: `zation_servers' => [$wwwroot . '/local/coursepilot/oauth.php'], 'scopes_supported => zation_servers' => ['/local/coursepilot/oauth.php' . $wwwroot], 'scopes_supported`
+- 102 ConcatOperandRemoval: `zation_servers' => [$wwwroot . '/local/coursepilot/ => zation_servers' => ['/local/coursepilot/`
+- 102 ConcatOperandRemoval: `ervers' => [$wwwroot . '/local/coursepilot/oauth.php'], 'scopes_supported => ervers' => [$wwwroot], 'scopes_supported`
+- 102 ArrayItemRemoval: `zation_servers' => [$wwwroot . '/local/coursepilot/oauth.php'], 'scopes_supported => zation_servers' => [], 'scopes_supported`
+- 103 ArrayItemRemoval: `opes_supported' => ['coursepilot.read'], 'bearer_methods_s => opes_supported' => [], 'bearer_methods_s`
+- 103 ArrayItemRemoval: `opes_supported' => ['coursepilot.read'], 'bearer_methods_s => opes_supported' => [], 'bearer_methods_s`
+- 104 ArrayItemRemoval: `hods_supported' => ['header']]; => hods_supported' => []];`
+- 104 ArrayItemRemoval: `hods_supported' => ['header']]; => hods_supported' => []];`
+- 117 ArrayItemRemoval: `$known = ['', '.well-known/openid-c => $known = ['.well-known/openid-c`
+- 117 ArrayItemRemoval: `$known = ['', '.well-known/openid-c => $known = ['.well-known/openid-c`
+- 121 ArrayItemRemoval: `self::result(200, ['Cache-Control' => 'no-store'], self::authorizati => self::result(200, [], self::authorizati`
+- 121 ArrayItemRemoval: `self::result(200, ['Cache-Control' => 'no-store'], self::authorizati => self::result(200, [], self::authorizati`
+- 131 PublicVisibility: `public static function reg => protected static function reg`
+- 131 PublicVisibility: `public static function reg => protected static function reg`
+- 148 ArrayItemRemoval: `self::result(405, ['Allow' => 'POST'], ['error' => 'inva => self::result(405, [], ['error' => 'inva`
+- 148 ArrayItemRemoval: `=> 'POST'], ['error' => 'invalid_request', 'error_description' => 'On => => 'POST'], ['error_description' => 'On`
+- 148 ArrayItemRemoval: `self::result(405, ['Allow' => 'POST'], ['error' => 'inva => self::result(405, [], ['error' => 'inva`
+- 148 ArrayItemRemoval: `=> 'POST'], ['error' => 'invalid_request', 'error_description' => 'On => => 'POST'], ['error_description' => 'On`
+- 153 GreaterThan: `(strlen($rawbody) > self::REGISTRATION_ => (strlen($rawbody) >= self::REGISTRATION_`
+- 153 GreaterThan: `(strlen($rawbody) > self::REGISTRATION_ => (strlen($rawbody) >= self::REGISTRATION_`
+- 159 DecrementInteger: `de($rawbody, true, 16); => de($rawbody, true, 15);`
+- 159 IncrementInteger: `de($rawbody, true, 16); => de($rawbody, true, 17);`
+- 159 DecrementInteger: `de($rawbody, true, 16); => de($rawbody, true, 15);`
+- 159 IncrementInteger: `de($rawbody, true, 16); => de($rawbody, true, 17);`
+- 179 CastString: `, ['Retry-After' => (string) $retryafter], ['erro => , ['Retry-After' => $retryafter], ['erro`
+- 179 CastString: `, ['Retry-After' => (string) $retryafter], ['erro => , ['Retry-After' => $retryafter], ['erro`
+- 184 ArrayItemRemoval: `self::result(201, ['Cache-Control' => 'no-store'], self::register_cl => self::result(201, [], self::register_cl`
+- 184 ArrayItemRemoval: `self::result(201, ['Cache-Control' => 'no-store'], self::register_cl => self::result(201, [], self::register_cl`
+- 314 PublicVisibility: `public static function bui => protected static function bui`
+- 314 PublicVisibility: `public static function bui => protected static function bui`
+- 315 LogicalAnd: `=> $value !== null && $value !== ''); => => $value !== null || $value !== '');`
+- 315 UnwrapArrayFilter: `$params = array_filter($params, static fn($value) => $value !== null && $value !== ''); => $params = $params;`
+- 315 LogicalAnd: `=> $value !== null && $value !== ''); => => $value !== null || $value !== '');`
+- 315 UnwrapArrayFilter: `$params = array_filter($params, static fn($value) => $value !== null && $value !== ''); => $params = $params;`
+
+## Plugin/src/local_coursepilot/classes/observer.php (8 überlebt, 8 offen)
+
+- 41 CastInt: `ion_writer::capture((int) $event->objectid, (i => ion_writer::capture($event->objectid, (i`
+- 41 CastInt: `) $event->objectid, (int) $event->userid); => ) $event->objectid, $event->userid);`
+- 51 CastInt: `::capture_on_update((int) $event->objectid, (i => ::capture_on_update($event->objectid, (i`
+- 51 CastInt: `) $event->objectid, (int) $event->userid); => ) $event->objectid, $event->userid);`
+- 63 CastInt: `retention::purge_cm((int) $event->objectid); => retention::purge_cm($event->objectid);`
+- 75 CastInt: `ntion::purge_course((int) $event->objectid); => ntion::purge_course($event->objectid);`
+- 91 CastInt: `$cmid = (int) $event->get_context( => $cmid = $event->get_context(`
+- 92 CastInt: `re_on_update($cmid, (int) $event->userid); => re_on_update($cmid, $event->userid);`
+
+## Plugin/src/local_coursepilot/classes/output/admin_connections_page.php (22 überlebt, 22 offen)
+
+- 43 FunctionCallRemoval: `require_sesskey(); => `
+- 48 FunctionCallRemoval: `require_sesskey(); => `
+- 67 CastInt: `_location::describe((int) $token->userid); => _location::describe($token->userid);`
+- 68 UnwrapArrayValues: `lines = array_merge(array_values($storagelocation['targets']), $storagelocation[' => lines = array_merge($storagelocation['targets'], $storagelocation['`
+- 68 UnwrapArrayMerge: `$lines = array_merge(array_values($storagelocation['targets']), $storagelocation['markers']); => $lines = array_values($storagelocation['targets']);`
+- 71 Concat: `ws[] = ['person' => fullname($token) . ' (' . $token->email . ' => ws[] = ['person' => ' (' . fullname($token) . $token->email . '`
+- 71 ConcatOperandRemoval: `fullname($token) . ' (' . $token->email . ')', => fullname($token) . $token->email . ')',`
+- 71 Concat: `fullname($token) . ' (' . $token->email . ')', 'clientname' => fullname($token) . $token->email . ' (' . ')', 'clientname'`
+- 71 Concat: `me($token) . ' (' . $token->email . ')', 'clientname' => $t => me($token) . ' (' . ')' . $token->email, 'clientname' => $t`
+- 71 ConcatOperandRemoval: `' (' . $token->email . ')', 'clientname' => $t => ' (' . $token->email, 'clientname' => $t`
+- 72 Ternary: `$token->clientname ?: $token->clientid, 'since' => userdat => $token->clientname ? $token->clientid : $token->clientname, 'since' => userdat`
+- 73 ArrayItem: `->clientid, 'since' => userdate($token->t => ->clientid, 'since' > userdate($token->t`
+- 74 ArrayItem: `created), 'expires' => userdate($token->e => created), 'expires' > userdate($token->e`
+- 75 ArrayItemRemoval: `g $line): array => ['text' => $line], $lines), 'revokeu => g $line): array => [], $lines), 'revokeu`
+- 75 UnwrapArrayMap: `gelocationlines' => array_map(static fn(string $line): array => ['text' => $line], $lines), 'revokeurl' => (ne => gelocationlines' => $lines, 'revokeurl' => (ne`
+- 78 ArrayItem: `oken->id, 'sesskey' => sesskey()]))->out( => oken->id, 'sesskey' > sesskey()]))->out(`
+- 79 FalseValue: `> sesskey()]))->out(false)]; => > sesskey()]))->out(true)];`
+- 86 FalseValue: `ections.php'))->out(false), 'sesskey' => ses => ections.php'))->out(true), 'sesskey' => ses`
+- 86 ArrayItem: `ows, 'revokeallurl' => (new \moodle_url(' => ows, 'revokeallurl' > (new \moodle_url('`
+- 87 ArrayItem: `t(false), 'sesskey' => sesskey(), 'revoke => t(false), 'sesskey' > sesskey(), 'revoke`
+- 88 Concat: `'return confirm(' . json_encode(get_string('connectionrevokeallconfirm', 'local_coursepilot')) . ');']; => 'return confirm(' . ');' . json_encode(get_string('connectionrevokeallconfirm', 'local_course`
+- 88 ConcatOperandRemoval: `local_coursepilot')) . ');']; => local_coursepilot'))];`
+
+## Plugin/src/local_coursepilot/classes/output/authorize_page.php (45 überlebt, 45 offen)
+
+- 43 MethodCallRemoval: `\local_coursepilot\remote_access::require_granted(); => `
+- 51 MethodCallRemoval: `$PAGE->set_title($title); => `
+- 54 FunctionCallRemoval: `require_sesskey(); => `
+- 62 FunctionCallRemoval: `require_sesskey(); => `
+- 67 CastInt: `arams['client_id'], (int) $USER->id, $params[' => arams['client_id'], $USER->id, $params['`
+- 78 ArrayItemRemoval: `ay_merge($params, ['state' => $state, 'oauthflow' => 1])); => ay_merge($params, ['oauthflow' => 1]));`
+- 78 UnwrapArrayMerge: `ion_selection.php', array_merge($params, ['state' => $state, 'oauthflow' => 1])); => ion_selection.php', ['state' => $state, 'oauthflow' => 1]);`
+- 107 CastBool: `allowpersonaldata = (bool) get_config('local_co => allowpersonaldata = get_config('local_co`
+- 113 FalseValue: `onselectionurl->out(false), 'formurl' => $fo => onselectionurl->out(true), 'formurl' => $fo`
+- 114 FalseValue: `l' => $formurl->out(false), 'hiddenfields' = => l' => $formurl->out(true), 'hiddenfields' =`
+- 114 ArrayItem: `t(false), 'formurl' => $formurl->out(fals => t(false), 'formurl' > $formurl->out(fals`
+- 116 ArrayItem: `$state), 'sesskey' => sesskey(), 'action => $state), 'sesskey' > sesskey(), 'action`
+- 118 ArrayItem: `=> 'allow', 'label' => get_string('consen => => 'allow', 'label' > get_string('consen`
+- 119 ArrayItem: `=> 'deny', 'label' => get_string('consen => => 'deny', 'label' > get_string('consen`
+- 132 Concat: `return get_string('consentintro', 'local_coursepilot', $clientname) . '<br><br>' . get_string('conse => return '<br><br>' . get_string('consentintro', 'local_coursepilot', $clientname) . get_string('c`
+- 132 ConcatOperandRemoval: `ot', $clientname) . '<br><br>' . get_string('consentg => ot', $clientname) . get_string('consentg`
+- 132 Concat: `ot', $clientname) . '<br><br>' . get_string('consentgranted', 'local_coursepilot') . '<br>' . get_stri => ot', $clientname) . get_string('consentgranted', 'local_coursepilot') . '<br><br>' . '<br>' . `
+- 132 ConcatOperandRemoval: `ame) . '<br><br>' . get_string('consentgranted', 'local_coursepilot') . '<br>' . get_string( => ame) . '<br><br>' . '<br>' . get_string(`
+- 132 Concat: `ame) . '<br><br>' . get_string('consentgranted', 'local_coursepilot') . '<br>' . get_string('conse => ame) . '<br><br>' . '<br>' . get_string('consentgranted', 'local_coursepilot') . get_string('conse`
+- 132 ConcatOperandRemoval: `cal_coursepilot') . '<br>' . get_string('consentd => cal_coursepilot') . get_string('consentd`
+- 132 Concat: `cal_coursepilot') . '<br>' . get_string('consentdenied', 'local_coursepilot') . '<br><br>' . get_ => cal_coursepilot') . get_string('consentdenied', 'local_coursepilot') . '<br>' . '<br><br>' . get_`
+- 132 ConcatOperandRemoval: `epilot') . '<br>' . get_string('consentdenied', 'local_coursepilot') . '<br><br>' . get_str => epilot') . '<br>' . '<br><br>' . get_str`
+- 132 Concat: `epilot') . '<br>' . get_string('consentdenied', 'local_coursepilot') . '<br><br>' . get_string('conse => epilot') . '<br>' . '<br><br>' . get_string('consentdenied', 'local_coursepilot') . get_string(`
+- 132 ConcatOperandRemoval: `cal_coursepilot') . '<br><br>' . get_string('consentt => cal_coursepilot') . get_string('consentt`
+- 132 Concat: `cal_coursepilot') . '<br><br>' . get_string('consenttransfer', 'local_coursepilot') . '<br><br>' . ($al => cal_coursepilot') . get_string('consenttransfer', 'local_coursepilot') . '<br><br>' . '<br><b`
+- 132 ConcatOperandRemoval: `ot') . '<br><br>' . get_string('consenttransfer', 'local_coursepilot') . '<br><br>' . ($allow => ot') . '<br><br>' . '<br><br>' . ($allow`
+- 132 Concat: `ot') . '<br><br>' . get_string('consenttransfer', 'local_coursepilot') . '<br><br>' . ($allowpersonalda => ot') . '<br><br>' . '<br><br>' . get_string('consenttransfer', 'local_coursepilot') . ($allow`
+- 132 ConcatOperandRemoval: `cal_coursepilot') . '<br><br>' . ($allowpersonaldata => cal_coursepilot') . ($allowpersonaldata`
+- 132 Concat: `cal_coursepilot') . '<br><br>' . ($allowpersonaldata ? get_string('consentpersonaldataon', 'local_coursepilot') : get_string('consentpersonaldataoff', 'local_coursepilot')) . '<br><br>' . get_ => cal_`
+- 132 Concat: `ot') . '<br><br>' . ($allowpersonaldata ? get_string('consentpersonaldataon', 'local_coursepilot') : get_string('consentpersonaldataoff', 'local_coursepilot')) . '<br><br>' . get_string('conse => ot')`
+- 132 ConcatOperandRemoval: `al_coursepilot')) . '<br><br>' . get_string('consenta => al_coursepilot')) . get_string('consenta`
+- 132 Concat: `al_coursepilot')) . '<br><br>' . get_string('consentabbreviate', 'local_coursepilot') . '<br><br>' . get_ => al_coursepilot')) . get_string('consentabbreviate', 'local_coursepilot') . '<br><br>' . '<b`
+- 132 ConcatOperandRemoval: `t')) . '<br><br>' . get_string('consentabbreviate', 'local_coursepilot') . '<br><br>' . get_str => t')) . '<br><br>' . '<br><br>' . get_str`
+- 132 Concat: `t')) . '<br><br>' . get_string('consentabbreviate', 'local_coursepilot') . '<br><br>' . get_string('conse => t')) . '<br><br>' . '<br><br>' . get_string('consentabbreviate', 'local_coursepilot') . get`
+- 132 ConcatOperandRemoval: `cal_coursepilot') . '<br><br>' . get_string('consentr => cal_coursepilot') . get_string('consentr`
+- 132 Concat: `cal_coursepilot') . '<br><br>' . get_string('consentrevoke', 'local_coursepilot'); => cal_coursepilot') . get_string('consentrevoke', 'local_coursepilot') . '<br><br>';`
+- 132 ConcatOperandRemoval: `pilot') . '<br><br>' . get_string('consentrevoke', 'local_coursepilot'); => pilot') . '<br><br>';`
+- 152 Identical: `urrentkey = $target === 'context_area' ? => urrentkey = $target !== 'context_area' ?`
+- 152 Ternary: `' ? 'consentlocationcontextareacurrent' : 'consentlocationmaterialstorecurrent'; => ' ? 'consentlocationmaterialstorecurrent' : 'consentlocationcontextareacurrent';`
+- 155 Concat: `$text = get_string($currentkey, 'local_coursepilot', $location['display']) . ' — ' . location_selectio => $text = ' — ' . get_string($currentkey, 'local_coursepilot', $location['display']) . location_`
+- 155 ConcatOperandRemoval: `$text = get_string($currentkey, 'local_coursepilot', $location['display']) . ' — ' . location_sel => $text = ' — ' . location_sel`
+- 155 ConcatOperandRemoval: `ation['display']) . ' — ' . location_selection:: => ation['display']) . location_selection::`
+- 155 Concat: `ation['display']) . ' — ' . location_selection::allowed_label($location); => ation['display']) . location_selection::allowed_label($location) . ' — ';`
+- 155 ConcatOperandRemoval: `['display']) . ' — ' . location_selection::allowed_label($location); => ['display']) . ' — ';`
+- 157 ArrayItemRemoval: `return ['text' => $text]; => return [];`
+
+## Plugin/src/local_coursepilot/classes/output/connections_page.php (9 überlebt, 9 offen)
+
+- 42 CastInt: `ke_token($revokeid, (int) $USER->id); => ke_token($revokeid, $USER->id);`
+- 46 CastInt: `ive_tokens_for_user((int) $USER->id), location => ive_tokens_for_user($USER->id), location`
+- 65 ArrayItem: `->clientid, 'since' => userdate($token->t => ->clientid, 'since' > userdate($token->t`
+- 66 ArrayItem: `created), 'expires' => userdate($token->e => created), 'expires' > userdate($token->e`
+- 69 ArrayItem: `oken->id, 'sesskey' => sesskey()]))->out( => oken->id, 'sesskey' > sesskey()]))->out(`
+- 70 FalseValue: `> sesskey()]))->out(false)]; => > sesskey()]))->out(true)];`
+- 74 ArrayItemRemoval: `return ['currentlocations' => $currentlocations, 'locationselectionurl => return ['locationselectionurl`
+- 76 FalseValue: `onselectionurl->out(false), 'empty' => $rows => onselectionurl->out(true), 'empty' => $rows`
+- 76 ArrayItem: `cationselectionurl' => $locationselection => cationselectionurl' > $locationselection`
+
+## Plugin/src/local_coursepilot/classes/output/history_page.php (30 überlebt, 30 offen)
+
+- 49 LogicalAnd: `version', $context) && has_capability('moo => version', $context) || has_capability('moo`
+- 55 ArrayItem: `history.php', ['id' => $course->id]))); => history.php', ['id' > $course->id])));`
+- 55 ArrayItemRemoval: `ilot/history.php', ['id' => $course->id]))); => ilot/history.php', [])));`
+- 58 CastInt: `lf::activities_data((int) $course->id)); => lf::activities_data($course->id));`
+- 72 FalseValue: `om_id('', $cmid, 0, false, MUST_EXIST); => om_id('', $cmid, 0, true, MUST_EXIST);`
+- 75 ArrayItemRemoval: `ilot/history.php', ['cmid' => $cmid]); => ilot/history.php', []);`
+- 79 ArrayItemRemoval: `ilot/history.php', ['id' => $courseid]); => ilot/history.php', []);`
+- 83 FunctionCallRemoval: `require_login($course, true, $cm); => `
+- 85 MethodCallRemoval: `$PAGE->set_context($context); => `
+- 86 MethodCallRemoval: `$PAGE->set_url($url); => `
+- 87 MethodCallRemoval: `$PAGE->set_pagelayout('incourse'); => `
+- 88 MethodCallRemoval: `$PAGE->set_title(get_string('historytitle', 'local_coursepilot')); => `
+- 89 MethodCallRemoval: `$PAGE->set_heading($course->fullname); => `
+- 105 ArrayItemRemoval: `ilot/history.php', ['cmid' => $cmid]); => ilot/history.php', []);`
+- 109 ArrayItemRemoval: `lot/history.php', ['cmid' => $cmid, 'restore' => $version => lot/history.php', ['restore' => $version`
+- 110 DecrementInteger: `ion, 'confirmed' => 1, 'sesskey' => sessk => ion, 'confirmed' => 0, 'sesskey' => sessk`
+- 110 IncrementInteger: `ion, 'confirmed' => 1, 'sesskey' => sessk => ion, 'confirmed' => 2, 'sesskey' => sessk`
+- 110 ArrayItem: `ed' => 1, 'sesskey' => sesskey()]), cance => ed' => 1, 'sesskey' > sesskey()]), cance`
+- 141 ArrayItemRemoval: `$rows[] = ['version' => $row['version'], 'user' => $row['user' => $rows[] = ['user' => $row['user'`
+- 144 ArrayItem: `row['user'], 'time' => userdate($row['tim => row['user'], 'time' > userdate($row['tim`
+- 148 ArrayItemRemoval: `lot/history.php', ['cmid' => $cmid, 'restore' => $row['ve => lot/history.php', ['restore' => $row['ve`
+- 151 FalseValue: `['version']]))->out(false) : null]; => ['version']]))->out(true) : null];`
+- 156 ArrayItemRemoval: `return ['activityname' => format_string($activityname), 'isquiz' => $data['mo => return ['isquiz' => $data['mo`
+- 157 ArrayItem: `urn ['activityname' => format_string($act => urn ['activityname' > format_string($act`
+- 158 Identical: `=> $data['modname'] === 'quiz', 'rows' => => => $data['modname'] !== 'quiz', 'rows' =>`
+- 161 FalseValue: `l' => $listurl->out(false)]; => l' => $listurl->out(true)];`
+- 161 ArrayItem: `notice'], 'listurl' => $listurl->out(fals => notice'], 'listurl' > $listurl->out(fals`
+- 179 ArrayItemRemoval: `ilot/history.php', ['cmid' => $activity['cmid']]))->out(false)]; => ilot/history.php', []))->out(false)];`
+- 179 ArrayItem: `odname'], 'viewurl' => (new \moodle_url(' => odname'], 'viewurl' > (new \moodle_url('`
+- 181 FalseValue: `ity['cmid']]))->out(false)]; => ity['cmid']]))->out(true)];`
+
+## Plugin/src/local_coursepilot/classes/output/http_endpoint.php (31 überlebt, 31 offen)
+
+- 38 MethodCallRemoval: `\local_coursepilot\remote_access::require_granted(); => `
+- 39 ArrayItemRemoval: `$headers = ['Content-Type' => 'application/json; charset=utf-8', 'Cache-Control' => 'no => $headers = ['Cache-Control' => 'no`
+- 42 TrueValue: `$body = ['ok' => true, 'state' => \local => $body = ['ok' => false, 'state' => \local`
+- 42 CastInt: `lection::page_state((int) $USER->id, $result)] => lection::page_state($USER->id, $result)]`
+- 42 ArrayItemRemoval: `$body = ['ok' => true, 'state' => \local_cou => $body = ['state' => \local_cou`
+- 43 CastString: `onse(200, $headers, (string) json_encode($body)); => onse(200, $headers, json_encode($body));`
+- 45 CastString: `onse(400, $headers, (string) json_encode(['ok' => => onse(400, $headers, json_encode(['ok' =>`
+- 63 MethodCallRemoval: `\local_coursepilot\access_log::log_failure('workbenchticketinvalid', $toolname); => `
+- 65 ArrayItem: `'body' => ['error' => get_string('workbe => 'body' => ['error' > get_string('workbe`
+- 65 ArrayItemRemoval: `' => [], 'body' => ['error' => get_string('workbenchticketinvalid', 'local_coursepilot')]], 0); => ' => [], 'body' => []], 0);`
+- 65 DecrementInteger: `al_coursepilot')]], 0); => al_coursepilot')]], -1);`
+- 65 IncrementInteger: `al_coursepilot')]], 0); => al_coursepilot')]], 1);`
+- 70 MethodCallRemoval: `\local_coursepilot\access_log::log_failure($e->errorcode, $toolname, $e->path); => `
+- 71 ArrayItem: `'body' => ['error' => $e->getMessage()]] => 'body' => ['error' > $e->getMessage()]]`
+- 71 ArrayItemRemoval: `' => [], 'body' => ['error' => $e->getMessage()]], 0); => ' => [], 'body' => []], 0);`
+- 71 DecrementInteger: `$e->getMessage()]], 0); => $e->getMessage()]], -1);`
+- 71 IncrementInteger: `$e->getMessage()]], 0); => $e->getMessage()]], 1);`
+- 73 FalseValue: `_success($toolname, false, $delivery['path'] => _success($toolname, true, $delivery['path']`
+- 73 MethodCallRemoval: `\local_coursepilot\access_log::log_success($toolname, false, $delivery['path'], $delivery['userid']); => `
+- 74 ArrayItemRemoval: `onse(200, ['Content-Type' => $delivery['mimetype'], 'Content-Length' => (string) => onse(200, ['Content-Length' => (string)`
+- 112 ArrayItemRemoval: `erver, $headers), ['origin' => $server['HTTP_ORIGIN'] ?? null, 'pathinfo' => $server => erver, $headers), ['pathinfo' => $server`
+- 114 Coalesce: `null, 'pathinfo' => $server['PATH_INFO'] ?? '', 'method' => $serve => null, 'pathinfo' => '' ?? $server['PATH_INFO'], 'method' => $serve`
+- 115 Coalesce: `?? '', 'method' => $server['REQUEST_METHOD'] ?? 'POST', 'protocolversion' => ?? '', 'method' => 'POST' ?? $server['REQUEST_METHOD'], 'protocolversion'`
+- 118 BitwiseOr: `N_UNESCAPED_SLASHES | JSON_UNESCAPED_UNIC => N_UNESCAPED_SLASHES & JSON_UNESCAPED_UNIC`
+- 118 BitwiseOr: `se::json($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_S => se::json($response, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) & JSON_INVALID_UTF8_S`
+- 127 Ternary: `('getallheaders') ? getallheaders() : []; => ('getallheaders') ? [] : getallheaders();`
+- 143 Break_: `break; => continue;`
+- 147 UnwrapTrim: `Bearer\s+(\S+)$/i', trim($header), $matches)) { => Bearer\s+(\S+)$/i', $header, $matches)) {`
+- 147 PregMatchRemoveCaret: `if (preg_match('/^Bearer\s+(\S+)$/i', => if (preg_match('/Bearer\s+(\S+)$/i',`
+- 147 PregMatchRemoveDollar: `ch('/^Bearer\s+(\S+)$/i', trim($header), => ch('/^Bearer\s+(\S+)/i', trim($header),`
+- 147 PregMatchRemoveFlags: `('/^Bearer\s+(\S+)$/i', trim($header), $m => ('/^Bearer\s+(\S+)$/', trim($header), $m`
+
+## Plugin/src/local_coursepilot/classes/output/http_response.php (8 überlebt, 8 offen)
+
+- 56 CastString: `$body = (string) json_encode($respons => $body = json_encode($respons`
+- 66 Foreach_: `foreach ($this->headers as $name => $value) => foreach ([] as $name => $value)`
+- 67 Concat: `header($name . ': ' . $value); => header(': ' . $name . $value);`
+- 67 ConcatOperandRemoval: `header($name . ': ' . $value); => header(': ' . $value);`
+- 67 ConcatOperandRemoval: `header($name . ': ' . $value); => header($name . $value);`
+- 67 Concat: `header($name . ': ' . $value); => header($name . $value . ': ');`
+- 67 ConcatOperandRemoval: `header($name . ': ' . $value); => header($name . ': ');`
+- 67 FunctionCallRemoval: `header($name . ': ' . $value); => `
+
+## Plugin/src/local_coursepilot/classes/output/location_selection_page.php (20 überlebt, 20 offen)
+
+- 41 MethodCallRemoval: `\local_coursepilot\remote_access::require_granted(); => `
+- 47 CastInt: `ection::setup_state((int) $USER->id)['state'] => ection::setup_state($USER->id)['state']`
+- 47 Identical: `$USER->id)['state'] === location_selectio => $USER->id)['state'] !== location_selectio`
+- 48 ArrayItemRemoval: `election', 'init', [\local_coursepilot\output\location_selection::amd_configuration($USER)]); => election', 'init', []);`
+- 48 MethodCallRemoval: `$PAGE->requires->js_call_amd('local_coursepilot/location_selection', 'init', [\local_coursepilot\output\location_selection::amd_configuration($USER)]); => `
+- 98 FunctionCallRemoval: `require_sesskey(); => `
+- 122 UnwrapArrayMap: `lot', implode(', ', array_map(static fn(string $target): string => get_string('locationselectiontab' . str_replace('_', '', $target), 'local_coursepilot'), $changed)))]; => lot', implode(', ', $change`
+- 124 UnwrapStrReplace: `tionselectiontab' . str_replace('_', '', $target), 'local_coursepilot => tionselectiontab' . $target, 'local_coursepilot`
+- 124 Concat: `tring => get_string('locationselectiontab' . str_replace('_', '', $target), 'local_coursepilot => tring => get_string(str_replace('_', '', $target) . 'locationselectiontab', 'local_coursepilot`
+- 124 ConcatOperandRemoval: `tring => get_string('locationselectiontab' . str_replace('_', '', => tring => get_string(str_replace('_', '',`
+- 124 ConcatOperandRemoval: `ocationselectiontab' . str_replace('_', '', $target), 'local_coursepilot => ocationselectiontab', 'local_coursepilot`
+- 150 DecrementInteger: `et . '_instanceid', 0, PARAM_INT), 'path' => et . '_instanceid', -1, PARAM_INT), 'path'`
+- 150 IncrementInteger: `et . '_instanceid', 0, PARAM_INT), 'path' => et . '_instanceid', 1, PARAM_INT), 'path'`
+- 152 Concat: `ool) optional_param($target . '_confirmed', 0, PARAM_BOOL)]; => ool) optional_param('_confirmed' . $target, 0, PARAM_BOOL)];`
+- 152 ConcatOperandRemoval: `ool) optional_param($target . '_confirmed', 0, PAR => ool) optional_param('_confirmed', 0, PAR`
+- 152 ConcatOperandRemoval: `tional_param($target . '_confirmed', 0, PARAM_BOOL)]; => tional_param($target, 0, PARAM_BOOL)];`
+- 152 DecrementInteger: `get . '_confirmed', 0, PARAM_BOOL)]; => get . '_confirmed', -1, PARAM_BOOL)];`
+- 152 IncrementInteger: `get . '_confirmed', 0, PARAM_BOOL)]; => get . '_confirmed', 1, PARAM_BOOL)];`
+- 152 CastBool: `ED), 'confirmed' => (bool) optional_param($targ => ED), 'confirmed' => optional_param($targ`
+- 158 ArrayOneItem: `return $selection; => return count($selection) > 1 ? array_slice($selection, 0, 1, true) : $selection;`
+
+## Plugin/src/local_coursepilot/classes/output/surface_page.php (11 überlebt, 11 offen)
+
+- 45 UnwrapArrayMap: `[], 'violations' => array_map(static fn(array $violation): array => ['type' => $violation['type'], 'name' => $violation['name'], 'detail' => $violation['detail']], $violations), 'allowedtools' => => [`
+- 53 UnwrapArrayMap: `=> self::list_items(array_map(static fn(string $requirement): string => get_string('surfacereq' . $requirement, 'local_coursepilot'), instance_check::REQUIREMENTS)), 'selfcheckurltext => => self::list`
+- 54 Concat: `tring => get_string('surfacereq' . $requirement, 'local_coursepilot => tring => get_string($requirement . 'surfacereq', 'local_coursepilot`
+- 54 ConcatOperandRemoval: `tring => get_string('surfacereq' . $requirement, 'local => tring => get_string($requirement, 'local`
+- 54 ConcatOperandRemoval: `_string('surfacereq' . $requirement, 'local_coursepilot => _string('surfacereq', 'local_coursepilot`
+- 57 ArrayItem: `'selfcheckurltext' => get_string('selfch => 'selfcheckurltext' > get_string('selfch`
+- 75 Foreach_: `foreach (privacy_surface::allowed_tools() as $tool => $functi => foreach ([] as $tool => $functi`
+- 76 ArrayItemRemoval: `$rows[] = ['tool' => $tool, 'function' => $functi => $rows[] = ['function' => $functi`
+- 78 ArrayOneItem: `return $rows; => return count($rows) > 1 ? array_slice($rows, 0, 1, true) : $rows;`
+- 88 ArrayItemRemoval: `g $item): array => ['text' => $item], $items); => g $item): array => [], $items);`
+- 88 UnwrapArrayMap: `return array_map(static fn(string $item): array => ['text' => $item], $items); => return $items;`
+
+## Plugin/src/local_coursepilot/classes/pending_write_notice.php (20 überlebt, 20 offen)
+
+- 109 DecrementInteger: `try['course_id'] ?? 0, => try['course_id'] ?? -1,`
+- 109 IncrementInteger: `try['course_id'] ?? 0, => try['course_id'] ?? 1,`
+- 115 Spaceship: `array $b): int => $a['timestamp'] <=> $b['timestamp']); => array $b): int => $b['timestamp'] <=> $a['timestamp']);`
+- 115 FunctionCallRemoval: `usort($entriesforpath, static fn(array $a, array $b): int => $a['timestamp'] <=> $b['timestamp']); => `
+- 118 IncrementInteger: `nt => $a['entries'][0]['timestamp'] <=> $ => nt => $a['entries'][1]['timestamp'] <=> $`
+- 118 IncrementInteger: `] <=> $b['entries'][0]['timestamp']); => ] <=> $b['entries'][1]['timestamp']);`
+- 118 Spaceship: `array $b): int => $a['entries'][0]['timestamp'] <=> $b['entries'][0]['time => array $b): int => $b['entries'][0]['timestamp'] <=> $a['entries'][0]['time`
+- 118 FunctionCallRemoval: `usort($groups, static fn(array $a, array $b): int => $a['entries'][0]['timestamp'] <=> $b['entries'][0]['timestamp']); => `
+- 119 ArrayOneItem: `return $groups; => return count($groups) > 1 ? array_slice($groups, 0, 1, true) : $groups;`
+- 152 LogicalAnd: `is_array($decoded) && !array_is_list($dec => is_array($decoded) || !array_is_list($dec`
+- 163 BitwiseOr: `, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLAS => , JSON_PRETTY_PRINT & JSON_UNESCAPED_SLAS`
+- 163 BitwiseOr: `on_encode($entries, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNIC => on_encode($entries, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) & JSON_UNESCAPED_UNIC`
+- 176 DecrementInteger: `g->get_filesize() : 0; => g->get_filesize() : -1;`
+- 176 IncrementInteger: `g->get_filesize() : 0; => g->get_filesize() : 1;`
+- 178 Minus: `&& strlen($content) - $oldsize > $remaini => && strlen($content) + $oldsize > $remaini`
+- 178 GreaterThan: `ontent) - $oldsize > $remaining) { => ontent) - $oldsize >= $remaining) {`
+- 196 DoWhile: `} while (isset($existing[$identifier])); => } while (false);`
+- 197 DecrementInteger: `upper(random_string(8)); => upper(random_string(7));`
+- 197 IncrementInteger: `upper(random_string(8)); => upper(random_string(9));`
+- 197 UnwrapStrToUpper: `$identifier = strtoupper(random_string(8)); => $identifier = random_string(8);`
+
+## Plugin/src/local_coursepilot/classes/pending_write_translation.php (6 überlebt, 6 offen)
+
+- 88 ArrayItemRemoval: `ot', '', (object) ['path' => $clientpath, 'operation' => self:: => ot', '', (object) ['operation' => self::`
+- 88 CastObject: `l_coursepilot', '', (object) ['path' => $clientpa => l_coursepilot', '', ['path' => $clientpa`
+- 94 CastObject: `l_coursepilot', '', (object) ['path' => $clientpa => l_coursepilot', '', ['path' => $clientpa`
+- 110 PublicVisibility: `public static function ope => protected static function ope`
+- 111 Concat: `return get_string('pendingoperation' . $operation, 'local_coursepilot => return get_string($operation . 'pendingoperation', 'local_coursepilot`
+- 111 ConcatOperandRemoval: `return get_string('pendingoperation' . $operation, 'local_c => return get_string($operation, 'local_c`
+
+## Plugin/src/local_coursepilot/classes/personal_data.php (4 überlebt, 4 offen)
+
+- 41 CastBool: `return (bool) get_config('local_co => return get_config('local_co`
+- 52 PregMatchRemoveCaret: `if (!preg_match('/^---\s*\n(.*?)\n---\s => if (!preg_match('/---\s*\n(.*?)\n---\s`
+- 55 DecrementInteger: `*true\b/', $matches[1]); => *true\b/', $matches[0]);`
+- 55 CastBool: `return (bool) preg_match('/persone => return preg_match('/persone`
+
+## Plugin/src/local_coursepilot/classes/personal_data_hosts.php (5 überlebt, 5 offen)
+
+- 65 CastString: `L && !self::allowed((string) ($location->fingerprint['server'] ?? ''))) { => L && !self::allowed($location->fingerprint['server'] ?? '')) {`
+- 76 PublicVisibility: `public static function con => protected static function con`
+- 77 CastString: `return self::parse((string) (get_config('local_coursepilot', 'personaldatahosts') ?: '')); => return self::parse(get_config('local_coursepilot', 'personaldatahosts') ?: '');`
+- 120 UnwrapTrim: `return strtolower(trim($value)); => return strtolower($value);`
+- 120 UnwrapStrToLower: `return strtolower(trim($value)); => return trim($value);`
+
+## Plugin/src/local_coursepilot/classes/pointer_location.php (35 überlebt, 35 offen)
+
+- 99 CastString: `lf::normalised_path((string) $this->path, $subpat => lf::normalised_path($this->path, $subpat`
+- 99 ConcatOperandRemoval: `return 'moodle|' . self::normalised_pat => return self::normalised_pat`
+- 101 Coalesce: `trtolower((string) ($this->fingerprint['server'] ?? '')); => trtolower((string) ('' ?? $this->fingerprint['server']));`
+- 101 CastString: `server = strtolower((string) ($this->fingerprint['server'] ?? '')); => server = strtolower($this->fingerprint['server'] ?? '');`
+- 101 UnwrapStrToLower: `$server = strtolower((string) ($this->fingerprint['server'] ?? '')); => $server = (string) ($this->fingerprint['server'] ?? '');`
+- 102 Coalesce: `account = (string) ($this->fingerprint['account'] ?? ''); => account = (string) ('' ?? $this->fingerprint['account']);`
+- 102 CastString: `$account = (string) ($this->fingerprint['account'] ?? ''); => $account = $this->fingerprint['account'] ?? '';`
+- 103 CastString: `$basepath = (string) ($this->fingerprint['basepath'] ?? ''); => $basepath = $this->fingerprint['basepath'] ?? '';`
+- 104 UnwrapTrim: `$effectivepath = trim($basepath, '/') . '/' . trim((strin => $effectivepath = $basepath . '/' . trim((strin`
+- 104 CastString: `, '/') . '/' . trim((string) $this->relativepath, => , '/') . '/' . trim($this->relativepath,`
+- 104 UnwrapTrim: `epath, '/') . '/' . trim((string) $this->relativepath, '/'); => epath, '/') . '/' . (string) $this->relativepath;`
+- 104 ConcatOperandRemoval: `basepath, '/') . '/' . trim((string) $this->relativepath, '/'); => basepath, '/') . '/';`
+- 105 Concat: `return 'external|' . $server . '|' . $account . => return $server . 'external|' . '|' . $account .`
+- 105 ConcatOperandRemoval: `return 'external|' . $server . '|' . $acc => return $server . '|' . $acc`
+- 105 ConcatOperandRemoval: `eturn 'external|' . $server . '|' . $account . '|' => eturn 'external|' . '|' . $account . '|'`
+- 105 Concat: `eturn 'external|' . $server . '|' . $account . '|' . => eturn 'external|' . '|' . $server . $account . '|' .`
+- 105 ConcatOperandRemoval: `ernal|' . $server . '|' . $account . '|' . sel => ernal|' . $server . $account . '|' . sel`
+- 105 Concat: `ernal|' . $server . '|' . $account . '|' . self::norma => ernal|' . $server . $account . '|' . '|' . self::norma`
+- 105 ConcatOperandRemoval: `' . $server . '|' . $account . '|' . self::normalis => ' . $server . '|' . '|' . self::normalis`
+- 105 Concat: `' . $server . '|' . $account . '|' . self::normalised_ => ' . $server . '|' . '|' . $account . self::normalised_`
+- 105 ConcatOperandRemoval: `. '|' . $account . '|' . self::normalised_pat => . '|' . $account . self::normalised_pat`
+- 105 Concat: `. '|' . $account . '|' . self::normalised_path($effectivepath, $subpath); => . '|' . $account . self::normalised_path($effectivepath, $subpath) . '|';`
+- 116 UnwrapTrim: `$combined = trim($base, '/') . ($subpath !== '' => $combined = $base . ($subpath !== ''`
+- 116 NotIdentical: `e, '/') . ($subpath !== '' ? '/' . trim($ => e, '/') . ($subpath === '' ? '/' . trim($`
+- 116 UnwrapTrim: `path !== '' ? '/' . trim($subpath, '/') : ''); => path !== '' ? '/' . $subpath : '');`
+- 116 Concat: `($subpath !== '' ? '/' . trim($subpath, '/') : ''); => ($subpath !== '' ? trim($subpath, '/') . '/' : '');`
+- 116 ConcatOperandRemoval: `($subpath !== '' ? '/' . trim($subpath, '/') => ($subpath !== '' ? trim($subpath, '/')`
+- 116 ConcatOperandRemoval: `ubpath !== '' ? '/' . trim($subpath, '/') : ''); => ubpath !== '' ? '/' : '');`
+- 116 Ternary: `($subpath !== '' ? '/' . trim($subpath, '/') : ''); => ($subpath !== '' ? '' : '/' . trim($subpath, '/'));`
+- 116 Concat: `$combined = trim($base, '/') . ($subpath !== '' ? '/' . trim($subpath, '/') : ''); => $combined = ($subpath !== '' ? '/' . trim($subpath, '/') : '') . trim($base, '/');`
+- 116 ConcatOperandRemoval: `d = trim($base, '/') . ($subpath !== '' ? '/' . trim($subpath, '/') : ''); => d = trim($base, '/');`
+- 117 UnwrapTrim: `$trimmed = trim($combined, '/'); => $trimmed = $combined;`
+- 118 ConcatOperandRemoval: `mmed === '' ? '/' : '/' . $trimmed . '/'; => mmed === '' ? '/' : $trimmed . '/';`
+- 118 Concat: `== '' ? '/' : '/' . $trimmed . '/'; => == '' ? '/' : '/' . '/' . $trimmed;`
+- 118 ConcatOperandRemoval: `'/' : '/' . $trimmed . '/'; => '/' : '/' . $trimmed;`
+
+## Plugin/src/local_coursepilot/classes/pointer_reader.php (1 überlebt, 1 offen)
+
+- 84 CastObject: `l_coursepilot', '', (object) [ => l_coursepilot', '', [`
+
+## Plugin/src/local_coursepilot/classes/pointer_writer.php (16 überlebt, 16 offen)
+
+- 193 CastString: `ntpath, $operation, (string) ($location->fingerprint['server'] ?? ''), $location->instanc => ntpath, $operation, $location->fingerprint['server'] ?? '', $location->instanc`
+- 226 Coalesce: `$host = (string) ($location->fingerprint['server'] ?? ''); => $host = (string) ('' ?? $location->fingerprint['server']);`
+- 226 CastString: `$host = (string) ($location->fingerprint['server'] ?? ''); => $host = $location->fingerprint['server'] ?? '';`
+- 229 Coalesce: `$host = (string) ($e->a->server ?? ''); => $host = (string) ('' ?? $e->a->server);`
+- 229 CastString: `$host = (string) ($e->a->server ?? ''); => $host = $e->a->server ?? '';`
+- 230 CastInt: `stanceid ?? null) ? (int) $e->a->instanceid : => stanceid ?? null) ? $e->a->instanceid :`
+- 230 Ternary: `stanceid ?? null) ? (int) $e->a->instanceid : null; => stanceid ?? null) ? null : (int) $e->a->instanceid;`
+- 283 PublicVisibility: `public static function rea => protected static function rea`
+- 284 Concat: `ONS[$errorclass] ?? 'error class "' . $errorclass . '"'; => ONS[$errorclass] ?? $errorclass . 'error class "' . '"';`
+- 284 ConcatOperandRemoval: `ONS[$errorclass] ?? 'error class "' . $errorclass . '"'; => ONS[$errorclass] ?? $errorclass . '"';`
+- 284 ConcatOperandRemoval: `? 'error class "' . $errorclass . '"'; => ? 'error class "' . '"';`
+- 284 Concat: `? 'error class "' . $errorclass . '"'; => ? 'error class "' . '"' . $errorclass;`
+- 284 ConcatOperandRemoval: `ass "' . $errorclass . '"'; => ass "' . $errorclass;`
+- 285 Concat: `return $reason . ' – ' . self::classify($e => return ' – ' . $reason . self::classify($e`
+- 285 ConcatOperandRemoval: `return $reason . ' – ' . self::classify($erro => return $reason . self::classify($erro`
+- 285 Concat: `return $reason . ' – ' . self::classify($errorclass); => return $reason . self::classify($errorclass) . ' – ';`
+
+## Plugin/src/local_coursepilot/classes/privacy/provider.php (83 überlebt, 83 offen)
+
+- 89 ArrayItemRemoval: `ilot_oauth_code', ['clientid' => 'privacy:metadata:oauth_code:clientid', 'userid' => 'privacy: => ilot_oauth_code', ['userid' => 'privacy:`
+- 89 MethodCallRemoval: `$collection->add_database_table('local_coursepilot_oauth_code', ['clientid' => 'privacy:metadata:oauth_code:clientid', 'userid' => 'privacy:metadata:oauth_code:userid', 'redirecturi' => 'privacy:metad`
+- 98 ArrayItemRemoval: `lot_oauth_grant', ['userid' => 'privacy:metadata:oauth_grant:userid', 'clientid' => 'privac => lot_oauth_grant', ['clientid' => 'privac`
+- 98 MethodCallRemoval: `$collection->add_database_table('local_coursepilot_oauth_grant', ['userid' => 'privacy:metadata:oauth_grant:userid', 'clientid' => 'privacy:metadata:oauth_grant:clientid', 'revoked' => 'privacy:metada`
+- 105 ArrayItemRemoval: `ot_oauth_token', ['connectionid' => 'privacy:metadata:oauth_token:connectionid', 'clientid' => 'privacy => ot_oauth_token', ['clientid' => 'privacy`
+- 105 MethodCallRemoval: `$collection->add_database_table('local_coursepilot_oauth_token', ['connectionid' => 'privacy:metadata:oauth_token:connectionid', 'clientid' => 'privacy:metadata:oauth_token:clientid', 'userid' => 'pri`
+- 115 MethodCallRemoval: `$collection->add_subsystem_link('core_files', [], 'privacy:metadata:core_files'); => `
+- 117 ArrayItemRemoval: `lot_cm_version', ['cmid' => 'privacy:metadata:cm_version:cmid', 'courseid' => 'privacy => lot_cm_version', ['courseid' => 'privacy`
+- 131 ArrayItemRemoval: `cm_version_file', ['versionid' => 'privacy:metadata:cm_version_file:versionid', 'fileid' => 'privacy: => cm_version_file', ['fileid' => 'privacy:`
+- 131 MethodCallRemoval: `// Both tables store file descriptions without userid. Still declare fields // rather than [] to avoid Moodle's missing-fields metadata warning. $collection->add_database_table('local_coursepilot_cm_v`
+- 136 ArrayItemRemoval: `sepilot_cm_file', ['pathnamehash' => 'privacy:metadata:cm_file:pathnamehash', 'contenthash' => 'pri => sepilot_cm_file', ['contenthash' => 'pri`
+- 136 MethodCallRemoval: `$collection->add_database_table('local_coursepilot_cm_file', ['pathnamehash' => 'privacy:metadata:cm_file:pathnamehash', 'contenthash' => 'privacy:metadata:cm_file:contenthash', 'filepath' => 'privacy`
+- 158 ArrayItemRemoval: `ot_context_mark', ['userid' => 'privacy:metadata:context_mark:userid', 'path' => 'privacy:me => ot_context_mark', ['path' => 'privacy:me`
+- 158 MethodCallRemoval: `// Marking memory (#493, Spec #486 §6): user ID and context-file client path. // See local_coursepilot\mark_memory. $collection->add_database_table('local_coursepilot_context_mark', ['userid' => 'priv`
+- 170 ArrayItemRemoval: `orkbench_ticket', ['userid' => 'privacy:metadata:workbench_ticket:userid', 'path' => 'privacy:me => orkbench_ticket', ['path' => 'privacy:me`
+- 170 MethodCallRemoval: `// External storage (#500, ADR 0021, Spec #486 §11) is outside Moodle's // export/deletion mechanisms. Pointer, pending note and workbench remain // in user/private and are covered by core user privac`
+- 193 ArrayItemRemoval: `pilot_oauth_code', ['userid' => $userid]) || $DB->record_ex => pilot_oauth_code', []) || $DB->record_ex`
+- 193 LogicalOr: `serid' => $userid]) || $DB->record_exists( => serid' => $userid]) && $DB->record_exists(`
+- 193 LogicalOr: `$hasoauthdata = $DB->record_exists('local_coursepilot_oauth_code', ['userid' => $userid]) || $DB->record_exists('local_coursepilot_oauth_token', ['userid' => $userid]) || $DB->record_exists( => $hasoa`
+- 194 ArrayItemRemoval: `ilot_oauth_token', ['userid' => $userid]) || $DB->record_ex => ilot_oauth_token', []) || $DB->record_ex`
+- 195 ArrayItemRemoval: `ilot_oauth_grant', ['userid' => $userid]) || $DB->record_ex => ilot_oauth_grant', []) || $DB->record_ex`
+- 196 ArrayItemRemoval: `workbench_ticket', ['userid' => $userid]); => workbench_ticket', []);`
+- 226 MethodCallRemoval: `$userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_oauth_code}', []); => `
+- 227 MethodCallRemoval: `$userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_oauth_token}', []); => `
+- 228 MethodCallRemoval: `$userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_oauth_grant}', []); => `
+- 229 MethodCallRemoval: `$userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_workbench_ticket}', []); => `
+- 237 InstanceOf_: `if ($context instanceof \context_module) { => if (true) {`
+- 257 ArrayItemRemoval: `lot_context_mark', ['userid' => $context->instanceid])) { => lot_context_mark', [])) {`
+- 269 LogicalNot: `if (!$file->is_directory( => if ($file->is_directory(`
+- 284 InstanceOf_: `if ($context instanceof \context_user && (int) $context-> => if (true && (int) $context->`
+- 284 LogicalAnd: `nceof \context_user && (int) $context->ins => nceof \context_user || (int) $context->ins`
+- 286 Continue_: `continue; => break;`
+- 318 FalseValue: `ext->instanceid, 0, false, MUST_EXIST)->modn => ext->instanceid, 0, true, MUST_EXIST)->modn`
+- 318 CastString: `$modname = (string) get_coursemodule_fro => $modname = get_coursemodule_fro`
+- 319 ArrayItemRemoval: `s => (object) ['filearea' => $file->filearea, 'filename' => $file->file => s => (object) ['filename' => $file->file`
+- 320 ArrayItem: `object) ['filearea' => $file->filearea, ' => object) ['filearea' > $file->filearea, '`
+- 326 ArrayItem: `->version, 'source' => $record->source, ' => ->version, 'source' > $record->source, '`
+- 327 ArrayItem: `ource, 'sourcecmid' => $record->sourcecmi => ource, 'sourcecmid' > $record->sourcecmi`
+- 329 CastInt: `tory::allowed_files((int) $record->id, $modnam => tory::allowed_files($record->id, $modnam`
+- 329 UnwrapArrayMap: `reated), 'files' => array_map($exportfile, version_history::allowed_files((int) $record->id, $modname))], array_values($re => reated), 'files' => version_history::allowed_files((int) $record->id, $mod`
+- 355 ArrayItemRemoval: `lot_context_mark', ['userid' => $userid]); => lot_context_mark', []);`
+- 356 UnwrapArrayMap: `portedmarks = array_map(static fn($record): \stdClass => (object) ['path' => $record->path, 'ismarked' => transform::yesno($record->ismarked)], array_values($markrecords)); => portedmarks = array_valu`
+- 378 ArrayItemRemoval: `pilot_oauth_code', ['userid' => $userid]); => pilot_oauth_code', []);`
+- 379 ArrayItemRemoval: `Class => (object) ['clientid' => $record->clientid, 'redirecturi' => $rec => Class => (object) ['redirecturi' => $rec`
+- 379 UnwrapArrayMap: `portedcodes = array_map(static fn($record): \stdClass => (object) ['clientid' => $record->clientid, 'redirecturi' => $record->redirecturi, 'expires' => transform::datetime($record->expires), 'used' =>`
+- 380 ArrayItem: `object) ['clientid' => $record->clientid, => object) ['clientid' > $record->clientid,`
+- 381 ArrayItem: `ntid, 'redirecturi' => $record->redirectu => ntid, 'redirecturi' > $record->redirectu`
+- 384 UnwrapArrayValues: `no($record->used)], array_values($codes)); => no($record->used)], $codes);`
+- 386 ArrayItemRemoval: `ilot_oauth_token', ['userid' => $userid]); => ilot_oauth_token', []);`
+- 387 UnwrapArrayMap: `ortedtokens = array_map(static fn($record): \stdClass => (object) ['clientid' => $record->clientid, 'expires' => transform::datetime($record->expires), 'refreshexpires' => transform::datetime($record-`
+- 395 ArrayItemRemoval: `ilot_oauth_grant', ['userid' => $userid]); => ilot_oauth_grant', []);`
+- 396 ArrayItemRemoval: `Class => (object) ['id' => $record->id, 'clientid' => $record => Class => (object) ['clientid' => $record`
+- 396 UnwrapArrayMap: `ortedgrants = array_map(static fn($record): \stdClass => (object) ['id' => $record->id, 'clientid' => $record->clientid, 'revoked' => transform::yesno($record->revoked), 'timecreated' => transform::da`
+- 397 ArrayItem: `s => (object) ['id' => $record->id, 'clie => s => (object) ['id' > $record->id, 'clie`
+- 397 ArrayItem: `ord->id, 'clientid' => $record->clientid, => ord->id, 'clientid' > $record->clientid,`
+- 400 UnwrapArrayValues: `ord->timecreated)], array_values($grants)); => ord->timecreated)], $grants);`
+- 402 ArrayItemRemoval: `workbench_ticket', ['userid' => $userid]); => workbench_ticket', []);`
+- 403 ArrayItemRemoval: `Class => (object) ['path' => $record->path, 'expires' => transfor => Class => (object) ['expires' => transfor`
+- 403 CastObject: `cord): \stdClass => (object) ['path' => $record-> => cord): \stdClass => ['path' => $record->`
+- 403 UnwrapArrayMap: `rtedtickets = array_map(static fn($record): \stdClass => (object) ['path' => $record->path, 'expires' => transform::datetime($record->expires), 'timecreated' => transform::datetime($record->timecreate`
+- 404 ArrayItem: `=> (object) ['path' => $record->path, 'ex => => (object) ['path' > $record->path, 'ex`
+- 407 UnwrapArrayValues: `ord->timecreated)], array_values($tickets)); => ord->timecreated)], $tickets);`
+- 434 CastInt: `retention::purge_cm((int) $context->instanceid => retention::purge_cm($context->instanceid`
+- 441 MethodCallRemoval: `$DB->delete_records('local_coursepilot_oauth_code'); => `
+- 444 MethodCallRemoval: `$DB->delete_records('local_coursepilot_workbench_ticket'); => `
+- 462 InstanceOf_: `if ($context instanceof \context_user) { => if (true) {`
+- 477 InstanceOf_: `if ($context instanceof \context_user && (int) $context-> => if (true && (int) $context->`
+- 477 LogicalAnd: `nceof \context_user && (int) $context->ins => nceof \context_user || (int) $context->ins`
+- 480 InstanceOf_: `if ($context instanceof \context_module) { => if (true) {`
+- 481 CastInt: `:purge_cm_for_users((int) $context->instanceid => :purge_cm_for_users($context->instanceid`
+- 492 ArrayItemRemoval: `pilot_oauth_code', ['userid' => $userid]); => pilot_oauth_code', []);`
+- 492 MethodCallRemoval: `$DB->delete_records('local_coursepilot_oauth_code', ['userid' => $userid]); => `
+- 494 ArrayItemRemoval: `ilot_oauth_grant', ['userid' => $userid]); => ilot_oauth_grant', []);`
+- 494 MethodCallRemoval: `$DB->delete_records('local_coursepilot_oauth_grant', ['userid' => $userid]); => `
+- 495 ArrayItemRemoval: `workbench_ticket', ['userid' => $userid]); => workbench_ticket', []);`
+- 495 MethodCallRemoval: `$DB->delete_records('local_coursepilot_workbench_ticket', ['userid' => $userid]); => `
+- 513 InstanceOf_: `if ($context instanceof \context_module) { => if (true) {`
+- 514 CastInt: `:purge_cm_for_users((int) $context->instanceid => :purge_cm_for_users($context->instanceid`
+- 518 InstanceOf_: `if (!$context instanceof \context_system) { => if (!false) {`
+- 522 MethodCallRemoval: `$DB->delete_records_select('local_coursepilot_oauth_code', "userid {$insql}", $inparams); => `
+- 523 MethodCallRemoval: `$DB->delete_records_select('local_coursepilot_oauth_token', "userid {$insql}", $inparams); => `
+- 524 MethodCallRemoval: `$DB->delete_records_select('local_coursepilot_oauth_grant', "userid {$insql}", $inparams); => `
+- 525 MethodCallRemoval: `$DB->delete_records_select('local_coursepilot_workbench_ticket', "userid {$insql}", $inparams); => `
+
+## Plugin/src/local_coursepilot/classes/private_files_storage_port.php (7 überlebt, 3 offen)
+
+- 157 MethodCallRemoval: `$this->require_checksum_match($existing, $expectedchecksum, $clientpath); => `
+- 221 CastString: `($area, '') : rtrim((string) $this->location->pat => ($area, '') : rtrim($this->location->pat`
+- 242 Throw_: `throw new storage_conflict => new storage_conflict`
+- 273 DecrementInteger (ignoriert): `($CFG->userquota ?? 0); => ($CFG->userquota ?? -1);`
+- 273 CastInt (ignoriert): `$quota = (int) ($CFG->userquota ?? 0); => $quota = $CFG->userquota ?? 0;`
+- 277 CastInt (ignoriert): `urn max(0, $quota - (int) file_get_user_used_s => urn max(0, $quota - file_get_user_used_s`
+- 296 CastObject (ignoriert): `l_coursepilot', '', (object) ['remaining' => form => l_coursepilot', '', ['remaining' => form`
+
+## Plugin/src/local_coursepilot/classes/question_bank_context.php (4 überlebt, 4 offen)
+
+- 43 MethodCallRemoval: `external_api::validate_context($context); => `
+- 44 FunctionCallRemoval: `require_capability('local/coursepilot:use', $context); => `
+- 64 CastInt: `xt_module::instance((int) $bankrecord->id); => xt_module::instance($bankrecord->id);`
+- 65 MethodCallRemoval: `external_api::validate_context($bankcontext); => `
+
+## Plugin/src/local_coursepilot/classes/question_import.php (69 überlebt, 0 offen)
+
+- 64 CastInt (ignoriert): `ext::instance_by_id((int) $category->contextid => ext::instance_by_id($category->contextid`
+- 141 LessThanOrEqualTo (ignoriert): `if ($maxbytes <= 0 || $bytes <= $max => if ($maxbytes < 0 || $bytes <= $max`
+- 305 MethodCallRemoval (ignoriert): `$qformat->setCategory($category); => `
+- 306 ArrayItemRemoval (ignoriert): `ormat->setContexts([$context]); => ormat->setContexts([]);`
+- 306 MethodCallRemoval (ignoriert): `$qformat->setContexts([$context]); => `
+- 307 TrueValue (ignoriert): `mat->setStoponerror(true); => mat->setStoponerror(false);`
+- 307 MethodCallRemoval (ignoriert): `$qformat->setStoponerror(true); => `
+- 308 MethodCallRemoval (ignoriert): `$qformat->setMatchgrades('grade'); => `
+- 309 FalseValue (ignoriert): `mat->setCatfromfile(false); => mat->setCatfromfile(true);`
+- 309 MethodCallRemoval (ignoriert): `$qformat->setCatfromfile(false); => `
+- 310 FalseValue (ignoriert): `>setContextfromfile(false); => >setContextfromfile(true);`
+- 310 MethodCallRemoval (ignoriert): `$qformat->setContextfromfile(false); => `
+- 322 CastString (ignoriert): `t = trim(strip_tags((string) ob_get_clean())); => t = trim(strip_tags(ob_get_clean()));`
+- 324 FalseValue (ignoriert): `if ($questions === false || $qformat->impor => if ($questions === true || $qformat->impor`
+- 330 CastArray (ignoriert): `values(array_filter((array) $questions, static f => values(array_filter($questions, static f`
+- 330 UnwrapArrayValues (ignoriert): `$questions = array_values(array_filter((array) $questions, static function ($question) { return !isset($question->qtype) || $question->qtype !== 'category'; })); => $questions = array_filter((array) $`
+- 358 CastString (ignoriert): `$name = (string) ($question->name ?? ''); => $name = $question->name ?? '';`
+- 359 CastString (ignoriert): `$xmlidnumber = trim((string) ($question->idnumber ?? '')); => $xmlidnumber = trim($question->idnumber ?? '');`
+- 376 CastInt (ignoriert): `st_version_question((int) $entry->id); => st_version_question($entry->id);`
+- 377 CastInt (ignoriert): `context, $question, (int) $latest->id, $xmlidn => context, $question, $latest->id, $xmlidn`
+- 408 CastInt (ignoriert): `ind_name_candidates((int) $category->id, $name => ind_name_candidates($category->id, $name`
+- 448 ConcatOperandRemoval (ignoriert): `$category->id . ',' . $context->id; => $category->id . ',';`
+- 460 DecrementInteger (ignoriert): `estiontextitemid ?? 0); => estiontextitemid ?? -1);`
+- 465 DecrementInteger (ignoriert): `alfeedbackitemid ?? 0); => alfeedbackitemid ?? -1);`
+- 554 CastInt (ignoriert): `loaded->contextid = (int) $context->id; => loaded->contextid = $context->id;`
+- 555 CastInt (ignoriert): `question_bank_entry((int) $reloaded->id); => question_bank_entry($reloaded->id);`
+- 559 MethodCallRemoval (ignoriert): `$qformat->setCategory($category); => `
+- 560 ArrayItemRemoval (ignoriert): `ormat->setContexts([$context]); => ormat->setContexts([]);`
+- 560 MethodCallRemoval (ignoriert): `$qformat->setContexts([$context]); => `
+- 566 ConcatOperandRemoval (ignoriert): `?>\n<quiz>\n" . $xml . "\n</quiz>"; => ?>\n<quiz>\n" . $xml;`
+- 579 MethodCallRemoval (ignoriert): `$reparser->setCategory($category); => `
+- 580 ArrayItemRemoval (ignoriert): `arser->setContexts([$context]); => arser->setContexts([]);`
+- 580 MethodCallRemoval (ignoriert): `$reparser->setContexts([$context]); => `
+- 581 TrueValue (ignoriert): `ser->setStoponerror(true); => ser->setStoponerror(false);`
+- 581 MethodCallRemoval (ignoriert): `$reparser->setStoponerror(true); => `
+- 582 MethodCallRemoval (ignoriert): `$reparser->setMatchgrades('grade'); => `
+- 583 FalseValue (ignoriert): `ser->setCatfromfile(false); => ser->setCatfromfile(true);`
+- 583 MethodCallRemoval (ignoriert): `$reparser->setCatfromfile(false); => `
+- 584 FalseValue (ignoriert): `>setContextfromfile(false); => >setContextfromfile(true);`
+- 584 MethodCallRemoval (ignoriert): `$reparser->setContextfromfile(false); => `
+- 593 CastString (ignoriert): `t = trim(strip_tags((string) ob_get_clean())); => t = trim(strip_tags(ob_get_clean()));`
+- 595 FalseValue (ignoriert): `if ($reparsed === false || $reparser->impo => if ($reparsed === true || $reparser->impo`
+- 618 CastObject (ignoriert): `l_coursepilot', '', (object) ['field' => $field, => l_coursepilot', '', ['field' => $field,`
+- 634 CastString (ignoriert): `if (trim((string) ($expected->name ?? '')) !== trim((string) => if (trim($expected->name ?? '') !== trim((string)`
+- 634 UnwrapTrim (ignoriert): `if (trim((string) ($expected->name ?? '')) !== trim((string) => if ((string) ($expected->name ?? '') !== trim((string)`
+- 634 CastString (ignoriert): `me ?? '')) !== trim((string) ($actual->name ?? ''))) { => me ?? '')) !== trim($actual->name ?? '')) {`
+- 634 UnwrapTrim (ignoriert): `d->name ?? '')) !== trim((string) ($actual->name ?? ''))) { => d->name ?? '')) !== (string) ($actual->name ?? '')) {`
+- 637 CastString (ignoriert): `edidnumber !== trim((string) ($actual->idnumber ?? ''))) { => edidnumber !== trim($actual->idnumber ?? '')) {`
+- 637 UnwrapTrim (ignoriert): `xpectedidnumber !== trim((string) ($actual->idnumber ?? ''))) { => xpectedidnumber !== (string) ($actual->idnumber ?? '')) {`
+- 667 GreaterThan (ignoriert): `other['fraction']) > 1.0E-5 || $answer[' => other['fraction']) >= 1.0E-5 || $answer['`
+- 693 DecrementInteger (ignoriert): `qo->fraction[$i] ?? 0), 'feedback' => sel => qo->fraction[$i] ?? -1), 'feedback' => sel`
+- 693 IncrementInteger (ignoriert): `qo->fraction[$i] ?? 0), 'feedback' => sel => qo->fraction[$i] ?? 1), 'feedback' => sel`
+- 693 Coalesce (ignoriert): `action' => (float) ($qo->fraction[$i] ?? 0), 'feedback' => sel => action' => (float) (0 ?? $qo->fraction[$i]), 'feedback' => sel`
+- 693 CastFloat (ignoriert): `wer), 'fraction' => (float) ($qo->fraction[$i] ?? 0), 'feedback' => self => wer), 'fraction' => $qo->fraction[$i] ?? 0, 'feedback' => self`
+- 719 OneZeroFloat (ignoriert): `n' => $qo->answer ? 1.0 : 0.0, 'feedback' => n' => $qo->answer ? 0.0 : 0.0, 'feedback'`
+- 719 OneZeroFloat (ignoriert): `$qo->answer ? 1.0 : 0.0, 'feedback' => se => $qo->answer ? 1.0 : 1.0, 'feedback' => se`
+- 719 Ternary (ignoriert): `n' => $qo->answer ? 1.0 : 0.0, 'feedback' => se => n' => $qo->answer ? 0.0 : 1.0, 'feedback' => se`
+- 724 OneZeroFloat (ignoriert): `n' => $qo->answer ? 0.0 : 1.0, 'feedback' => n' => $qo->answer ? 1.0 : 1.0, 'feedback'`
+- 724 OneZeroFloat (ignoriert): `$qo->answer ? 0.0 : 1.0, 'feedback' => se => $qo->answer ? 0.0 : 0.0, 'feedback' => se`
+- 724 Ternary (ignoriert): `n' => $qo->answer ? 0.0 : 1.0, 'feedback' => se => n' => $qo->answer ? 1.0 : 0.0, 'feedback' => se`
+- 743 CastObject (ignoriert): `local_coursepilot', (object) ['name' => $name, 'v => local_coursepilot', ['name' => $name, 'v`
+- 744 CastObject (ignoriert): `local_coursepilot', (object) ['name' => $name, 'v => local_coursepilot', ['name' => $name, 'v`
+- 765 CastString (ignoriert): `return (string) ($value['text'] ?? ''); => return $value['text'] ?? '';`
+- 767 LogicalAnd (ignoriert): `(is_object($value) && isset($value->text) => (is_object($value) || isset($value->text)`
+- 767 LogicalAndSingleSubExprNegation (ignoriert): `if (is_object($value) && => if (!is_object($value) &&`
+- 770 CastString (ignoriert): `return (string) $value; => return $value;`
+- 781 DecrementInteger (ignoriert): `rmat, int $itemid = 0): array => rmat, int $itemid = -1): array`
+- 781 IncrementInteger (ignoriert): `rmat, int $itemid = 0): array => rmat, int $itemid = 1): array`
+- 782 LogicalAndSingleSubExprNegation (ignoriert): `is_array($value) && array_key_exists('te => is_array($value) && !array_key_exists('te`
+
+## Plugin/src/local_coursepilot/classes/question_suspect_gate.php (19 überlebt, 19 offen)
+
+- 58 DecrementInteger: `se', VALUE_DEFAULT, 0), 'candidates' => n => se', VALUE_DEFAULT, -1), 'candidates' => n`
+- 58 IncrementInteger: `se', VALUE_DEFAULT, 0), 'candidates' => n => se', VALUE_DEFAULT, 1), 'candidates' => n`
+- 92 ArrayItemRemoval: `return ['idnumber' => '', 'categoryid' => 0, 'c => return ['categoryid' => 0, 'c`
+- 94 DecrementInteger: `'', 'categoryid' => 0, 'candidates' => [] => '', 'categoryid' => -1, 'candidates' => []`
+- 94 IncrementInteger: `'', 'categoryid' => 0, 'candidates' => [] => '', 'categoryid' => 1, 'candidates' => []`
+- 132 DecrementInteger: `> $excludeentryid], 0, 1); => > $excludeentryid], -1, 1);`
+- 132 DecrementInteger: `excludeentryid], 0, 1); => excludeentryid], 0, 0);`
+- 132 IncrementInteger: `excludeentryid], 0, 1); => excludeentryid], 0, 2);`
+- 147 CastString: `turn ['idnumber' => (string) $collision->idnumber => turn ['idnumber' => $collision->idnumber`
+- 150 CastInt: `> [['questionid' => (int) $collision->question => > [['questionid' => $collision->question`
+- 151 CastString: `estionid, 'name' => (string) $collision->name, 'i => estionid, 'name' => $collision->name, 'i`
+- 152 CastString: `name, 'idnumber' => (string) $collision->idnumber => name, 'idnumber' => $collision->idnumber`
+- 154 CastString: `uestiontext_old' => (string) $collision->question => uestiontext_old' => $collision->question`
+- 182 CastInt: `st_version_question((int) $row->entryid); => st_version_question($row->entryid);`
+- 184 CastInt: `= ['questionid' => (int) $latest->id, 'name' => = ['questionid' => $latest->id, 'name'`
+- 185 CastString: `test->id, 'name' => (string) $latest->name, 'idnu => test->id, 'name' => $latest->name, 'idnu`
+- 186 Coalesce: `umber' => (string) ($row->idnumber ?? '')]; => umber' => (string) ('' ?? $row->idnumber)];`
+- 186 CastString: `name, 'idnumber' => (string) ($row->idnumber ?? '')]; => name, 'idnumber' => $row->idnumber ?? ''];`
+- 189 ArrayOneItem: `return $candidates; => return count($candidates) > 1 ? array_slice($candidates, 0, 1, true) : $candidates;`
+
+## Plugin/src/local_coursepilot/classes/question_xml.php (8 überlebt, 0 offen)
+
+- 54 CastFloat (ignoriert): `atic fn($answer) => (float) $answer['fraction'] => atic fn($answer) => $answer['fraction']`
+- 62 CastFloat (ignoriert): `answer) => max(0.0, (float) $answer['fraction']) => answer) => max(0.0, $answer['fraction'])`
+- 65 GreaterThan (ignoriert): `positivesum - 1.0) > 0.001) { => positivesum - 1.0) >= 0.001) {`
+- 124 CastInt (ignoriert): `ext::instance_by_id((int) $category->contextid => ext::instance_by_id($category->contextid`
+- 133 CastInt (ignoriert): `estion->contextid = (int) $context->id; => estion->contextid = $context->id;`
+- 158 MethodCallRemoval (ignoriert): `$qformat->setCategory($category); => `
+- 159 ArrayItemRemoval (ignoriert): `ormat->setContexts([$context]); => ormat->setContexts([]);`
+- 159 MethodCallRemoval (ignoriert): `$qformat->setContexts([$context]); => `
+
+## Plugin/src/local_coursepilot/classes/quiz/arrangement.php (37 überlebt, 37 offen)
+
+- 62 ArrayItemRemoval: `s('quiz_sections', ['quizid' => $quizid], 'firstslot', 'id, => s('quiz_sections', [], 'firstslot', 'id,`
+- 68 ArrayItemRemoval: `s('quiz_feedback', ['quizid' => $quizid], 'mingrade', 'id, => s('quiz_feedback', [], 'mingrade', 'id,`
+- 75 CastInt: `'id' => (int) $slot->id, => 'id' => $slot->id,`
+- 76 CastInt: `'page' => (int) $slot->page, => 'page' => $slot->page,`
+- 77 Coalesce: `umber' => (string) ($slot->displaynumber ?? ''), => umber' => (string) ('' ?? $slot->displaynumber),`
+- 77 CastString: `'displaynumber' => (string) ($slot->displaynumber ?? ''), => 'displaynumber' => $slot->displaynumber ?? '',`
+- 79 CastFloat: `'maxmark' => (float) $slot->maxmark, => 'maxmark' => $slot->maxmark,`
+- 82 CastInt: `n === null ? null : (int) $slot->version, => n === null ? null : $slot->version,`
+- 84 ArrayItemRemoval: `ection): array => ['firstslot' => (int) $section->firstslot, 'heading' => $section => ection): array => ['heading' => $section`
+- 85 CastInt: `=> ['firstslot' => (int) $section->firstslot, => => ['firstslot' => $section->firstslot,`
+- 87 CastInt: `hufflequestions' => (int) $section->shuffleque => hufflequestions' => $section->shuffleque`
+- 91 CastInt: `dbacktextformat' => (int) $row->feedbacktextfo => dbacktextformat' => $row->feedbacktextfo`
+- 92 CastFloat: `rmat, 'mingrade' => (float) $row->mingrade, 'max => rmat, 'mingrade' => $row->mingrade, 'max`
+- 93 CastFloat: `rade, 'maxgrade' => (float) $row->maxgrade], $fe => rade, 'maxgrade' => $row->maxgrade], $fe`
+- 108 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 109 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 126 ArrayItemRemoval: `_coursepilot', '', ['quizid' => $quizid]); => _coursepilot', '', []);`
+- 131 UnwrapArrayFilter: `lots = array_values(array_filter($target['slots'], static fn(array $slot): bool => isset($currentids[$slot['id']]))); => lots = array_values($target['slots']);`
+- 131 UnwrapArrayValues: `targetslots = array_values(array_filter($target['slots'], static fn(array $slot): bool => isset($currentids[$slot['id']]))); => targetslots = array_filter($target['slots'], static fn(array $slot): boo`
+- 160 DecrementInteger: `$previousid === 0 ? 1 : $structure->get_s => $previousid === 0 ? 0 : $structure->get_s`
+- 179 GreaterThan: `urrentslot['page'] > $previousslot['page => urrentslot['page'] >= $previousslot['page`
+- 198 CastInt: `if ((int) $slot->requireprevio => if ($slot->requireprevio`
+- 199 CastBool: `pendency($slot->id, (bool) $targetslot['require => pendency($slot->id, $targetslot['require`
+- 201 CastFloat: `if (abs((float) $slot->maxmark - $ta => if (abs($slot->maxmark - $ta`
+- 201 Minus: `oat) $slot->maxmark - $targetslot['maxmar => oat) $slot->maxmark + $targetslot['maxmar`
+- 201 GreaterThan: `etslot['maxmark']) > 1.0E-7) { => etslot['maxmark']) >= 1.0E-7) {`
+- 204 CastString: `if ((string) ($slot->displaynumber => if (($slot->displaynumber`
+- 209 MethodCallRemoval: `// Always call: update_slot_version() is a no-op for unchanged values // and preserves version=null without a separate interpretation. $structure->update_slot_version($slot->id, $targetslot['version']`
+- 233 CastString: `if ((string) ($currentsection->hea => if (($currentsection->hea`
+- 233 Coalesce: `? '') !== (string) ($targetsection['heading'] ?? '')) { => ? '') !== (string) ('' ?? $targetsection['heading'])) {`
+- 233 CastString: `heading ?? '') !== (string) ($targetsection['head => heading ?? '') !== ($targetsection['head`
+- 236 CastInt: `if ((int) $currentsection->shu => if ($currentsection->shu`
+- 257 ArrayItemRemoval: `s('quiz_feedback', ['quizid' => $quizid]); => s('quiz_feedback', []);`
+- 257 MethodCallRemoval: `$DB->delete_records('quiz_feedback', ['quizid' => $quizid]); => `
+- 259 CastObject: `rd('quiz_feedback', (object) array_merge($row, [' => rd('quiz_feedback', array_merge($row, ['`
+- 272 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+- 274 BitwiseOr: `N_UNESCAPED_UNICODE | JSON_UNESCAPED_SLAS => N_UNESCAPED_UNICODE & JSON_UNESCAPED_SLAS`
+
+## Plugin/src/local_coursepilot/classes/remote_access.php (10 überlebt, 10 offen)
+
+- 43 CastInt: `userid = $userid ?? (int) $USER->id; => userid = $userid ?? $USER->id;`
+- 99 CastInt: `$counts[(int) $record->id] = (obje => $counts[$record->id] = (obje`
+- 99 ArrayItemRemoval: `d->id] = (object) ['id' => (int) $record->id, 'name' => $record->na => d->id] = (object) ['name' => $record->na`
+- 100 CastInt: `= (object) ['id' => (int) $record->id, 'name' => = (object) ['id' => $record->id, 'name'`
+- 105 ArrayOneItem: `return $counts; => return count($counts) > 1 ? array_slice($counts, 0, 1, true) : $counts;`
+- 114 UnwrapArrayValues: `return array_values(array_diff(self::selected_cohort_ids(), array_keys(self::selected_cohort_member_counts()))); => return array_diff(self::selected_cohort_ids(), array_keys(self::selected_cohort_memb`
+- 123 CastString: `$raw = (string) get_config('local_co => $raw = get_config('local_co`
+- 124 UnwrapArrayFilter: `(array_unique(array_filter(array_map('intval', explode(',', $raw))))); => (array_unique(array_map('intval', explode(',', $raw))));`
+- 124 UnwrapArrayUnique: `array_values(array_unique(array_filter(array_map('intval', explode(',', $raw))))); => array_values(array_filter(array_map('intval', explode(',', $raw))));`
+- 124 UnwrapArrayValues: `return array_values(array_unique(array_filter(array_map('intval', explode(',', $raw))))); => return array_unique(array_filter(array_map('intval', explode(',', $raw))));`
+
+## Plugin/src/local_coursepilot/classes/skill_corpus.php (22 überlebt, 22 offen)
+
+- 49 FunctionCallRemoval: `sort($paths); => `
+- 51 CastString: `$content = (string) file_get_contents($p => $content = file_get_contents($p`
+- 56 MBString: `ntent), 'length' => mb_strlen($content), 'p => ntent), 'length' => strlen($content), 'p`
+- 74 CastString: `$content = (string) file_get_contents($e => $content = file_get_contents($e`
+- 82 ArrayItemRemoval: `sepilot', '', ['name' => $name, 'names' => implode(', ', => sepilot', '', ['names' => implode(', ',`
+- 113 UnwrapTrim: `$line = trim($line); => $line = $line;`
+- 115 UnwrapLtrim: `return ltrim($line, "# \t"); => return $line;`
+- 131 DecrementInteger: `($content, "\n---", 4); => ($content, "\n---", 3);`
+- 131 IncrementInteger: `($content, "\n---", 4); => ($content, "\n---", 5);`
+- 135 DecrementInteger: `$content, 4, $end - 4)) as $line) { => $content, 4, $end - 3)) as $line) {`
+- 135 Minus: `r($content, 4, $end - 4)) as $line) { => r($content, 4, $end + 4)) as $line) {`
+- 135 UnwrapSubstr: `each (explode("\n", substr($content, 4, $end - 4)) as $line) { => each (explode("\n", $content) as $line) {`
+- 152 DecrementInteger: `atches[1], $matches[2]), static fn(string => atches[1], $matches[1]), static fn(string`
+- 152 UnwrapArrayMerge: `ames = array_filter(array_merge($matches[1], $matches[2]), static fn(string $ => ames = array_filter($matches[1], static fn(string $`
+- 152 UnwrapArrayFilter: `$names = array_filter(array_merge($matches[1], $matches[2]), static fn(string $name): bool => $name !== ''); => $names = array_merge($matches[1], $matches[2]);`
+- 153 UnwrapArrayUnique: `return array_values(array_unique($names)); => return array_values($names);`
+- 153 UnwrapArrayValues: `return array_values(array_unique($names)); => return array_unique($names);`
+- 168 Concat: `return $plugin->release . ' (' . $plugin->version => return ' (' . $plugin->release . $plugin->version`
+- 168 ConcatOperandRemoval: `$plugin->release . ' (' . $plugin->version . ' => $plugin->release . $plugin->version . '`
+- 168 Concat: `$plugin->release . ' (' . $plugin->version . ')'; => $plugin->release . $plugin->version . ' (' . ')';`
+- 168 Concat: `n->release . ' (' . $plugin->version . ')'; => n->release . ' (' . ')' . $plugin->version;`
+- 168 ConcatOperandRemoval: `' . $plugin->version . ')'; => ' . $plugin->version;`
+
+## Plugin/src/local_coursepilot/classes/storage_anchor.php (16 überlebt, 14 offen)
+
+- 164 LogicalOr: `!is_array($decoded) || json_last_error() ! => !is_array($decoded) && json_last_error() !`
+- 216 CastInt (ignoriert): `webdav_storage_port((int) $location->instancei => webdav_storage_port($location->instancei`
+- 216 CastString (ignoriert): `cation->instanceid, (string) $location->relativep => cation->instanceid, $location->relativep`
+- 228 CastString: `$configured = trim((string) (get_config('local_coursepilot', $settingname) ?: $defaultvalue), '/'); => $configured = trim(get_config('local_coursepilot', $settingname) ?: $defaultvalue, '/');`
+- 228 UnwrapTrim: `$configured = trim((string) (get_config('local_coursepilot', $settingname) ?: $defaultvalue), '/'); => $configured = (string) (get_config('local_coursepilot', $settingname) ?: $defaultvalue);`
+- 266 BitwiseOr: `, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLAS => , JSON_PRETTY_PRINT & JSON_UNESCAPED_SLAS`
+- 266 BitwiseOr: `n_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNIC => n_encode($document, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) & JSON_UNESCAPED_UNIC`
+- 323 Continue_: `continue; => break;`
+- 354 UnwrapTrim: `return trim(substr($directory, strlen(self::root($area))), '/'); => return substr($directory, strlen(self::root($area)));`
+- 368 Concat: `== '' ? $filename : $relative . '/' . $filename; => == '' ? $filename : '/' . $relative . $filename;`
+- 368 ConcatOperandRemoval: `== '' ? $filename : $relative . '/' . $filename; => == '' ? $filename : '/' . $filename;`
+- 368 ConcatOperandRemoval: `ename : $relative . '/' . $filename; => ename : $relative . $filename;`
+- 368 Concat: `ename : $relative . '/' . $filename; => ename : $relative . $filename . '/';`
+- 368 ConcatOperandRemoval: `me : $relative . '/' . $filename; => me : $relative . '/';`
+- 441 CastString: `$base = trim((string) $location->relativep => $base = trim($location->relativep`
+- 441 UnwrapTrim: `$base = trim((string) $location->relativepath, '/'); => $base = (string) $location->relativepath;`
+
+## Plugin/src/local_coursepilot/classes/tool_registry.php (6 überlebt, 6 offen)
+
+- 295 Ternary: `ol['classname']) ? 'write' : 'read', 'ajax' => false]; => ol['classname']) ? 'read' : 'write', 'ajax' => false];`
+- 296 FalseValue: `: 'read', 'ajax' => false]; => : 'read', 'ajax' => true];`
+- 339 IfNegation: `if (in_array($classname, => if (!in_array($classname,`
+- 340 ArrayItemRemoval: `oursepilot\external\create_workbench_download_links', 'local_coursepilot\external\export_activity_back => oursepilot\external\export_activity_back`
+- 345 FalseValue: `return false; => return true;`
+- 351 IncrementInteger: `/', $classname) === 1; => /', $classname) === 2;`
+
+## Plugin/src/local_coursepilot/classes/webdav/curl_transport.php (25 überlebt, 25 offen)
+
+- 89 ArrayItemRemoval: `in_array($method, ['GET', 'DELETE'], true)) { => in_array($method, ['DELETE'], true)) {`
+- 89 LogicalNot: `if (!in_array($method, [' => if (in_array($method, ['`
+- 93 MatchArmRemoval: `'DELETE' => $this->curl->delete($url, [], $options), => `
+- 96 Coalesce: `s->curl->post($url, $body ?? '', $options), => s->curl->post($url, '' ?? $body, $options),`
+- 108 DecrementInteger: `nfo['http_code'] ?? 0), $this->response_h => nfo['http_code'] ?? -1), $this->response_h`
+- 108 IncrementInteger: `nfo['http_code'] ?? 0), $this->response_h => nfo['http_code'] ?? 1), $this->response_h`
+- 108 CastInt: `new webdav_response((int) ($info['http_code'] ?? 0), $this->response_he => new webdav_response($info['http_code'] ?? 0, $this->response_he`
+- 108 CastString: `response_headers(), (string) $raw); => response_headers(), $raw);`
+- 123 ArrayItemRemoval: `'CURLOPT_HTTPAUTH' => CURLAUTH_BASIC, => `
+- 125 Concat: `CURLOPT_USERPWD' => $this->username . ':' . $this->password, => CURLOPT_USERPWD' => ':' . $this->username . $this->password,`
+- 125 ConcatOperandRemoval: `CURLOPT_USERPWD' => $this->username . ':' . $this->passwor => CURLOPT_USERPWD' => ':' . $this->passwor`
+- 125 ConcatOperandRemoval: `> $this->username . ':' . $this->password, => > $this->username . $this->password,`
+- 125 Concat: `> $this->username . ':' . $this->password, => > $this->username . $this->password . ':',`
+- 125 ConcatOperandRemoval: `this->username . ':' . $this->password, => this->username . ':',`
+- 126 ArrayItem: `CURLOPT_HTTPHEADER' => $this->format_head => CURLOPT_HTTPHEADER' > $this->format_head`
+- 172 Foreach_: `foreach ($headers as $name => $value) => foreach ([] as $name => $value)`
+- 173 Concat: `$lines[] = $name . ': ' . $value; => $lines[] = ': ' . $name . $value;`
+- 173 ConcatOperandRemoval: `$lines[] = $name . ': ' . $value; => $lines[] = ': ' . $value;`
+- 173 ConcatOperandRemoval: `$lines[] = $name . ': ' . $value; => $lines[] = $name . $value;`
+- 173 Concat: `$lines[] = $name . ': ' . $value; => $lines[] = $name . $value . ': ';`
+- 173 ConcatOperandRemoval: `nes[] = $name . ': ' . $value; => nes[] = $name . ': ';`
+- 175 ArrayOneItem: `return $lines; => return count($lines) > 1 ? array_slice($lines, 0, 1, true) : $lines;`
+- 186 CastString: `$headers[strtolower((string) $key)] = is_array($v => $headers[strtolower($key)] = is_array($v`
+- 186 CastString: `is_array($value) ? (string) end($value) : (strin => is_array($value) ? end($value) : (strin`
+- 186 CastString: `ring) end($value) : (string) $value; => ring) end($value) : $value;`
+
+## Plugin/src/local_coursepilot/classes/webdav/webdav_client.php (28 überlebt, 25 offen)
+
+- 86 DecrementInteger: `p((int) ($seconds * 1000000)); => p((int) ($seconds * 999999));`
+- 86 IncrementInteger: `) ($seconds * 1000000)); => ) ($seconds * 1000001));`
+- 86 CastInt: `usleep((int) ($seconds * 1000000)); => usleep($seconds * 1000000);`
+- 106 DecrementInteger: `$url, int $depth = 1): array => $url, int $depth = 0): array`
+- 106 IncrementInteger: `$url, int $depth = 1): array => $url, int $depth = 2): array`
+- 110 ArrayItemRemoval: `'PROPFIND', $url, ['Depth' => (string) $depth, 'Content-Type' => 'ap => 'PROPFIND', $url, ['Content-Type' => 'ap`
+- 111 CastString: `, $url, ['Depth' => (string) $depth, 'Content-Typ => , $url, ['Depth' => $depth, 'Content-Typ`
+- 177 PublicVisibility: `public function mkcol(stri => protected function mkcol(stri`
+- 189 UnwrapRtrim: `$url = rtrim($baseurl, '/') . '/'; => $url = $baseurl . '/';`
+- 256 GreaterThanOrEqualTo: `if ($elapsed >= self::RETRY_BUDGET_ => if ($elapsed > self::RETRY_BUDGET_`
+- 257 Concat: `dav_error::UNCLEAR, 'Retry given up after ' . self::RETRY_BUDGET_SECONDS . 's.'); => dav_error::UNCLEAR, self::RETRY_BUDGET_SECONDS . 'Retry given up after ' . 's.');`
+- 257 ConcatOperandRemoval: `dav_error::UNCLEAR, 'Retry given up after ' . self::RETRY_BUDGET_S => dav_error::UNCLEAR, self::RETRY_BUDGET_S`
+- 257 ConcatOperandRemoval: `given up after ' . self::RETRY_BUDGET_SECONDS . 's.'); => given up after ' . 's.');`
+- 257 Concat: `given up after ' . self::RETRY_BUDGET_SECONDS . 's.'); => given up after ' . 's.' . self::RETRY_BUDGET_SECONDS);`
+- 257 ConcatOperandRemoval: `RETRY_BUDGET_SECONDS . 's.'); => RETRY_BUDGET_SECONDS);`
+- 293 GreaterThanOrEqualTo: `if ($code >= 300 && $code < 400) => if ($code > 300 && $code < 400)`
+- 293 LessThan: `de >= 300 && $code < 400) { => de >= 300 && $code <= 400) {`
+- 312 Coalesce: `if (stripos($response->header('content-type') ?? '', 'xml') !== false) => if (stripos('' ?? $response->header('content-type'), 'xml') !== false)`
+- 315 UnwrapLtrim: `$trimmed = ltrim($response->body); => $trimmed = $response->body;`
+- 316 LogicalOr: `($trimmed, '<?xml') || stripos($trimmed, ' => ($trimmed, '<?xml') && stripos($trimmed, '`
+- 355 FunctionCallRemoval: `libxml_use_internal_errors($previous); => `
+- 382 CastString (ignoriert): `is->normalised_path((string) $davresponse->href); => is->normalised_path($davresponse->href);`
+- 405 CastString (ignoriert): `$lastmodifiedraw = (string) $prop->getlastmodifi => $lastmodifiedraw = $prop->getlastmodifi`
+- 411 CastString (ignoriert): `lection ? 0 : (int) (string) $prop->getcontentlen => lection ? 0 : (int) $prop->getcontentlen`
+- 438 FalseValue: `if ($mimetype === false) { => if ($mimetype === true) {`
+- 459 CastString: `$status = (string) $psdav->status; => $status = $psdav->status;`
+- 460 Identical: `if ($status === '' || str_contain => if ($status !== '' || str_contain`
+- 460 LogicalOrAllSubExprNegation: `if ($status === '' || str_contains($status => if (!($status === '') || !str_contains($status`
+
+## Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php (27 überlebt, 27 offen)
+
+- 76 CastInt: `self::resolve_owned((int) $location->instancei => self::resolve_owned($location->instancei`
+- 78 CastInt: `self::fresh_options((int) $location->instancei => self::fresh_options($location->instancei`
+- 126 CastInt: `cord->contextid !== (int) $owncontextid || \co => cord->contextid !== $owncontextid || \co`
+- 135 CastInt: `s::enabled_for_user((int) $USER->id)) { => s::enabled_for_user($USER->id)) {`
+- 177 Coalesce: `\curl(), (string) ($options['webdav_user'] ?? ''), (string) ($option => \curl(), (string) ('' ?? $options['webdav_user']), (string) ($option`
+- 177 CastString: `nsport(new \curl(), (string) ($options['webdav_user'] ?? ''), (string) ($options => nsport(new \curl(), $options['webdav_user'] ?? '', (string) ($options`
+- 178 Coalesce: `] ?? ''), (string) ($options['webdav_password'] ?? '')); => ] ?? ''), (string) ('' ?? $options['webdav_password']));`
+- 178 CastString: `bdav_user'] ?? ''), (string) ($options['webdav_password'] ?? '')); => bdav_user'] ?? ''), $options['webdav_password'] ?? '');`
+- 216 DecrementInteger: `s['webdav_type'] ?? 0) === 1 && ($options => s['webdav_type'] ?? -1) === 1 && ($options`
+- 216 IncrementInteger: `s['webdav_type'] ?? 0) === 1 && ($options => s['webdav_type'] ?? 1) === 1 && ($options`
+- 244 UnwrapArrayValues: `$names = array_values(array_map(static fn(array $entry): string => $entry['name'], array_filter($entries, static fn(array $entry): bool => $entry['type'] === 'folder'))); => $names = array_map(static `
+- 246 UnwrapArrayFilter: `=> $entry['name'], array_filter($entries, static fn(array $entry): bool => $entry['type'] === 'folder'))); => => $entry['name'], $entries));`
+- 263 ArrayItemRemoval: `_instance_config', ['instanceid' => $instanceid], '', 'name, value' => _instance_config', [], '', 'name, value'`
+- 279 CastString: `return ['server' => (string) ($options['webdav_server'] ?? ''), 'basepath' => trim => return ['server' => $options['webdav_server'] ?? '', 'basepath' => trim`
+- 280 CastString: `'basepath' => trim((string) ($options['webdav_path'] ?? ''), '/'), 'account' => => 'basepath' => trim($options['webdav_path'] ?? '', '/'), 'account' =>`
+- 280 UnwrapTrim: `''), 'basepath' => trim((string) ($options['webdav_path'] ?? ''), '/'), 'account' => (st => ''), 'basepath' => (string) ($options['webdav_path'] ?? ''), 'account' => (st`
+- 281 CastString: `'/'), 'account' => (string) ($options['webdav_user'] ?? '')]; => '/'), 'account' => $options['webdav_user'] ?? ''];`
+- 293 CastString: `return ['server' => (string) ($fingerprint['server'] ?? ''), 'basepath' => trim => return ['server' => $fingerprint['server'] ?? '', 'basepath' => trim`
+- 294 CastString: `'basepath' => trim((string) ($fingerprint['basepath'] ?? ''), '/'), 'account' => => 'basepath' => trim($fingerprint['basepath'] ?? '', '/'), 'account' =>`
+- 294 UnwrapTrim: `''), 'basepath' => trim((string) ($fingerprint['basepath'] ?? ''), '/'), 'account' => (st => ''), 'basepath' => (string) ($fingerprint['basepath'] ?? ''), 'account' => (st`
+- 295 CastString: `'/'), 'account' => (string) ($fingerprint['account'] ?? '')]; => '/'), 'account' => $fingerprint['account'] ?? ''];`
+- 307 DecrementInteger: `s['webdav_port'] ?? 0); => s['webdav_port'] ?? -1);`
+- 307 IncrementInteger: `s['webdav_port'] ?? 0); => s['webdav_port'] ?? 1);`
+- 307 CastInt: `$port = (int) ($options['webdav_port'] ?? 0); => $port = $options['webdav_port'] ?? 0;`
+- 309 CastString: `$path = trim((string) ($options['webdav_path'] ?? ''), '/'); => $path = trim($options['webdav_path'] ?? '', '/');`
+- 309 UnwrapTrim: `$path = trim((string) ($options['webdav_path'] ?? ''), '/'); => $path = (string) ($options['webdav_path'] ?? '');`
+- 310 ConcatOperandRemoval: `path !== '' ? $path . '/' : ''); => path !== '' ? $path : '');`
+
+## Plugin/src/local_coursepilot/classes/webdav/webdav_setup_steps.php (11 überlebt, 11 offen)
+
+- 72 FalseValue: `epositoryrecord !== false && (int) $reposito => epositoryrecord !== true && (int) $reposito`
+- 72 NotIdentical: `= $repositoryrecord !== false && (int) $r => = $repositoryrecord === false && (int) $r`
+- 72 CastInt: `record !== false && (int) $repositoryrecord->v => record !== false && $repositoryrecord->v`
+- 72 IncrementInteger: `record->visible === 1; => record->visible === 2;`
+- 82 ArrayItem: `tive, 'instruction' => get_string('webdav => tive, 'instruction' > get_string('webdav`
+- 87 ArrayItem: `owed, 'instruction' => get_string('webdav => owed, 'instruction' > get_string('webdav`
+- 92 ArrayItem: `lity, 'instruction' => get_string('webdav => lity, 'instruction' > get_string('webdav`
+- 93 ArrayItemRemoval: `roles/assign.php', ['contextid' => SYSCONTEXTID])]]; => roles/assign.php', [])]];`
+- 110 LogicalAndAllSubExprNegation: `return $steps[self::STEP_REPOSITORY_ACTIVE]['ok'] && $steps[self::STEP_USER_INSTANCES]['ok'] && $steps[self::STEP_CA => return !$steps[self::STEP_REPOSITORY_ACTIVE]['ok'] && !$steps[self::STEP_USER_IN`
+- 110 LogicalAndSingleSubExprNegation: `RY_ACTIVE]['ok'] && $steps[self::STEP_US => RY_ACTIVE]['ok'] && !$steps[self::STEP_US`
+- 110 LogicalAndSingleSubExprNegation: `INSTANCES]['ok'] && $steps[self::STEP_CA => INSTANCES]['ok'] && !$steps[self::STEP_CA`
+
+## Plugin/src/local_coursepilot/classes/webdav_storage_port.php (23 überlebt, 23 offen)
+
+- 67 Concat: `ss_log::log_failure('WebDAV ' . $e->errorclass . ' during IServ de => ss_log::log_failure($e->errorclass . 'WebDAV ' . ' during IServ de`
+- 67 ConcatOperandRemoval: `ss_log::log_failure('WebDAV ' . $e->errorclass . ' d => ss_log::log_failure($e->errorclass . ' d`
+- 67 ConcatOperandRemoval: `failure('WebDAV ' . $e->errorclass . ' during IServ detec => failure('WebDAV ' . ' during IServ detec`
+- 67 Concat: `failure('WebDAV ' . $e->errorclass . ' during IServ detection: ' . $e->getMessage()) => failure('WebDAV ' . ' during IServ detection: ' . $e->errorclass . $e->getMessage())`
+- 67 ConcatOperandRemoval: `. $e->errorclass . ' during IServ detection: ' . $e->getMessage()); => . $e->errorclass . $e->getMessage());`
+- 67 Concat: `. $e->errorclass . ' during IServ detection: ' . $e->getMessage()); => . $e->errorclass . $e->getMessage() . ' during IServ detection: ');`
+- 67 ConcatOperandRemoval: `g IServ detection: ' . $e->getMessage()); => g IServ detection: ');`
+- 189 DecrementInteger: `['timemodified'] ?? 0), 'size' => $entry[ => ['timemodified'] ?? -1), 'size' => $entry[`
+- 189 IncrementInteger: `['timemodified'] ?? 0), 'size' => $entry[ => ['timemodified'] ?? 1), 'size' => $entry[`
+- 205 Identical: `= $clientdirectory === '' ? [] : explode => = $clientdirectory !== '' ? [] : explode`
+- 205 Ternary: `tdirectory === '' ? [] : explode('/', $clientdirectory); => tdirectory === '' ? explode('/', $clientdirectory) : [];`
+- 274 Coalesce: `=== null, 'size' => $written['size'] ?? strlen($content), 'checksum' => poin => === null, 'size' => strlen($content) ?? $written['size'], 'checksum' => poin`
+- 275 DecrementInteger: `['timemodified'] ?? 0)]; => ['timemodified'] ?? -1)];`
+- 275 IncrementInteger: `['timemodified'] ?? 0)]; => ['timemodified'] ?? 1)];`
+- 275 Coalesce: `en['etag'] ?? null, $written['timemodified'] ?? 0)]; => en['etag'] ?? null, 0 ?? $written['timemodified'])];`
+- 289 ArrayItemRemoval: `ath = implode('/', [...$folders, $filename]); => ath = implode('/', [$filename]);`
+- 314 DecrementInteger: `['timemodified'] ?? 0)]; => ['timemodified'] ?? -1)];`
+- 314 IncrementInteger: `['timemodified'] ?? 0)]; => ['timemodified'] ?? 1)];`
+- 314 Coalesce: `en['etag'] ?? null, $written['timemodified'] ?? 0)]; => en['etag'] ?? null, 0 ?? $written['timemodified'])];`
+- 397 UnwrapArrayFilter: `return array_values(array_filter(explode('/', trim($this->baserelativepath, '/')), static fn(string $segment): bool => $segment !== '')); => return array_values(explode('/', trim($this->baserelativepa`
+- 397 UnwrapArrayValues: `return array_values(array_filter(explode('/', trim($this->baserelativepath, '/')), static fn(string $segment): bool => $segment !== '')); => return array_filter(explode('/', trim($this->baserelativepa`
+- 398 UnwrapTrim: `filter(explode('/', trim($this->baserelativepath, '/')), static fn(string => filter(explode('/', $this->baserelativepath), static fn(string`
+- 456 IncrementInteger: `>base_segments())), 0); => >base_segments())), 1);`
+
+## Plugin/src/local_coursepilot/classes/workbench_ticket.php (27 überlebt, 27 offen)
+
+- 75 MethodCallRemoval: `self::purge_expired(); => `
+- 77 DecrementInteger: `n2hex(random_bytes(32)); => n2hex(random_bytes(31));`
+- 77 IncrementInteger: `n2hex(random_bytes(32)); => n2hex(random_bytes(33));`
+- 81 CastInt: `$record->userid = (int) $USER->id; => $record->userid = $USER->id;`
+- 95 ConcatOperandRemoval: `enthash'], 'url' => $CFG->wwwroot . '/local/coursepilot/ => enthash'], 'url' => '/local/coursepilot/`
+- 134 UnwrapFinally: `try { // Storage locations belong to the validated owner, including anonymous downloads. $USER = (object) ['id' => (int) $ticket->userid]; [$directory, $filename] = material_files::resolve_file($ticke`
+- 136 CastInt: `= (object) ['id' => (int) $ticket->userid]; => = (object) ['id' => $ticket->userid];`
+- 145 ArrayItem: `ket->userid, 'path' => $ticket->path, 'fi => ket->userid, 'path' > $ticket->path, 'fi`
+- 147 Ternary: `le->get_mimetype() ?: 'application/octet-stream'), 'content' => $fil => le->get_mimetype() ? 'application/octet-stream' : $file->get_mimetype()), 'content' => $fil`
+- 147 CastString: `name, 'mimetype' => (string) ($file->get_mimetype() ?: 'application/octet-stream'), 'content' => $file => name, 'mimetype' => $file->get_mimetype() ?: 'application/octet-stream', 'content' => $file`
+- 149 CastInt: `ontent(), 'size' => (int) $file->get_filesize( => ontent(), 'size' => $file->get_filesize(`
+- 160 CastInt: `if ((int) $ticket->expires < t => if ($ticket->expires < t`
+- 160 LessThan: `) $ticket->expires < time()) { => ) $ticket->expires <= time()) {`
+- 165 CastInt: `ction::access_error((int) $ticket->userid, $ti => ction::access_error($ticket->userid, $ti`
+- 166 CastInt: `ectionid !== null ? (int) $ticket->oauthconnec => ectionid !== null ? $ticket->oauthconnec`
+- 167 CastInt: `htokenid !== null ? (int) $ticket->oauthtokeni => htokenid !== null ? $ticket->oauthtokeni`
+- 184 CastInt: `text_user::instance((int) $ticket->userid)->id => text_user::instance($ticket->userid)->id`
+- 193 LogicalOr: `if (!$file || $file->is_directory => if (!$file && $file->is_directory`
+- 225 Concat: `im = hash('sha256', $tickethash . '|' . random_string(20) => im = hash('sha256', '|' . $tickethash . random_string(20)`
+- 225 ConcatOperandRemoval: `im = hash('sha256', $tickethash . '|' . random_string( => im = hash('sha256', '|' . random_string(`
+- 225 ConcatOperandRemoval: `256', $tickethash . '|' . random_string(20)); => 256', $tickethash . random_string(20));`
+- 225 DecrementInteger: `'|' . random_string(20)); => '|' . random_string(19));`
+- 225 IncrementInteger: `|' . random_string(20)); => |' . random_string(21));`
+- 225 Concat: `256', $tickethash . '|' . random_string(20)); => 256', $tickethash . random_string(20) . '|');`
+- 225 ConcatOperandRemoval: `', $tickethash . '|' . random_string(20)); => ', $tickethash . '|');`
+- 234 MethodCallRemoval: `// Claimed, gone from here on - regardless of the outcome of the // following checks (expiry, connection, account, contenthash). $DB->delete_records(self::TABLE, ['id' => $ticket->id]); => `
+- 248 MethodCallRemoval: `$DB->delete_records_select(self::TABLE, 'expires < :now', ['now' => time()]); => `
+
+## Plugin/src/local_coursepilot/classes/write_gate.php (16 überlebt, 16 offen)
+
+- 103 MethodCallRemoval: `self::ensure_fresh(); => `
+- 107 ArrayItemRemoval: `return ['modname' => $modname, 'state' => 'needs_wor => return ['state' => 'needs_wor`
+- 113 CastInt: `} else if ((int) $CFG->branch > $cata => } else if ($CFG->branch > $cata`
+- 113 GreaterThan: `(int) $CFG->branch > $catalogclass::revi => (int) $CFG->branch >= $catalogclass::revi`
+- 148 Identical: `if ($lastchecked === $currentversiontu => if ($lastchecked !== $currentversiontu`
+- 152 Foreach_: `foreach (registry::known_modnames() as $modname) { => foreach ([] as $modname) {`
+- 154 Concat: `set_config(self::CONFIG_VIOLATIONS_PREFIX . $modname, json_encode($viola => set_config($modname . self::CONFIG_VIOLATIONS_PREFIX, json_encode($viola`
+- 154 ConcatOperandRemoval: `set_config(self::CONFIG_VIOLATIONS_PREFIX . $modname, json_encod => set_config($modname, json_encod`
+- 154 ConcatOperandRemoval: `IG_VIOLATIONS_PREFIX . $modname, json_encode($viola => IG_VIOLATIONS_PREFIX, json_encode($viola`
+- 154 FunctionCallRemoval: `set_config(self::CONFIG_VIOLATIONS_PREFIX . $modname, json_encode($violations), self::CONFIG_COMPONENT); => `
+- 168 Concat: `return $CFG->version . ':' . get_config(self:: => return ':' . $CFG->version . get_config(self::`
+- 168 ConcatOperandRemoval: `return $CFG->version . ':' . get_config(sel => return ':' . get_config(sel`
+- 168 ConcatOperandRemoval: `urn $CFG->version . ':' . get_config(self::CON => urn $CFG->version . get_config(self::CON`
+- 168 Concat: `urn $CFG->version . ':' . get_config(self::CONFIG_COMPONENT, 'version'); => urn $CFG->version . get_config(self::CONFIG_COMPONENT, 'version') . ':';`
+- 168 ConcatOperandRemoval: `$CFG->version . ':' . get_config(self::CONFIG_COMPONENT, 'version'); => $CFG->version . ':';`
+- 179 FalseValue: `if ($raw === false) { => if ($raw === true) {`
+
+## Plugin/src/local_coursepilot/classes/xml_activity_creator.php (55 überlebt, 55 offen)
+
+- 84 MethodCallRemoval: `activity_file_supplement::validate($modname, \context_course::instance($courseid), $files); => `
+- 90 DecrementInteger: `'successor_cmid' => 0, 'hidden_predecesso => 'successor_cmid' => -1, 'hidden_predecesso`
+- 90 IncrementInteger: `'successor_cmid' => 0, 'hidden_predecesso => 'successor_cmid' => 1, 'hidden_predecesso`
+- 90 DecrementInteger: `en_predecessors' => 0] : self::chain($cou => en_predecessors' => -1] : self::chain($cou`
+- 90 IncrementInteger: `en_predecessors' => 0] : self::chain($cou => en_predecessors' => 1] : self::chain($cou`
+- 90 ArrayItemRemoval: `escmid === null ? ['successor_cmid' => 0, 'hidden_predecessors' => escmid === null ? ['hidden_predecessors'`
+- 92 CastBool: `cescmid === null || (bool) get_fast_modinfo($co => cescmid === null || get_fast_modinfo($co`
+- 96 FalseValue: `, $cmid, $courseid, false, MUST_EXIST); => , $cmid, $courseid, true, MUST_EXIST);`
+- 102 DecrementInteger: `$first['expected'], 80), 'actual' => short => $first['expected'], 79), 'actual' => short`
+- 102 IncrementInteger: `first['expected'], 80), 'actual' => short => first['expected'], 81), 'actual' => short`
+- 102 ArrayItem: `'path'], 'expected' => shorten_text($firs => 'path'], 'expected' > shorten_text($firs`
+- 103 DecrementInteger: `t($first['actual'], 80), 'count' => count( => t($first['actual'], 79), 'count' => count(`
+- 103 IncrementInteger: `($first['actual'], 80), 'count' => count( => ($first['actual'], 81), 'count' => count(`
+- 103 ArrayItem: `ed'], 80), 'actual' => shorten_text($firs => ed'], 80), 'actual' > shorten_text($firs`
+- 104 ArrayItem: `ual'], 80), 'count' => count($result['mis => ual'], 80), 'count' > count($result['mis`
+- 107 MethodCallRemoval: `activity_file_supplement::apply($cm, $files); => `
+- 112 CastInt: `mid, $replacescmid, (int) $USER->id); => mid, $replacescmid, $USER->id);`
+- 121 Concat: `cleanupfailures[] = 'Predecessor visibility: ' . $cleanup->getMessage(); => cleanupfailures[] = $cleanup->getMessage() . 'Predecessor visibility: ';`
+- 121 ConcatOperandRemoval: `cleanupfailures[] = 'Predecessor visibility: ' . $cleanup->getMessage => cleanupfailures[] = $cleanup->getMessage`
+- 126 Concat: `cleanupfailures[] = 'New activity deletion: ' . $cleanup->getMessage(); => cleanupfailures[] = $cleanup->getMessage() . 'New activity deletion: ';`
+- 126 ConcatOperandRemoval: `cleanupfailures[] = 'New activity deletion: ' . $cleanup->getMessage => cleanupfailures[] = $cleanup->getMessage`
+- 129 CastObject: `l_coursepilot', '', (object) ['cmid' => $cmid, 'p => l_coursepilot', '', ['cmid' => $cmid, 'p`
+- 130 DecrementInteger: `=> $replacescmid ?? 0], 'Creation failed: => => $replacescmid ?? -1], 'Creation failed:`
+- 130 IncrementInteger: `=> $replacescmid ?? 0], 'Creation failed: => => $replacescmid ?? 1], 'Creation failed:`
+- 130 Coalesce: `d, 'predecessor' => $replacescmid ?? 0], 'Creation failed: => d, 'predecessor' => 0 ?? $replacescmid], 'Creation failed:`
+- 131 Concat: `replacescmid ?? 0], 'Creation failed: ' . $e->getMessage() . '; ' . implode('; => replacescmid ?? 0], $e->getMessage() . 'Creation failed: ' . '; ' . implode(';`
+- 131 ConcatOperandRemoval: `replacescmid ?? 0], 'Creation failed: ' . $e->getMessage() . ' => replacescmid ?? 0], $e->getMessage() . '`
+- 131 Concat: `reation failed: ' . $e->getMessage() . '; ' . implode('; ', $cl => reation failed: ' . '; ' . $e->getMessage() . implode('; ', $cl`
+- 131 ConcatOperandRemoval: `$e->getMessage() . '; ' . implode('; ', $clean => $e->getMessage() . implode('; ', $clean`
+- 131 Concat: `$e->getMessage() . '; ' . implode('; ', $cleanupfailures)); => $e->getMessage() . implode('; ', $cleanupfailures) . '; ');`
+- 136 MethodCallRemoval: `// Last: drop what the observers wrote on the way, keep exactly one state. retention::purge_cm($cmid); => `
+- 137 CastInt: `ter::capture($cmid, (int) $USER->id, version_w => ter::capture($cmid, $USER->id, version_w`
+- 155 MethodCallRemoval: `registry::require_developed($modname, 'createfromxmlcatalogued'); => `
+- 156 MethodCallRemoval: `self::assert_valid($activityxml, $modname); => `
+- 157 MethodCallRemoval: `self::assert_replaceable($replacescmid, $courseid, $modname); => `
+- 158 ArrayItemRemoval: `return ['references' => cm_references::references_to($replacescmid)] + self::chain($cou => return [] + self::chain($cou`
+- 179 ArrayItemRemoval: `ilot_cm_version', ['courseid' => $courseid, 'source' => version_w => ilot_cm_version', ['source' => version_w`
+- 187 CastInt: `$next[(int) $m->cmid] = (int) $m => $next[$m->cmid] = (int) $m`
+- 188 CastInt: `$previous[(int) $m->sourcecmid] = (i => $previous[$m->sourcecmid] = (i`
+- 188 CastInt: `) $m->sourcecmid] = (int) $m->cmid; => ) $m->sourcecmid] = $m->cmid;`
+- 192 UnwrapArrayFilter: `iddenpredecessors = array_filter(self::walk($previous, $oldcmid), static fn($cmid) => !$cms[$cmid]->visible); => iddenpredecessors = self::walk($previous, $oldcmid);`
+- 208 UnwrapArrayValues: `return array_values(array_slice($path, 1, null, true)); => return array_slice($path, 1, null, true);`
+- 250 UnwrapFinally: `try { $ok = $dom->loadXML($xml, LIBXML_NONET); } finally { libxml_clear_errors(); libxml_use_internal_errors($previous); } => $ok = $dom->loadXML($xml, LIBXML_NONET); libxml_clear_errors(); libxml_use`
+- 253 FunctionCallRemoval: `libxml_clear_errors(); => `
+- 254 FunctionCallRemoval: `libxml_use_internal_errors($previous); => `
+- 265 LogicalAndAllSubExprNegation: `if ($modname === 'lightboxgallery' && (new \DOMXPath($dom))->query('/activity/lightboxgallery/timemodified')->length === 0) { => if (!($modname === 'lightboxgallery') && !((new \DOMXPath($dom))->query`
+- 266 DecrementInteger: `ified')->length === 0) { => ified')->length === -1) {`
+- 266 Identical: `emodified')->length === 0) { => emodified')->length !== 0) {`
+- 290 UnwrapArrayUnique: `ts' => array_values(array_unique($presets))]; => ts' => array_values($presets)];`
+- 290 UnwrapArrayValues: `'presets' => array_values(array_unique($presets))]; => 'presets' => array_unique($presets)];`
+- 324 Continue_: `continue; => break;`
+- 350 LogicalAnd: `cted === $actual || is_numeric($expected) && is_numeric($actual) && (float) $expect => cted === $actual || (is_numeric($expected) || is_numeric($actual)) && (float) $expect`
+- 382 ArrayItemRemoval: `(in_array($name, ['id', 'contextid', 'file', => (in_array($name, ['contextid', 'file',`
+- 385 UnwrapTrim: `'id') && is_numeric(trim($node->textContent)); => 'id') && is_numeric($node->textContent);`
+- 405 UnwrapTrim: `$value = trim(str_replace("\r\n", "\n", $value)); => $value = str_replace("\r\n", "\n", $value);`

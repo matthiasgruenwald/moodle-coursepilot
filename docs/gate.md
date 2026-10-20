@@ -151,6 +151,34 @@ Erfolg des Qualitätsjobs. Der Pilot und der Fixture-Nachweis ersetzen keinen vo
 Der erste [Pilotbericht](checks/672-infection-pilot-2026-10-13.md) enthält gemessene
 Einzelzeiten, Originalpfade und die Grenzen der Volllauf-Hochrechnung.
 
+### Mutations-Volllauf (einmalig, #673)
+
+`node scripts/gate/mutation-full.js run` mutiert den gesamten Produktionscode (dieselben Ausschlüsse,
+Zeitgrenze und Coverage wie `mutation`, aber ohne Git-Diff) in Abschnitten je Verzeichnis
+(`plan` listet sie, größere Verzeichnisse in Blöcken zu zehn Dateien). Je Instanz läuft ein Abschnitt
+nach dem anderen (`--threads=1`). Fortschritt liegt unter `/var/lib/afk-pipeline/673/sections/`:
+`<name>.lock` (Besitzer, exklusiv angelegt), `<name>.compact.json` und zuletzt atomar `<name>.done`.
+Bei Abbruch läuft nur der unvollständige Abschnitt neu. Vor jedem Abschnitt gilt der Lastschutz
+(`host-load.js`): bei belegtem Host wartet der Lauf, er umgeht ihn nicht. Es braucht die frische
+`infection-coverage` eines `gate full` auf demselben Quellstand.
+
+Mehrere Instanzen: `bash scripts/gate/mutation-full-instance.sh up <id> [mem-gb] [cpus]` baut einen
+zusätzlichen Stack `kurspilot-gate-<id>` (eigenes Moodle, eigener Plugin-Mount aus dem Checkout, eigene
+Datenbank, eigenes PHPUnit-Datenverzeichnis, Speicher- und CPU-Grenzen; der Präfix hält den Lastschutz
+zufrieden). Jede Instanz startet mit `GATE_DIR=/opt/kurspilot-gate-<id>
+GATE_CONTAINER=kurspilot-gate-<id>-webserver-1 FULL_MUTATION_INSTANCE=<id>`
+(`FULL_MUTATION_ORDER=reverse` arbeitet die Liste von hinten ab) und nimmt den nächsten Abschnitt ohne
+fremdes Lock. Dieselbe Datenbank wird nie von zwei Läufern benutzt. Vor dem Lock und vor dem Done-Marker
+muss der Plugin-Mount (`treeDigest`, ohne `.phpunit.cache` und generierte `phpunit.xml`) dem beim Start
+festgehaltenen Quellstand (`plugin-digest.txt`) entsprechen, sonst bricht der Lauf ab. Den gemeinsamen
+Mount `/opt/kurspilot-gate/plugin` nicht für lange Läufe verwenden: andere `gate`-Läufe synchronisieren
+mit `rsync --delete` hinein. Eine Instanz-ID gehört genau einem Prozess: der Start räumt eigene Locks ohne Done-Marker weg. `FULL_MUTATION_DIR` verlegt das Arbeitsverzeichnis (Standard `/var/lib/afk-pipeline/673`). `... down <id>` entfernt nur den eigenen Stack.
+
+`report <datum>` schreibt `docs/checks/673-mutationsvolllauf-<datum>-ueberlebende.md` (Überlebende je Datei)
+und `-prune.md` (Tests ohne getöteten Mutanten, Vertragstests ausgenommen). Tests werden nie gelöscht;
+der Prune-Bericht ist eine Liste für eine menschliche Entscheidung. MSI ist nur ein Trendwert ohne Schwelle.
+Ergebnis und Grenzen: [Hauptbericht](checks/673-mutationsvolllauf-2026-10-19.md).
+
 ### Bewusste Leseausnahme bei eigenen Dateien
 
 Die Capability-Ausnahmen für `list_context_files`, `read_context_file`, `list_material_files`
