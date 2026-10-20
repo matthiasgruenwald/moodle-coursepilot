@@ -192,4 +192,20 @@ final class oauth_lib_responses_test extends \advanced_testcase {
             oauth_lib::build_redirect_url('https://c.example/cb', ['error' => null, 'state' => ''])
         );
     }
+
+    /**
+     * The public registration helpers can be used directly: registering a client and describing a stored one.
+     */
+    public function test_registration_helpers_are_public_and_agree(): void {
+        $this->resetAfterTest();
+
+        $registered = oauth_lib::register_client(['client_name' => 'Direkt', 'redirect_uris' => ['https://client.example/cb']]);
+        $client = oauth_lib::get_client($registered['client_id']);
+        $described = oauth_lib::client_registration_response($client);
+
+        $this->assertSame('Direkt', $registered['client_name']);
+        $this->assertSame($registered, $described);
+        $this->assertTrue(oauth_lib::redirect_uri_matches($client, 'https://client.example/cb'));
+        $this->assertFalse(oauth_lib::redirect_uri_matches($client, 'https://client.example/other'));
+    }
 }
