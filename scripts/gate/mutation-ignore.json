@@ -1813,5 +1813,56 @@
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 140,
+    "mutator": "UnwrapArrayValues",
+    "hash": "6195f458d74f5ec64cd2207b30a80101652c6ea031373f50fcff90b56dd6d596",
+    "reason": "Historical #673 identity before the reviewed catalog-data refactor. The complete mutation delta in column_violations maps uniquely to current identity e46ccc82a667a6ea72607b10ba813fe0b61e90f089e8e5ebc82ccffc5bbfa616 at line 171; both exact source pairs and their input wiring were independently checked in R9 (674/drift-lineage-candidates.json). This entry preserves the old identity and does not match or suppress a different current mutant. The only subsequent use of $known before comparison is sort($known), which unconditionally renumbers integer keys. array_unique retains the same ordered values with or without this array_values call. sort therefore produces the identical indexed list and the same column-parity decision for every definition.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 147,
+    "mutator": "UnwrapArrayValues",
+    "hash": "c1e0ce4ad952cd91c3643b3155dff95de41b86e5c1df86dada446decf64aae41",
+    "reason": "Historical #673 identity before the reviewed catalog-data refactor. The complete mutation delta in column_violations maps uniquely to current identity 4721a10b0794b3ff3ea685fa7029d19afae6907eaaae6de04026316c4135de9f at line 178; both exact source pairs and their input wiring were independently checked in R9 (674/drift-lineage-candidates.json). This entry preserves the old identity and does not match or suppress a different current mutant. The private $added array is consumed only by its truth value and implode(\", \", $added). Renumbering keys changes neither emptiness nor the ordered values emitted by implode. No keys or raw array escape this method; the returned violation text is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 148,
+    "mutator": "UnwrapArrayValues",
+    "hash": "af2bf4b0acfc25bb071a3f8e5716bacb74001eb0450bd8c7b001523edd813005",
+    "reason": "Historical #673 identity before the reviewed catalog-data refactor. The complete mutation delta in column_violations maps uniquely to current identity b0b0c694717c98d3b246cb88e4781d3aaef1a28041d5e7a104404a62d6cbac5e at line 179; both exact source pairs and their input wiring were independently checked in R9 (674/drift-lineage-candidates.json). This entry preserves the old identity and does not match or suppress a different current mutant. The private $removed array is consumed only by its truth value and implode(\", \", $removed). Renumbering keys changes neither emptiness nor the ordered values emitted by implode. No keys or raw array escape this method; the returned violation text is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 200,
+    "mutator": "UnwrapArrayMerge",
+    "hash": "a685887bd46466ca24117ed050f689b8861aa788234c9cdf3a5656f9d18a9885",
+    "reason": "Historical #673 identity before the reviewed catalog-data refactor. The complete mutation delta in constant_violations maps uniquely to current identity 3295f6f786edf18861ab02bf3d251fd88c209dc4f709c5e432dc794977e8b0a2 at line 227; both exact source pairs and their input wiring were independently checked in R9 (674/drift-lineage-candidates.json). This entry preserves the old identity and does not match or suppress a different current mutant. The exact bound shared_block::checked_constants() returns only NOGROUPS, SEPARATEGROUPS and VISIBLEGROUPS. Moodle setup.php unconditionally loads lib/grouplib.php, which defines all three before any plugin entry point runs. Removing these already-defined names from this private validation cannot produce or suppress a violation on a supported initialized Moodle instance. Module-supplied constants remain checked unchanged. The shared-block producer and drift validator are both source-bound.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/drift_check.php",
+    "line": 235,
+    "mutator": "ArrayItemRemoval",
+    "hash": "d4666e93026d57a70a2a6640106328e7dff7a7815caec4889dbbf28af8678b74",
+    "reason": "Historical #673 identity before the reviewed catalog-data refactor. The complete mutation delta in write_option_violations maps uniquely to current identity 00245b92f83828740161679c52860f0f6263bf480acefd2344a41a51cdf0164d at line 257; both exact source pairs and their input wiring were independently checked in R9 (674/drift-lineage-candidates.json). This entry preserves the old identity and does not match or suppress a different current mutant. For missing or null editor_content, the original spreads one empty array into array_merge, while this mutant spreads zero arguments. On supported PHP 8 runtimes array_merge([]) and array_merge() both return the same empty array. For an explicitly supplied editor_content value the fallback is unused, so all referenced names and violation messages remain identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/drift_check.php": "429d9c59960e0557f3fc63e82eaed95770219b4ffc94217a510d59389b079404"
+    }
   }
 ]
