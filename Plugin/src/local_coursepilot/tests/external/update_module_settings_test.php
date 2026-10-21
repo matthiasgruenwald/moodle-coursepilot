@@ -304,6 +304,8 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['coursepagevisibility' => 'stealth']));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
+            $this->assertSame('readonlyvocabularyfield', $e->errorcode);
+            $this->assertStringContainsString('Field "coursepagevisibility"', $e->getMessage());
             $this->assertStringContainsString('visibleoncoursepage', $e->getMessage());
             $this->assertStringNotContainsString('Unbekanntes Feld', $e->getMessage());
         }
@@ -454,7 +456,9 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['completionview' => 1]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
+            $this->assertSame('completionfieldviasetcompletion', $e->errorcode);
             $this->assertStringContainsString('completionview', $e->getMessage());
+            $this->assertStringContainsString('set_completion', $e->getMessage());
         }
     }
 

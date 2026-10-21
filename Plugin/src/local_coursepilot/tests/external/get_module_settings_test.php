@@ -28,7 +28,37 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(get_module_settings::class)]
 #[CoversClass(\local_coursepilot\catalog\module_state::class)]
+#[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class get_module_settings_test extends \advanced_testcase {
+    /**
+     * Hidden activities remain hidden regardless of whether their course-page listing is enabled.
+     */
+    public function test_visibility_state_distinguishes_hidden_stealth_and_shown(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        $cases = [
+            [0, 0, 'stealth', 'hidden'],
+            [0, 1, 'shown', 'hidden'],
+            [1, 0, 'stealth', 'stealth'],
+            [1, 1, 'shown', 'shown'],
+        ];
+        foreach ($cases as [$visible, $listed, $pagevisibility, $availability]) {
+            set_coursemodule_visible($page->cmid, $visible, $listed);
+            $result = external_api::clean_returnvalue(
+                get_module_settings::execute_returns(),
+                get_module_settings::execute($page->cmid)
+            );
+            $settings = json_decode($result['settings_json'], true, 512, JSON_THROW_ON_ERROR);
+            $this->assertSame($pagevisibility, $settings['coursepagevisibility']);
+            $this->assertSame($availability, $settings['availability_status']);
+        }
+    }
+
     /**
      * Return raw instance fields, such as intro, without a custom Coursepilot schema.
      */

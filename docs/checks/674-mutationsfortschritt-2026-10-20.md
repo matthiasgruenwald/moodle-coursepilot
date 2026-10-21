@@ -1,5 +1,9 @@
 # Mutationsarbeit #674: Zwischenstand vom 20.10.2026
 
+Fortsetzung: [CI-Teilabnahme vom 21.10.](674-ci-teilabnahme-2026-10-21.md)
+und [Shared-Block-Charge](674-shared-block-2026-10-21.md). Die folgenden
+Zähler bleiben historische Snapshots.
+
 **Kein Abschlussbericht.** Die Kriterien von #674 (alle Ausgangsmutanten erledigt,
 MSI-Trend fortgeschrieben, Ratsche grün) sind noch nicht vollständig nachgewiesen.
 Keine Tests gelöscht oder abgeschwächt, keine Schwelle oder Baseline geändert.

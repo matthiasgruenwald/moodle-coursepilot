@@ -42,6 +42,24 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(\local_coursepilot\catalog\registry::class)]
 final class describe_module_fields_test extends \advanced_testcase {
     /**
+     * Shared settings retain their published defaults, ranges, routing advice and side effects.
+     */
+    public function test_full_label_catalog_preserves_the_shared_contract(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $result = external_api::clean_returnvalue(
+            describe_module_fields::execute_returns(),
+            describe_module_fields::execute('label', true)
+        );
+        $path = __DIR__ . '/../fixtures/catalog/shared-label-contract.json';
+        $expected = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+        foreach ($expected as $category => $value) {
+            $this->assertSame($value, $result['module'][$category], $category);
+        }
+    }
+
+    /**
      * A client sees each blocked field exactly once across shared and module-specific rules.
      */
     public function test_full_catalog_blocklists_have_no_duplicate_fields(): void {
