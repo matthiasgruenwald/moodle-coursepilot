@@ -71,3 +71,46 @@ Ergebnis `acceptance.json`. Lokale Belege:
 den CI-Watch. Issue bleibt offen; vollständige Restbearbeitung und
 Abschnittsnachmessungen einschließlich der bekannten `root/lib.php`-Lücke
 stehen aus.
+
+
+## Ergänzung: Shared-Meilenstein 6482d56 abgenommen
+
+[CI39570796657](https://github.com/matthiasgruenwald/moodle-coursepilot/actions/runs/39570796657),
+Versuch1, `pull_request`: **11/11 Jobs erfolgreich**, Head exakt
+`6482d567dd9faa08944561877eb43f3c68ba47c9`, PR717 offen gegen `dev`.
+Test-Merge `a946e0e3c2a02496f44eca84099423098f939580` hat exakt die Eltern
+`f909fc4681a74bc437299c7db69bc64bdc69ccdb` und diesen Head;
+`git-context.log` bestätigt dieselbe Basis und vollständige Historie.
+Die vier originalen Uploadarchive wurden per API heruntergeladen, vor dem
+Entpacken auf SHA256, Bytezahl und ZIP-Integrität geprüft:
+
+| Artefakt-ID | Inhalt | Upload-SHA256 |
+|---|---|---|
+| 12336415247 | gate-trend-MOODLE_501_STABLE | `26946a90b3c80f1ea053368ee422e361ff54db1d1abf1e1a046bfe242009a37c` |
+| 12332192977 | native-release-zip-MOODLE_502_STABLE | `7911a69d038c112f282fce66f680aed41d2008aa53c80c502fa988dce145debd` |
+| 12331927508 | native-release-zip-MOODLE_501_STABLE | `c58236a46e6677e5c9fde9728976298de25aebdd595923926cb8637cc48b1901` |
+| 12331429004 | native-release-zip-MOODLE_503_STABLE | `7f605641a88f0007e949d1a3487adcf3ce8c62f333eb6a6af9af9a8ebb792616` |
+
+Alle drei inneren Release-ZIPs entsprechen den vor Installation protokollierten
+Jobhashes und bytegenau allen **524 Dateien** des festen Commits, einschließlich
+der neuen Shared-Vertragsfixture und Root-NOTICE gemäß Buildskript. Jeder
+Releasejob bestätigt Registrierung, Discovery, OAuth-`tools/list` mit56
+Werkzeugen und autorisierten Versionsaufruf. Keine Veröffentlichung im Worker.
+
+CI-Full:2220 Tests,133336 Assertions,15 Skips; Coverage98,42%,
+Baseline86,26%, Ratsche/Statik0 Verstöße. Diff-Infection1512 Mutanten,
+135 überlebt,0 Fehler/Verstöße,3764,950s. `full.exit`, `infection.exit` und
+`mutation-proof.exit` jeweils0; die sieben echten positiven/negativen
+Fehlerpfadprüfungen zeigen genau die erwarteten Exits. Alle72 CI-Quellbindungen
+stimmen. Die16 lokalen Archive wurden erneut auf Archiv-/Rohhash und Größe
+geprüft; normale lokale Hooks/Push Exit0. Kein Volltest wiederholt.
+
+Originale, API-Metadaten, Releasejoblogs und Ergebnis:
+`674/ci-acceptance-6482d56/acceptance.json`; Parent-Rohlog:
+`674/parent-ci-6482d56/full-gate.log`; lokale16 Archive:
+`674/full-gate-6482d56-20261021/manifest.json`.
+
+**Nur Teilabnahme:** Register2140 fachliche Assertion-Kills+61 genehmigte
+Ignores+2503 offene Originalidentitäten=4704; Vorkommen2180+61+2507=4748.
+Keine Gesamt-Abnahme674, kein vollständiger Abschnitts-/Gesamt-MSI und keine
+Freigabe späterer Änderungen. Parent besitzt weiterhin den CI-Watch.

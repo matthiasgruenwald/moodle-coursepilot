@@ -263,4 +263,56 @@ final class material_composition_test extends \advanced_testcase {
 
         $this->assertSame([300 + 24 + 20, 48 + 5], [$width, $height]);
     }
+
+    /**
+     * A leading empty line must not move the same visible source credit in its centred strip.
+     *
+     * @param string $text Source credit with distinct glyph bearings.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('source_credit_glyphs')]
+    public function test_leading_empty_line_preserves_the_centred_source_credit(string $text): void {
+        $part = $this->part($this->png(10, 9), $text);
+        [$bytes, $width, $height] = material_composition::render([$part], 'horizontal');
+        $part['source_header_text'] = "\n" . $text;
+        [$spacedbytes, $spacedwidth, $spacedheight] = material_composition::render([$part], 'horizontal');
+
+        $this->assertSame([$width, $height], [$spacedwidth, $spacedheight]);
+        $image = imagecreatefromstring($bytes);
+        $spacedimage = imagecreatefromstring($spacedbytes);
+        try {
+            $mismatch = 0;
+            $blue = 0;
+            $spacedblue = 0;
+            for ($y = 0; $y < $height; $y++) {
+                for ($x = 0; $x < $width; $x++) {
+                    $colour = $this->rgb($image, $x, $y);
+                    $spacedcolour = $this->rgb($spacedimage, $x, $y);
+                    $mismatch += $colour === $spacedcolour ? 0 : 1;
+                    $blue += $colour === self::BLUE ? 1 : 0;
+                    $spacedblue += $spacedcolour === self::BLUE ? 1 : 0;
+                }
+            }
+            $this->assertGreaterThan(0, $blue, 'The original source credit is visible.');
+            $this->assertGreaterThan(0, $spacedblue, 'The source credit after the empty line is visible.');
+            $this->assertSame(0, $mismatch, 'Empty leading lines preserve the centred credit and source picture.');
+        } finally {
+            imagedestroy($image);
+            imagedestroy($spacedimage);
+        }
+    }
+
+    /**
+     * Glyphs with cap height, descenders and low strokes exercise different font bearings.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function source_credit_glyphs(): array {
+        return [
+            'capital I' => ['I'],
+            'low stroke' => ['_'],
+            'descender j' => ['j'],
+            'capital F' => ['F'],
+            'descender g' => ['g'],
+        ];
+    }
 }
