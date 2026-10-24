@@ -36,6 +36,12 @@ erneut starten. Komplett neu: `docker compose -f scripts/gate/compose.yml down`,
 `git -C /opt/moodle worktree remove --force /opt/kurspilot-gate/moodle`,
 `/opt/kurspilot-gate` löschen, Skript starten.
 
+Die Test-DB läuft ohne Dauerhaftigkeit (`innodb_flush_log_at_trx_commit=0`,
+`innodb_doublewrite=0`): ein Absturz darf die Testdaten verlieren, sie sind
+wiederherstellbar (`init.php`). Gemessen am festen Ausschnitt (clone/restore/create_quiz/
+import_questions, 86 Tests): 68,1 s → 50,7 s (Median aus 3); Infection auf zwei kleinen
+Dateien (28 Mutanten): 59,0 s → 54,3 s. Gilt über `compose.yml` auch für CI und die privaten Instanzen.
+
 ## Gate-Kommando
 
 Node-Skript ohne Laufzeit-Abhängigkeiten, ruft PHP per `docker exec` im
