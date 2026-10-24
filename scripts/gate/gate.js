@@ -35,6 +35,7 @@ const ratchet = require('./ratchet');
 const deptrac = require('./deptrac');
 const mutation = require('./mutation');
 const hostLoad = require('./host-load');
+const mutationBase = require('./mutation-base');
 
 const { PLUGIN_REL, PLUGIN_IN_CONTAINER, repoPath } = staticChecks;
 // GATE_REPO nur fuer Tests: das Repo, dessen Git-Stand und Baselines ausgewertet werden.
@@ -364,7 +365,8 @@ function runFull() {
 function runMutation(pilotDirectory, reuseCoverage = false) {
   const ignores = mutation.parseIgnores(fs.readFileSync(path.join(REPO, 'scripts/gate/mutation-ignore.json'), 'utf8'));
   const baseline = loadBaseline();
-  const { base, changed } = mutationChanges();
+  const { base, changed, fullBase, incremental } = mutationChanges(!pilotDirectory);
+  const stateFile = path.join(GATE_DIR, 'reports', 'mutation-green.json');
   let files;
   if (pilotDirectory) {
     const directory = path.join(REPO, PLUGIN_REL, pilotDirectory);
@@ -383,6 +385,7 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
   if (files.length === 0) {
     logOutcome('mutation', true);
     console.log('summary: mutation no changed production PHP');
+    if (!pilotDirectory) mutationBase.recordGreen({ repo: REPO, stateFile, fullBase });
     return true;
   }
   requireContainer();
@@ -457,15 +460,20 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
   found.map(ratchet.formatFinding).forEach(line => console.log(line));
   failureLog.append(found.map(f => [new Date().toISOString(), f.rule, f.file, 'fail']));
   logOutcome('mutation', found.length === 0);
-  console.log(`summary: mutation total=${report.stats.totalMutantsCount} escaped=${report.stats.escapedCount} errors=${report.stats.errorCount + report.stats.syntaxErrorCount} violations=${found.length} seconds=${elapsedSeconds}`);
+  console.log(`summary: mutation total=${report.stats.totalMutantsCount} escaped=${report.stats.escapedCount} errors=${report.stats.errorCount + report.stats.syntaxErrorCount} violations=${found.length} seconds=${elapsedSeconds} base=${incremental ? 'last-green' : 'full'}`);
+  if (found.length === 0 && !pilotDirectory) mutationBase.recordGreen({ repo: REPO, stateFile, fullBase });
   return found.length === 0;
 }
 
-function mutationChanges() {
+/** Local runs may diff against the last green commit (`incremental`); everything else uses the full target base. */
+function mutationChanges(incremental = false) {
   const base = resolveBase(loadBaseline().armedAt);
-  const ancestor = (git(['merge-base', 'HEAD', base]) || '').trim();
-  if (!ancestor) throw new Error(`No mutation comparison ancestor for ${base}`);
-  return { base: ancestor, ...changesSince(ancestor) };
+  const fullBase = (git(['merge-base', 'HEAD', base]) || '').trim();
+  if (!fullBase) throw new Error(`No mutation comparison ancestor for ${base}`);
+  const chosen = incremental
+    ? mutationBase.mutationBase({ repo: REPO, stateFile: path.join(GATE_DIR, 'reports', 'mutation-green.json'), fullBase })
+    : { base: fullBase, incremental: false };
+  return { base: chosen.base, fullBase, incremental: chosen.incremental, ...changesSince(chosen.base) };
 }
 
 function printMutationReport(file) {
