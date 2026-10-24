@@ -1870,7 +1870,7 @@
     "line": 100,
     "mutator": "DecrementInteger",
     "hash": "01210c7bd1eadacd70c406f4d48f3cb490a20eff9b0e2213478313c328f291fc",
-    "reason": "Changing fallback coordinate 0 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 0 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1880,7 +1880,7 @@
     "line": 100,
     "mutator": "IncrementInteger",
     "hash": "c87b42205b97e31f993f33f0c59c74dbc6f6e93faf583402421f2ad139ee26d9",
-    "reason": "Changing fallback coordinate 0 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 0 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1890,7 +1890,7 @@
     "line": 100,
     "mutator": "DecrementInteger",
     "hash": "746c6a7622b3e4bc9908f72f3e6263ad916fe1660e763922f3d233c801ed7c1c",
-    "reason": "Changing fallback coordinate 1 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 1 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1900,7 +1900,7 @@
     "line": 100,
     "mutator": "IncrementInteger",
     "hash": "43f5133a1351e2262874c8ee71f94ef9eae737541869e37510f9d81f885238f7",
-    "reason": "Changing fallback coordinate 1 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 1 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1910,7 +1910,7 @@
     "line": 100,
     "mutator": "DecrementInteger",
     "hash": "e7eb5499e53c6e5094f828df4d5c3df5ea3aabfca37e723effb4773d3f2c1610",
-    "reason": "Changing fallback coordinate 2 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 2 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1920,7 +1920,7 @@
     "line": 100,
     "mutator": "IncrementInteger",
     "hash": "5f4c2af13f990e05ff567b40ff3667836b4576974e068fd31774127f61404ed0",
-    "reason": "Changing fallback coordinate 2 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 2 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1930,7 +1930,7 @@
     "line": 100,
     "mutator": "DecrementInteger",
     "hash": "cfd7da20f9327ea970525ff9f7f58ec5a826fd89f48efd607ef4c40747f0d5d6",
-    "reason": "Changing fallback coordinate 3 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 3 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1940,7 +1940,7 @@
     "line": 100,
     "mutator": "IncrementInteger",
     "hash": "ca93ffdf1d2a2e03de8e0408913182cb4a3d6c1666a8452698715361deb64d47",
-    "reason": "Changing fallback coordinate 3 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 3 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1950,7 +1950,7 @@
     "line": 100,
     "mutator": "DecrementInteger",
     "hash": "3777cfd7c97fce6f9099ac760ac4abdf69fe099f017e95bb71c71e1870da9178",
-    "reason": "Changing fallback coordinate 4 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 4 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1960,7 +1960,7 @@
     "line": 100,
     "mutator": "IncrementInteger",
     "hash": "4d1dfe5d5390f0b8034daafbff8a68ffa52a30b0b2821c0e29e482abd6f64e6f",
-    "reason": "Changing fallback coordinate 4 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 4 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1970,7 +1970,7 @@
     "line": 100,
     "mutator": "DecrementInteger",
     "hash": "b487799d11df93ea3bbbf31ce7582565377a65793ff7f68939d9b21fe2751a49",
-    "reason": "Changing fallback coordinate 5 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 5 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1980,7 +1980,7 @@
     "line": 100,
     "mutator": "IncrementInteger",
     "hash": "2e6a960e3a1a73b54f5580cef44c7299fea337d3f3d1310ae0defd39adb4ed79",
-    "reason": "Changing fallback coordinate 5 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 5 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -1990,7 +1990,7 @@
     "line": 100,
     "mutator": "DecrementInteger",
     "hash": "bd6c1585a1e9ab7d760227864d3dd2db8720fa251827d197ce748aab1d9e5c56",
-    "reason": "Changing fallback coordinate 6 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 6 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -2000,7 +2000,7 @@
     "line": 100,
     "mutator": "IncrementInteger",
     "hash": "89a699378b503df57732a865eb005f8ca32df75dd8b8e18cc51ae8e945406b04",
-    "reason": "Changing fallback coordinate 6 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 6 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -2010,7 +2010,7 @@
     "line": 100,
     "mutator": "DecrementInteger",
     "hash": "352c1ec59edcfdbbb06a410378c92d86a09ef46f269dd3ef246eda266509cb84",
-    "reason": "Changing fallback coordinate 7 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 7 from 0 to -1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -2020,7 +2020,7 @@
     "line": 100,
     "mutator": "IncrementInteger",
     "hash": "493c683a5a40eddf8c49359e8632b6f33d3246842334f62418d803609a380a9f",
-    "reason": "Changing fallback coordinate 7 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Changing fallback coordinate 7 from 0 to 1 affects only the empty-header placeholder. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }
@@ -2030,7 +2030,7 @@
     "line": 100,
     "mutator": "ArrayItemRemoval",
     "hash": "8e5a48d331bdee15da714abd8ff4fcb6f83082145afe0a6166ad456ecb3d83aa",
-    "reason": "Removing one of eight identical fallback zeros leaves seven zeros; indices 0, 2, 4, 6 read by the width calculation still exist, and index 7 is never read in this branch. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers.",
+    "reason": "Removing one of eight identical fallback zeros leaves seven zeros; indices 0, 2, 4, 6 read by the width calculation still exist, and index 7 is never read in this branch. The fallback is selected only for empty source_header_text. Header height is then 0; the returned layout width selects 0 instead of the computed textwidth, and draw_parts skips its entire box/text block because part.header is 0. The private box is not returned by public render(); PNG pixels and output dimensions therefore remain identical. Bind to the full material_composition source controlling all these consumers. This proof concerns strictly empty text, not a leading newline in non-empty text: neither GD font metrics nor newline handling is invoked for this fallback.",
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/material_composition.php": "ffd08f78db4a80dec14017a6f758a0a4a5e5daee2bb29513b8422f59ee05e7ef"
     }

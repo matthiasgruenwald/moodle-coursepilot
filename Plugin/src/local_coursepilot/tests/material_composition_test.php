@@ -265,39 +265,65 @@ final class material_composition_test extends \advanced_testcase {
     }
 
     /**
-     * A leading empty line must not move the same visible source credit in its centred strip.
+     * The source credit uses the native font's bounds, 12 px padding and a centred 48 px strip.
      *
      * @param string $text Source credit with distinct glyph bearings.
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('source_credit_glyphs')]
-    public function test_leading_empty_line_preserves_the_centred_source_credit(string $text): void {
-        $part = $this->part($this->png(10, 9), $text);
-        [$bytes, $width, $height] = material_composition::render([$part], 'horizontal');
-        $part['source_header_text'] = "\n" . $text;
-        [$spacedbytes, $spacedwidth, $spacedheight] = material_composition::render([$part], 'horizontal');
+    public function test_source_credit_matches_the_native_font_in_the_centred_strip(string $text): void {
+        $source = $this->png(10, 9);
+        [$bytes, $width, $height] = material_composition::render([$this->part($source, $text)], 'horizontal');
 
-        $this->assertSame([$width, $height], [$spacedwidth, $spacedheight]);
+        // Measure actual native drawing at a separate origin, independently of the layout's bbox query.
+        $reference = imagecreatetruecolor(256, 256);
+        imagefill($reference, 0, 0, imagecolorallocate($reference, 255, 255, 255));
+        $metrics = imagecreatetruecolor(1, 1);
+        $bounds = imagettftext($metrics, 20, 0, 0, 0, imagecolorallocate($metrics, ...self::BLUE), self::FONT, $text);
+        imagettftext($reference, 20, 0, 80, 80, imagecolorallocate($reference, ...self::BLUE), self::FONT, $text);
+        $left = min($bounds[0], $bounds[2], $bounds[4], $bounds[6]);
+        $right = max($bounds[0], $bounds[2], $bounds[4], $bounds[6]);
+        $top = min($bounds[1], $bounds[3], $bounds[5], $bounds[7]);
+        $bottom = max($bounds[1], $bounds[3], $bounds[5], $bounds[7]);
+        $expectedwidth = $right - $left + 24;
+        $expected = imagecreatetruecolor($expectedwidth, 57);
+        imagefill($expected, 0, 0, imagecolorallocate($expected, 255, 255, 255));
+        // Preserve glyph overhangs outside the reported font rectangle, too.
+        imagecopy(
+            $expected,
+            $reference,
+            12 - $left - 80,
+            (int) round((48 - ($bottom - $top)) / 2) - $top - 80,
+            0,
+            0,
+            256,
+            256
+        );
+        $picture = imagecreatefromstring($source);
+        imagecopy($expected, $picture, 0, 48, 0, 0, 10, 9);
         $image = imagecreatefromstring($bytes);
-        $spacedimage = imagecreatefromstring($spacedbytes);
         try {
+            $this->assertSame([$expectedwidth, 57], [$width, $height]);
             $mismatch = 0;
             $blue = 0;
-            $spacedblue = 0;
+            $expectedblue = 0;
             for ($y = 0; $y < $height; $y++) {
                 for ($x = 0; $x < $width; $x++) {
                     $colour = $this->rgb($image, $x, $y);
-                    $spacedcolour = $this->rgb($spacedimage, $x, $y);
-                    $mismatch += $colour === $spacedcolour ? 0 : 1;
+                    $expectedcolour = $this->rgb($expected, $x, $y);
+                    $mismatch += $colour === $expectedcolour ? 0 : 1;
                     $blue += $colour === self::BLUE ? 1 : 0;
-                    $spacedblue += $spacedcolour === self::BLUE ? 1 : 0;
+                    $expectedblue += $expectedcolour === self::BLUE ? 1 : 0;
                 }
             }
-            $this->assertGreaterThan(0, $blue, 'The original source credit is visible.');
-            $this->assertGreaterThan(0, $spacedblue, 'The source credit after the empty line is visible.');
-            $this->assertSame(0, $mismatch, 'Empty leading lines preserve the centred credit and source picture.');
+            $this->assertGreaterThan(0, $blue, 'The composed source credit is visible.');
+            $this->assertGreaterThan(0, $expectedblue, 'The native font reference is visible.');
+            $this->assertSame(0, $mismatch, 'The complete PNG preserves the centred native credit and source picture.');
         } finally {
             imagedestroy($image);
-            imagedestroy($spacedimage);
+            imagedestroy($expected);
+            imagedestroy($reference);
+            imagedestroy($picture);
+            imagedestroy($metrics);
         }
     }
 
@@ -313,6 +339,11 @@ final class material_composition_test extends \advanced_testcase {
             'descender j' => ['j'],
             'capital F' => ['F'],
             'descender g' => ['g'],
+            'leading empty line capital I' => ["\nI"],
+            'leading empty line low stroke' => ["\n_"],
+            'leading empty line descender j' => ["\nj"],
+            'leading empty line capital F' => ["\nF"],
+            'leading empty line descender g' => ["\ng"],
         ];
     }
 }
