@@ -167,7 +167,7 @@ Nichts davon ersetzt CI: CI prüft weiter den vollen Diff gegen den Zielbranch a
 (`@{upstream}`, sonst Zielbranch; `GATE_MATRIX_BASE=<ref>` überschreibt) und führt sie auf einer
 privaten Instanz mit anderer Moodle-Version und Datenbank aus. Profile in
 `scripts/gate/matrix-profiles.json` (`53-pgsql` = Standard, `52-mariadb`; weitere Zeilen genügen),
-Auswahl mit `GATE_MATRIX_PROFILES=52-mariadb,53-pgsql`. Die Instanz
+Auswahl mit `GATE_MATRIX_PROFILES=52-mariadb,53-pgsql`; `moodleRef` ist ein `origin/<Branch>`. Gemessen: warmer Lauf (Start, ein Testklasse, Stopp) 6 s auf 5.3 + PostgreSQL, Ersteinrichtung rund 3 Minuten. Die Instanz
 (`matrix-instance.sh`, `/opt/kurspilot-gate-m-<profil>`, Container `kurspilot-gate-m-<profil>-*`
 mit 3 GB/2 CPU Web und 1 GB/1 CPU DB) startet bei Bedarf, richtet sich einmal ein (Moodle-Worktree,
 Composer, PHPUnit-Init, rund 3 Minuten) und wird nach dem Lauf **gestoppt**; die Daten bleiben
@@ -180,7 +180,7 @@ sauberem Arbeitsbaum steht der Commit in `$GATE_DIR/reports/mutation-green.json`
 geschrieben, nie bei Abbruch, Fehler, Lastschutz oder Befund). Der nächste lokale Lauf vergleicht
 gegen diesen Commit statt gegen den Zielbranch und prüft nur die seither geänderten Zeilen. Gilt
 nur, wenn der Commit Vorfahr von HEAD ist, derselbe Vergleichsstand gegolten hat und
-`mutation-ignore.json` und `mutation.js` unverändert sind; sonst volle Basis wie bisher. Mit
+`mutation-ignore.json`, `mutation.js`, `gate.js`, `infection-git.sh`, `infection-bootstrap.php` und `baseline.json` unverändert sind und HEAD sowie sauberer Arbeitsbaum zu Laufbeginn und -ende gleich waren; sonst volle Basis wie bisher. Gemessen: Ein-Zeilen-Änderung nach grünem Lauf = 1 Mutant, 29 s (statt ca. 1512 Mutanten, rund 2,5 h). Mit
 `CI`/`GITHUB_ACTIONS` oder `GATE_MUTATION_FULL=1` immer volle Basis. Grenze: Eine Teständerung
 ohne Änderung der Produktionszeile prüft lokal keine alten Mutanten neu, das fängt CI.
 
@@ -190,7 +190,7 @@ Zeilenzahl auf `GATE_MUTATION_INSTANCES` Instanzen (Standard 2, `1` = bisheriges
 immer 1). Jede Zusatzinstanz (`mutation-full-instance.sh`, Id `s1`, `s2`) hat eigenen Webserver,
 eigene DB und `--threads=1`. Weniger Instanzen mit Meldung `mutation-shards:`, wenn weniger als
 `GATE_MIN_MEM_MB` + 5 GB je Zusatzinstanz Speicher oder weniger als 1,5 GB + 2,5 GB je neue
-Instanz Platz frei sind. Die Berichte werden summiert und mit derselben Auswertung bewertet.
+Instanz Platz frei sind. Die Berichte werden summiert und mit derselben Auswertung bewertet (Gegenprobe: 81 Mutanten, 11 Überlebende, 10 Befunde, identisch zum seriellen Lauf). Bei `mutation` ohne wiederverwendete Coverage läuft der Initialtestlauf je Instanz; der Gewinn ist dort klein (580 s → 519 s), bei `full` mit gemeinsamer Coverage am größten.
 Fertige Shards hinterlassen einen atomaren Marker (Quellstand, Basis, Dateiliste) und werden bei
 gleichem Schlüssel nicht wiederholt. Nach Erfolg werden die Zusatzinstanzen entfernt
 (`GATE_MUTATION_KEEP_INSTANCES=1` behält sie gestoppt), nach einem Fehler nur gestoppt, damit die

@@ -9,8 +9,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
-// Evaluation rules: when one of these changes, earlier green results prove nothing.
-const BOUND_FILES = ['scripts/gate/mutation-ignore.json', 'scripts/gate/mutation.js'];
+// Evaluation rules and the Infection setup: when one of these changes, earlier green results prove nothing.
+const BOUND_FILES = ['scripts/gate/mutation-ignore.json', 'scripts/gate/mutation.js', 'scripts/gate/gate.js', 'scripts/gate/infection-git.sh', 'scripts/gate/infection-bootstrap.php', 'scripts/gate/baseline.json'];
 
 const forcedFull = env => Boolean(env.CI || env.GITHUB_ACTIONS || env.GATE_MUTATION_FULL === '1');
 
@@ -49,17 +49,29 @@ function mutationBase({ repo, stateFile, fullBase, env = process.env }) {
   return valid ? { base: state.sha, incremental: true } : { base: fullBase, incremental: false };
 }
 
-/** Remember HEAD as green; only for a clean tree outside CI, written atomically after the green result. */
-function recordGreen({ repo, stateFile, fullBase, env = process.env }) {
-  if (env.CI || env.GITHUB_ACTIONS) return false;
+/** HEAD and cleanliness when a run starts; a green result may only be recorded for exactly this state. */
+function snapshot(repo) {
   const dirty = git(repo, ['status', '--porcelain']);
   const head = git(repo, ['rev-parse', 'HEAD']);
-  if (dirty.status !== 0 || dirty.stdout.trim() !== '' || head.status !== 0) return false;
-  fs.mkdirSync(path.dirname(stateFile), { recursive: true });
-  const tmp = `${stateFile}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify({ sha: head.stdout.trim(), base: fullBase, digest: rulesDigest(repo) }));
-  fs.renameSync(tmp, stateFile);
-  return true;
+  return dirty.status === 0 && head.status === 0 ? { head: head.stdout.trim(), clean: dirty.stdout.trim() === '' } : null;
 }
 
-module.exports = { mutationBase, recordGreen, forcedFull };
+/** Remember HEAD as green; only for a tree that was and is clean at the same HEAD outside CI, written atomically after the green result. */
+function recordGreen({ repo, stateFile, fullBase, started, env = process.env }) {
+  if (env.CI || env.GITHUB_ACTIONS) return false;
+  const now = snapshot(repo);
+  if (!now || !now.clean || (started !== undefined && (!started?.clean || started.head !== now.head))) return false;
+  const head = { stdout: now.head };
+  try {
+    fs.mkdirSync(path.dirname(stateFile), { recursive: true });
+    const tmp = `${stateFile}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify({ sha: head.stdout, base: fullBase, digest: rulesDigest(repo) }));
+    fs.renameSync(tmp, stateFile);
+    return true;
+  } catch (e) {
+    // The state is an optimisation: an unreadable rule file means no incremental base next time.
+    return false;
+  }
+}
+
+module.exports = { mutationBase, recordGreen, snapshot, rulesDigest, forcedFull };

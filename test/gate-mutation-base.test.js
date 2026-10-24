@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { mutationBase, recordGreen } = require('../scripts/gate/mutation-base');
+const { mutationBase, recordGreen, snapshot, rulesDigest } = require('../scripts/gate/mutation-base');
 
 function fixture() {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-mutation-base-'));
@@ -22,6 +22,7 @@ function fixture() {
   const commit = (name, data) => { write(name, data); git('add', '.'); git('commit', '-qm', name); return git('rev-parse', 'HEAD'); };
   write('scripts/gate/mutation-ignore.json', '[]');
   write('scripts/gate/mutation.js', '// rules');
+  for (const rel of ['gate.js', 'infection-git.sh', 'infection-bootstrap.php', 'baseline.json']) write(`scripts/gate/${rel}`, rel);
   git('init', '-q');
   const full = commit('a.php', '1');
   const green = commit('a.php', '2');
@@ -30,7 +31,7 @@ function fixture() {
   const args = (env = {}) => ({ repo, stateFile, fullBase: full, env });
   const state = (sha, extra = {}) => {
     fs.mkdirSync(path.dirname(stateFile), { recursive: true });
-    fs.writeFileSync(stateFile, JSON.stringify({ sha, base: full, digest: require('node:crypto').createHash('sha256').update('scripts/gate/mutation-ignore.json\0[]scripts/gate/mutation.js\0// rules').digest('hex'), ...extra }));
+    fs.writeFileSync(stateFile, JSON.stringify({ sha, base: full, digest: rulesDigest(repo), ...extra }));
   };
   return { repo, git, write, commit, full, green, stateFile, args, state, done: () => fs.rmSync(repo, { recursive: true, force: true }) };
 }
@@ -61,6 +62,12 @@ test('mutation base: changed evaluation rules, other full base, foreign or corru
     f.write('scripts/gate/mutation.js', '// other');
     assert.equal(mutationBase(f.args()).incremental, false, 'mutation.js changed');
     f.write('scripts/gate/mutation.js', '// rules');
+    for (const rel of ['gate.js', 'infection-git.sh', 'infection-bootstrap.php', 'baseline.json']) {
+      f.write(`scripts/gate/${rel}`, 'changed');
+      assert.equal(mutationBase(f.args()).incremental, false, `${rel} changed`);
+      f.write(`scripts/gate/${rel}`, rel);
+    }
+    assert.equal(mutationBase(f.args()).incremental, true);
     f.state(f.green, { base: f.green });
     assert.equal(mutationBase(f.args()).incremental, false, 'verified for another full base');
     f.git('checkout', '-q', '-b', 'other', f.full);
@@ -99,5 +106,18 @@ test('mutation base: green is recorded atomically for a clean local tree only', 
     assert.equal(JSON.parse(fs.readFileSync(f.stateFile, 'utf8')).sha, head);
     f.commit('a.php', '4');
     assert.deepEqual(mutationBase(f.args()), { base: head, incremental: true });
+  } finally { f.done(); }
+});
+
+test('mutation base: green is not recorded when the run started dirty or HEAD moved during it', () => {
+  const f = fixture();
+  try {
+    const clean = snapshot(f.repo);
+    assert.equal(clean.clean, true);
+    assert.equal(recordGreen({ ...f.args(), started: { ...clean, clean: false } }), false, 'started dirty');
+    f.commit('a.php', '5');
+    assert.equal(recordGreen({ ...f.args(), started: clean }), false, 'HEAD moved while the run was going');
+    assert.equal(fs.existsSync(f.stateFile), false);
+    assert.equal(recordGreen({ ...f.args(), started: snapshot(f.repo) }), true);
   } finally { f.done(); }
 });

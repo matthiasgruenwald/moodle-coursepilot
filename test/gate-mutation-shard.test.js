@@ -88,13 +88,13 @@ test('shard runner: jobs run concurrently, only a successful job leaves its done
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-shard-run-'));
   try {
     const job = (name, script, key) => ({ argv: ['sh', '-c', script], log: path.join(dir, `${name}.log`), done: path.join(dir, `${name}.done`), key });
-    const started = Date.now();
+    // Each overlapping job waits for the other one's start file; run one after the other, it times out with exit 9.
+    const meet = (me, other, text) => `touch ${dir}/${me}.up; i=0; until [ -f ${dir}/${other}.up ]; do i=$((i+1)); [ $i -gt 200 ] && exit 9; sleep 0.05; done; echo ${text}`;
     const r = spawnSync('node', [path.join(ROOT, 'scripts/gate/mutation-shard-run.js')], {
-      input: JSON.stringify([job('a', 'sleep 1; echo A', 'ka'), job('b', 'sleep 1; echo B; exit 3', 'kb'), job('c', 'echo C', 'kc')]), encoding: 'utf8',
+      input: JSON.stringify([job('a', meet('a', 'b', 'A'), 'ka'), job('b', `${meet('b', 'a', 'B')}; exit 3`, 'kb'), job('c', 'echo C', 'kc')]), encoding: 'utf8',
     });
     assert.equal(r.status, 0, r.stderr);
-    assert.deepEqual(JSON.parse(r.stdout), [0, 3, 0]);
-    assert.ok(Date.now() - started < 1900, 'the two one-second jobs overlap');
+    assert.deepEqual(JSON.parse(r.stdout), [0, 3, 0], 'a and b ran at the same time');
     assert.equal(fs.readFileSync(path.join(dir, 'a.done'), 'utf8'), 'ka');
     assert.equal(fs.existsSync(path.join(dir, 'b.done')), false);
     assert.equal(fs.readFileSync(path.join(dir, 'b.log'), 'utf8'), 'B\n');

@@ -1,6 +1,6 @@
-# Matrix-Instanz des Gates (`gate matrix`): abweichende Moodle-Version und Datenbank, privat und nur
-# bei Bedarf gestartet. Start und Einrichtung: scripts/gate/matrix-instance.sh. Der Projektname
-# beginnt mit kurspilot-gate-, damit host-load.js die Container als eigene zaehlt.
+# Matrix instance of the gate (`gate matrix`): other Moodle version and database, private, started
+# on demand. Start and setup: scripts/gate/matrix-instance.sh. The project name starts with
+# kurspilot-gate- so host-load.js counts the containers as the gate's own.
 name: kurspilot-gate-matrix
 services:
   webserver:

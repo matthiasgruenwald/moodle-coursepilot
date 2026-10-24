@@ -476,7 +476,7 @@ function runMutationShards(commands, { base, treeDigest, reuseCoverage, jsonName
   const index = [];
   commands.forEach(({ inst, argv }, i) => {
     const reports = path.join(inst.dir, 'reports');
-    const key = mutationShard.shardKey({ base, treeDigest, reuseCoverage, files: inst.files });
+    const key = mutationShard.shardKey({ base, treeDigest, reuseCoverage, files: inst.files, setup: mutationBase.rulesDigest(REPO) });
     const done = path.join(reports, 'infection-shard.done');
     if (fs.existsSync(done) && fs.readFileSync(done, 'utf8') === key && fs.existsSync(path.join(reports, jsonName))) {
       console.log(`mutation-shards: shard ${i} reused (same tree, base and files)`);
@@ -497,6 +497,7 @@ function runMutationShards(commands, { base, treeDigest, reuseCoverage, jsonName
 function runMutation(pilotDirectory, reuseCoverage = false) {
   const ignores = mutation.parseIgnores(fs.readFileSync(path.join(REPO, 'scripts/gate/mutation-ignore.json'), 'utf8'));
   const baseline = loadBaseline();
+  const startState = mutationBase.snapshot(REPO);
   const { base, changed, fullBase, incremental } = mutationChanges(!pilotDirectory);
   const stateFile = path.join(GATE_DIR, 'reports', 'mutation-green.json');
   let files;
@@ -517,7 +518,7 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
   if (files.length === 0) {
     logOutcome('mutation', true);
     console.log('summary: mutation no changed production PHP');
-    if (!pilotDirectory) mutationBase.recordGreen({ repo: REPO, stateFile, fullBase });
+    if (!pilotDirectory) mutationBase.recordGreen({ repo: REPO, stateFile, fullBase, started: startState });
     return true;
   }
   requireContainer();
@@ -567,7 +568,7 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
     try { return fn(); } catch (e) { stopMutationShards(extras, false); throw e; }
   };
   if (sharded) guarded(() => startMutationShards(extras, reuseCoverage, treeDigest));
-  const commands = instances.map(inst => {
+  const commands = guarded(() => instances.map(inst => {
     const reports = path.join(inst.dir, 'reports');
     const args = [`--configuration=/var/www/reports/${prefix}-config.json`, '--threads=1',
       '--only-covering-test-cases', '--no-progress', '--log-verbosity=all', '--debug',
@@ -603,7 +604,7 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
       fs.writeFileSync(path.join(reports, `${prefix}-config.json`), JSON.stringify(config, null, 2));
     }
     return { inst, args, argv: ['docker', ...dockerArgs, inst.container, 'php', '-d', 'memory_limit=-1', '/opt/dev-tools/vendor/bin/infection', ...args] };
-  });
+  }));
   const args = commands[0].args;
   const started = Date.now();
   let status = 0;
@@ -614,13 +615,12 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
     status = failed.length === 0 ? 0 : 1;
     if (status !== 0) console.log(`gate:0: gate-error: mutation shard(s) ${failed.join(', ')} failed; finished shards are kept for the next run`);
   }
-  const result = { status };
   const elapsedSeconds = (Date.now() - started) / 1000;
-  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}.exit`), `${result.status}\n`);
-  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-timer.json`), JSON.stringify({ elapsedSeconds, exit: result.status, base, files, args, shards: instances.map(i => i.files.length) }, null, 2));
-  if (result.status !== 0) {
+  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}.exit`), `${status}\n`);
+  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-timer.json`), JSON.stringify({ elapsedSeconds, exit: status, base, files, args, shards: instances.map(i => i.files.length) }, null, 2));
+  if (status !== 0) {
     stopMutationShards(extras, false);
-    throw new Error(`Infection failed: exit ${result.status}`);
+    throw new Error(`Infection failed: exit ${status}`);
   }
   if (sharded) {
     const parts = guarded(() => instances.map(i => mutation.parseReport(fs.readFileSync(path.join(i.dir, 'reports', jsonName), 'utf8'))));
@@ -633,7 +633,7 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
   failureLog.append(found.map(f => [new Date().toISOString(), f.rule, f.file, 'fail']));
   logOutcome('mutation', found.length === 0);
   console.log(`summary: mutation total=${report.stats.totalMutantsCount} escaped=${report.stats.escapedCount} errors=${report.stats.errorCount + report.stats.syntaxErrorCount} violations=${found.length} seconds=${elapsedSeconds} base=${incremental ? 'last-green' : 'full'}`);
-  if (found.length === 0 && !pilotDirectory) mutationBase.recordGreen({ repo: REPO, stateFile, fullBase });
+  if (found.length === 0 && !pilotDirectory) mutationBase.recordGreen({ repo: REPO, stateFile, fullBase, started: startState });
   return found.length === 0;
 }
 
