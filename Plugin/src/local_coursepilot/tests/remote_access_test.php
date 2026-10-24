@@ -336,4 +336,11 @@ final class remote_access_test extends \advanced_testcase {
         $plugin = enrol_get_plugin('manual');
         $plugin->unenrol_user($enrolinstance, $userid);
     }
+
+    public function test_member_counts_are_empty_without_selected_cohorts(): void {
+        $this->resetAfterTest();
+        set_config('remoteaccesscohorts', '', 'local_coursepilot');
+
+        $this->assertSame([], remote_access::selected_cohort_member_counts());
+    }
 }

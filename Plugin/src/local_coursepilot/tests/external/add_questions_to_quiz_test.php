@@ -288,4 +288,14 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
     }
+
+    public function test_an_empty_question_list_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course, $quiz] = $this->create_course_with_quiz();
+        $this->login_editing_teacher($course);
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id, $course->id, false, MUST_EXIST);
+
+        $this->expectException(\invalid_parameter_exception::class);
+        add_questions_to_quiz::execute((int) $cm->id, []);
+    }
 }

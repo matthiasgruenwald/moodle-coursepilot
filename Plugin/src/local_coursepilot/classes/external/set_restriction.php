@@ -25,6 +25,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\pseudofield_carry_forward;
+use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
 use stdClass;
@@ -46,7 +47,7 @@ use stdClass;
  * the next page view.
  *
  * "availability"/"availabilityconditionsjson" stays on the blocklist of
- * update_module_settings (shared_block::BLOCKLIST does not list it as a
+ * update_module_settings (shared_block::blocked_fields() does not list it as a
  * field at all) - this endpoint is the only write path.
  *
  * Writing goes through get_moduleinfo_data()/update_moduleinfo() (ADR
@@ -195,7 +196,7 @@ final class set_restriction extends external_api {
      * @return mixed[] Current state, same shape as get_module_settings.
      */
     private static function read_settings(int $cmid): array {
-        $result = get_module_settings::execute($cmid);
+        $result = module_state::read_settings($cmid);
         return json_decode($result['settings_json'], true);
     }
 
@@ -361,19 +362,13 @@ final class set_restriction extends external_api {
      */
     private static function grade_condition_locks(array $conditions, string $currentavailability): array {
         $existing = \local_coursepilot\cm_references::completion_pairs(json_decode($currentavailability, true) ?: []);
-        $gradedstatus = [self::COMPLETION_STATUS['pass'], self::COMPLETION_STATUS['fail']];
         $locks = [];
         foreach ($conditions as $condition) {
             if ($condition->type !== 'completion' || in_array($condition->cm . ':' . $condition->e, $existing, true)) {
                 continue;
             }
             $target = get_coursemodule_from_id('', $condition->cm, 0, false, MUST_EXIST);
-            $catalogclass = registry::for((string) $target->modname);
-            if ($catalogclass === null || $catalogclass::grade_origin((int) $target->instance) !== learner_locks::GRADE_TEACHER) {
-                continue;
-            }
-            $bygrade = $target->completiongradeitemnumber !== null || !empty($target->completionpassgrade);
-            if (!in_array($condition->e, $gradedstatus, true) && !$bygrade) {
+            if (!self::waits_for_teacher_grade($condition, $target)) {
                 continue;
             }
             $locks[] = [
@@ -383,6 +378,25 @@ final class set_restriction extends external_api {
             ];
         }
         return $locks;
+    }
+
+    /**
+     * Whether a completion condition makes learners wait for a teacher's grade: the activity's grade
+     * comes from the teacher and the condition depends on the grade (pass/fail) or the activity's
+     * own completion runs via the grade.
+     *
+     * @param stdClass $condition Native completion condition.
+     * @param stdClass $target Course module the condition refers to.
+     * @return bool
+     */
+    private static function waits_for_teacher_grade(stdClass $condition, stdClass $target): bool {
+        $catalogclass = registry::for($target->modname);
+        if ($catalogclass === null || $catalogclass::grade_origin($target->instance) !== learner_locks::GRADE_TEACHER) {
+            return false;
+        }
+        $gradedstatus = [self::COMPLETION_STATUS['pass'], self::COMPLETION_STATUS['fail']];
+        $bygrade = $target->completiongradeitemnumber !== null || !empty($target->completionpassgrade);
+        return in_array($condition->e, $gradedstatus, true) || $bygrade;
     }
 
     /**

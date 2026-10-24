@@ -39,6 +39,10 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_writer::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
 final class write_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -891,7 +895,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -1030,7 +1034,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -1092,7 +1096,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -1154,7 +1158,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -1615,7 +1619,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */

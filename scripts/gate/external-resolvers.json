@@ -21,6 +21,36 @@
       "call": "remote_access::require_granted",
       "requires": true,
       "reason": "verlangt die Fernzugriffsfreigabe (Capability local/coursepilot:remoteaccess bzw. gewählte Kohorten) im Systemkontext"
+    },
+    {
+      "call": "module_state::read_settings",
+      "validates": true,
+      "requires": true,
+      "reason": "löst das Kursmodul auf, validiert den Modulkontext und verlangt local/coursepilot:use vor dem Lesen der Einstellungen"
+    },
+    {
+      "call": "question_import::import",
+      "validates": true,
+      "requires": true,
+      "reason": "validiert den Zielkategoriekontext und verlangt local/coursepilot:use sowie moodle/question:add vor XML-Auflösung, Parse und Schreibtransaktion"
+    },
+    {
+      "call": "completion_settings::write",
+      "validates": true,
+      "requires": true,
+      "reason": "löst das Kursmodul auf, validiert den Modulkontext und prüft local/coursepilot:use sowie moodle/course:manageactivities vor Patchprüfung und Schreiben"
+    },
+    {
+      "call": "module_settings::write",
+      "validates": true,
+      "requires": true,
+      "reason": "validiert den Modulkontext und prüft local/coursepilot:use sowie moodle/course:manageactivities vor Patchprüfung und Schreiben"
+    },
+    {
+      "call": "version_restore::restore",
+      "validates": true,
+      "requires": true,
+      "reason": "validiert den Modulkontext und prüft local/coursepilot:restoreversion sowie moodle/course:manageactivities vor dem Lesen des Zielstands und dem Schreiben"
     }
   ]
 }

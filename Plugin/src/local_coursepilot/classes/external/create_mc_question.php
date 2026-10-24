@@ -23,24 +23,14 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\question_suspect_gate;
-
-defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->libdir . '/questionlib.php');
+use local_coursepilot\question_import;
+use local_coursepilot\question_xml;
 
 /**
- * Facade over the XML core (Spec 0017 §7.1, ticket #418): the teacher
- * creates a multiple-choice question through typed fields and never sees
- * XML. The SERVER builds XML from a fixed template and writes through
- * {@see \local_coursepilot\external\import_questions_xml} (T4), including
- * round-trip verification and rollback. The AI cannot generate structurally
- * invalid XML for multiple-choice questions.
- *
- * Suspect gate (T414 format): creation supplies no idnumber to match.
- * Unlike import_questions_xml, an existing entry with the same name in the
- * target category already counts as suspect, without an idnumber collision.
- * The gate runs BEFORE building XML and writes nothing on suspicion.
- * Only a repeated, explicitly confirmed call writes.
+ * Create multiple-choice questions from typed fields and a fixed XML template.
+ * The shared question importer verifies the round trip and rolls back failures.
+ * Creation supplies no idnumber: a same-named entry is already a suspect case.
+ * Its gate runs before building XML and writes only after explicit confirmation.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -118,7 +108,7 @@ final class create_mc_question extends external_api {
         require_capability('local/coursepilot:use', $context);
         require_capability('moodle/question:add', $context);
 
-        self::validate_answers($params['answers'], $params['selectionmode']);
+        question_xml::validate_answers($params['answers'], $params['selectionmode']);
 
         // Suspect gate BEFORE building XML: creation supplies no idnumber
         // to match, so an existing entry with the same name in the target
@@ -146,8 +136,7 @@ final class create_mc_question extends external_api {
 
         $xml = self::build_xml($params);
 
-        $imported = import_questions_xml::execute((int) $params['categoryid'], $xml);
-        $imported = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $imported);
+        $imported = question_import::import((int) $params['categoryid'], $xml);
         $question = $imported['questions'][0];
 
         $entry = $DB->get_record('question_bank_entries', ['id' => $question['questionbankentryid']], '*', MUST_EXIST);
@@ -175,54 +164,9 @@ final class create_mc_question extends external_api {
     }
 
     /**
-     * Validates answer options against the same rules as the local original
-     * ({@see \local_coursepilot\external\create_mc_question}): at least two
-     * answers, fraction/correct consistency, exactly one correct answer for
-     * "single", and positive fractions summing to exactly 1.
-     * qtype_multichoice::save_question_options() requires this; otherwise an
-     * internal Moodle error would replace a useful response.
-     *
-     * Public: reused by {@see \local_coursepilot\external\update_mc_question}
-     * (ticket #419), which patches the same simple fields rather than creating.
-     *
-     * @param mixed[] $answers
-     * @param string $selectionmode
-     * @return void
-     */
-    public static function validate_answers(array $answers, string $selectionmode): void {
-        if (count($answers) < 2) {
-            throw new \invalid_parameter_exception('A multiple-choice question needs at least 2 answers.');
-        }
-        if (!in_array($selectionmode, ['single', 'multiple'], true)) {
-            throw new \invalid_parameter_exception('selectionmode must be single or multiple.');
-        }
-        foreach ($answers as $answer) {
-            if ($answer['fraction'] < -1 || $answer['fraction'] > 1) {
-                throw new \invalid_parameter_exception('fraction must be between -1 and 1.');
-            }
-        }
-        $correctcount = count(array_filter($answers, static fn($answer) => (float) $answer['fraction'] > 0));
-        if ($selectionmode === 'single' && $correctcount !== 1) {
-            throw new \invalid_parameter_exception('Single selection needs exactly one correct answer.');
-        }
-        if ($correctcount === 0) {
-            throw new \invalid_parameter_exception('At least one answer must have a positive fraction.');
-        }
-        $positivesum = round(array_sum(array_map(
-            static fn($answer) => max(0.0, (float) $answer['fraction']),
-            $answers
-        )), 2);
-        if (abs($positivesum - 1.0) > 0.001) {
-            throw new \invalid_parameter_exception(
-                'Positive fraction values must sum to exactly 1 (currently ' . $positivesum . ').'
-            );
-        }
-    }
-
-    /**
      * Builds Moodle XML for a multichoice question from a fixed template.
      * Only the server writes XML for multiple-choice questions. No idnumber
-     * is included: the XML core (import_questions_xml) generates and assigns
+     * is included: the shared question importer generates and assigns
      * one for a first import. No further gate is needed there, as this
      * endpoint's gate has already decided BEFORE this call.
      *

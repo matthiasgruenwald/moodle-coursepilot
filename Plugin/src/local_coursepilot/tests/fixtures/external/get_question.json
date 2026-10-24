@@ -1,0 +1,210 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "categoryid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "name",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "questionid",
+                "type": "int",
+                "default": 0
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "categoryid": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the question bank category",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "name": {
+                "class": "core_external\\external_value",
+                "desc": "Name of the question (alternative to questionid)",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "text"
+            },
+            "questionid": {
+                "class": "core_external\\external_value",
+                "desc": "questionid of any version of the question (alternative to name)",
+                "required": 0,
+                "default": 0,
+                "allownull": true,
+                "type": "int"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "questionid": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the latest-version question row",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "questionbankentryid": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the question_bank_entries row (question identity)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "categoryid": {
+                "class": "core_external\\external_value",
+                "desc": "Current question bank category of the question",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "version": {
+                "class": "core_external\\external_value",
+                "desc": "Current version number",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "name": {
+                "class": "core_external\\external_value",
+                "desc": "Name of the question",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "questiontext": {
+                "class": "core_external\\external_value",
+                "desc": "Question text (HTML)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "generalfeedback": {
+                "class": "core_external\\external_value",
+                "desc": "General feedback (HTML)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "qtype": {
+                "class": "core_external\\external_value",
+                "desc": "Question type (usually multichoice)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "defaultmark": {
+                "class": "core_external\\external_value",
+                "desc": "Default mark of the question",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "float"
+            },
+            "answers": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Answer options in creation order",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "id": {
+                            "class": "core_external\\external_value",
+                            "desc": "question_answers.id",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "answer": {
+                            "class": "core_external\\external_value",
+                            "desc": "Answer text (HTML)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "fraction": {
+                            "class": "core_external\\external_value",
+                            "desc": "Weight of the answer",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "float"
+                        },
+                        "feedback": {
+                            "class": "core_external\\external_value",
+                            "desc": "Answer-specific feedback (HTML)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "correct": {
+                            "class": "core_external\\external_value",
+                            "desc": "Answer has a positive weight",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        }
+                    }
+                }
+            },
+            "correctindex": {
+                "class": "core_external\\external_value",
+                "desc": "0-based index of the correct answer in answers[] (-1 if none detected)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "selectionmode": {
+                "class": "core_external\\external_value",
+                "desc": "single or multiple",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "alpha"
+            }
+        }
+    }
+}

@@ -32,6 +32,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(provider::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\history\retention::class)]
 final class history_provider_test extends \core_privacy\tests\provider_testcase {
     /** @var \stdClass */
     private \stdClass $author;
@@ -184,6 +185,39 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         $encoded = json_encode($data);
         $this->assertStringNotContainsString('student.pdf', $encoded);
         $this->assertStringNotContainsString('secret design text', $encoded);
+    }
+
+    public function test_export_describes_each_own_state_with_its_exact_metadata(): void {
+        $ctx = \context_module::instance($this->cm->id);
+
+        $this->export_context_data_for_user($this->author->id, $ctx, 'local_coursepilot');
+
+        /** @var \core_privacy\tests\request\content_writer $exported */
+        $exported = writer::with_context($ctx);
+        $data = $exported->get_data([
+            get_string('pluginname', 'local_coursepilot'), get_string('historytitle', 'local_coursepilot'),
+        ]);
+        $this->assertEquals((object) ['versions' => [(object) [
+            'version' => 1,
+            'source' => 'moodle',
+            'sourcecmid' => null,
+            'timecreated' => \core_privacy\local\request\transform::datetime(1001),
+            'files' => [
+                (object) ['filearea' => 'intro', 'filename' => 'shared.png', 'gap' => get_string('no')],
+                (object) ['filearea' => 'intro', 'filename' => 'author.png', 'gap' => get_string('no')],
+            ],
+        ]]], $data);
+    }
+
+    public function test_export_of_a_context_without_own_states_writes_nothing(): void {
+        $bystander = $this->getDataGenerator()->create_user();
+        $ctx = \context_module::instance($this->cm->id);
+
+        $this->export_context_data_for_user($bystander->id, $ctx, 'local_coursepilot');
+
+        /** @var \core_privacy\tests\request\content_writer $exported */
+        $exported = writer::with_context($ctx);
+        $this->assertFalse($exported->has_any_data());
     }
 
     public function test_delete_for_user_removes_own_states_in_approved_context_only(): void {

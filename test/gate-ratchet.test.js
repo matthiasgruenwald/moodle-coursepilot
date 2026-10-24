@@ -72,6 +72,7 @@ function makeRepo({ baseline = BASELINE, phpstan = 3, pairs = [['a\\x', 'a\\y']]
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-ratchet-'));
   git(repo, 'init', '-q');
   write(repo, 'scripts/gate/baseline.json', JSON.stringify(baseline));
+  write(repo, 'scripts/gate/mutation-ignore.json', '[]');
   write(repo, 'scripts/gate/phpstan/phpstan-baseline.neon', PHPSTAN(phpstan));
   write(repo, 'scripts/gate/deptrac/deptrac-baseline.yaml', DEPTRAC(pairs));
   write(repo, `${PLUGIN}/classes/a.php`, SOURCE);
@@ -557,7 +558,7 @@ if (args[0] === 'inspect') {
     git(repo, 'add', '-A');
     git(repo, 'commit', '-qm', 'Node contract fixture');
     // The fixture runs its own Node test process, outside this test runner's context.
-    const env = { NODE_TEST_CONTEXT: undefined, PATH: `${path.join(repo, 'bin')}${path.delimiter}${process.env.PATH}`, GATE_DIR: path.join(repo, 'gate-dir') };
+    const env = { NODE_TEST_CONTEXT: undefined, GATE_MIN_MEM_MB: '0', PATH: `${path.join(repo, 'bin')}${path.delimiter}${process.env.PATH}`, GATE_DIR: path.join(repo, 'gate-dir') };
     for (const name of fs.readdirSync(path.join(ROOT, 'scripts/gate')).filter(n => n.endsWith('.js') || n === 'sync-plugin.sh')) {
       fs.copyFileSync(path.join(ROOT, 'scripts/gate', name), path.join(repo, 'scripts/gate', name));
     }
@@ -616,9 +617,12 @@ test('pre-push: Gate full rot blockiert den Push, gruen laesst ihn durch', () =>
   const red = pushRepo(1);
   const blocked = push(red, 'HEAD:refs/heads/work');
   assert.notEqual(blocked.status, 0);
-  assert.match(blocked.out, /stub full/);
+  assert.match(blocked.out, /stub matrix/);
+  assert.doesNotMatch(blocked.out, /stub full/, 'the matrix check blocks before the expensive full gate');
   const green = pushRepo(0);
-  assert.equal(push(green, 'HEAD:refs/heads/work').status, 0);
+  const passed = push(green, 'HEAD:refs/heads/work');
+  assert.equal(passed.status, 0);
+  assert.match(passed.out, /stub matrix\nstub full/);
 });
 
 test('pre-push: Loeschen eines Branches und Tags brauchen kein Gate', () => {
@@ -634,10 +638,10 @@ test('pre-push: mehrere Refs, auch Loeschen plus Neuanlage, laufen ueber ein Gat
   git(repo, 'push', '--no-verify', 'origin', 'HEAD:refs/heads/old');
   const two = push(repo, 'HEAD:refs/heads/a', 'HEAD:refs/heads/b');
   assert.notEqual(two.status, 0);
-  assert.equal(two.out.match(/stub full/g).length, 1);
+  assert.equal(two.out.match(/stub matrix/g).length, 1);
   const mixed = push(repo, ':refs/heads/old', 'HEAD:refs/heads/new');
   assert.notEqual(mixed.status, 0);
-  assert.match(mixed.out, /stub full/);
+  assert.match(mixed.out, /stub matrix/);
 });
 
 test('pre-push: gepushter Stand muss der geprueften sein (Ref nicht HEAD, geaenderter Arbeitsbaum)', () => {
@@ -653,7 +657,7 @@ test('pre-push: gepushter Stand muss der geprueften sein (Ref nicht HEAD, geaend
   const dirty = push(repo, 'HEAD:refs/heads/work');
   assert.notEqual(dirty.status, 0);
   assert.match(dirty.out, /versionierte Dateien sind geaendert/);
-  assert.doesNotMatch(dirty.out, /stub full/);
+  assert.doesNotMatch(dirty.out, /stub (matrix|full)/);
 });
 
 test('Aktivierung und Edit-Hooks: ein npm-Skript, Claude und Codex rufen dasselbe Gate, kein php -l', () => {

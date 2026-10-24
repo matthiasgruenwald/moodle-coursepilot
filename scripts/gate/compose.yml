@@ -31,6 +31,7 @@ services:
     command: >
       --character-set-server=utf8mb4 --collation-server=utf8mb4_bin
       --innodb_file_per_table=On --wait-timeout=28800 --skip-log-bin
+      --innodb_flush_log_at_trx_commit=0 --innodb_doublewrite=0
     volumes:
       - "${GATE_DIR}/db:/var/lib/mysql"
     environment:

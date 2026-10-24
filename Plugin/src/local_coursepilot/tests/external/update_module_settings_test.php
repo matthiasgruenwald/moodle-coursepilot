@@ -30,13 +30,42 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(update_module_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\module_settings::class)]
 #[CoversClass(\local_coursepilot\activity_file_trash::class)]
+#[CoversClass(\local_coursepilot\catalog\catalog_fields::class)]
+#[CoversClass(\local_coursepilot\catalog\assign::class)]
+#[CoversClass(\local_coursepilot\catalog\shared_block::class)]
+#[CoversClass(\local_coursepilot\catalog\pseudofield_carry_forward::class)]
+#[CoversClass(\local_coursepilot\catalog\write_target::class)]
+#[CoversClass(\local_coursepilot\catalog\choice::class)]
+#[CoversClass(\local_coursepilot\catalog\folder::class)]
+#[CoversClass(\local_coursepilot\catalog\forum::class)]
+#[CoversClass(\local_coursepilot\catalog\page::class)]
+#[CoversClass(\local_coursepilot\catalog\resource::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz::class)]
 final class update_module_settings_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
         \core\di::reset_container();
         parent::tearDown();
+    }
+
+    /**
+     * A patch that is not a JSON object is refused and leaves the activity unchanged.
+     */
+    public function test_patch_that_is_not_json_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Vorher']);
+
+        try {
+            update_module_settings::execute($page->cmid, 'not json');
+            $this->fail('Expected moodle_exception was not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidpatchjson', $e->errorcode);
+        }
+        $this->assertSame('Vorher', $this->read($page->cmid)['name']);
     }
 
     /**
@@ -275,6 +304,8 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['coursepagevisibility' => 'stealth']));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
+            $this->assertSame('readonlyvocabularyfield', $e->errorcode);
+            $this->assertStringContainsString('Field "coursepagevisibility"', $e->getMessage());
             $this->assertStringContainsString('visibleoncoursepage', $e->getMessage());
             $this->assertStringNotContainsString('Unbekanntes Feld', $e->getMessage());
         }
@@ -425,7 +456,9 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['completionview' => 1]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
+            $this->assertSame('completionfieldviasetcompletion', $e->errorcode);
             $this->assertStringContainsString('completionview', $e->getMessage());
+            $this->assertStringContainsString('set_completion', $e->getMessage());
         }
     }
 

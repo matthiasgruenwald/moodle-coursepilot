@@ -29,6 +29,10 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(dispatcher::class)]
 #[CoversClass(\local_coursepilot\history\file_policy::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\event\tool_access_failed::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\event\tool_access_succeeded::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\tool_registry::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\external\create_activity_from_xml::class)]
 final class dispatcher_test extends \advanced_testcase {
     /**
      * Creates a user with a valid OAuth access token (#337) - replaces the
@@ -2211,5 +2215,63 @@ XML;
             $this->assertStringNotContainsString($secrettoken, $encoded);
         }
         $sink->close();
+    }
+
+    /**
+     * The resource path itself serves the protected-resource metadata (RFC 9728 §3), uncached.
+     */
+    public function test_resource_path_serves_protected_resource_metadata(): void {
+        global $CFG;
+        $this->resetAfterTest();
+
+        $response = dispatcher::handle(
+            null,
+            null,
+            $this->headers(['pathinfo' => '/.well-known/oauth-protected-resource', 'method' => 'GET'])
+        );
+
+        $this->assertSame(200, $response['status']);
+        $this->assertSame('no-store', $response['headers']['Cache-Control']);
+        $this->assertSame(oauth_lib::protected_resource_metadata($CFG->wwwroot), $response['body']);
+    }
+
+    /**
+     * MCP over HTTP is POST only; other verbs are refused with an Allow header.
+     */
+    public function test_get_request_is_refused_with_allow_header(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(null, $token, $this->headers(['method' => 'GET']));
+
+        $this->assertSame(405, $response['status']);
+        $this->assertSame('POST', $response['headers']['Allow']);
+    }
+
+    /**
+     * Protocol notifications are acknowledged without a body.
+     */
+    public function test_initialized_notification_is_acknowledged_without_body(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(['method' => 'notifications/initialized'], $token, $this->headers());
+
+        $this->assertSame(202, $response['status']);
+        $this->assertNull($response['body']);
+    }
+
+    /**
+     * A suspended account loses MCP access even with a valid, unrevoked token.
+     */
+    public function test_suspended_user_is_refused_despite_a_valid_token(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$user, $token] = $this->create_authenticated_user();
+        $DB->set_field('user', 'suspended', 1, ['id' => $user->id]);
+
+        $response = dispatcher::handle(['id' => 1, 'method' => 'initialize'], $token, $this->headers());
+
+        $this->assertSame(401, $response['status']);
     }
 }

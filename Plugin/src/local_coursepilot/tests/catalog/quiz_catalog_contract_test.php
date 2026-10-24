@@ -61,7 +61,7 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
             ['id'],
             array_map(static fn (field $f): string => $f->name, quiz::fields()),
             quiz::blocklist(),
-            array_intersect(shared_block::BLOCKLIST, $realcolumns)
+            array_intersect(shared_block::blocked_fields(), $realcolumns)
         );
         sort($known);
 
@@ -145,6 +145,77 @@ final class quiz_catalog_contract_test extends \advanced_testcase {
         foreach ($reviewbitmasks as $bitmask) {
             $this->assertContains($bitmask, $blocklist, "$bitmask is missing from the blocklist.");
         }
+    }
+
+    /**
+     * A catalogue read of a quiz that no longer exists is empty, not an error.
+     */
+    public function test_state_of_a_missing_quiz_is_empty(): void {
+        $this->resetAfterTest();
+
+        $state = quiz::state(999999, 0, false);
+
+        $this->assertSame('', $state['name']);
+        $this->assertSame([], $state['quizslots']);
+    }
+
+    /**
+     * Completion fields belong to the dedicated completion tool, so the quiz
+     * write tool blocks them as well.
+     */
+    public function test_completion_fields_of_quiz_are_blocked_for_the_settings_tool(): void {
+        $blocklist = quiz::blocklist();
+
+        $this->assertNotEmpty(\local_coursepilot\catalog\completion_settings::module_fields('quiz'));
+        foreach (\local_coursepilot\catalog\completion_settings::module_fields('quiz') as $field) {
+            $this->assertContains($field, $blocklist, "$field is missing from the blocklist.");
+        }
+        $this->assertContains('completionminattempts', $blocklist);
+    }
+
+    /**
+     * The catalog state lists each slot with its question in the newest version;
+     * a slot without a question reference reports zeros.
+     */
+    public function test_state_lists_slots_with_their_newest_question_version(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $quizmodule = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+        $quiz = $DB->get_record('quiz', ['id' => $quizmodule->id], '*', MUST_EXIST);
+        $qbank = $this->getDataGenerator()->create_module('qbank', ['course' => $course->id]);
+        /** @var \core_question_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $generator->create_question_category(['contextid' => \context_module::instance($qbank->cmid)->id]);
+        $first = $generator->create_question('truefalse', null, ['category' => $category->id, 'name' => 'Erste Frage']);
+        $second = $generator->create_question('shortanswer', null, ['category' => $category->id, 'name' => 'Zweite Frage']);
+        quiz_add_quiz_question($first->id, $quiz);
+        quiz_add_quiz_question($second->id, $quiz);
+        $entryid = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $second->id], MUST_EXIST);
+        $newer = $generator->update_question($second, null, ['name' => 'Zweite Frage neu']);
+        $DB->insert_record('quiz_slots', (object) ['quizid' => $quiz->id, 'slot' => 3, 'page' => 3, 'maxmark' => 1]);
+
+        $slots = quiz::state((int) $quiz->id, (int) $quizmodule->cmid, false)['quizslots'];
+
+        $this->assertCount(3, $slots);
+        $this->assertSame([1, 2, 3], array_column($slots, 'slot'));
+        $this->assertSame('Erste Frage', $slots[0]['questionname']);
+        $this->assertSame('truefalse', $slots[0]['qtype']);
+        $this->assertSame(1, $slots[0]['version']);
+        $this->assertSame((int) $first->id, $slots[0]['questionid']);
+        $this->assertSame((int) $category->id, $slots[0]['categoryid']);
+        $this->assertSame('Zweite Frage neu', $slots[1]['questionname']);
+        $this->assertSame('shortanswer', $slots[1]['qtype']);
+        $this->assertSame(2, $slots[1]['version']);
+        $this->assertSame((int) $newer->id, $slots[1]['questionid']);
+        $this->assertSame($entryid, $slots[1]['questionbankentryid']);
+        $this->assertSame(
+            ['slot' => 3, 'categoryid' => 0, 'questionbankentryid' => 0, 'questionid' => 0, 'version' => 0,
+                'questionname' => '', 'qtype' => ''],
+            $slots[2]
+        );
     }
 
     /**

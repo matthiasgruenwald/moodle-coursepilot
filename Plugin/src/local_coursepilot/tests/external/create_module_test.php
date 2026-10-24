@@ -31,6 +31,16 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(create_module::class)]
+#[CoversClass(\local_coursepilot\catalog\catalog_fields::class)]
+#[CoversClass(\local_coursepilot\catalog\assign::class)]
+#[CoversClass(\local_coursepilot\catalog\label::class)]
+#[CoversClass(\local_coursepilot\catalog\write_target::class)]
+#[CoversClass(\local_coursepilot\catalog\choice::class)]
+#[CoversClass(\local_coursepilot\catalog\folder::class)]
+#[CoversClass(\local_coursepilot\catalog\forum::class)]
+#[CoversClass(\local_coursepilot\catalog\page::class)]
+#[CoversClass(\local_coursepilot\catalog\resource::class)]
+#[CoversClass(\local_coursepilot\catalog\url::class)]
 final class create_module_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -1004,5 +1014,25 @@ final class create_module_test extends \advanced_testcase {
 
         $result = $this->create($course->id, 0, 'choice', $felder + ['allowupdate' => 1]);
         $this->assertSame(1, (int) $this->read($result['cmid'])['allowupdate']);
+    }
+
+    public function test_unparseable_field_json_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $this->expectExceptionMessage(get_string('invalidpatchjson', 'local_coursepilot'));
+        create_module::execute((int) $course->id, 0, 'label', 'kein json');
+    }
+
+    public function test_activity_types_with_their_own_write_route_are_refused(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        try {
+            create_module::execute((int) $course->id, 0, 'quiz', '{}');
+            $this->fail('Quiz creation must use its own tool.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('writevehicleblocked', $e->errorcode);
+        }
     }
 }

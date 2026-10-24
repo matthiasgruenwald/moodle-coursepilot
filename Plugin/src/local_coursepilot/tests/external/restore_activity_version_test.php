@@ -28,7 +28,167 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(restore_activity_version::class)]
+#[CoversClass(update_module_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\module_settings::class)]
+#[CoversClass(\local_coursepilot\history\version_restore::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\activity_file_trash::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\history\version_history::class)]
 final class restore_activity_version_test extends \advanced_testcase {
+    /**
+     * A restricted token is refused before looking up a version in another course.
+     */
+    public function test_native_restore_checks_the_external_context_restriction(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $other = $this->getDataGenerator()->create_course();
+        external_api::set_context_restriction(\context_course::instance($other->id));
+        try {
+            $this->expectException(\core_external\restricted_context_exception::class);
+            \local_coursepilot\history\version_restore::restore($page->cmid, PHP_INT_MAX);
+        } finally {
+            external_api::set_context_restriction(\context_system::instance());
+        }
+    }
+
+    /**
+     * One restoration reports and persists both ordinary settings and every completion field.
+     */
+    public function test_restore_reports_settings_and_multiple_completion_changes_together(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id, 'name' => 'Saved title',
+            'completion' => COMPLETION_TRACKING_MANUAL, 'completionview' => 0,
+        ]);
+        update_module_settings::execute($page->cmid, '{"name":"Later title","visible":0}');
+        set_completion::execute($page->cmid, json_encode([
+            'completion' => COMPLETION_TRACKING_AUTOMATIC, 'completionview' => 1,
+        ]));
+        $result = restore_activity_version::execute($page->cmid, 1);
+        $result = external_api::clean_returnvalue(restore_activity_version::execute_returns(), $result);
+        $state = $this->read($page->cmid);
+        $this->assertSame('Saved title', $state['name']);
+        $this->assertSame(1, $state['visible']);
+        $this->assertSame(COMPLETION_TRACKING_MANUAL, $state['completion']);
+        $this->assertSame(0, $state['completionview']);
+        $this->assertSame(['visible', 'name', 'completion', 'completionview'], array_column($result['changes'], 'field'));
+        $this->assertStringContainsString('"name" from "Later title" to "Saved title"', $result['message']);
+        $this->assertStringContainsString('"completion"', $result['message']);
+        $this->assertStringContainsString('"completionview"', $result['message']);
+    }
+
+    /**
+     * A native no-op restore still requires editing permission before reading its saved state.
+     */
+    public function test_native_restore_requires_editing_permission_for_an_unchanged_state(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $noneditor = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($noneditor->id, $course->id, 'teacher');
+        $this->setUser($noneditor);
+        $this->expectException(\required_capability_exception::class);
+        \local_coursepilot\history\version_restore::restore($page->cmid, 1);
+    }
+
+    /**
+     * Omitting confirmation at the native seam cannot discard a learner's completed view.
+     */
+    public function test_native_restore_default_keeps_completion_data_until_confirmed(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id, 'completion' => COMPLETION_TRACKING_MANUAL,
+        ]);
+        set_completion::execute($page->cmid, json_encode([
+            'completion' => COMPLETION_TRACKING_AUTOMATIC, 'completionview' => 1,
+        ]));
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $cm = get_coursemodule_from_id('page', $page->cmid, 0, false, MUST_EXIST);
+        $completion = new \completion_info($course);
+        $completion->set_module_viewed($cm, $student->id);
+        $this->assertSame(COMPLETION_COMPLETE, (int) $completion->get_data($cm, false, $student->id)->completionstate);
+        $result = \local_coursepilot\history\version_restore::restore($page->cmid, 1);
+        $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($page->cmid)['completion']);
+        $this->assertSame(COMPLETION_COMPLETE, (int) $completion->get_data($cm, false, $student->id)->completionstate);
+        $this->assertSame([], $result['changes']);
+        $this->assertStringContainsString('"confirmed": true', $result['message']);
+    }
+
+    /**
+     * A snapshot predating a completion field leaves its current value unchanged.
+     */
+    public function test_legacy_snapshot_preserves_completion_fields_it_did_not_capture(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id, 'name' => 'Saved title',
+            'completion' => COMPLETION_TRACKING_MANUAL, 'completionexpected' => 2000000000,
+        ]);
+        update_module_settings::execute($page->cmid, '{"name":"Later title"}');
+        set_completion::execute($page->cmid, '{"completionexpected":2000000100}');
+        $version = $DB->get_record('local_coursepilot_cm_version', ['cmid' => $page->cmid, 'version' => 1], '*', MUST_EXIST);
+        foreach (['moduleinfo_json', 'coursemodule_json'] as $column) {
+            $snapshot = json_decode($version->{$column}, true, 512, JSON_THROW_ON_ERROR);
+            unset($snapshot['completionexpected']);
+            $version->{$column} = json_encode($snapshot, JSON_THROW_ON_ERROR);
+        }
+        $DB->update_record('local_coursepilot_cm_version', $version);
+        $result = restore_activity_version::execute($page->cmid, 1);
+        $result = external_api::clean_returnvalue(restore_activity_version::execute_returns(), $result);
+        $state = $this->read($page->cmid);
+        $this->assertSame('Saved title', $state['name']);
+        $this->assertSame(2000000100, $state['completionexpected']);
+        $this->assertSame(['name'], array_column($result['changes'], 'field'));
+    }
+
+    /**
+     * Restoring a title does not write unchanged module completion when the site disables completion.
+     */
+    public function test_title_restore_does_not_require_site_completion(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->create_module('assign', [
+            'course' => $course->id, 'name' => 'Saved assignment', 'completionsubmit' => 0,
+        ]);
+        update_module_settings::execute($assign->cmid, '{"name":"Later assignment"}');
+        set_config('enablecompletion', 0);
+        $result = restore_activity_version::execute($assign->cmid, 1);
+        $result = external_api::clean_returnvalue(restore_activity_version::execute_returns(), $result);
+        $this->assertSame('Saved assignment', $this->read($assign->cmid)['name']);
+        $this->assertSame(['name'], array_column($result['changes'], 'field'));
+    }
+
+    /**
+     * History can carry a saved state forward without entering an external tool.
+     */
+    public function test_history_restore_carries_saved_state_forward(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'name' => 'Saved state',
+        ]);
+        update_module_settings::execute($page->cmid, '{"name":"Later state"}');
+
+        $result = \local_coursepilot\history\version_restore::restore($page->cmid, 1);
+        $this->assertSame('Saved state', $this->read($page->cmid)['name']);
+        $this->assertSame($page->cmid, $result['cmid']);
+        $this->assertSame(
+            'Restored to version 1 - the old state becomes the new latest version: '
+                . '"name" from "Later state" to "Saved state".',
+            $result['message']
+        );
+        $this->assertSame([[
+            'field' => 'name',
+            'before_json' => '"Later state"',
+            'after_json' => '"Saved state"',
+        ]], $result['changes']);
+    }
+
     /**
      * Provides course with editing teacher.
      *
@@ -213,6 +373,7 @@ final class restore_activity_version_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance([
             'course' => $course->id,
+            'name' => 'Saved name',
             'completion' => COMPLETION_TRACKING_MANUAL,
         ]);
         $cmid = $page->cmid;
@@ -220,6 +381,7 @@ final class restore_activity_version_test extends \advanced_testcase {
         // Version 2: completion set to automatic (no learner data yet,
         // runs through without the two-step flow).
         set_completion::execute($cmid, json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC]));
+        update_module_settings::execute($cmid, '{"name":"Later name"}');
         $student = $this->getDataGenerator()->create_user();
         $this->seed_completion_data($cmid, $student->id);
 
@@ -237,6 +399,16 @@ final class restore_activity_version_test extends \advanced_testcase {
         // The real number of affected learners from set_completion's two-step flow, not just
         // a generic warning (the test environment runs in English).
         $this->assertStringContainsString('1 learner', $result['message']);
+        $this->assertSame('Saved name', $this->read($cmid)['name']);
+        $this->assertSame(
+            'Restored to version 1 - the old state becomes the new latest version: '
+                . '"name" from "Later name" to "Saved name". Completion fields not restored: '
+                . 'This change would delete the existing completion data of 1 learner(s) for this activity - '
+                . 'Moodle wipes and recalculates it as soon as this write unlocks completion. Nothing was written. '
+                . 'Call set_completion again with "confirmed": true to proceed anyway. '
+                . 'Calling restore_activity_version again with "confirmed": true restores them as well.',
+            $result['message']
+        );
     }
 
     /**
@@ -476,7 +648,10 @@ final class restore_activity_version_test extends \advanced_testcase {
         // Version 2.
 
         $this->create_material_file('blatt.pdf', 'Fassung B');
-        update_module_settings::execute($cmid, json_encode(['introattachments' => ['blatt.pdf']]));
+        $this->create_material_file('design.png', 'Updated intro design');
+        update_module_settings::execute($cmid, json_encode([
+            'introattachments' => ['blatt.pdf'], 'introimages' => ['design.png'],
+        ]));
         // Version 3.
 
         $replaced = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf');
@@ -490,9 +665,21 @@ final class restore_activity_version_test extends \advanced_testcase {
         $restored = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf');
         $this->assertNotFalse($restored);
         $this->assertSame('Fassung A', $restored->get_content());
+        $attachments = get_file_storage()->get_area_files(
+            $modulecontext->id,
+            'mod_assign',
+            'introattachment',
+            0,
+            'filename',
+            false
+        );
+        $this->assertSame(
+            ['blatt.pdf'],
+            array_values(array_map(static fn($file) => $file->get_filename(), $attachments))
+        );
         $intro = get_file_storage()->get_file($modulecontext->id, 'mod_assign', 'intro', 0, '/', 'design.png');
         $this->assertNotFalse($intro);
-        $this->assertSame('Intro design', $intro->get_content());
+        $this->assertSame('Updated intro design', $intro->get_content());
         if ((int) $CFG->branch >= 502) {
             $after = $DB->get_record('assign', ['id' => $assign->id], '*', MUST_EXIST);
             $this->assertEquals(2, $after->markercount);
@@ -507,6 +694,19 @@ final class restore_activity_version_test extends \advanced_testcase {
         $this->assertContains('blatt.pdf', array_column($files, 'filename'));
         $this->assertStringContainsString('blatt.pdf', $result['message']);
         $this->assertStringContainsString('recycle bin', $result['message']);
+        $this->assertSame('Restored to version 2. File restored from the recycle bin: blatt.pdf.', $result['message']);
+        $again = restore_activity_version::execute($cmid, 2);
+        $again = external_api::clean_returnvalue(restore_activity_version::execute_returns(), $again);
+        $this->assertSame([], $again['changes']);
+        $this->assertSame('No change: the activity already matches version 2.', $again['message']);
+        $this->assertSame('Fassung A', get_file_storage()->get_file(
+            $modulecontext->id,
+            'mod_assign',
+            'introattachment',
+            0,
+            '/',
+            'blatt.pdf'
+        )->get_content());
     }
 
     /**
@@ -518,6 +718,41 @@ final class restore_activity_version_test extends \advanced_testcase {
     private function get_role_id(string $shortname): int {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
+    }
+
+    /**
+     * All replaced attachments return together, with a complete plural restoration message.
+     */
+    public function test_restore_returns_every_replaced_attachment(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id] +
+            ((int) $CFG->branch >= 502 ? [
+                'markingworkflow' => 1, 'markingallocation' => 1, 'markercount' => 2,
+                'multimarkmethod' => 'average', 'multimarkrounding' => 2,
+            ] : []));
+        $context = \context_module::instance($assign->cmid);
+        $this->create_material_file('0-kept.pdf', 'Unchanged attachment');
+        $this->create_material_file('a.pdf', 'Original A');
+        $this->create_material_file('b.pdf', 'Original B');
+        update_module_settings::execute($assign->cmid, '{"introattachments":["0-kept.pdf","a.pdf","b.pdf"]}');
+        $this->create_material_file('a.pdf', 'Replacement A');
+        $this->create_material_file('b.pdf', 'Replacement B');
+        update_module_settings::execute($assign->cmid, '{"introattachments":["0-kept.pdf","a.pdf","b.pdf"]}');
+
+        $result = restore_activity_version::execute($assign->cmid, 2);
+        $result = external_api::clean_returnvalue(restore_activity_version::execute_returns(), $result);
+        $files = get_file_storage()->get_area_files($context->id, 'mod_assign', 'introattachment', 0, 'filename', false);
+        $this->assertSame(
+            ['0-kept.pdf', 'a.pdf', 'b.pdf'],
+            array_values(array_map(static fn($file) => $file->get_filename(), $files))
+        );
+        $this->assertSame(
+            ['Unchanged attachment', 'Original A', 'Original B'],
+            array_values(array_map(static fn($file) => $file->get_content(), $files))
+        );
+        $this->assertSame('Restored to version 2. Files restored from the recycle bin: a.pdf, b.pdf.', $result['message']);
     }
 
     /**

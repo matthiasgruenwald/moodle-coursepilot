@@ -366,4 +366,9 @@ final class retention_test extends \advanced_testcase {
             new \xmldb_index('fileid', XMLDB_INDEX_NOTUNIQUE, ['fileid'])
         ));
     }
+
+    public function test_scheduled_purge_is_named_for_the_admin_overview(): void {
+        $task = new \local_coursepilot\task\purge_history();
+        $this->assertSame(get_string('taskpurgehistory', 'local_coursepilot'), $task->get_name());
+    }
 }

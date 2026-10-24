@@ -349,9 +349,7 @@ final class choice implements module_catalog {
      * @return mixed[]
      */
     public static function blocklist(): array {
-        return [
-            'completionsubmit',
-        ];
+        return completion_settings::module_fields('choice');
     }
 
     /**

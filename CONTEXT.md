@@ -119,8 +119,13 @@ _Avoid_: Umzugswerkzeug im Plugin, Kopieren ohne Bestätigung, am neuen Ort übe
 Der Nachweis im **Kontextpointer**, wann **Kontextbereich** oder **Materialbestand** von wo nach wo gewechselt sind. Jede **Ortswahl**, die einen Ort ändert, fügt eine Zeile hinzu; die Ortswahlseite zeigt sie als „Bisherige Orte“. Nur die Ortswahl schreibt ihn, die KI liest ihn, und er wird nie gekürzt. Er gibt keinen Zugriff: Lesen darf Coursepilot nur den einen vorherigen Ort des **Altbestands** ([#477](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/477)).
 _Avoid_: Ortsverlauf als Weg zu älteren Orten, Verlauf von der KI fortschreiben lassen, Verlauf nach Frist oder Länge kürzen
 
+**Bedingtes Schreiben**:
+Ein Schreiben für **Kontextbereich** und **Werkbank**, das den vorab gelesenen Stand bis zum Speichern voraussetzt. Ändert sich dieser Stand, bleibt die fremde Änderung erhalten und der Aufruf meldet einen Konflikt. Scheitert das Schreiben am Speicher, entsteht eine **Ausstandsnotiz**.
+Code: `storage_write`
+_Avoid_: blindes Überschreiben nach einem Vorab-Lesen, Konflikte als Speicherausfall behandeln
+
 **Ausstand**:
-Gültiger Inhalt für den **Kontextbereich**, der am Speicher gescheitert ist: Er hat jede Prüfung bestanden und wäre geschrieben worden, wenn Speicher, Verbindung oder Ort funktioniert hätten. Ob die Ursache vorübergehend ist (Speicher antwortet nicht) oder bleibt (Instanz gelöscht, Anmeldung abgelehnt), spielt keine Rolle. Verloren ist verloren. Kein Ausstand ist ein Aufruffehler, den die KI sofort selbst behebt, und kein Konflikt, bei dem sie neu liest und zusammenführt: In beiden Fällen liegt der Inhalt noch im Gespräch und der Ablauf geht weiter ([#475](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/475)).
+Gültiger Inhalt für den **Kontextbereich** oder die **Werkbank**, der am Speicher gescheitert ist: Er hat jede Prüfung bestanden und wäre geschrieben worden, wenn Speicher, Verbindung oder Ort funktioniert hätten. Ob die Ursache vorübergehend ist (Speicher antwortet nicht) oder bleibt (Instanz gelöscht, Anmeldung abgelehnt), spielt keine Rolle. Verloren ist verloren. Kein Ausstand ist ein Aufruffehler, den die KI sofort selbst behebt, und kein Konflikt, bei dem sie neu liest und zusammenführt: In beiden Fällen liegt der Inhalt noch im Gespräch und der Ablauf geht weiter ([#475](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/475)).
 _Avoid_: Rückfall in einen zweiten Ablageort, Leseausfall als Ausstand zählen (beim Lesen geht nichts verloren), Konflikt oder Aufruffehler als Ausstand vermerken, „Ausstand“ als Wort zur Lehrkraft (im Kollegium heißt es Abschiedsrunde oder Streik; zur Lehrkraft heißt es „noch nicht gespeichert“)
 
 **Ausstandsnotiz**:

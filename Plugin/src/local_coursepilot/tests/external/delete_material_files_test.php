@@ -30,6 +30,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(delete_material_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
 final class delete_material_files_test extends \advanced_testcase {
     public function test_deletes_exactly_named_files(): void {
         $this->resetAfterTest();
@@ -38,7 +39,10 @@ final class delete_material_files_test extends \advanced_testcase {
         $this->store('loeschen.pdf', 'weg damit');
         $this->store('behalten.pdf', 'bleibt');
 
-        $result = delete_material_files::execute(['loeschen.pdf']);
+        $result = \core_external\external_api::clean_returnvalue(
+            delete_material_files::execute_returns(),
+            delete_material_files::execute(['loeschen.pdf'])
+        );
 
         $this->assertSame(['loeschen.pdf'], $result['deleted']);
         $this->assertSame(strlen('weg damit'), $result['freed_bytes']);

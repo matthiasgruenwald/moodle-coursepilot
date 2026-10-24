@@ -110,4 +110,12 @@ final class webdav_capability_check_test extends \advanced_testcase {
         $this->assertStringContainsString('Ohne Recht', $result->get_details());
         $this->assertStringNotContainsString('Hat Recht', $result->get_details());
     }
+
+    public function test_identifies_itself_for_the_status_report(): void {
+        $this->resetAfterTest();
+        $check = new webdav_capability_check();
+
+        $this->assertSame('webdav_capability', $check->get_id());
+        $this->assertSame(get_string('webdavcheck3name', 'local_coursepilot'), $check->get_name());
+    }
 }

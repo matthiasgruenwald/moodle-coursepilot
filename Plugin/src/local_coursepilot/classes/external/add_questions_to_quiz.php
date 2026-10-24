@@ -151,10 +151,6 @@ final class add_questions_to_quiz extends external_api {
         $added = array_filter($appended, static fn(array $item): bool => $item['added']);
         $skipped = array_filter($appended, static fn(array $item): bool => !$item['added']);
 
-        if (!$added && !$skipped) {
-            return 'No question appended.';
-        }
-
         $parts = [];
         if ($added) {
             $names = array_map(static fn(array $item): string => '"' . $item['name'] . '"', $added);

@@ -61,6 +61,41 @@ final class webdav_instance_test extends \advanced_testcase {
     }
 
     /**
+     * A transport bound in the container (tests) is used instead of a real connection.
+     */
+    public function test_transport_bound_in_the_container_serves_the_requests(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $fake = new fake_webdav_transport();
+        $fake->seed_file('/Coursepilot/notiz.md', 'Inhalt');
+        \core\di::set(webdav_transport::class, $fake);
+
+        try {
+            $resolved = webdav_instance::resolve_owned($instanceid);
+
+            $this->assertSame('Inhalt', $resolved->client()->get($resolved->file_url('notiz.md')));
+        } finally {
+            \core\di::reset_container();
+        }
+    }
+
+    /**
+     * The fingerprint names server, base path and account of the stored instance.
+     */
+    public function test_fingerprint_of_names_server_basepath_and_account(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+
+        $this->assertSame($this->fixture_fingerprint(), webdav_instance::fingerprint_of($instanceid));
+    }
+
+    /**
      * Moodle stores no port as string 0; never emit :0 in URLs
      * (live acceptance #505: all requests timed out).
      */

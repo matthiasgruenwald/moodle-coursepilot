@@ -124,4 +124,43 @@ final class write_gate_test extends \advanced_testcase {
         write_gate::assert_writable('quiz');
         $this->addToAssertionCount(2);
     }
+
+    /**
+     * An activity type outside the catalog is never writable and says so.
+     */
+    public function test_unknown_activity_type_is_locked(): void {
+        $this->resetAfterTest();
+
+        $status = write_gate::status_for('kein_aktivitaetstyp');
+
+        $this->assertSame('needs_work', $status['state']);
+        $this->assertSame(['Unknown activity type.'], $status['violations']);
+        $this->expectException(\moodle_exception::class);
+        write_gate::assert_writable('kein_aktivitaetstyp');
+    }
+
+    /**
+     * A Moodle major version covered by the manual review counts as fully "checked".
+     */
+    public function test_manually_reviewed_major_version_is_checked_not_auto_checked(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->branch = 400;
+
+        $this->assertSame('checked', write_gate::status_for('label')['state']);
+    }
+
+    /**
+     * Missing or unreadable stored drift results mean "no violations", not a lock.
+     */
+    public function test_missing_or_garbled_stored_violations_count_as_none(): void {
+        $this->resetAfterTest();
+        write_gate::status_for('label');
+
+        unset_config('driftviolations_label', 'local_coursepilot');
+        $this->assertNotSame('needs_work', write_gate::status_for('label')['state']);
+
+        set_config('driftviolations_label', 'kein json', 'local_coursepilot');
+        $this->assertNotSame('needs_work', write_gate::status_for('label')['state']);
+    }
 }

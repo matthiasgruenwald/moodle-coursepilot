@@ -35,6 +35,10 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(list_context_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_reader::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_area::class)]
 final class list_context_files_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -408,6 +412,27 @@ final class list_context_files_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
 
         $this->assertSame([], $result['entries']);
+    }
+
+    /**
+     * An external storage that rejects the account is reported as a named
+     * error with the translated error class, never as an empty listing.
+     */
+    public function test_listing_rejected_by_external_storage_is_a_named_error(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->deny_auth();
+
+        try {
+            list_context_files::execute();
+            $this->fail('A rejected account must not look like an empty folder.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('webdavexternalerror', $e->errorcode);
+            $this->assertStringContainsString(
+                \local_coursepilot\webdav\webdav_error::label(\local_coursepilot\webdav\webdav_error::AUTH_REJECTED),
+                $e->getMessage()
+            );
+        }
     }
 
     /**

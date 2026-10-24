@@ -45,4 +45,12 @@ final class personal_data_hosts_check_test extends \advanced_testcase {
 
         $this->assertSame(result::OK, $result->get_status());
     }
+
+    public function test_identifies_itself_for_the_status_report(): void {
+        $this->resetAfterTest();
+        $check = new personal_data_hosts_check();
+
+        $this->assertSame('webdav_personal_data_hosts', $check->get_id());
+        $this->assertSame(get_string('webdavcheck4name', 'local_coursepilot'), $check->get_name());
+    }
 }
