@@ -4,6 +4,7 @@
  * Befund der statischen Pruefungen, bei fehlgeschlagenen Tests und bei Ratschenverletzung.
  *
  *   node scripts/gate/gate.js fast            Node-Tests + PHPUnit der Tests zu geaenderten Klassen
+ *   node scripts/gate/gate.js matrix          neue/geaenderte Tests auf privaten Instanzen mit anderer Moodle-Version und DB (matrix-profiles.json)
  *   node scripts/gate/gate.js full            Node-Tests + volle PHPUnit-Suite mit pcov, danach Bericht
  *   node scripts/gate/gate.js report <clover> Bericht aus einem vorhandenen Clover-Bericht (nur Messwerte)
  *   node scripts/gate/gate.js ratchet [clover] Ratsche: Baselines nur besser; mit Clover zusaetzlich Coverage, geaenderte Dateien und Methoden
@@ -257,8 +258,8 @@ function sh(cmd, args, opts = {}) {
   return spawnSync(cmd, args, { cwd: REPO, encoding: 'utf8', stdio: opts.inherit ? childStdio : 'pipe', ...opts });
 }
 
-function dexec(args, opts = {}) {
-  return sh('docker', ['exec', '-w', `${PLUGIN_IN_CONTAINER}`, CONTAINER, ...args], opts);
+function dexec(args, opts = {}, container = CONTAINER) {
+  return sh('docker', ['exec', '-w', `${PLUGIN_IN_CONTAINER}`, container, ...args], opts);
 }
 
 function requireContainer() {
@@ -283,12 +284,12 @@ function preparePlugin() {
   }
 }
 
-function phpunit(extra, coverage) {
+function phpunit(extra, coverage, container = CONTAINER) {
   const php = ['php', '-d', 'memory_limit=-1'];
   if (coverage) {
     php.push('-d', 'pcov.enabled=1', '-d', `pcov.directory=${PLUGIN_IN_CONTAINER}`);
   }
-  return dexec([...php, '/var/www/html/vendor/bin/phpunit', '-c', 'phpunit.xml', ...extra], { inherit: true });
+  return dexec([...php, '/var/www/html/vendor/bin/phpunit', '-c', 'phpunit.xml', ...extra], { inherit: true }, container);
 }
 
 /** Ergebnis einer Pruefung ohne Dateibezug ins Fehlschlagslog. */
@@ -311,16 +312,20 @@ function changedFiles() {
   return `${tracked.stdout}\n${fresh.stdout}`.split('\n').filter(Boolean);
 }
 
-function runFast() {
-  let ok = nodeTests();
-  const changed = changedFiles();
+/** Tests for changed files: changed test classes, plus those covering changed production classes. */
+function selectTests(changed) {
   const interfaces = changed.filter(rel => {
     if (!rel.startsWith(`${PLUGIN_PREFIX}classes/`) || !rel.endsWith('.php')) return false;
     const file = path.join(REPO, rel);
     return fs.existsSync(file) && new RegExp(`^interface\\s+${path.basename(rel, '.php')}\\b`, 'm')
       .test(fs.readFileSync(file, 'utf8'));
   });
-  const { tests, unmapped } = mapChangedToTests(changed, staticChecks.readPluginTests(REPO), interfaces);
+  return mapChangedToTests(changed, staticChecks.readPluginTests(REPO), interfaces);
+}
+
+function runFast() {
+  let ok = nodeTests();
+  const { tests, unmapped } = selectTests(changedFiles());
   unmapped.forEach(f => console.log(`${f}:0: no-test-mapped: keine Testklasse mit CoversClass fuer diese Datei`));
   requireContainer();
   if (tests.length > 0) {
@@ -334,6 +339,56 @@ function runFast() {
   ok = printRatchet() && ok;
   ok = printStatic(staticChecks.FAST_CHECKS) && ok;
   console.log(`summary: mode=fast node=${ok ? 'ok' : 'fail'} phpunit_tests=${tests.length}`);
+  return ok;
+}
+
+/** Profiles of the matrix run: GATE_MATRIX_PROFILES (comma list) or the profiles marked `default`. */
+function matrixProfiles(env = process.env) {
+  const all = JSON.parse(fs.readFileSync(path.join(__dirname, 'matrix-profiles.json'), 'utf8'));
+  const names = env.GATE_MATRIX_PROFILES ? env.GATE_MATRIX_PROFILES.split(',').map(n => n.trim()).filter(Boolean)
+    : Object.keys(all).filter(n => all[n].default);
+  const unknown = names.filter(n => !all[n]);
+  if (unknown.length > 0 || names.length === 0) throw new Error(`Unknown or empty matrix profiles: ${unknown.join(', ') || '(none)'}; known: ${Object.keys(all).join(', ')}`);
+  return names.map(name => ({ name, ...all[name] }));
+}
+
+/** Since which commit tests count as new: GATE_MATRIX_BASE, else the last push of this branch, else the target base. */
+function matrixBase() {
+  if (process.env.GATE_MATRIX_BASE) return process.env.GATE_MATRIX_BASE;
+  const upstream = (git(['rev-parse', '--verify', '-q', '@{upstream}^{commit}']) || '').trim();
+  return (git(['merge-base', 'HEAD', upstream || resolveBase(loadBaseline().armedAt)]) || '').trim() || 'HEAD';
+}
+
+/** Run the new or changed tests on private instances with another Moodle version and database. */
+function runMatrix() {
+  hostLoad.assertHostCapacity();
+  const { changed } = changesSince(matrixBase());
+  const { tests } = selectTests([...changed.keys()]);
+  if (tests.length === 0) {
+    console.log('summary: mode=matrix no changed tests');
+    return true;
+  }
+  const script = path.join(__dirname, 'matrix-instance.sh');
+  const env = { ...process.env, GATE_DIR, GATE_REPO: REPO };
+  let ok = true;
+  for (const p of matrixProfiles()) {
+    const started = Date.now();
+    let passed = false;
+    try {
+      const up = sh('bash', [script, 'up', p.name, p.moodleRef, p.db, p.php], { inherit: true, env });
+      if (up.status !== 0) throw new Error(`matrix instance ${p.name} did not start (exit ${up.status})`);
+      const container = `kurspilot-gate-m-${p.name}-webserver-1`;
+      passed = phpunit(['--filter', `/\\b(${tests.join('|')})\\b/`], false, container).status === 0;
+    } catch (e) {
+      console.log(`gate:0: gate-error: ${e.message}`);
+    } finally {
+      // Containers run only during the check; the data stays for the next one.
+      sh('bash', [script, 'stop', p.name], { env });
+    }
+    logOutcome(`matrix-${p.name}`, passed);
+    console.log(`summary: mode=matrix profile=${p.name} phpunit=${passed ? 'ok' : 'fail'} tests=${tests.length} seconds=${Math.round((Date.now() - started) / 1000)}`);
+    ok = passed && ok;
+  }
   return ok;
 }
 
@@ -730,6 +785,9 @@ function main(argv) {
     if (mode === 'fast') {
       return runFast();
     }
+    if (mode === 'matrix') {
+      return runMatrix();
+    }
     if (mode === 'full') {
       return runFull();
     }
@@ -782,4 +840,4 @@ if (require.main === module) {
   process.exit(process.exitCode || (ok ? 0 : 1));
 }
 
-module.exports = { parseClover, buildReport, formatSummary, reportFromFile, mapChangedToTests, runRatchet };
+module.exports = { parseClover, buildReport, formatSummary, reportFromFile, mapChangedToTests, runRatchet, matrixProfiles };

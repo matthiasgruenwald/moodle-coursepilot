@@ -617,9 +617,12 @@ test('pre-push: Gate full rot blockiert den Push, gruen laesst ihn durch', () =>
   const red = pushRepo(1);
   const blocked = push(red, 'HEAD:refs/heads/work');
   assert.notEqual(blocked.status, 0);
-  assert.match(blocked.out, /stub full/);
+  assert.match(blocked.out, /stub matrix/);
+  assert.doesNotMatch(blocked.out, /stub full/, 'the matrix check blocks before the expensive full gate');
   const green = pushRepo(0);
-  assert.equal(push(green, 'HEAD:refs/heads/work').status, 0);
+  const passed = push(green, 'HEAD:refs/heads/work');
+  assert.equal(passed.status, 0);
+  assert.match(passed.out, /stub matrix\nstub full/);
 });
 
 test('pre-push: Loeschen eines Branches und Tags brauchen kein Gate', () => {
@@ -635,10 +638,10 @@ test('pre-push: mehrere Refs, auch Loeschen plus Neuanlage, laufen ueber ein Gat
   git(repo, 'push', '--no-verify', 'origin', 'HEAD:refs/heads/old');
   const two = push(repo, 'HEAD:refs/heads/a', 'HEAD:refs/heads/b');
   assert.notEqual(two.status, 0);
-  assert.equal(two.out.match(/stub full/g).length, 1);
+  assert.equal(two.out.match(/stub matrix/g).length, 1);
   const mixed = push(repo, ':refs/heads/old', 'HEAD:refs/heads/new');
   assert.notEqual(mixed.status, 0);
-  assert.match(mixed.out, /stub full/);
+  assert.match(mixed.out, /stub matrix/);
 });
 
 test('pre-push: gepushter Stand muss der geprueften sein (Ref nicht HEAD, geaenderter Arbeitsbaum)', () => {
@@ -654,7 +657,7 @@ test('pre-push: gepushter Stand muss der geprueften sein (Ref nicht HEAD, geaend
   const dirty = push(repo, 'HEAD:refs/heads/work');
   assert.notEqual(dirty.status, 0);
   assert.match(dirty.out, /versionierte Dateien sind geaendert/);
-  assert.doesNotMatch(dirty.out, /stub full/);
+  assert.doesNotMatch(dirty.out, /stub (matrix|full)/);
 });
 
 test('Aktivierung und Edit-Hooks: ein npm-Skript, Claude und Codex rufen dasselbe Gate, kein php -l', () => {
