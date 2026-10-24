@@ -37,6 +37,8 @@ const deptrac = require('./deptrac');
 const mutation = require('./mutation');
 const hostLoad = require('./host-load');
 const mutationBase = require('./mutation-base');
+const mutationShard = require('./mutation-shard');
+const mutationFull = require('./mutation-full');
 
 const { PLUGIN_REL, PLUGIN_IN_CONTAINER, repoPath } = staticChecks;
 // GATE_REPO nur fuer Tests: das Repo, dessen Git-Stand und Baselines ausgewertet werden.
@@ -416,6 +418,81 @@ function runFull() {
   return staticPassed && ratcheted && nodePassed && passed && mutated;
 }
 
+/** Instances for the mutation run: GATE_MUTATION_INSTANCES (default 2), never in CI, fewer when work, memory or disk are short. */
+function planMutationShards(weights) {
+  const requested = mutationBase.forcedFull({ CI: process.env.CI, GITHUB_ACTIONS: process.env.GITHUB_ACTIONS })
+    ? 1 : Number(process.env.GATE_MUTATION_INSTANCES || 2);
+  if (!Number.isInteger(requested) || requested < 1) throw new Error('GATE_MUTATION_INSTANCES must be a positive integer');
+  const disk = fs.statfsSync(GATE_DIR);
+  const existing = [1, 2, 3].filter(i => fs.existsSync(`${GATE_DIR}-s${i}`)).length;
+  const { count, note } = mutationShard.shardCount({
+    requested, files: weights.length, weight: weights.reduce((n, [, w]) => n + w, 0),
+    minWeight: Number(process.env.GATE_MUTATION_SHARD_MIN_LINES ?? 200),
+    availableMb: hostLoad.availableMemoryMb(process.env.GATE_MEMINFO || undefined),
+    minMemMb: process.env.GATE_MIN_MEM_MB === undefined ? hostLoad.DEFAULT_MIN_MEM_MB : Number(process.env.GATE_MIN_MEM_MB),
+    freeDiskMb: Math.floor(disk.bavail * disk.bsize / 1048576), existing,
+  });
+  if (requested > 1) console.log(`mutation-shards: ${note}`);
+  return mutationShard.partition(weights, count);
+}
+
+const shardScript = path.join(__dirname, 'mutation-full-instance.sh');
+const shardTreeFile = inst => path.join(inst.dir, 'reports', '.shard-tree');
+const shardBash = (action, id) => sh('bash', [shardScript, action, id], { env: { ...process.env, GATE_DIR }, inherit: true });
+
+/** Bring the extra instances up with the current plugin, tests and coverage; an instance from an older tree is rebuilt. */
+function startMutationShards(extras, reuseCoverage, treeDigest) {
+  for (const inst of extras) {
+    if (fs.existsSync(inst.dir) && !(fs.existsSync(shardTreeFile(inst)) && fs.readFileSync(shardTreeFile(inst), 'utf8') === treeDigest)) {
+      shardBash('down', inst.id);
+    }
+    if (shardBash('up', inst.id).status !== 0) throw new Error(`mutation instance ${inst.id} did not start`);
+    fs.writeFileSync(shardTreeFile(inst), treeDigest);
+    const sync = sh('rsync', ['-a', '--delete', '--exclude', 'phpunit.xml', `${path.join(REPO, PLUGIN_REL)}/`, `${inst.dir}/plugin/`]);
+    if (sync.status !== 0) throw new Error(`mutation instance ${inst.id}: plugin sync failed: ${sync.stderr}`);
+    if (reuseCoverage) {
+      const cov = sh('rsync', ['-a', '--delete', `${path.join(GATE_DIR, 'reports', 'infection-coverage')}/`, `${inst.dir}/reports/infection-coverage/`]);
+      if (cov.status !== 0) throw new Error(`mutation instance ${inst.id}: coverage sync failed: ${cov.stderr}`);
+    }
+    const cfg = sh('docker', ['exec', '-w', '/var/www/html', inst.container, 'php', 'public/admin/tool/phpunit/cli/util.php', '--buildcomponentconfigs']);
+    if (cfg.status !== 0) throw new Error(`mutation instance ${inst.id}: PHPUnit configuration not built: ${cfg.stdout}${cfg.stderr}`);
+  }
+}
+
+/** Success removes the extra instances (unless kept); after a failure they stay, stopped, with their finished shards. */
+function stopMutationShards(extras, purge) {
+  for (const inst of extras) {
+    if (purge) shardBash('down', inst.id);
+    else sh('docker', ['stop', inst.container, `kurspilot-gate-${inst.id}-db-1`]);
+  }
+}
+
+/**
+ * Run all shards at once; a finished shard leaves an atomic done marker (key = tree, base, file split)
+ * and is not run again for the same key. Returns the indexes of failed shards.
+ */
+function runMutationShards(commands, { base, treeDigest, reuseCoverage, jsonName }) {
+  const jobs = [];
+  const index = [];
+  commands.forEach(({ inst, argv }, i) => {
+    const reports = path.join(inst.dir, 'reports');
+    const key = mutationShard.shardKey({ base, treeDigest, reuseCoverage, files: inst.files });
+    const done = path.join(reports, 'infection-shard.done');
+    if (fs.existsSync(done) && fs.readFileSync(done, 'utf8') === key && fs.existsSync(path.join(reports, jsonName))) {
+      console.log(`mutation-shards: shard ${i} reused (same tree, base and files)`);
+      return;
+    }
+    fs.rmSync(done, { force: true });
+    fs.rmSync(path.join(reports, jsonName), { force: true });
+    jobs.push({ argv, log: path.join(reports, `infection-shard-${i}.log`), done, key });
+    index.push(i);
+  });
+  if (jobs.length === 0) return [];
+  const r = spawnSync(process.execPath, [path.join(__dirname, 'mutation-shard-run.js')], { input: JSON.stringify(jobs), encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`mutation shard runner failed: ${r.stderr}`);
+  return JSON.parse(r.stdout).map((code, k) => (code === 0 ? null : index[k])).filter(i => i !== null);
+}
+
 /** Execute real Infection; the host supplies its authoritative Git diff to the mount. */
 function runMutation(pilotDirectory, reuseCoverage = false) {
   const ignores = mutation.parseIgnores(fs.readFileSync(path.join(REPO, 'scripts/gate/mutation-ignore.json'), 'utf8'));
@@ -462,54 +539,94 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
   const sourceHashes = Object.fromEntries([...new Set([...files, ...dependencies, 'composer.lock'])]
     .map(f => [f, crypto.createHash('sha256').update(fs.readFileSync(path.join(REPO, f))).digest('hex')]));
   fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-sources.json`), JSON.stringify(sourceHashes, null, 2));
+  const lines = f => {
+    const ranges = changed.get(f);
+    return ranges === 'all' || !ranges ? fs.readFileSync(path.join(REPO, f), 'utf8').split('\n').length : ranges.reduce((n, [a, b]) => n + b - a + 1, 0);
+  };
+  const plan = pilotDirectory ? [files] : planMutationShards(files.map(f => [f, lines(f)]));
+  const instances = plan.map((list, i) => (i === 0
+    ? { dir: GATE_DIR, container: CONTAINER, files: list }
+    : { id: `s${i}`, dir: `${GATE_DIR}-s${i}`, container: `kurspilot-gate-s${i}-webserver-1`, files: list }));
+  const sharded = instances.length > 1;
+  const jsonName = sharded ? `${prefix}-shard.json` : `${prefix}.json`;
   const config = {
     source: { directories: [PLUGIN_IN_CONTAINER], excludes: ['tests', ...baseline.excluded.map(e => e.path)] },
     phpUnit: { configDir: PLUGIN_IN_CONTAINER, customPath: '/var/www/html/vendor/bin/phpunit' },
     // The measured full suite takes 17 minutes; broad covering sets must actually run.
     timeout: 1800,
     bootstrap: '/var/www/reports/infection-bootstrap.php',
-    logs: { json: `/var/www/reports/${prefix}.json`, text: `/var/www/reports/${prefix}.log` },
+    logs: { json: `/var/www/reports/${jsonName}`, text: `/var/www/reports/${prefix}.log` },
     tmpDir: `/var/www/reports/${prefix}-tmp`,
     mutators: { '@default': true },
   };
   fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-config.json`), JSON.stringify(config, null, 2));
   fs.copyFileSync(path.join(__dirname, 'infection-bootstrap.php'), path.join(GATE_DIR, 'reports', 'infection-bootstrap.php'));
-  const args = [`--configuration=/var/www/reports/${prefix}-config.json`, '--threads=1',
-    '--only-covering-test-cases', '--no-progress', '--log-verbosity=all', '--debug',
-    `--filter=${files.map(f => f.slice(PLUGIN_PREFIX.length)).join(',')}`];
-  if (reuseCoverage) {
-    args.push('--coverage=/var/www/reports/infection-coverage', '--skip-initial-tests');
-  } else {
-    args.push(`--initial-tests-php-options=-d memory_limit=-1 -d pcov.enabled=1 -d pcov.directory=${PLUGIN_IN_CONTAINER}`);
-    const mapped = mapChangedToTests(files, staticChecks.readPluginTests(REPO));
-    if (mapped.unmapped.length === 0 && mapped.tests.length > 0) {
-      args.push(`--test-framework-options=--filter=/\\b(${mapped.tests.join('|')})\\b/`);
+  const treeDigest = sharded ? mutationFull.treeDigest(path.join(REPO, PLUGIN_REL)) : '';
+  const extras = instances.slice(1);
+  const guarded = fn => {
+    try { return fn(); } catch (e) { stopMutationShards(extras, false); throw e; }
+  };
+  if (sharded) guarded(() => startMutationShards(extras, reuseCoverage, treeDigest));
+  const commands = instances.map(inst => {
+    const reports = path.join(inst.dir, 'reports');
+    const args = [`--configuration=/var/www/reports/${prefix}-config.json`, '--threads=1',
+      '--only-covering-test-cases', '--no-progress', '--log-verbosity=all', '--debug',
+      `--filter=${inst.files.map(f => f.slice(PLUGIN_PREFIX.length)).join(',')}`];
+    if (reuseCoverage) {
+      args.push('--coverage=/var/www/reports/infection-coverage', '--skip-initial-tests');
+    } else {
+      args.push(`--initial-tests-php-options=-d memory_limit=-1 -d pcov.enabled=1 -d pcov.directory=${PLUGIN_IN_CONTAINER}`);
+      const mapped = mapChangedToTests(inst.files, staticChecks.readPluginTests(REPO));
+      if (mapped.unmapped.length === 0 && mapped.tests.length > 0) {
+        args.push(`--test-framework-options=--filter=/\\b(${mapped.tests.join('|')})\\b/`);
+      }
     }
-  }
-  const dockerArgs = ['exec', '-w', PLUGIN_IN_CONTAINER];
-  if (!pilotDirectory) {
-    const headers = [];
-    for (const file of files) {
-      const inner = file.slice(PLUGIN_PREFIX.length);
-      const ranges = changed.get(file);
-      const spans = ranges === 'all' ? [[1, fs.readFileSync(path.join(REPO, file), 'utf8').split('\n').length]] : ranges;
-      headers.push(`diff --git a/${inner} b/${inner}`, ...spans.map(([a, b]) => `@@ -0,0 +${a},${b - a + 1} @@`));
+    const dockerArgs = ['exec', '-w', PLUGIN_IN_CONTAINER];
+    if (!pilotDirectory) {
+      const headers = [];
+      for (const file of inst.files) {
+        const inner = file.slice(PLUGIN_PREFIX.length);
+        const ranges = changed.get(file);
+        const spans = ranges === 'all' ? [[1, fs.readFileSync(path.join(REPO, file), 'utf8').split('\n').length]] : ranges;
+        headers.push(`diff --git a/${inner} b/${inner}`, ...spans.map(([a, b]) => `@@ -0,0 +${a},${b - a + 1} @@`));
+      }
+      fs.writeFileSync(path.join(reports, 'infection.diff'), headers.join('\n') + '\n');
+      fs.writeFileSync(path.join(reports, 'infection-files.txt'), inst.files.map(f => f.slice(PLUGIN_PREFIX.length)).join('\n') + '\n');
+      const bin = path.join(reports, 'infection-bin');
+      fs.mkdirSync(bin, { recursive: true });
+      fs.copyFileSync(path.join(__dirname, 'infection-git.sh'), path.join(bin, 'git'));
+      fs.chmodSync(path.join(bin, 'git'), 0o755);
+      dockerArgs.push('-e', 'PATH=/var/www/reports/infection-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', '-e', `GATE_MUTATION_BASE=${base}`);
+      args.push('--git-diff-lines', `--git-diff-base=${base}`);
     }
-    fs.writeFileSync(path.join(GATE_DIR, 'reports', 'infection.diff'), headers.join('\n') + '\n');
-    fs.writeFileSync(path.join(GATE_DIR, 'reports', 'infection-files.txt'), files.map(f => f.slice(PLUGIN_PREFIX.length)).join('\n') + '\n');
-    const bin = path.join(GATE_DIR, 'reports', 'infection-bin');
-    fs.mkdirSync(bin, { recursive: true });
-    fs.copyFileSync(path.join(__dirname, 'infection-git.sh'), path.join(bin, 'git'));
-    fs.chmodSync(path.join(bin, 'git'), 0o755);
-    dockerArgs.push('-e', 'PATH=/var/www/reports/infection-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', '-e', `GATE_MUTATION_BASE=${base}`);
-    args.push('--git-diff-lines', `--git-diff-base=${base}`);
-  }
+    if (inst.id) {
+      fs.writeFileSync(path.join(reports, `${prefix}-config.json`), JSON.stringify(config, null, 2));
+    }
+    return { inst, args, argv: ['docker', ...dockerArgs, inst.container, 'php', '-d', 'memory_limit=-1', '/opt/dev-tools/vendor/bin/infection', ...args] };
+  });
+  const args = commands[0].args;
   const started = Date.now();
-  const result = sh('docker', [...dockerArgs, CONTAINER, 'php', '-d', 'memory_limit=-1', '/opt/dev-tools/vendor/bin/infection', ...args], { inherit: true });
+  let status = 0;
+  if (!sharded) {
+    status = sh(commands[0].argv[0], commands[0].argv.slice(1), { inherit: true }).status;
+  } else {
+    const failed = guarded(() => runMutationShards(commands, { base, treeDigest, reuseCoverage, jsonName }));
+    status = failed.length === 0 ? 0 : 1;
+    if (status !== 0) console.log(`gate:0: gate-error: mutation shard(s) ${failed.join(', ')} failed; finished shards are kept for the next run`);
+  }
+  const result = { status };
   const elapsedSeconds = (Date.now() - started) / 1000;
   fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}.exit`), `${result.status}\n`);
-  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-timer.json`), JSON.stringify({ elapsedSeconds, exit: result.status, base, files, args }, null, 2));
-  if (result.status !== 0) throw new Error(`Infection failed: exit ${result.status}`);
+  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-timer.json`), JSON.stringify({ elapsedSeconds, exit: result.status, base, files, args, shards: instances.map(i => i.files.length) }, null, 2));
+  if (result.status !== 0) {
+    stopMutationShards(extras, false);
+    throw new Error(`Infection failed: exit ${result.status}`);
+  }
+  if (sharded) {
+    const parts = guarded(() => instances.map(i => mutation.parseReport(fs.readFileSync(path.join(i.dir, 'reports', jsonName), 'utf8'))));
+    fs.writeFileSync(hostReport, JSON.stringify(mutationShard.mergeReports(parts)));
+    stopMutationShards(extras, process.env.GATE_MUTATION_KEEP_INSTANCES !== '1');
+  }
   const report = mutation.parseReport(fs.readFileSync(hostReport, 'utf8'));
   const found = mutation.evaluate(report, pilotDirectory ? new Map() : changed, ignores, !pilotDirectory, environment, sourceHashes);
   found.map(ratchet.formatFinding).forEach(line => console.log(line));

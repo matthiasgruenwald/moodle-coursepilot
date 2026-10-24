@@ -49,6 +49,7 @@ Container auf:
 
 ```bash
 npm run gate -- fast               # Node-Tests + PHPUnit der Tests zu geänderten Klassen
+npm run gate -- matrix             # neue/geänderte Tests auf Moodle 5.3 + PostgreSQL (private Instanz, vor dem Push)
 npm run gate -- full               # Node-Tests + volle Suite mit pcov, danach Bericht (rund 15 Minuten)
 npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
 npm run gate -- ratchet [clover.xml] # Ratsche; ohne Clover nur die Baselines
@@ -156,6 +157,44 @@ CI lädt sämtliche Reports auch bei Fehler hoch; `Gate (required)` fordert weit
 Erfolg des Qualitätsjobs. Der Pilot und der Fixture-Nachweis ersetzen keinen vollen Lauf.
 Der erste [Pilotbericht](checks/672-infection-pilot-2026-10-13.md) enthält gemessene
 Einzelzeiten, Originalpfade und die Grenzen der Volllauf-Hochrechnung.
+
+### Früher und billiger erkennen (lokal)
+
+Nichts davon ersetzt CI: CI prüft weiter den vollen Diff gegen den Zielbranch auf einer Instanz.
+
+**`matrix`** (läuft im `pre-push` vor dem teuren `full`): wählt wie `fast` die neuen/geänderten Tests
+(`*_test.php` und die Tests zu geänderten Klassen), aber seit dem letzten Push dieses Branches
+(`@{upstream}`, sonst Zielbranch; `GATE_MATRIX_BASE=<ref>` überschreibt) und führt sie auf einer
+privaten Instanz mit anderer Moodle-Version und Datenbank aus. Profile in
+`scripts/gate/matrix-profiles.json` (`53-pgsql` = Standard, `52-mariadb`; weitere Zeilen genügen),
+Auswahl mit `GATE_MATRIX_PROFILES=52-mariadb,53-pgsql`. Die Instanz
+(`matrix-instance.sh`, `/opt/kurspilot-gate-m-<profil>`, Container `kurspilot-gate-m-<profil>-*`
+mit 3 GB/2 CPU Web und 1 GB/1 CPU DB) startet bei Bedarf, richtet sich einmal ein (Moodle-Worktree,
+Composer, PHPUnit-Init, rund 3 Minuten) und wird nach dem Lauf **gestoppt**; die Daten bleiben
+(Moodle 5.3 + PostgreSQL rund 0,85 GB, 5.2 + MariaDB rund 0,9 GB). Entfernen:
+`bash scripts/gate/matrix-instance.sh purge <profil>`. Der PHPUnit-Stand wird neu initialisiert,
+sobald sich `version.php` oder `db/` des Plugins ändern.
+
+**Inkrementelle Mutationsprüfung** (lokal, `mutation` und `full`): Nach einem grünen Lauf auf
+sauberem Arbeitsbaum steht der Commit in `$GATE_DIR/reports/mutation-green.json` (atomar
+geschrieben, nie bei Abbruch, Fehler, Lastschutz oder Befund). Der nächste lokale Lauf vergleicht
+gegen diesen Commit statt gegen den Zielbranch und prüft nur die seither geänderten Zeilen. Gilt
+nur, wenn der Commit Vorfahr von HEAD ist, derselbe Vergleichsstand gegolten hat und
+`mutation-ignore.json` und `mutation.js` unverändert sind; sonst volle Basis wie bisher. Mit
+`CI`/`GITHUB_ACTIONS` oder `GATE_MUTATION_FULL=1` immer volle Basis. Grenze: Eine Teständerung
+ohne Änderung der Produktionszeile prüft lokal keine alten Mutanten neu, das fängt CI.
+
+**Mutanten-Sharding** (lokal, `mutation` und `full`): ab `GATE_MUTATION_SHARD_MIN_LINES`
+geänderten Zeilen (Standard 200) und mindestens zwei Dateien verteilt das Gate die Dateien nach
+Zeilenzahl auf `GATE_MUTATION_INSTANCES` Instanzen (Standard 2, `1` = bisheriges Verhalten, in CI
+immer 1). Jede Zusatzinstanz (`mutation-full-instance.sh`, Id `s1`, `s2`) hat eigenen Webserver,
+eigene DB und `--threads=1`. Weniger Instanzen mit Meldung `mutation-shards:`, wenn weniger als
+`GATE_MIN_MEM_MB` + 5 GB je Zusatzinstanz Speicher oder weniger als 1,5 GB + 2,5 GB je neue
+Instanz Platz frei sind. Die Berichte werden summiert und mit derselben Auswertung bewertet.
+Fertige Shards hinterlassen einen atomaren Marker (Quellstand, Basis, Dateiliste) und werden bei
+gleichem Schlüssel nicht wiederholt. Nach Erfolg werden die Zusatzinstanzen entfernt
+(`GATE_MUTATION_KEEP_INSTANCES=1` behält sie gestoppt), nach einem Fehler nur gestoppt, damit die
+fertigen Shards erhalten bleiben.
 
 ### Mutations-Volllauf (einmalig, #673)
 

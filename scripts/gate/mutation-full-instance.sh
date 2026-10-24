@@ -23,7 +23,8 @@ case "$ACTION" in
     [[ -d "$DIR/plugin" ]] || { rm -rf "$DIR/plugin.partial"; rsync -a "$HERE/../../Plugin/src/local_coursepilot/" "$DIR/plugin.partial/" && mv "$DIR/plugin.partial" "$DIR/plugin"; }
     for d in ci dev phpstan deptrac node java; do ln -sfn "$MAIN/$d" "$DIR/$d"; done
     [[ -d "$DIR/reports/infection-coverage" ]] || cp -a "$MAIN/reports/infection-coverage" "$DIR/reports/"
-    cp "$MAIN/reports/infection-bootstrap.php" "$MAIN/reports/infection-environment.json" "$DIR/reports/"
+    cp "$MAIN/reports/infection-bootstrap.php" "$DIR/reports/"
+    [[ ! -f "$MAIN/reports/infection-environment.json" ]] || cp "$MAIN/reports/infection-environment.json" "$DIR/reports/"
     set -a; source "$DIR/.env"; set +a
     compose up -d
     until compose exec -T db bash -c 'mariadb-admin ping -h127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" --silent' 2>/dev/null; do sleep 2; done
