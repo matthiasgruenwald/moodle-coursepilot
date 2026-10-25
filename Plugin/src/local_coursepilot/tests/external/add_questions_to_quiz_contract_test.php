@@ -213,7 +213,7 @@ final class add_questions_to_quiz_contract_test extends \advanced_testcase {
             accesslib_clear_all_caches_for_unit_testing();
             $e = $this->caught(fn() => add_questions_to_quiz::execute((int) $this->quiz->cmid, []));
             $this->assertInstanceOf(\required_capability_exception::class, $e, $capability);
-            assign_capability($capability, CAP_INHERIT, $roleid, \context_system::instance()->id, true);
+            assign_capability($capability, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
             accesslib_clear_all_caches_for_unit_testing();
         }
     }

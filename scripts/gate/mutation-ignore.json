@@ -4071,5 +4071,805 @@
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 70,
+    "mutator": "DecrementInteger",
+    "hash": "1e113b7f65c4b7805f8e07cee33d5fe6d603f7c2a8541d09a33834b33f4a53fd",
+    "reason": "consume(): max(1, $expires - $now) with the 1 lowered to 0. $expires = intdiv($now, $window) * $window + $window is strictly greater than $now (the remainder of $now / $window is below $window), so $expires - $now is always at least 1 and the max() floor never applies.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 98,
+    "mutator": "CastInt",
+    "hash": "7439c0221adb3e5bfacdcb5f8f96039242ac6ef9d290867206939456e726ba88",
+    "reason": "consume_locked(): (int) $sitehits > $sitelimit. get_field() returns the numeric hits column as a numeric string; PHP 8 compares a numeric string with an int numerically, so the cast changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 104,
+    "mutator": "CastObject",
+    "hash": "3616c823e161b1cdab5369aef1eb2d2c996ccc2b07381b491d6239d9d26ac084",
+    "reason": "consume_locked(): insert_record() receives an array instead of an object. moodle_database::insert_record() (object|array $dataobject) casts the argument with (array) in every driver, so both forms insert the same row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 108,
+    "mutator": "CastInt",
+    "hash": "7115218080f4a4e332f71e843aa855c02c56c0d80d5fd8b97e42a32c0074e918",
+    "reason": "consume_locked(): (int) $row->hits < $sourcelimit; numeric string against int is compared numerically in PHP 8, the cast is irrelevant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 109,
+    "mutator": "CastInt",
+    "hash": "ae66431c81d2015fd62b1ad4becee4c61e69b4d96bb9d22497d4a181ca60a966",
+    "reason": "consume_locked(): (int) $row->hits + 1; arithmetic on a numeric string yields the same int, and set_field() writes it as a numeric parameter either way.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 169,
+    "mutator": "FalseValue",
+    "hash": "d81cea9a656c30eccde3267586ec045912c708d487fe74ce7eecfcff4e0a2dff",
+    "reason": "request_source(): the else branch of the str_contains() ternary yields true instead of false. Without a colon the next line then evaluates strlen(true) === 16, which is false (strlen of '1' is 1), so the IPv6 branch is skipped exactly as with false.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 170,
+    "mutator": "FalseValue",
+    "hash": "88400b3ee81e95630bbe17659b6d355f70512607674f95a971a58f0b65441bd8",
+    "reason": "request_source(): $packed !== true instead of !== false. For false the condition becomes true && strlen(false) === 16, i.e. false (length 0); for a packed address strlen decides as before. The IPv6 branch is entered in exactly the same cases.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 170,
+    "mutator": "LogicalAnd",
+    "hash": "5c4f1010d6a260f8d6ee4580c61627e1de69dac3889d54b517a3a41025b24727",
+    "reason": "request_source(): $packed !== false || strlen($packed) === 16. inet_pton() of an address containing ':' returns either false or exactly 16 bytes, so both operands are true together or false together (strlen(false) is 0).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 205,
+    "mutator": "CastInt",
+    "hash": "72c6f1fdae5149714224d6940dd6d2f37225f8506b8160e3860f2fafb61823c2",
+    "reason": "site_row(): return (int) $id in a method declared ': int'; the non-strict return type already coerces the numeric string from get_field().",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 208,
+    "mutator": "ArrayItemRemoval",
+    "hash": "7060b1445a6ebf0263c7788633e051f04a591790bc72549a22b3a35aa4694cd4",
+    "reason": "site_row(): the explicit 'hits' => 0 is dropped from the inserted row. The hits column is declared NOT NULL DEFAULT 0 in install.xml, so the database stores 0 either way.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 208,
+    "mutator": "CastObject",
+    "hash": "6e1bbc8c60702b2581ff11f7be95554461aaf44053b57358e7699248b7b0112e",
+    "reason": "site_row(): insert_record() receives an array instead of an object; every driver casts the argument with (array), see line 104.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 208,
+    "mutator": "CastInt",
+    "hash": "fb5ab8396fab6a119ad07982fb58853e7682d4359ede6f47841f2ea9cf6bd2a4",
+    "reason": "site_row(): (int) insert_record() inside a method declared ': int'; insert_record() returns an int id and the return type would coerce it anyway.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_budget.php",
+    "line": 210,
+    "mutator": "CastInt",
+    "hash": "a6676c35241b32734b10086ab0c02610f4c3cbcc4569ac2fa2d61f0d3f5ddbda",
+    "reason": "site_row(): (int) get_field() inside a method declared ': int'; the non-strict return type coerces the numeric string (race-only branch after a duplicate-key failure).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_budget.php": "c5508f670209bef0f524974f3b8809d3d4331038a66b52b67e9861547259b32f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 81,
+    "mutator": "CastInt",
+    "hash": "5fb77029e93f7170a154d35fb1be8303e7a8f9f16542aae2027d865550b96a60",
+    "reason": "issue(): $record->userid = $USER->id instead of (int) $USER->id. insert_record() normalises numeric values per column type, the stored integer is the same.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 136,
+    "mutator": "CastInt",
+    "hash": "534d9999e4705a91e29c6e0a486eb7163feabda6194a90feb6f55a8bf999d84b",
+    "reason": "redeem(): the temporary $USER->id is the numeric string from the ticket row. Its only consumers are context_user::instance($USER->id) and empty($USER->id) (storage_anchor), which treat the numeric string like the int (context cache keys and DML parameters are normalised).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 147,
+    "mutator": "CastString",
+    "hash": "af7eb346fbf63364c0ee9ffd868445c6b303e3da45aeac52d557f39278ade047",
+    "reason": "redeem(): (string) around ($file->get_mimetype() ?: 'application/octet-stream'); stored_file::get_mimetype() returns a string and the fallback is a string, so the cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 160,
+    "mutator": "CastInt",
+    "hash": "b8fe3e76bf9892f26785e39556408d166f6cc795f94d8adc0c01a960ef6850e3",
+    "reason": "assert_still_valid(): (int) $ticket->expires < time(); numeric string against int is compared numerically in PHP 8.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 165,
+    "mutator": "CastInt",
+    "hash": "bf9fb83a8fa931788f89c70faeffbf404e66154c09f61f0a18ca959ab420c613",
+    "reason": "assert_still_valid(): connection::access_error(int $userid, ...) coerces the numeric string from the ticket row in non-strict mode to the same int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 166,
+    "mutator": "CastInt",
+    "hash": "4a35c2106d95582219ee31e793cde71d4a6266d8401cb9c54a6268d5b0da9d41",
+    "reason": "assert_still_valid(): the ?int $connectionid parameter of access_error() coerces the numeric string from the row to the same int; the null case is handled by the ternary.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 167,
+    "mutator": "CastInt",
+    "hash": "2109534226665294f31864614761af8c0d8ee204925aaf5ffbc8188c4b3a39e8",
+    "reason": "assert_still_valid(): the ?int $tokenid parameter of access_error() coerces the numeric string from the row to the same int; the null case is handled by the ternary.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 184,
+    "mutator": "CastInt",
+    "hash": "c5b7691452bf6ee1573710672be5b2f6db6b6e38ea2d017e853ee884c6e574e0",
+    "reason": "resolve_ticket_file(): context_user::instance() takes the user id untyped and only uses it as cache key and DML parameter, where a numeric string and the int are equivalent.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 225,
+    "mutator": "Concat",
+    "hash": "07848c12bbace6ce5125f31aced94f5f776caa88e1f2b056d320d5de85e01c3d",
+    "reason": "claim(): the claim marker is hash('sha256', $tickethash . '|' . random_string(20)). It is only ever compared for equality with the value just written by the same call, and its uniqueness comes from random_string(20) (about 119 bits). Swapping the operands of the first concatenation only permutes the hashed input; the marker stays equally unpredictable and unique.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 225,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "ff1b44f98f4260a6ef035563f17a0cc6268f12b3cfc0f6f894fea48cc50e8a34",
+    "reason": "claim(): the claim marker is hash('sha256', $tickethash . '|' . random_string(20)). It is only ever compared for equality with the value just written by the same call, and its uniqueness comes from random_string(20) (about 119 bits). Dropping $tickethash from the hashed input keeps the random part, which alone provides the uniqueness.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 225,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "4fe9159d9276f03bd53457d6b7a7e0992d87122e7ccbabec9eeacca0f8a13321",
+    "reason": "claim(): the claim marker is hash('sha256', $tickethash . '|' . random_string(20)). It is only ever compared for equality with the value just written by the same call, and its uniqueness comes from random_string(20) (about 119 bits). Dropping the '|' separator only changes the bytes that are hashed.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 225,
+    "mutator": "DecrementInteger",
+    "hash": "798e541713d636f6a968549f8e616aee02f8f499160ca03ab0abfaaa55dfbecc",
+    "reason": "claim(): the claim marker is hash('sha256', $tickethash . '|' . random_string(20)). It is only ever compared for equality with the value just written by the same call, and its uniqueness comes from random_string(20) (about 119 bits). random_string(19) still carries about 113 bits; a collision between two concurrent redemptions stays negligible.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 225,
+    "mutator": "IncrementInteger",
+    "hash": "7bf6abb1c4e75ba4695db717e797836a778eefc9aaf3edaed1f7c72ea37e38f9",
+    "reason": "claim(): the claim marker is hash('sha256', $tickethash . '|' . random_string(20)). It is only ever compared for equality with the value just written by the same call, and its uniqueness comes from random_string(20) (about 119 bits). random_string(21) only adds entropy.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 225,
+    "mutator": "Concat",
+    "hash": "7678b66eb7213fe51c4623c7cc2450822bca9b0d9b21de522d3e475f00bf1c65",
+    "reason": "claim(): the claim marker is hash('sha256', $tickethash . '|' . random_string(20)). It is only ever compared for equality with the value just written by the same call, and its uniqueness comes from random_string(20) (about 119 bits). Moving the '|' behind the random part only permutes the hashed input.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/create_mc_question.php",
+    "line": 106,
+    "mutator": "CastInt",
+    "hash": "4cb7754db5d3f737dab510d763f117b3b9f10d6dd662899ba539c8abe9e139c1",
+    "reason": "execute(): context::instance_by_id() takes the id untyped and uses it as cache key and DML parameter, where the numeric string from the category row behaves like the int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/create_mc_question.php": "f64a64e4dd09d0f2e5b1479da029624fbda0888f15267ca1065458771a06a296"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/create_mc_question.php",
+    "line": 116,
+    "mutator": "CastInt",
+    "hash": "bc66e05b505707940abe285d0d9a16a31f9d21e90c6491b2e292245f40f35037",
+    "reason": "execute(): $params['categoryid'] comes from validate_parameters() with PARAM_INT and is already an int; the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/create_mc_question.php": "f64a64e4dd09d0f2e5b1479da029624fbda0888f15267ca1065458771a06a296"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/create_mc_question.php",
+    "line": 129,
+    "mutator": "CastInt",
+    "hash": "8a25885a9b761e7a3f6e685eb24684259b2948c0f4e6375ff96368abfd98dafa",
+    "reason": "execute(): $params['categoryid'] is already an int after validate_parameters() (PARAM_INT); the cast is a no-op.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/create_mc_question.php": "f64a64e4dd09d0f2e5b1479da029624fbda0888f15267ca1065458771a06a296"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/create_mc_question.php",
+    "line": 143,
+    "mutator": "CastInt",
+    "hash": "2674fb7f8681989cf6c8885ab1bee93b6b5a523458d0e6b7cf657d5f76aed160",
+    "reason": "execute(): question_suspect_gate::latest_version_question(int $entryid) coerces the numeric string from the entry row to the same int in non-strict mode.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/create_mc_question.php": "f64a64e4dd09d0f2e5b1479da029624fbda0888f15267ca1065458771a06a296"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/create_mc_question.php",
+    "line": 149,
+    "mutator": "CastInt",
+    "hash": "e76a7e78451f61496ceff46c2a1db561d6d0e2072342d957e0f0c0bc7d1fb7eb",
+    "reason": "execute(): $question['questionbankentryid'] comes from question_import::import(), which already casts it with (int) (question_import.php line 749); the second cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/create_mc_question.php": "f64a64e4dd09d0f2e5b1479da029624fbda0888f15267ca1065458771a06a296"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/create_mc_question.php",
+    "line": 150,
+    "mutator": "CastInt",
+    "hash": "d048cb5a67e61b2c0cd32630debdc51ed2ca27ac89c013b8db38cec0f02048d4",
+    "reason": "execute(): $question['version'] comes from question_import::import(), which already casts it with (int) (question_import.php line 750); the second cast is a no-op.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/create_mc_question.php": "f64a64e4dd09d0f2e5b1479da029624fbda0888f15267ca1065458771a06a296"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/create_mc_question.php",
+    "line": 155,
+    "mutator": "CastObject",
+    "hash": "f6ca16948955d6dbb87d8fefbc3bd990458d4c721b27c8a093cf53f83c91d715",
+    "reason": "execute(): get_string() treats an array placeholder like an object ($a is read through the same key replacement), so the array and the stdClass render the identical message.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/create_mc_question.php": "f64a64e4dd09d0f2e5b1479da029624fbda0888f15267ca1065458771a06a296"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/create_mc_question.php",
+    "line": 179,
+    "mutator": "CastFloat",
+    "hash": "bb264d5712e75a589ec0205d8bebea4fa54bf97c3258a86c2c09d4cdd8b5fe30",
+    "reason": "build_xml(): round(((float) $fraction) * 100, 5); the answer fraction is validated as PARAM_FLOAT, and multiplying an int, float or numeric string by 100 yields the same number.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/create_mc_question.php": "f64a64e4dd09d0f2e5b1479da029624fbda0888f15267ca1065458771a06a296"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 102,
+    "mutator": "CastInt",
+    "hash": "bf6ca77ec4a83ca05a5e44c205e5a33263c9b85263340bfdb9fd013949d9cae3",
+    "reason": "execute(): entry_id_from_questionid(int $questionid) takes $params['questionid'], which is already an int after validate_parameters() (PARAM_INT).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 103,
+    "mutator": "CastInt",
+    "hash": "92b7b573d57eeaca51de5a4d7c8c17aaf1105e0a7e95c912c2ce8c81d2b32674",
+    "reason": "execute(): $params['categoryid'] is already an int after validate_parameters() (PARAM_INT); the cast is a no-op.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 103,
+    "mutator": "CastString",
+    "hash": "60f43246baf083030b7063cd7c36ecafaa4d8fe93ec524d3323e98b14d7baab6",
+    "reason": "execute(): $params['name'] is already a string after validate_parameters() (PARAM_TEXT); the cast is a no-op.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 151,
+    "mutator": "CastString",
+    "hash": "434ff720526987542b5ddd68f448a49fbe13a379d41c72ab9c7d5aaf2f6d3dcf",
+    "reason": "execute(): question_answers.answer is a NOT NULL text column (lib/db/install.xml), so get_record() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 153,
+    "mutator": "CastString",
+    "hash": "0d73d338b0238892a1fb904d39647b2c1499e5ef9cafc0824c3f648529dd2d47",
+    "reason": "execute(): question_answers.feedback is a NOT NULL text column (lib/db/install.xml), so get_record() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 154,
+    "mutator": "CastFloat",
+    "hash": "4403d614f6bff86a819ddcf914d342a6f37711a7e15fd3c59d92de673c451594",
+    "reason": "execute(): (float) $a->fraction > 0; numeric string against int is compared numerically in PHP 8.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 156,
+    "mutator": "CastFloat",
+    "hash": "de6642ee4da4a392b76da9ca002068aad2d76e494bf964264ec554bb4da43fde",
+    "reason": "execute(): (float) $a->fraction >= 1.0; numeric string against float is compared numerically in PHP 8.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 166,
+    "mutator": "CastInt",
+    "hash": "ba7f2dc735cebdc7dbfe94d0fa873e63741aa8850496edcaaf836b65973ee97d",
+    "reason": "execute(): $entryid is the int returned by entry_id_from_questionid()/entry_id_from_name() (both declared ': int'); the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 174,
+    "mutator": "CastString",
+    "hash": "bbd82999dcf737aa1e9bd959bf407cd609d18ce894102ca257e87a2756ee620e",
+    "reason": "execute(): question.name is a NOT NULL char column (lib/db/install.xml), so get_record() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 175,
+    "mutator": "CastString",
+    "hash": "d1679a6be8ef4c50392a1c1fe888fc5ffcf546331d6b7373b6a719b9ff66659d",
+    "reason": "execute(): question.questiontext is a NOT NULL text column (lib/db/install.xml), so get_record() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 176,
+    "mutator": "CastString",
+    "hash": "3ad0653cfec28ce64d55468003daf1a6af28ba2ef15a5faa2bc3e522e65564b0",
+    "reason": "execute(): question.generalfeedback is a NOT NULL text column (lib/db/install.xml), so get_record() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 177,
+    "mutator": "CastString",
+    "hash": "6744503e32e0079294c69940b171eee0eadfe40f65b1b66de6b1bd00bcc94204",
+    "reason": "execute(): question.qtype is a NOT NULL char column (lib/db/install.xml), so get_record() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 194,
+    "mutator": "CastInt",
+    "hash": "75855c6b3b6b61c1e838525b3868321d664da811c126b773856aa10b315ece65",
+    "reason": "entry_id_from_questionid(): the method is declared ': int' and the non-strict return type coerces the numeric string from the version row to the same int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 220,
+    "mutator": "CastInt",
+    "hash": "39bcb256fd6a5715243c28a7b2333c7964b4a90136a950cc45a7f7d4394fb337",
+    "reason": "entry_id_from_name(): the method is declared ': int' and the non-strict return type coerces the numeric string from the SQL row to the same int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 123,
+    "mutator": "Throw_",
+    "hash": "92ea3175afbe80507cca05f7ef143ff850891409f888435d025941d77f5cd4df",
+    "reason": "execute(): the branch is unreachable. $latest is looked up by the questionbankentryid that entry_id_from_questionid() read from a question_versions row or entry_id_from_name() joined with question_versions, so at least one version row exists; the lookup cannot come back empty (a concurrent delete between the two statements aside).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "Concat",
+    "hash": "c14dac67818379e9570cae0fec85313319fc7a0add7b0dadaaa448255c81f632",
+    "reason": "execute(): the branch is unreachable. $latest is looked up by the questionbankentryid that entry_id_from_questionid() read from a question_versions row or entry_id_from_name() joined with question_versions, so at least one version row exists; the lookup cannot come back empty (a concurrent delete between the two statements aside). The mutation only changes the debug text of that exception.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "a4d67c28a28eaab1cc280a0beda564cac1a63a9d59ca2c99b0c0614552bfbefd",
+    "reason": "execute(): the branch is unreachable. $latest is looked up by the questionbankentryid that entry_id_from_questionid() read from a question_versions row or entry_id_from_name() joined with question_versions, so at least one version row exists; the lookup cannot come back empty (a concurrent delete between the two statements aside). The mutation only changes the debug text of that exception.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "e36faae75cdd81dcb8bf6d79430eb5b46e6753f0d5c1b9eb0eed3f27f3b30231",
+    "reason": "execute(): the branch is unreachable. $latest is looked up by the questionbankentryid that entry_id_from_questionid() read from a question_versions row or entry_id_from_name() joined with question_versions, so at least one version row exists; the lookup cannot come back empty (a concurrent delete between the two statements aside). The mutation only changes the debug text of that exception.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "Concat",
+    "hash": "2a042b39467e9cb1a045c9b7427cf71fa3e857ad5a787d47ebe19c5c85a0e3d3",
+    "reason": "execute(): the branch is unreachable. $latest is looked up by the questionbankentryid that entry_id_from_questionid() read from a question_versions row or entry_id_from_name() joined with question_versions, so at least one version row exists; the lookup cannot come back empty (a concurrent delete between the two statements aside). The mutation only changes the debug text of that exception.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "4a1594094300052275413f26c31c57c147040ffb6cb49518d3ae53e9285fb36d",
+    "reason": "execute(): the branch is unreachable. $latest is looked up by the questionbankentryid that entry_id_from_questionid() read from a question_versions row or entry_id_from_name() joined with question_versions, so at least one version row exists; the lookup cannot come back empty (a concurrent delete between the two statements aside). The mutation only changes the debug text of that exception.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_question.php": "fc16d542df8e0d9df32bcd3ac176365cfb33f1ba38db587ed693400abfc27ee3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 270,
+    "mutator": "FunctionCallRemoval",
+    "hash": "d004f896515f0bb5f0d1d44ae4c9636c6f9be53c0f66b0b57e51bf3eee8f4d0c",
+    "reason": "PHP 8 GdImage objects are freed by reference counting and imagedestroy() has been a no-op since PHP 8.0 (deprecated in 8.5); the image is released when the variable goes out of scope either way, and nothing observable depends on the call. Here: imagedestroy($source) in load_and_crop().",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 421,
+    "mutator": "FunctionCallRemoval",
+    "hash": "aa5aeed3f1d38c9237d91425c65dcbe832c7902e898e14abdf59e559d2706886",
+    "reason": "PHP 8 GdImage objects are freed by reference counting and imagedestroy() has been a no-op since PHP 8.0 (deprecated in 8.5); the image is released when the variable goes out of scope either way, and nothing observable depends on the call. Here: imagedestroy($canvas) in crop().",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 307,
+    "mutator": "CastObject",
+    "hash": "ae29cb1c66588c7e905c75f98d339f8905d0046922fee81a47a05fbb7a1416d2",
+    "reason": "build_crop_response(): get_string() receives an array instead of an object as $a; get_string() replaces {$a->key} placeholders from arrays and objects alike, so the message text is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 445,
+    "mutator": "CastInt",
+    "hash": "11125b2304747a49555959414513766f03f741f512945b0e89ca3a95ad465ea2",
+    "reason": "pixel_rect(): the (int) cast around round(). round() returns an integral float and every consumer (min/max arithmetic, render_canvas(int ...), imagecopy(), the width/height values, the get_string() message where the float 6.0 prints as 6) coerces or prints it as the same integer in non-strict mode, so the cast changes no result. Here: $px0.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 446,
+    "mutator": "CastInt",
+    "hash": "26fbbd13c514e777c324c1e09b95e8b9715f2f9eedfa483764147139ef555a7f",
+    "reason": "pixel_rect(): the (int) cast around round(). round() returns an integral float and every consumer (min/max arithmetic, render_canvas(int ...), imagecopy(), the width/height values, the get_string() message where the float 6.0 prints as 6) coerces or prints it as the same integer in non-strict mode, so the cast changes no result. Here: $py0.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 447,
+    "mutator": "CastInt",
+    "hash": "8a75b23fed90f447ec2c79cdbbcdfd841b69e973fb9bf3b0978161d3a6c0f07c",
+    "reason": "pixel_rect(): the (int) cast around round(). round() returns an integral float and every consumer (min/max arithmetic, render_canvas(int ...), imagecopy(), the width/height values, the get_string() message where the float 6.0 prints as 6) coerces or prints it as the same integer in non-strict mode, so the cast changes no result. Here: $px1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 448,
+    "mutator": "CastInt",
+    "hash": "1bfbbdb31c56e47ac9be8591c31520f543746b9c5ee729219a94d2ed0e8d7e81",
+    "reason": "pixel_rect(): the (int) cast around round(). round() returns an integral float and every consumer (min/max arithmetic, render_canvas(int ...), imagecopy(), the width/height values, the get_string() message where the float 6.0 prints as 6) coerces or prints it as the same integer in non-strict mode, so the cast changes no result. Here: $py1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 455,
+    "mutator": "Minus",
+    "hash": "74f4966a29a6990f79cf9e23348c833faa3a037ee6a37e50ca6ffb84c639b0fa",
+    "reason": "pixel_rect(): min($orig - $p0, $p1 - $p0) with the first operand changed to $orig + $p0. The guarded relative coordinates satisfy x1 <= 1.0, hence p1 <= orig (round() is monotonic and orig is an integer), so p1 - p0 <= orig - p0 <= orig + p0 and min() always returns the second operand; the first operand never decides. Here: the width.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 456,
+    "mutator": "Minus",
+    "hash": "64b480abf6a1b7c179258b29641da0a17379c8ef80f112da3b0bc30a133e0028",
+    "reason": "pixel_rect(): min($orig - $p0, $p1 - $p0) with the first operand changed to $orig + $p0. The guarded relative coordinates satisfy x1 <= 1.0, hence p1 <= orig (round() is monotonic and orig is an integer), so p1 - p0 <= orig - p0 <= orig + p0 and min() always returns the second operand; the first operand never decides. Here: the height.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 487,
+    "mutator": "DecrementInteger",
+    "hash": "62ded98671de9ed6a1fba7434a812dcb0b1a65f6b8b7e01a6b51ddc96f548120",
+    "reason": "render_canvas(), PNG/GIF branch: the transparent fill is overwritten completely. The canvas has the size width x height and imagecopy() copies exactly that rectangle onto (0, 0) with alpha blending off, replacing every canvas pixel by the source pixel; even a source rectangle outside the image replaces the pixel (verified with the GD build of the gate: the canvas pixel becomes opaque black). The fill colour and its position therefore never reach the encoded output. Here: x coordinate -1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 487,
+    "mutator": "IncrementInteger",
+    "hash": "4877c8f4d3498106bf67b3d5ff4aa5991371f69b57b3d06985df6318569f7b45",
+    "reason": "render_canvas(), PNG/GIF branch: the transparent fill is overwritten completely. The canvas has the size width x height and imagecopy() copies exactly that rectangle onto (0, 0) with alpha blending off, replacing every canvas pixel by the source pixel; even a source rectangle outside the image replaces the pixel (verified with the GD build of the gate: the canvas pixel becomes opaque black). The fill colour and its position therefore never reach the encoded output. Here: x coordinate 1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 487,
+    "mutator": "DecrementInteger",
+    "hash": "e0d480a8ab814592c07edc20c7e70d97d440e640546b1032c73e6ccf4709eb79",
+    "reason": "render_canvas(), PNG/GIF branch: the transparent fill is overwritten completely. The canvas has the size width x height and imagecopy() copies exactly that rectangle onto (0, 0) with alpha blending off, replacing every canvas pixel by the source pixel; even a source rectangle outside the image replaces the pixel (verified with the GD build of the gate: the canvas pixel becomes opaque black). The fill colour and its position therefore never reach the encoded output. Here: y coordinate -1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 487,
+    "mutator": "IncrementInteger",
+    "hash": "159c3703f6a63a4a5d518d37689b3df00ef74fb465089caeaec5bcf775f5a257",
+    "reason": "render_canvas(), PNG/GIF branch: the transparent fill is overwritten completely. The canvas has the size width x height and imagecopy() copies exactly that rectangle onto (0, 0) with alpha blending off, replacing every canvas pixel by the source pixel; even a source rectangle outside the image replaces the pixel (verified with the GD build of the gate: the canvas pixel becomes opaque black). The fill colour and its position therefore never reach the encoded output. Here: y coordinate 1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 487,
+    "mutator": "IncrementInteger",
+    "hash": "3d8f1ddd6045a9e0be07624ab251a0c81c114574ac382b10e9cb915901b2d3ec",
+    "reason": "render_canvas(), PNG/GIF branch: the transparent fill is overwritten completely. The canvas has the size width x height and imagecopy() copies exactly that rectangle onto (0, 0) with alpha blending off, replacing every canvas pixel by the source pixel; even a source rectangle outside the image replaces the pixel (verified with the GD build of the gate: the canvas pixel becomes opaque black). The fill colour and its position therefore never reach the encoded output. Here: red 1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 487,
+    "mutator": "IncrementInteger",
+    "hash": "e4390fc2c01e1a9fbaa5b40a2649f90d1644fc1e25289c2e0583f3cb7bf5e233",
+    "reason": "render_canvas(), PNG/GIF branch: the transparent fill is overwritten completely. The canvas has the size width x height and imagecopy() copies exactly that rectangle onto (0, 0) with alpha blending off, replacing every canvas pixel by the source pixel; even a source rectangle outside the image replaces the pixel (verified with the GD build of the gate: the canvas pixel becomes opaque black). The fill colour and its position therefore never reach the encoded output. Here: green 1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 487,
+    "mutator": "IncrementInteger",
+    "hash": "d1b786943e1275ee8a532c5b3ee87d4305c1f9934446cd361a757c0ea3a242fd",
+    "reason": "render_canvas(), PNG/GIF branch: the transparent fill is overwritten completely. The canvas has the size width x height and imagecopy() copies exactly that rectangle onto (0, 0) with alpha blending off, replacing every canvas pixel by the source pixel; even a source rectangle outside the image replaces the pixel (verified with the GD build of the gate: the canvas pixel becomes opaque black). The fill colour and its position therefore never reach the encoded output. Here: blue 1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 487,
+    "mutator": "DecrementInteger",
+    "hash": "caae88fb2b73bf7b773e136e063da3a288a0021053654ab0114b70a14577fd52",
+    "reason": "render_canvas(), PNG/GIF branch: the transparent fill is overwritten completely. The canvas has the size width x height and imagecopy() copies exactly that rectangle onto (0, 0) with alpha blending off, replacing every canvas pixel by the source pixel; even a source rectangle outside the image replaces the pixel (verified with the GD build of the gate: the canvas pixel becomes opaque black). The fill colour and its position therefore never reach the encoded output. Here: alpha 126.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/crop_material_file.php",
+    "line": 487,
+    "mutator": "FunctionCallRemoval",
+    "hash": "cb1b7da6a05cdfaa92f88d02c165e2b87029a883cd8f6a6ada259d2cbf748c68",
+    "reason": "render_canvas(), PNG/GIF branch: the transparent fill is overwritten completely. The canvas has the size width x height and imagecopy() copies exactly that rectangle onto (0, 0) with alpha blending off, replacing every canvas pixel by the source pixel; even a source rectangle outside the image replaces the pixel (verified with the GD build of the gate: the canvas pixel becomes opaque black). The fill colour and its position therefore never reach the encoded output. Here: the imagefill() call itself is removed.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/crop_material_file.php": "2c6c44607303bb26a847cafcd3a94f8e6f545735a9ec71a179983259544e0430"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/export_questions_xml.php",
+    "line": 98,
+    "mutator": "CastInt",
+    "hash": "82f1f00d20dfafc8005b1202b6c73ee6174307fda347b759348786eeeae7fd6c",
+    "reason": "execute(): export_one(int $questionid, ...) coerces the element of the validated questionids list (PARAM_INT elements, already ints) to the same int; the cast is a no-op.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/export_questions_xml.php": "03c49961dfa7f3bead95ff1132791e6261c51a7f254d6285038055a84ddff393"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/export_questions_xml.php",
+    "line": 165,
+    "mutator": "CastString",
+    "hash": "331fac39ca168d4f25af356acc128d6fad58173e7b3018f9bf2761f7b470a343",
+    "reason": "export_one(): question.name is a NOT NULL char column (lib/db/install.xml), so get_record() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/export_questions_xml.php": "03c49961dfa7f3bead95ff1132791e6261c51a7f254d6285038055a84ddff393"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/export_questions_xml.php",
+    "line": 222,
+    "mutator": "CastObject",
+    "hash": "0c1591eba2b0c13041f22f1dff9afc4ea1adbcfad878c594981891e4a1375216",
+    "reason": "build_message(): get_string() receives an array instead of an object as $a; get_string() replaces {$a->key} placeholders from arrays and objects alike, so the message text is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/export_questions_xml.php": "03c49961dfa7f3bead95ff1132791e6261c51a7f254d6285038055a84ddff393"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/export_questions_xml.php",
+    "line": 185,
+    "mutator": "MethodCallRemoval",
+    "hash": "d4943abc792e4850ea9df1d90f45413479be87135754e4a715520ac674d908db",
+    "reason": "write_material_file(): the right to manage own files is checked a second time by material_area::write_to() (private_files_storage_port::require_manage_own_files(), line 137) before any write. Between the two checks only side-effect free reads run (export_area(), effective_location(), port_at(), and the path segment validation, which can only reject '.' and '..' segments that PARAM_PATH of targetpath has already excluded). A user without the right gets the identical required_capability_exception either way; only the order against a failing pointer configuration could differ. Verified by removing the line: every exception test still passes.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/export_questions_xml.php": "03c49961dfa7f3bead95ff1132791e6261c51a7f254d6285038055a84ddff393"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/authorize_page.php",
+    "line": 67,
+    "mutator": "CastInt",
+    "hash": "dd2696f8acd00c519e6d3d06e5aff28256a25e8a7a22cb990952dc806a54493b",
+    "reason": "response(): connection::issue_code() takes the user id as an int parameter (non-strict mode) and coerces $USER->id, an int or numeric string, to the same int; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/authorize_page.php": "3ceff904574e8b66e666ac94915f25b11e60b08a7a126f78aa1117b150057a48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/authorize_page.php",
+    "line": 107,
+    "mutator": "CastBool",
+    "hash": "446f5cb4f4730ea11070e6504be40ca659d0b6dffea5dc24e98353856bff8b0d",
+    "reason": "page_data(): $allowpersonaldata is only passed to consent_text(string, bool $allowpersonaldata), whose bool parameter coerces get_config()'s string ('0', '1') or false in non-strict mode to the same boolean as the (bool) cast.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/authorize_page.php": "3ceff904574e8b66e666ac94915f25b11e60b08a7a126f78aa1117b150057a48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php",
+    "line": 103,
+    "mutator": "CastString",
+    "hash": "087ee0b8d2c60066cc02d79043b884a77133e90c770d2021b75ae46eb5e8e952",
+    "reason": "execute(): (string) around ($row->entryidnumber ?? ''); the value is either the string column value or the string '', so the cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php": "efd978c38dd8508cad276a954c1c972cb5dda9dfdea4b5f64b016c2e7ab208da"
+    }
   }
 ]

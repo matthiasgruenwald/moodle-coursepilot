@@ -116,7 +116,7 @@ final class ensure_tools_contract_test extends \advanced_testcase {
             $this->assertInstanceOf(\required_capability_exception::class, $e, $capability);
             assign_capability(
                 $capability,
-                CAP_INHERIT,
+                CAP_ALLOW,
                 $DB->get_field('role', 'id', ['shortname' => 'editingteacher']),
                 \context_system::instance()->id,
                 true
@@ -125,6 +125,16 @@ final class ensure_tools_contract_test extends \advanced_testcase {
             accesslib_clear_all_caches_for_unit_testing();
         }
         $this->assertSame(0, $DB->count_records('qbank', ['name' => 'Never']));
+    }
+
+    public function test_reusing_an_existing_question_bank_still_needs_the_right_to_manage_activities(): void {
+        $this->setup_course();
+        ensure_question_bank::execute((int) $this->course->id, 'My bank');
+        $this->prohibit('moodle/course:manageactivities');
+
+        $e = $this->caught(fn() => ensure_question_bank::execute((int) $this->course->id, 'My bank'));
+
+        $this->assertInstanceOf(\required_capability_exception::class, $e);
     }
 
     public function test_an_existing_question_bank_needs_the_plugin_capability_in_its_own_context(): void {
@@ -184,7 +194,7 @@ final class ensure_tools_contract_test extends \advanced_testcase {
             $this->assertInstanceOf(\required_capability_exception::class, $e, $capability);
             assign_capability(
                 $capability,
-                CAP_INHERIT,
+                CAP_ALLOW,
                 $DB->get_field('role', 'id', ['shortname' => 'editingteacher']),
                 \context_system::instance()->id,
                 true
@@ -251,7 +261,7 @@ final class ensure_tools_contract_test extends \advanced_testcase {
             $this->assertInstanceOf(\required_capability_exception::class, $denied, $capability);
             assign_capability(
                 $capability,
-                CAP_INHERIT,
+                CAP_ALLOW,
                 $DB->get_field('role', 'id', ['shortname' => 'editingteacher']),
                 \context_system::instance()->id,
                 true

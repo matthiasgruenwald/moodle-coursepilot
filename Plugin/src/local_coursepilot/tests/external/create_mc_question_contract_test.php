@@ -193,9 +193,16 @@ final class create_mc_question_contract_test extends \advanced_testcase {
         foreach (['local/coursepilot:use', 'moodle/question:add'] as $capability) {
             assign_capability($capability, CAP_PROHIBIT, $roleid, \context_system::instance()->id, true);
             accesslib_clear_all_caches_for_unit_testing();
-            $e = $this->caught(fn() => create_mc_question::execute($this->categoryid, 'Twin', 'Q', 'single', self::answers()));
+            // A single answer is invalid, so a removed capability check would end in another exception.
+            $e = $this->caught(fn() => create_mc_question::execute(
+                $this->categoryid,
+                'Twin',
+                'Q',
+                'single',
+                [['answer' => 'Only', 'fraction' => 1]]
+            ));
             $this->assertInstanceOf(\required_capability_exception::class, $e, $capability);
-            assign_capability($capability, CAP_INHERIT, $roleid, \context_system::instance()->id, true);
+            assign_capability($capability, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
             accesslib_clear_all_caches_for_unit_testing();
         }
     }
@@ -210,5 +217,57 @@ final class create_mc_question_contract_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\invalid_parameter_exception::class, $e);
         $this->assertSame('A multiple-choice question needs at least 2 answers.', $e->debuginfo);
+    }
+
+    public function test_the_generated_xml_is_exact(): void {
+        $method = new \ReflectionMethod(create_mc_question::class, 'build_xml');
+
+        $xml = $method->invoke(null, [
+            'name' => 'O\'Neil "x" <&>',
+            'questiontext' => 'Text ]]> end',
+            'generalfeedback' => 'General',
+            'selectionmode' => 'multiple',
+            'defaultmark' => 2.5,
+            'answers' => [
+                ['answer' => 'A', 'fraction' => 1 / 3, 'feedback' => 'Fa'],
+                ['answer' => 'B', 'fraction' => 0.12345678],
+                ['answer' => 'C', 'fraction' => 0.5, 'feedback' => ''],
+            ],
+        ]);
+
+        $expected = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+  <question type="multichoice">
+    <name><text>O&apos;Neil &quot;x&quot; &lt;&amp;&gt;</text></name>
+    <questiontext format="html"><text><![CDATA[Text ]]]]><![CDATA[> end]]></text></questiontext>
+    <generalfeedback format="html"><text><![CDATA[General]]></text></generalfeedback>
+    <defaultgrade>2.5</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <idnumber></idnumber>
+    <single>false</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <correctfeedback format="html"><text></text></correctfeedback>
+    <partiallycorrectfeedback format="html"><text></text></partiallycorrectfeedback>
+    <incorrectfeedback format="html"><text></text></incorrectfeedback>
+    <answer fraction="33.33333" format="html">
+      <text><![CDATA[A]]></text>
+      <feedback format="html"><text><![CDATA[Fa]]></text></feedback>
+    </answer>
+    <answer fraction="12.34568" format="html">
+      <text><![CDATA[B]]></text>
+      <feedback format="html"><text><![CDATA[]]></text></feedback>
+    </answer>
+    <answer fraction="50" format="html">
+      <text><![CDATA[C]]></text>
+      <feedback format="html"><text><![CDATA[]]></text></feedback>
+    </answer>
+  </question>
+</quiz>
+XML;
+
+        $this->assertSame($expected, $xml);
     }
 }

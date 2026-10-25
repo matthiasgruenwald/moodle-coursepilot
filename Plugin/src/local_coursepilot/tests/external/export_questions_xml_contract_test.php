@@ -186,7 +186,7 @@ final class export_questions_xml_contract_test extends \advanced_testcase {
             accesslib_clear_all_caches_for_unit_testing();
             $e = $this->caught(fn() => export_questions_xml::execute([$this->questions['First']], '', true));
             $this->assertInstanceOf(\required_capability_exception::class, $e, $capability);
-            assign_capability($capability, CAP_INHERIT, $roleid, \context_system::instance()->id, true);
+            assign_capability($capability, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
             accesslib_clear_all_caches_for_unit_testing();
         }
     }
