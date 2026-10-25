@@ -5912,5 +5912,215 @@
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/external/add_glossary_entries.php": "e7079264994ad06696cd31442154056f7b71d89e90814470a78e59edaff6aaf9"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/label.php",
+    "line": 88,
+    "mutator": "CastString",
+    "hash": "ca79de11f243254af75afc8008bd4e1f952f6f3c596e29f978e65b47adb0b418",
+    "reason": "read_details(): label.name is a NOT NULL char column (mod/label/db/install.xml), so get_record() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/label.php",
+    "line": 89,
+    "mutator": "CastString",
+    "hash": "072c26d125c5811baea8124d91f955e9569a5ca882a5e97c4db0f9f2d7ed6f02",
+    "reason": "read_details(): label.intro is a NOT NULL text column (mod/label/db/install.xml), so get_record() delivers a string already; content_field() also takes a string parameter.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/label.php",
+    "line": 193,
+    "mutator": "DecrementInteger",
+    "hash": "50dd45e18cd09146cad4535ae1cbd37317dca1388267f0e90cbfdea980339f86",
+    "reason": "grade_origin(int $instanceid = -1): the parameter is not used by the method body, which always returns learner_locks::GRADE_-1O-1E, so its default value has no effect. ",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/label.php",
+    "line": 193,
+    "mutator": "IncrementInteger",
+    "hash": "8715cee7ce89c3efa9055271a61b89791e5dc28a625b088b5a09c01f7a2c6fb3",
+    "reason": "grade_origin(int $instanceid = 1): the parameter is not used by the method body, which always returns learner_locks::GRADE_1O1E, so its default value has no effect. ",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/label.php": "b4a2398e80e7b2345ba32cb911c760ea0c45a516662437cd6363f8cbdfd12e24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/admin/pointer_scan.php",
+    "line": 83,
+    "mutator": "CastInt",
+    "hash": "9fd47f7ce512e04c1a1f8f8f2a4221577b617a519456b100f18e0e68283ccae7",
+    "reason": "userids_with_pointer(): the mapping closure is declared ': int' and coerces the numeric string id of the SQL row to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/admin/pointer_scan.php": "6c50bc211db890de38fc21c330b0fd22fd969b77f8724fca58fc90ceb3171760"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/admin/pointer_scan.php",
+    "line": 208,
+    "mutator": "CastString",
+    "hash": "264791bf62f1aff2fbf0e7939dabe25153dd31e131574094cbc188a6123f10d3",
+    "reason": "target_state(): the fingerprint server of a resolved external location is a string (context_pointer::resolve_external() only accepts string servers), so the cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/admin/pointer_scan.php": "6c50bc211db890de38fc21c330b0fd22fd969b77f8724fca58fc90ceb3171760"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/export_activity_backup.php",
+    "line": 58,
+    "mutator": "FalseValue",
+    "hash": "9cf1b0e2b97004896bca07b6b7f94ba0ee03d4c7a51ee785cc51c3dd70d5751f",
+    "reason": "execute(): the fourth argument of get_coursemodule_from_id() only adds a 'sectionnum' property to the record; execute() reads id, modname and passes the record to activity_backup::export(), which reads id and modname only.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/export_activity_backup.php": "ea2c5ea2da3f1dcb38dfbae7426f89f5f3c6249440acb36f5f6e5b7e75c04f1c"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_bank_context.php",
+    "line": 64,
+    "mutator": "CastInt",
+    "hash": "063c0f7cb379aceffb37b8408bbac581a39a7f473ea779a540108b56d7b9724c",
+    "reason": "resolve(): context_module::instance() takes the id untyped and uses it as cache key and DML parameter, where the numeric string from the SQL row behaves like the int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/question_bank_context.php": "bd152035ec46a38d925286f2338a24b7312c545dca07dd9f6f2edf0af40bbff8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_bank_context.php",
+    "line": 65,
+    "mutator": "MethodCallRemoval",
+    "hash": "3028288fe886848f3de31c0af0b83a24fbddfb5afb6134c68e9c85b4e32adb8e",
+    "reason": "resolve(): external_api::validate_context($bankcontext). The bank context is a descendant of the course context, which was validated at the start of the same method; validate_context() only compares the context path with the single restricted context path, so a descendant of an accepted context is accepted as well and the second call never decides (verified by trying to restrict to the bank or to another module: the course call fails first).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/question_bank_context.php": "bd152035ec46a38d925286f2338a24b7312c545dca07dd9f6f2edf0af40bbff8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/personal_data.php",
+    "line": 41,
+    "mutator": "CastBool",
+    "hash": "8a31a504189374e4b3e3ed2e697fe540834f1be7fcdf50c103cf65603262753b",
+    "reason": "allowed(): the method is declared ': bool' and coerces get_config()'s string or false to the same boolean in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/personal_data.php": "790318c45c0e7734278da1b54e3b35033e87ebd7b5493d8a531e5d3dd40c1c4a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/personal_data.php",
+    "line": 55,
+    "mutator": "DecrementInteger",
+    "hash": "ea959c70998d72d7b7bac921a786857434ab5218fa32ef51f0970ce6f41d5610",
+    "reason": "is_marked(): preg_match() on $matches[0] (whole block including the delimiter lines) instead of $matches[1] (inner text). The inner text is a substring of the whole block and the pattern 'personenbezug:\\s*true\\b' cannot match across or inside the delimiter lines ('---'), so both subjects give the same result.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/personal_data.php": "790318c45c0e7734278da1b54e3b35033e87ebd7b5493d8a531e5d3dd40c1c4a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/personal_data.php",
+    "line": 55,
+    "mutator": "CastBool",
+    "hash": "7df77aaa157376e7b51ce4b9888e7629df70ffc3b635710efd95eb297b0147bd",
+    "reason": "is_marked(): the method is declared ': bool' and coerces the int result of preg_match() (0 or 1) to the same boolean in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/personal_data.php": "790318c45c0e7734278da1b54e3b35033e87ebd7b5493d8a531e5d3dd40c1c4a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/list_skills.php",
+    "line": 61,
+    "mutator": "MethodCallRemoval",
+    "hash": "cf6d748257fcb9838a735804610114f7f5dd828e16f3aa11e45b380e4a11a6be",
+    "reason": "execute(): validate_parameters() is called with an empty parameter description and an empty array, so it validates nothing and the result is not used.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/list_skills.php": "5d57315dc12ee983f6d12e4ac13bffedfe9a2500d6495b02dc22d30f7a335acd"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/list_skills.php",
+    "line": 75,
+    "mutator": "FalseValue",
+    "hash": "58f88363ded8ed1c93627a37a56fead4aecf64b1436609a36f64dd08afa6e681",
+    "reason": "execute(): the location selection URL (webdav_setup_steps::LOCATION_SELECTION_PAGE) carries no query parameters, so moodle_url::out(true) (escaping '&' as '&amp;') and out(false) give the identical string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/list_skills.php": "5d57315dc12ee983f6d12e4ac13bffedfe9a2500d6495b02dc22d30f7a335acd"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/list_skills.php",
+    "line": 85,
+    "mutator": "CastInt",
+    "hash": "7d15912a972fe0b981ed1e7d91c712d32baace8a9e2f611a730257e83d79187c",
+    "reason": "execute(): location_selection::open_with_access(int $userid) coerces $USER->id (int or numeric string) to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/list_skills.php": "5d57315dc12ee983f6d12e4ac13bffedfe9a2500d6495b02dc22d30f7a335acd"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/check/webdav_capability_check.php",
+    "line": 65,
+    "mutator": "CastInt",
+    "hash": "f11ff54d7d0186e8709cfc8144dbdda22154221d11e05f3c95938602ad40e8f7",
+    "reason": "get_result(): webdav_setup_steps::catalog(int $userid) coerces $USER->id (int or numeric string) to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/check/webdav_capability_check.php": "8c945bfcfb13616af4c5366c3569431d7f49181c0c99a4157a8de451410f228b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/check/webdav_capability_check.php",
+    "line": 74,
+    "mutator": "CastInt",
+    "hash": "1129dfeb379fd8da06f443c0310302e17c3887a99ac7f19c15715ff30f3f1e75",
+    "reason": "get_result(): the mapping closure is declared ': int' and coerces the numeric string userid of the token row to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/check/webdav_capability_check.php": "8c945bfcfb13616af4c5366c3569431d7f49181c0c99a4157a8de451410f228b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/check/webdav_capability_check.php",
+    "line": 87,
+    "mutator": "CastString",
+    "hash": "b77373358189a0fd9603b3cda5f81f96090d972c96c43ea99addbc60bb9edccd",
+    "reason": "get_result(): $userid is an int from the unique id list; the missing list is only joined with implode(\"\\n\", ...) and counted, and implode() renders an int exactly like its string cast.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/check/webdav_capability_check.php": "8c945bfcfb13616af4c5366c3569431d7f49181c0c99a4157a8de451410f228b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/check/webdav_capability_check.php",
+    "line": 97,
+    "mutator": "CastObject",
+    "hash": "bfa89335b2213fbc3547aca04dcb9a2275167dc9d62fc1e8017c45115a82c22a",
+    "reason": "get_result(): get_string() treats an array placeholder like an object (the {$a->missing} and {$a->total} placeholders are replaced from arrays and objects alike), so the message is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/check/webdav_capability_check.php": "8c945bfcfb13616af4c5366c3569431d7f49181c0c99a4157a8de451410f228b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/personal_data_hosts.php",
+    "line": 65,
+    "mutator": "CastString",
+    "hash": "97a3f9fe19e92ba3d0a4c89ade2ed742fdab2485aa7cb3209ea4dd6d0ec9175c",
+    "reason": "require_allowed_location(): allowed(string $host) coerces the fingerprint server in non-strict mode; the stored fingerprint server of an external location is a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/personal_data_hosts.php": "bebe470d9f2c70ba8aa8d94a1cbdad4c3000b9fa8fbe736fcf58deb73f3d8608"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/personal_data_hosts.php",
+    "line": 77,
+    "mutator": "CastString",
+    "hash": "8dd15a7959327356541a78bc595e94526bab6490a243ec43eb3cd842b43a2b30",
+    "reason": "configured(): parse(string $raw) coerces the value in non-strict mode, and `get_config() ?: ''` is already a string (get_config() returns a string or false, false is replaced by '').",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/personal_data_hosts.php": "bebe470d9f2c70ba8aa8d94a1cbdad4c3000b9fa8fbe736fcf58deb73f3d8608"
+    }
   }
 ]

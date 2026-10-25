@@ -104,6 +104,12 @@ final class write_target_contract_test extends \advanced_testcase {
         }
     }
 
+    public function test_a_date_before_1970_is_still_a_set_date_and_an_absent_partner_is_none(): void {
+        $target = write_target::update(assign::class, ['duedate' => -5], [], []);
+
+        $this->assertInstanceOf(write_target::class, $target);
+    }
+
     public function test_the_missing_required_fields_are_reported_together_in_catalog_order(): void {
         $e = $this->caught(fn() => write_target::create(choice::class, [], []));
 
@@ -244,10 +250,18 @@ final class write_target_contract_test extends \advanced_testcase {
         $item->itemnumber = 0;
         $DB->insert_record('grade_items', $item);
 
+        $DB->set_field('grade_items', 'itemname', 'tampered', ['itemmodule' => 'assign', 'iteminstance' => $activity->id]);
+
         $e = $this->caught(fn() => $this->call('ensure_assign_grade_item', 'assign', (int) $activity->cmid));
 
         $this->assertInstanceOf(\moodle_exception::class, $e);
         $this->assertSame('assignmentgradeitemfailed', $e->errorcode);
+        $this->assertSame(
+            ['tampered', 'tampered'],
+            array_values(
+                $DB->get_fieldset_select('grade_items', 'itemname', "itemmodule = 'assign' AND iteminstance = ?", [$activity->id])
+            )
+        );
     }
 
     /**
@@ -394,5 +408,54 @@ final class write_target_contract_test extends \advanced_testcase {
 
         $this->assertSame(['page' => ['text' => '<p>New</p>', 'format' => FORMAT_HTML, 'itemid' => 0]], $patch);
         $this->assertSame('<p>New</p>', $DB->get_field('page', 'content', ['id' => $cm->instance]));
+    }
+
+    /**
+     * Runs apply_changes() of a target with an image change on a given module info.
+     *
+     * @param \stdClass $moduleinfo
+     * @param \context $context
+     */
+    private function apply_image_change(\stdClass $moduleinfo, \context $context): void {
+        $target = write_target::update(assign::class, ['introimages' => ['pic.png']], ['name' => 'A'], []);
+        (new \ReflectionMethod($target, 'apply_changes'))->invoke(
+            $target,
+            assign::class,
+            $moduleinfo,
+            $context,
+            material_files::LOCATION_STORE,
+            false
+        );
+    }
+
+    public function test_an_intro_editor_is_built_from_the_flat_intro_only_when_none_array_exists(): void {
+        $course = $this->teacher_course();
+        $image = imagecreatetruecolor(2, 2);
+        ob_start();
+        imagepng($image);
+        $this->material('pic.png', ob_get_clean());
+        $context = \context_course::instance($course->id);
+
+        $flat = (object) ['intro' => 'Flat text', 'introformat' => 4];
+        $this->apply_image_change($flat, $context);
+        $this->assertSame('Flat text', $flat->introeditor['text']);
+        $this->assertSame(4, $flat->introeditor['format']);
+        $this->assertGreaterThan(0, $flat->introeditor['itemid']);
+
+        $bare = new \stdClass();
+        $this->apply_image_change($bare, $context);
+        $this->assertSame('', $bare->introeditor['text']);
+        $this->assertSame(FORMAT_HTML, $bare->introeditor['format']);
+
+        $broken = (object) ['introeditor' => 'not an array', 'intro' => 'From flat'];
+        $this->apply_image_change($broken, $context);
+        $rebuilt = (array) $broken;
+        $this->assertSame('From flat', $rebuilt['introeditor']['text']);
+
+        $existing = (object) ['introeditor' => ['text' => 'Kept', 'format' => 2, 'itemid' => 1], 'intro' => 'Ignored'];
+        $this->apply_image_change($existing, $context);
+        $this->assertSame('Kept', $existing->introeditor['text']);
+        $this->assertSame(2, $existing->introeditor['format']);
+        $this->assertGreaterThan(1, $existing->introeditor['itemid']);
     }
 }
