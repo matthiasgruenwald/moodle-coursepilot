@@ -5652,5 +5652,265 @@
       "Plugin/src/local_coursepilot/classes/webdav_storage_port.php": "7e45ffd407270277a5e658b96c33785539ead62a888dd56ad8385eff06d252ab",
       "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php": "ff7babde04407970c4321ae05a97c673418e8848c2f14fbb421d1818ac735c5e"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/context_pointer.php",
+    "line": 122,
+    "mutator": "CastString",
+    "hash": "5c2e82be3b18be4a2f2de421cc5608f2a0ec9a3322e3a743ac2511c59895c134",
+    "reason": "resolve_target(): strtok((string) $location->relativepath, '/'): a location of kind EXTERNAL always carries the relative path validated by validate_path() in resolve_external(), i.e. a string, so the cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/context_pointer.php": "95d514887b071c099a6ef9a5852a1e09608326d5a90dfa6c3854186f6a8abb02"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/context_pointer.php",
+    "line": 211,
+    "mutator": "CastString",
+    "hash": "a9aafeb9654cc3b407fd625e1f1168cb643a176b949a3ce5171570f8b0bffc2e",
+    "reason": "resolve_previous(): strtok((string) $location->relativepath, '/'): a location of kind EXTERNAL always carries the relative path validated by validate_path() in resolve_external(), i.e. a string, so the cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/context_pointer.php": "95d514887b071c099a6ef9a5852a1e09608326d5a90dfa6c3854186f6a8abb02"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/context_pointer.php",
+    "line": 260,
+    "mutator": "CastInt",
+    "hash": "ce5ae7f2cc5326b049f5d93eb46bf723d77aed9cee9a5e9b85e5110c0de2472e",
+    "reason": "resolve_external(): (int) $instanceid <= 0 after is_numeric(). A numeric string compared with an int is compared numerically in PHP 8 (also '-2' and '0'), so the cast does not change the outcome.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/context_pointer.php": "95d514887b071c099a6ef9a5852a1e09608326d5a90dfa6c3854186f6a8abb02"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/context_pointer.php",
+    "line": 270,
+    "mutator": "CastInt",
+    "hash": "478863df3c64499e4b85a61b887e972348a7ffcd3d06c06cd6a9b4199c38892e",
+    "reason": "resolve_external(): pointer_location::external(int $instanceid, ...) coerces the validated numeric value to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/context_pointer.php": "95d514887b071c099a6ef9a5852a1e09608326d5a90dfa6c3854186f6a8abb02"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pointer_writer.php",
+    "line": 193,
+    "mutator": "CastString",
+    "hash": "d5ec4445db7a52d60c0fc2809317a4f7d3e60d0a8d3c49ab0c45e884675bca73",
+    "reason": "record_storage_failure(): fail(string $errorclass, ..., string $host, ...) coerces the host to a string in non-strict mode; the fingerprint server of a stored location is a string already (context_pointer::resolve_external() only accepts string servers).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pointer_writer.php": "50bae70fdfa07ec78048d7995939448218ed6401d32b7d9d6f7af5ef32b7a024"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pointer_writer.php",
+    "line": 226,
+    "mutator": "CastString",
+    "hash": "6f244c9b7e93049d18a8430160b55741b09b730bf0159ce91215a06df16f3c36",
+    "reason": "record_location_failure(): $host feeds fail(string ... $host), which coerces to string in non-strict mode, and the fingerprint server is a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pointer_writer.php": "50bae70fdfa07ec78048d7995939448218ed6401d32b7d9d6f7af5ef32b7a024"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pointer_writer.php",
+    "line": 229,
+    "mutator": "CastString",
+    "hash": "0438c306cf1e4185b1873de1fad8bda67349243cde2b7c35c4c22bf49c0cb9fe",
+    "reason": "record_location_failure(): $host feeds fail(string ... $host), which coerces scalars to the same string in non-strict mode; the error payload carries the server text of context_pointer::iserv_files_only_exception().",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pointer_writer.php": "50bae70fdfa07ec78048d7995939448218ed6401d32b7d9d6f7af5ef32b7a024"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pointer_writer.php",
+    "line": 230,
+    "mutator": "CastInt",
+    "hash": "fb8f1e289fbe04f405582112f9b1d2a00b254d02cd044d124cfef40bff158380",
+    "reason": "record_location_failure(): the value is checked with is_numeric() and then passed to fail(..., ?int $instanceid), which coerces the numeric string to the same int in non-strict mode.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pointer_writer.php": "50bae70fdfa07ec78048d7995939448218ed6401d32b7d9d6f7af5ef32b7a024"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 79,
+    "mutator": "Continue_",
+    "hash": "0b4bc0f444f71e575c54c17ce721419e2b709ba538ab0a357a176f6e01fc65d1",
+    "reason": "'break' instead of 'continue' in a loop over pseudofields. The only pseudofields of editor type are the first entry of each catalog that has one (assign: activityeditor, page: page; checked with Catalog::pseudofields()), so no editor pseudofield follows the skipped entry and the remaining iterations only meet entries that fall through without any effect. Here: the entry is not of editor type.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 82,
+    "mutator": "Continue_",
+    "hash": "e0e9e2e5c7491f486ab55f365f3620f769b6276f01afd8d7fb7125dd92854da1",
+    "reason": "'break' instead of 'continue' in a loop over pseudofields. The only pseudofields of editor type are the first entry of each catalog that has one (assign: activityeditor, page: page; checked with Catalog::pseudofields()), so no editor pseudofield follows the skipped entry and the remaining iterations only meet entries that fall through without any effect. Here: the patch does not name the editor.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 87,
+    "mutator": "Continue_",
+    "hash": "d6efae1dd082fabe08f0d7645ca4caa3df38b0eaf7927b497c310ea43b5cda81",
+    "reason": "'break' instead of 'continue' in a loop over pseudofields. The only pseudofields of editor type are the first entry of each catalog that has one (assign: activityeditor, page: page; checked with Catalog::pseudofields()), so no editor pseudofield follows the skipped entry and the remaining iterations only meet entries that fall through without any effect. Here: the value is a plain string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 91,
+    "mutator": "Continue_",
+    "hash": "22237d905ae054f9a8ff1e7ec35fc4b39a9fb1bcd56b0ba855d0bd7cfebfaf92",
+    "reason": "'break' instead of 'continue' in a loop over pseudofields. The only pseudofields of editor type are the first entry of each catalog that has one (assign: activityeditor, page: page; checked with Catalog::pseudofields()), so no editor pseudofield follows the skipped entry and the remaining iterations only meet entries that fall through without any effect. Here: the value is an array with text.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 245,
+    "mutator": "Continue_",
+    "hash": "030c90af7be1c0b8672669664cc39b33bfb665429943b6a36810a759b6e34956",
+    "reason": "prepare_editor_content_pseudofields(): 'break' instead of 'continue' when the patch names the editor. Every catalog declares at most one editor_content entry (assign, page), so no entry follows.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 252,
+    "mutator": "Concat",
+    "hash": "09a51dd6f681d90515386a6171e02ee5369dd4ca870cc14ad869f67bf5bcfce5",
+    "reason": "prepare_editor_content_pseudofields(): file_prepare_draft_area() is called with an already allocated draft item id ($draftitemid = file_get_unused_draft_itemid()). In that case core (lib/filelib.php) skips the copy of the source area and only rewrites @@PLUGINFILE@@ links into draftfile.php URLs of the user's draft area, so the component and item id of the source area are never used. Here: the component argument is changed.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 252,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "7d47e29f0f0f06de11701ee706f305f569676ea83c63595152ee2aea1cee3b65",
+    "reason": "prepare_editor_content_pseudofields(): file_prepare_draft_area() is called with an already allocated draft item id ($draftitemid = file_get_unused_draft_itemid()). In that case core (lib/filelib.php) skips the copy of the source area and only rewrites @@PLUGINFILE@@ links into draftfile.php URLs of the user's draft area, so the component and item id of the source area are never used. Here: the component argument is changed.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 252,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "cd4ed7fcd2a950eefbf0baa816ca5333f65366b81fc190adb61027b220bbc8bf",
+    "reason": "prepare_editor_content_pseudofields(): file_prepare_draft_area() is called with an already allocated draft item id ($draftitemid = file_get_unused_draft_itemid()). In that case core (lib/filelib.php) skips the copy of the source area and only rewrites @@PLUGINFILE@@ links into draftfile.php URLs of the user's draft area, so the component and item id of the source area are never used. Here: the component argument is changed.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 254,
+    "mutator": "DecrementInteger",
+    "hash": "f3fad6d279a2a279c0f9b23297ae6416d3e5f5a9587403e9bb9f798dbd3cd999",
+    "reason": "prepare_editor_content_pseudofields(): file_prepare_draft_area() is called with an already allocated draft item id ($draftitemid = file_get_unused_draft_itemid()). In that case core (lib/filelib.php) skips the copy of the source area and only rewrites @@PLUGINFILE@@ links into draftfile.php URLs of the user's draft area, so the component and item id of the source area are never used. Here: the source item id is -1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 254,
+    "mutator": "IncrementInteger",
+    "hash": "138bff466c6567e11437e330ceae86dca7e5d1f5a085f5c90899e75cbe979c28",
+    "reason": "prepare_editor_content_pseudofields(): file_prepare_draft_area() is called with an already allocated draft item id ($draftitemid = file_get_unused_draft_itemid()). In that case core (lib/filelib.php) skips the copy of the source area and only rewrites @@PLUGINFILE@@ links into draftfile.php URLs of the user's draft area, so the component and item id of the source area are never used. Here: the source item id is 1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php",
+    "line": 75,
+    "mutator": "IncrementInteger",
+    "hash": "629fce577a135665deeb89b62475941f1af96434a789efff637ef1114ed7a173",
+    "reason": "decompose_review_bitmasks(): the default of a missing review column is 1 instead of 0. The timing bits are DURING (0x10000), IMMEDIATELY_AFTER (0x1000), LATER_WHILE_OPEN (0x100) and AFTER_CLOSE (0x10), none of which is set in the mask 1, so every checkbox is 0 exactly as with the mask 0.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php",
+    "line": 75,
+    "mutator": "CastInt",
+    "hash": "0d8810ef66709485c12ff532c1492d92cd8f14f89a057b11ba5449daa0259f0e",
+    "reason": "decompose_review_bitmasks(): $mask without (int). The quiz row delivers the numeric string of the integer column; the bitwise AND of a numeric string with an int operand converts the string to int in PHP, so the result is the same.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php",
+    "line": 97,
+    "mutator": "CastString",
+    "hash": "b39aaddf81aed718b55a15b36b6bcd1ed4b807684c394779f5bd4d59c837036b",
+    "reason": "read_feedback(): quiz_feedback.feedbacktext is a NOT NULL text column (mod/quiz/db/install.xml), so get_records() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php",
+    "line": 133,
+    "mutator": "CastFloat",
+    "hash": "6d1a737656bb4458037aef8f71bc07cee6dcbac95dea560c2eb4ea1c7b7fdf35",
+    "reason": "default_grade(): get_config() returns a numeric string (or false); without the cast the comparison '> 0' and the ternary keep that value, and the method's ': float' return type coerces the numeric string to the same float.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/quiz_write_bridge.php": "86021a21fad2c8749d07b627b8974b448afc5bc5581886c6db9d42edd18a1cda"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_file_trash.php",
+    "line": 97,
+    "mutator": "DecrementInteger",
+    "hash": "341fe98379cb8c920713a9346330b9b2ad2bf1f2551ca15be2670b191cd1a4f6",
+    "reason": "find_for_restore(): get_records_select(..., 'timecreated DESC', '*', limitfrom, limitnum) is followed by reset($records), i.e. only the first (newest) row is used. Here: limitfrom -1; moodle_database::normalise_limit_from_num() treats -1 as 0, so the same rows are selected.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/activity_file_trash.php": "404c2cf32818e8a64308e055f2c326ded4553993aa44bf12fd1db9a96c1ad087"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_file_trash.php",
+    "line": 98,
+    "mutator": "DecrementInteger",
+    "hash": "e20fa8f722fcf132af6f6f576a2a627deff1f5a4f29d38902a868086e7a92009",
+    "reason": "find_for_restore(): get_records_select(..., 'timecreated DESC', '*', limitfrom, limitnum) is followed by reset($records), i.e. only the first (newest) row is used. Here: limitnum 0 means no limit; the newest row is still the first one, so reset() returns the same record.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/activity_file_trash.php": "404c2cf32818e8a64308e055f2c326ded4553993aa44bf12fd1db9a96c1ad087"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_file_trash.php",
+    "line": 98,
+    "mutator": "IncrementInteger",
+    "hash": "fcebc20f8e793a57e5bab525907b15d321bcea38d3080cb67be31c2a814e2b30",
+    "reason": "find_for_restore(): get_records_select(..., 'timecreated DESC', '*', limitfrom, limitnum) is followed by reset($records), i.e. only the first (newest) row is used. Here: limitnum 2; the newest row is still the first one, so reset() returns the same record.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/activity_file_trash.php": "404c2cf32818e8a64308e055f2c326ded4553993aa44bf12fd1db9a96c1ad087"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_glossary_entries.php",
+    "line": 96,
+    "mutator": "FalseValue",
+    "hash": "96761994d44f206baad546651d2b3b45bf572d147da93c0f2871e53025624f6e",
+    "reason": "execute(): the fourth argument of get_coursemodule_from_id() only adds a 'sectionnum' property to the record; execute() reads id, course and instance only.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_glossary_entries.php": "e7079264994ad06696cd31442154056f7b71d89e90814470a78e59edaff6aaf9"
+    }
   }
 ]
