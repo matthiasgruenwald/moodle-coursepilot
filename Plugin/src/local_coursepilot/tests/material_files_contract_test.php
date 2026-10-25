@@ -171,7 +171,7 @@ final class material_files_contract_test extends \advanced_testcase {
         $this->resetAfterTest();
         $CFG->maxbytes = '1000';
 
-        $this->call('guard_embed_size', 1000);
+        $this->assertNull($this->succeeded(fn() => $this->call('guard_embed_size', 1000)));
         $e = $this->caught(fn() => $this->call('guard_embed_size', 1001));
 
         $this->assertInstanceOf(\moodle_exception::class, $e);
@@ -185,10 +185,9 @@ final class material_files_contract_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         unset($CFG->maxbytes);
-        $this->call('guard_embed_size', 5);
+        $this->assertNull($this->succeeded(fn() => $this->call('guard_embed_size', 5)));
         $CFG->maxbytes = 0;
-        $this->call('guard_embed_size', PHP_INT_MAX);
-        $this->expectNotToPerformAssertions();
+        $this->assertNull($this->succeeded(fn() => $this->call('guard_embed_size', PHP_INT_MAX)));
     }
 
     /**

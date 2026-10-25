@@ -289,19 +289,27 @@ final class pending_write_notice_test extends \advanced_testcase {
         global $CFG, $DB;
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
-        pending_write_notice::record('plan.md', 'create', 'storage_full', 7);
+        $this->assertNotSame('', $this->succeeded(
+            fn() => pending_write_notice::record('plan.md', 'create', 'storage_full', 7)
+        ));
         $first = strlen($this->note_content());
-        pending_write_notice::record('plan.md', 'create', 'storage_full', 7);
+        $this->assertNotSame('', $this->succeeded(
+            fn() => pending_write_notice::record('plan.md', 'create', 'storage_full', 7)
+        ));
         $second = strlen($this->note_content());
 
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
         $CFG->userquota = $first;
-        pending_write_notice::record('plan.md', 'create', 'storage_full', 7);
+        $this->assertNotSame('', $this->succeeded(
+            fn() => pending_write_notice::record('plan.md', 'create', 'storage_full', 7)
+        ));
         $this->assertSame($first, strlen($this->note_content()), 'The first note fills the quota exactly.');
 
         $CFG->userquota = $second;
-        pending_write_notice::record('plan.md', 'create', 'storage_full', 7);
+        $this->assertNotSame('', $this->succeeded(
+            fn() => pending_write_notice::record('plan.md', 'create', 'storage_full', 7)
+        ));
         $this->assertSame($second, strlen($this->note_content()), 'Growing by the difference fits the quota exactly.');
 
         $this->assertSame(1, $DB->count_records('files', [

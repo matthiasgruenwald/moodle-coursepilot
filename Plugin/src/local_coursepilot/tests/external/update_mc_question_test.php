@@ -218,6 +218,10 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->assertSame($entryid, $result['questionbankentryid'], 'Neue Version DESSELBEN Bank-Eintrags.');
         $this->assertSame(2, $result['version']);
         $this->assertFalse($result['idnumber_added']);
+        $this->assertSame(
+            'MC question "Additionsfrage" updated (bank entry ' . $entryid . ', new version 2).',
+            $result['message']
+        );
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
         $this->assertSame($countbefore, $countafter, 'No new bank entry, only a new version.');
@@ -342,6 +346,13 @@ final class update_mc_question_test extends \advanced_testcase {
             MUST_EXIST
         );
         $this->assertNotEmpty($newidnumber, 'Exactly this one question now has an idnumber.');
+        $this->assertSame(2, $result['version']);
+        $this->assertSame(
+            'MC question "Frage A (korrigiert)" updated (bank entry ' . $target['questionbankentryid']
+                . ', new version 2). idnumber "' . $newidnumber
+                . '" was assigned retroactively (the question had none before).',
+            $result['message']
+        );
 
         // The neighboring question remains unchanged.
         $unchangedneighbouridnumber = $DB->get_field(
@@ -569,6 +580,61 @@ final class update_mc_question_test extends \advanced_testcase {
                 'questiontext_images' => ['gibtsnicht.png'],
             ])
         );
+    }
+
+    /**
+     * A later text-only patch names the embedded binary removed by the XML transport.
+     */
+    public function test_text_only_patch_names_the_embedded_file_removed_from_the_new_version(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $imagebytes = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7E'
+                . 'AAAOxAGVKw4bAAAADElEQVQImWM4wSUCAAKEAOdVyX4MAAAAAElFTkSuQmCC',
+            true
+        );
+        $this->assertIsString($imagebytes);
+        $this->upload_material('warnung.png', $imagebytes);
+        $created = create_mc_question::execute(
+            $categoryid,
+            'Bildwarnung',
+            'Alter Fragetext',
+            'single',
+            [
+                ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
+                ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
+            ]
+        );
+        $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
+        $questiontext = '<p>Bildquelle:</p><img src="@@PLUGINFILE@@/warnung.png" alt="Roter Punkt">';
+        $embedded = update_mc_question::execute(
+            $created['questionid'],
+            json_encode(['questiontext' => $questiontext, 'questiontext_images' => ['warnung.png']])
+        );
+        $embedded = external_api::clean_returnvalue(update_mc_question::execute_returns(), $embedded);
+        $this->assertSame(2, $embedded['version']);
+        $file = $this->stored_question_file('question', 'questiontext', $embedded['questionid'], 'warnung.png');
+        $this->assertNotFalse($file);
+        $this->assertSame($imagebytes, $file->get_content(), 'The original version really contains the image binary.');
+
+        $updated = update_mc_question::execute(
+            $embedded['questionid'],
+            json_encode(['generalfeedback' => 'Erklärung nach Bildtransport'])
+        );
+        $updated = external_api::clean_returnvalue(update_mc_question::execute_returns(), $updated);
+        $this->assertSame('updated', $updated['status']);
+        $this->assertSame($created['questionbankentryid'], $updated['questionbankentryid']);
+        $this->assertSame(3, $updated['version']);
+        $this->assertSame(
+            'MC question "Bildwarnung" updated (bank entry ' . $created['questionbankentryid']
+                . ', new version 3). WARNING: The question contained embedded files that were removed in the process: '
+                . 'warnung.png.',
+            $updated['message']
+        );
+        $readback = get_question::execute($categoryid, '', $updated['questionid']);
+        $readback = external_api::clean_returnvalue(get_question::execute_returns(), $readback);
+        $this->assertSame('Erklärung nach Bildtransport', $readback['generalfeedback']);
+        $this->assertStringContainsString('@@PLUGINFILE@@/warnung.png', $readback['questiontext']);
     }
 
     /**

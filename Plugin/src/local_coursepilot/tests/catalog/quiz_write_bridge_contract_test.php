@@ -192,22 +192,22 @@ final class quiz_write_bridge_contract_test extends \advanced_testcase {
             '"feedbackboundaries" must be sorted descending.',
             $this->violation(fn() => $this->check(['a', 'b', 'c'], [3, 5]))
         );
-        $this->check(['a', 'b', 'c'], [9.99, 0.01]);
-        $this->check(['a', 'b', 'c', 'd'], [' 80 % ', '50%', 2]);
-        $this->check(['a', 'b'], ['99.9%']);
+        $this->succeeded(fn () => $this->check(['a', 'b', 'c'], [9.99, 0.01]));
+        $this->succeeded(fn () => $this->check(['a', 'b', 'c', 'd'], [' 80 % ', '50%', 2]));
+        $this->succeeded(fn () => $this->check(['a', 'b'], ['99.9%']));
         $this->addToAssertionCount(1);
     }
 
     public function test_percentages_resolve_against_the_grade_and_other_text_is_a_plain_number(): void {
         $resolve = new \ReflectionMethod(quiz_write_bridge::class, 'resolve_boundary');
 
-        $this->assertSame(5.0, $resolve->invoke(null, '50%', 10.0));
-        $this->assertSame(2.5, $resolve->invoke(null, ' 25 % ', 10.0));
-        $this->assertSame(5.0, $resolve->invoke(null, 5, 10.0));
-        $this->assertSame(7.5, $resolve->invoke(null, '7.5', 10.0));
-        $this->assertSame(5.0, $resolve->invoke(null, '5%0', 10.0));
-        $this->assertSame(0.0, $resolve->invoke(null, '', 10.0));
-        $this->assertSame(0.0, $resolve->invoke(null, '%', 10.0));
+        $this->assertSame(5.0, $this->succeeded(fn () => $resolve->invoke(null, '50%', 10.0)));
+        $this->assertSame(2.5, $this->succeeded(fn () => $resolve->invoke(null, ' 25 % ', 10.0)));
+        $this->assertSame(5.0, $this->succeeded(fn () => $resolve->invoke(null, 5, 10.0)));
+        $this->assertSame(7.5, $this->succeeded(fn () => $resolve->invoke(null, '7.5', 10.0)));
+        $this->assertSame(5.0, $this->succeeded(fn () => $resolve->invoke(null, '5%0', 10.0)));
+        $this->assertSame(0.0, $this->succeeded(fn () => $resolve->invoke(null, '', 10.0)));
+        $this->assertSame(0.0, $this->succeeded(fn () => $resolve->invoke(null, '%', 10.0)));
     }
 
     public function test_the_feedback_list_shape_is_checked_with_exact_counts(): void {

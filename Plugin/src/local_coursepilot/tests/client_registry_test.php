@@ -27,6 +27,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(client_registry::class)]
 final class client_registry_test extends \advanced_testcase {
+    use \local_coursepilot\tests\caught_throwable;
+
     /**
      * Registration returns the unchanged public metadata and an exactly matched redirect.
      */
@@ -73,6 +75,31 @@ final class client_registry_test extends \advanced_testcase {
         $this->assertTrue($registry->redirect_uri_matches($cached, 'https://client.example/callback'));
         $this->assertFalse($registry->redirect_uri_matches($cached, 'https://client.example/callback?extra=1'));
         $this->assertFalse($registry->redirect_uri_matches($cached, 'https://other.example/callback'));
+    }
+
+    public function test_cimd_race_returns_the_record_for_the_requested_client_id(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $registry = new client_registry();
+        $registry->register_client(['redirect_uris' => ['https://decoy.example/callback']]);
+
+        $url = 'https://client.example/metadata.json';
+        $winnerid = $DB->insert_record('local_coursepilot_oauth_client', (object) [
+            'clientid' => $url,
+            'clientname' => 'Concurrent CIMD client',
+            'redirecturis' => json_encode(['https://client.example/callback']),
+            'tokenendpointauthmethod' => 'none',
+            'clientsecret' => null,
+            'source' => 'cimd',
+            'timecreated' => time(),
+        ]);
+
+        $client = $this->succeeded(fn() => $registry->cache_cimd_client($url, [
+            'redirect_uris' => ['https://client.example/callback'],
+        ]));
+
+        $this->assertSame($winnerid, (int) $client->id);
+        $this->assertSame($url, $client->clientid);
     }
 
     /**
@@ -211,7 +238,10 @@ final class client_registry_test extends \advanced_testcase {
         $metadata = ['client_name' => 'Metadata client', 'redirect_uris' => ['https://client.example/callback']];
 
         $first = $registry->cache_cimd_client($url, $metadata);
-        $second = $registry->cache_cimd_client($url, ['redirect_uris' => ['https://other.example/callback']]);
+        $second = $this->succeeded(fn() => $registry->cache_cimd_client(
+            $url,
+            ['redirect_uris' => ['https://other.example/callback']]
+        ));
 
         $this->assertSame($url, $first->clientid);
         $this->assertEquals($first->id, $second->id);

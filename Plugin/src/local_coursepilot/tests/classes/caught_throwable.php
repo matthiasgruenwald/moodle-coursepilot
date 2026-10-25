@@ -40,4 +40,21 @@ trait caught_throwable {
         }
         return null;
     }
+
+    /**
+     * Runs a call that must succeed and turns any throwable into a failed assertion about that call.
+     *
+     * Used where the observable behaviour under test is "this call completes with this result": a
+     * regression that makes the call crash then fails an assertion instead of ending in an error.
+     *
+     * @param callable $call
+     * @return mixed What the call returns.
+     */
+    protected function succeeded(callable $call): mixed {
+        try {
+            return $call();
+        } catch (\Throwable $e) {
+            $this->fail('The call was expected to succeed but threw ' . get_class($e) . ': ' . $e->getMessage());
+        }
+    }
 }

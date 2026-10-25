@@ -167,7 +167,7 @@ final class crop_material_file_contract_test extends \advanced_testcase {
         $this->setup_user();
         $this->store_pattern('PHOTO.PNG', 5, 5);
 
-        $result = crop_material_file::execute('PHOTO.PNG', 'OUT.PNG', 0.0, 0.0, 1.0, 1.0);
+        $result = $this->succeeded(fn () => crop_material_file::execute('PHOTO.PNG', 'OUT.PNG', 0.0, 0.0, 1.0, 1.0));
 
         $this->assertSame('OUT.PNG', $result['path']);
         $this->assertSame([5, 5], [$result['width'], $result['height']]);
@@ -206,7 +206,7 @@ final class crop_material_file_contract_test extends \advanced_testcase {
         $this->assertSame('materialfilechanged', $missing->errorcode);
         $this->assertSame('b.png', $missing->a);
 
-        $first = crop_material_file::execute('a.png', 'b.png', 0.0, 0.0, 0.5, 0.5);
+        $first = $this->succeeded(fn () => crop_material_file::execute('a.png', 'b.png', 0.0, 0.0, 0.5, 0.5));
         $this->assertTrue($first['created']);
         $hash = sha1($this->load_content('b.png'));
 
@@ -214,10 +214,10 @@ final class crop_material_file_contract_test extends \advanced_testcase {
         $this->assertInstanceOf(\moodle_exception::class, $wrong);
         $this->assertSame('materialfilechanged', $wrong->errorcode);
 
-        $right = crop_material_file::execute('a.png', 'b.png', 0.0, 0.0, 0.5, 0.5, $hash);
+        $right = $this->succeeded(fn () => crop_material_file::execute('a.png', 'b.png', 0.0, 0.0, 0.5, 0.5, $hash));
         $this->assertFalse($right['created']);
 
-        $blank = crop_material_file::execute('a.png', 'b.png', 0.0, 0.0, 0.5, 0.5, '');
+        $blank = $this->succeeded(fn () => crop_material_file::execute('a.png', 'b.png', 0.0, 0.0, 0.5, 0.5, ''));
         $this->assertFalse($blank['created']);
     }
 
@@ -354,7 +354,7 @@ final class crop_material_file_contract_test extends \advanced_testcase {
         $this->setup_user();
         $this->store_pattern('a.png', 10, 10);
 
-        $result = crop_material_file::execute('a.png', 'b.png', 0.499, 0.499, 0.501, 0.501);
+        $result = $this->succeeded(fn () => crop_material_file::execute('a.png', 'b.png', 0.499, 0.499, 0.501, 0.501));
 
         $this->assertSame([1, 1], [$result['width'], $result['height']]);
         $this->assertSame([100, 100, 100, 0], $this->pixel($this->load('b.png'), 0, 0));

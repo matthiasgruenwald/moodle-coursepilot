@@ -17,6 +17,7 @@
 namespace local_coursepilot\catalog;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use local_coursepilot\tests\caught_throwable;
 
 /**
  * The exact shape of what the catalog read contract reports: value types of the activity
@@ -28,6 +29,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(module_state::class)]
 final class module_state_contract_test extends \advanced_testcase {
+    use caught_throwable;
+
     /**
      * Effective settings of a page carry typed course-module facts next to the instance record.
      */
@@ -76,12 +79,12 @@ final class module_state_contract_test extends \advanced_testcase {
         $first = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Erste']);
         $second = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Zweite']);
 
-        $this->assertSame('Zweite', module_state::effective_settings(
+        $this->assertSame('Zweite', $this->succeeded(fn () => module_state::effective_settings(
             get_coursemodule_from_id('page', $second->cmid, 0, false, MUST_EXIST)
-        )['name']);
-        $this->assertSame('Erste', module_state::effective_settings(
+        ))['name']);
+        $this->assertSame('Erste', $this->succeeded(fn () => module_state::effective_settings(
             get_coursemodule_from_id('page', $first->cmid, 0, false, MUST_EXIST)
-        )['name']);
+        ))['name']);
     }
 
     /**
@@ -126,12 +129,15 @@ final class module_state_contract_test extends \advanced_testcase {
         $one = $this->getDataGenerator()->create_module('choice', ['course' => $course->id, 'option' => ['A', 'B']]);
         $two = $this->getDataGenerator()->create_module('choice', ['course' => $course->id, 'option' => ['C']]);
 
-        $groups = module_state::read_repeated_groups(choice::class, (int) $two->id);
+        $groups = $this->succeeded(fn () => module_state::read_repeated_groups(choice::class, (int) $two->id));
 
         $this->assertSame(['option', 'limit', 'optionid'], array_keys($groups));
         $this->assertSame(['C'], $groups['option']);
-        $this->assertSame([], module_state::read_repeated_groups(page::class, (int) $one->id));
-        $this->assertSame(['A', 'B'], module_state::read_repeated_groups(choice::class, (int) $one->id)['option']);
+        $this->assertSame([], $this->succeeded(fn () => module_state::read_repeated_groups(page::class, (int) $one->id)));
+        $this->assertSame(
+            ['A', 'B'],
+            $this->succeeded(fn () => module_state::read_repeated_groups(choice::class, (int) $one->id))['option']
+        );
     }
 
     /**

@@ -253,10 +253,10 @@ final class update_mc_question_contract_test extends \advanced_testcase {
             (string) $DB->get_field('qtype_multichoice_options', 'single', ['questionid' => $multiple['questionid']])
         );
 
-        $single = update_mc_question::execute($multiple['questionid'], json_encode([
+        $single = $this->succeeded(fn() => update_mc_question::execute($multiple['questionid'], json_encode([
             'selectionmode' => 'single',
             'answers' => self::ANSWERS,
-        ]));
+        ])));
         $this->assertSame('updated', $single['status']);
         $this->assertSame(
             '1',
@@ -282,10 +282,10 @@ final class update_mc_question_contract_test extends \advanced_testcase {
         global $DB;
         $created = $this->create_original();
 
-        $result = update_mc_question::execute($created['questionid'], json_encode(['answers' => [
+        $result = $this->succeeded(fn() => update_mc_question::execute($created['questionid'], json_encode(['answers' => [
             'first' => ['answer' => 'One', 'fraction' => 1],
             'second' => ['answer' => 'Two', 'fraction' => 0],
-        ]]));
+        ]])));
 
         $answers = array_values($DB->get_records('question_answers', ['question' => $result['questionid']], 'id ASC'));
         $this->assertSame(['One', 'Two'], array_map(static fn($a) => $a->answer, $answers));
@@ -295,10 +295,10 @@ final class update_mc_question_contract_test extends \advanced_testcase {
         global $DB;
         $created = $this->create_original();
 
-        $result = update_mc_question::execute($created['questionid'], json_encode([
+        $result = $this->succeeded(fn() => update_mc_question::execute($created['questionid'], json_encode([
             'defaultmark' => 'abc',
             'answers' => [['answer' => 'A', 'fraction' => 1], ['answer' => 'B', 'fraction' => 'abc']],
-        ]));
+        ])));
 
         $this->assertSame('updated', $result['status']);
         $this->assertEquals(0, $DB->get_field('question', 'defaultmark', ['id' => $result['questionid']]));
@@ -531,7 +531,7 @@ final class update_mc_question_contract_test extends \advanced_testcase {
         $answerids = array_keys($DB->get_records('question_answers', ['question' => $foreign->id], 'id'));
         $DB->set_field('question_answers', 'fraction', 0.5, ['id' => $answerids[1]]);
 
-        $result = update_mc_question::execute((int) $foreign->id, '{"name":"Foreign renamed"}');
+        $result = $this->succeeded(fn() => update_mc_question::execute((int) $foreign->id, '{"name":"Foreign renamed"}'));
 
         $this->assertSame('updated', $result['status']);
         $e = $this->caught(fn() => update_mc_question::execute($result['questionid'], '{"selectionmode":"single"}'));
@@ -544,11 +544,11 @@ final class update_mc_question_contract_test extends \advanced_testcase {
         $created = $this->create_original();
         $this->upload_material_directly('second.png', 'second bytes');
 
-        $result = update_mc_question::execute($created['questionid'], json_encode(['answers' => [
+        $result = $this->succeeded(fn() => update_mc_question::execute($created['questionid'], json_encode(['answers' => [
             'first' => ['answer' => 'One', 'fraction' => 1],
             'second' => ['answer' => 'Two', 'fraction' => 0, 'feedback' => '<img src="@@PLUGINFILE@@/second.png">',
                 'feedback_images' => ['second.png']],
-        ]]));
+        ]])));
 
         $answers = array_values($DB->get_records('question_answers', ['question' => $result['questionid']], 'id ASC'));
         $this->assertSame('second bytes', $this->stored('answerfeedback', (int) $answers[1]->id, 'second.png'));

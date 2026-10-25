@@ -71,7 +71,7 @@ final class webdav_client_contract_test extends \advanced_testcase {
         $stub = $this->transport([$this->response(207, $this->multistatus(''))]);
         $client = new webdav_client($stub);
 
-        $client->propfind('https://h.example/dav/');
+        $this->succeeded(fn () => $client->propfind('https://h.example/dav/'));
         $client->propfind('https://h.example/dav/', 0);
 
         $this->assertSame(['Depth' => '1', 'Content-Type' => 'application/xml'], $stub->requests[0][2]);
