@@ -56,6 +56,26 @@ final class get_modules_test extends \advanced_testcase {
     }
 
     /**
+     * Activities come in course order: by section, then by position inside the section.
+     */
+    public function test_lists_activities_in_section_and_sequence_order(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course(['numsections' => 2]);
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $later = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'B'], ['section' => 2]);
+        $first = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'A'], ['section' => 1]);
+        $second = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'C'], ['section' => 1]);
+        \local_coursepilot\course_module_placement::place_after((int) $first->cmid, (int) $second->cmid);
+
+        $result = get_modules::execute($course->id);
+
+        $this->assertSame(['C', 'A', 'B'], array_column($result, 'name'));
+        $this->assertSame([(int) $second->cmid, (int) $first->cmid, (int) $later->cmid], array_column($result, 'cmid'));
+    }
+
+    /**
      * sectionnum filters to a single section.
      */
     public function test_sectionnum_filters_to_one_section(): void {

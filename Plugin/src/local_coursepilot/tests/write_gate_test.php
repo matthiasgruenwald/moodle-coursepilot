@@ -124,4 +124,119 @@ final class write_gate_test extends \advanced_testcase {
         write_gate::assert_writable('quiz');
         $this->addToAssertionCount(2);
     }
+
+    /**
+     * An activity type outside the catalog is never writable and says so.
+     */
+    public function test_unknown_activity_type_is_locked(): void {
+        $this->resetAfterTest();
+
+        $status = write_gate::status_for('kein_aktivitaetstyp');
+
+        $this->assertSame('needs_work', $status['state']);
+        $this->assertSame(['Unknown activity type.'], $status['violations']);
+        $this->expectException(\moodle_exception::class);
+        write_gate::assert_writable('kein_aktivitaetstyp');
+    }
+
+    /**
+     * A Moodle major version covered by the manual review counts as fully "checked".
+     */
+    public function test_manually_reviewed_major_version_is_checked_not_auto_checked(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->branch = 400;
+
+        $this->assertSame('checked', write_gate::status_for('label')['state']);
+    }
+
+    /**
+     * Missing or unreadable stored drift results mean "no violations", not a lock.
+     */
+    public function test_missing_or_garbled_stored_violations_count_as_none(): void {
+        $this->resetAfterTest();
+        write_gate::status_for('label');
+
+        unset_config('driftviolations_label', 'local_coursepilot');
+        $this->assertNotSame('needs_work', write_gate::status_for('label')['state']);
+
+        set_config('driftviolations_label', 'kein json', 'local_coursepilot');
+        $this->assertNotSame('needs_work', write_gate::status_for('label')['state']);
+    }
+
+    /**
+     * An unknown type reports itself with its name, state and one violation, and stays a plain list.
+     */
+    public function test_unknown_activity_type_reports_its_name(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame(
+            ['modname' => 'kein_aktivitaetstyp', 'state' => 'needs_work', 'violations' => ['Unknown activity type.']],
+            write_gate::status_for('kein_aktivitaetstyp')
+        );
+    }
+
+    /**
+     * The Moodle major equal to the last manually reviewed one is still checked; the next one is not.
+     */
+    public function test_review_boundary_is_the_reviewed_major_itself(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $reviewed = \local_coursepilot\catalog\registry::for('label')::reviewed_up_to_major();
+
+        $CFG->branch = (string) $reviewed;
+        $this->assertSame('checked', write_gate::status_for('label')['state']);
+        $CFG->branch = (string) ($reviewed + 1);
+        $this->assertSame('auto_checked', write_gate::status_for('label')['state']);
+    }
+
+    /**
+     * The deep check runs again after a version change and replaces stale stored results.
+     */
+    public function test_a_version_change_rechecks_and_replaces_stored_violations(): void {
+        $this->resetAfterTest();
+        write_gate::all_statuses();
+        set_config('driftviolations_label', json_encode(['Stale.']), 'local_coursepilot');
+        set_config('driftcheckversion', 'older:version', 'local_coursepilot');
+
+        $status = write_gate::status_for('label');
+
+        $this->assertNotSame('needs_work', $status['state']);
+        $this->assertSame([], $status['violations']);
+    }
+
+    /**
+     * The check stores one JSON list per catalog under its own key, and remembers the version tuple it ran for.
+     */
+    public function test_the_deep_check_stores_its_results_and_the_version_tuple(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        unset_config('driftcheckversion', 'local_coursepilot');
+        foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
+            unset_config('driftviolations_' . $modname, 'local_coursepilot');
+        }
+
+        write_gate::status_for('label');
+
+        $this->assertSame(
+            $CFG->version . ':' . get_config('local_coursepilot', 'version'),
+            get_config('local_coursepilot', 'driftcheckversion')
+        );
+        foreach (\local_coursepilot\catalog\registry::known_modnames() as $modname) {
+            $this->assertSame('[]', get_config('local_coursepilot', 'driftviolations_' . $modname), $modname);
+        }
+    }
+
+    /**
+     * Results stored for the current version tuple are trusted, not recomputed on every call.
+     */
+    public function test_results_for_the_current_version_are_not_recomputed(): void {
+        $this->resetAfterTest();
+        write_gate::all_statuses();
+        set_config('driftviolations_label', json_encode(['Kept.']), 'local_coursepilot');
+
+        $first = write_gate::status_for('label');
+        $this->assertSame(['Kept.'], $first['violations']);
+        $this->assertSame($first['violations'], write_gate::status_for('label')['violations']);
+    }
 }

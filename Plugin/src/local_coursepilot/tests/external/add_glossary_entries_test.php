@@ -341,4 +341,202 @@ final class add_glossary_entries_test extends \advanced_testcase {
         $this->assertSame('glossaryentrystandardtags', $result['entries'][0]['errorcode']);
         $this->assertFalse($DB->record_exists('tag', ['name' => 'brand-new']));
     }
+
+    public function test_pending_entry_in_a_dynamically_linked_glossary_is_saved_unapproved(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $CFG->glossary_linkentries = 1;
+        $course = $this->getDataGenerator()->create_course();
+        $glossary = $this->getDataGenerator()->create_module('glossary', ['course' => $course->id, 'usedynalink' => 1]);
+
+        $result = $this->call($glossary->cmid, [[
+            'concept' => 'Unfreigegeben', 'definition' => 'Wartet auf Freigabe', 'approved' => false,
+        ]]);
+
+        $this->assertTrue($result['entries'][0]['success']);
+        $this->assertFalse($result['entries'][0]['approved']);
+        $this->assertSame('0', $DB->get_field('glossary_entries', 'approved', ['id' => $result['entries'][0]['entryid']]));
+    }
+
+    /**
+     * Writes one entry through the writer with parameters normalised as the tool does.
+     *
+     * @param \stdClass $glossary Glossary module as returned by the generator.
+     * @param mixed[] $entry Entry fields.
+     * @return mixed[] Writer result.
+     */
+    private function write_entry(\stdClass $glossary, array $entry): array {
+        global $DB;
+        $cm = get_coursemodule_from_id('glossary', $glossary->cmid, 0, false, MUST_EXIST);
+        $params = external_api::validate_parameters(add_glossary_entries::execute_parameters(), [
+            'cmid' => $cm->id, 'entries' => [$entry],
+        ]);
+        return \local_coursepilot\glossary_entry_writer::add(
+            $params['entries'][0],
+            get_course($cm->course),
+            $cm,
+            $DB->get_record('glossary', ['id' => $cm->instance], '*', MUST_EXIST),
+            \context_module::instance($cm->id)
+        );
+    }
+
+    public function test_writer_reports_typed_identity_and_state(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $glossary = $this->getDataGenerator()->create_module('glossary', [
+            'course' => $this->getDataGenerator()->create_course()->id,
+        ]);
+
+        $result = $this->write_entry($glossary, ['concept' => 'Typ', 'definition' => 'Text']);
+
+        $this->assertTrue($result['success']);
+        $this->assertIsInt($result['entryid']);
+        $this->assertTrue($result['approved']);
+        $pending = $this->write_entry($glossary, ['concept' => 'Offen', 'definition' => 'Text', 'approved' => false]);
+        $this->assertFalse($pending['approved']);
+    }
+
+    /**
+     * Only Moodle's four text formats are accepted for the definition.
+     */
+    public function test_definition_format_must_be_one_of_the_four_moodle_text_formats(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $glossary = $this->getDataGenerator()->create_module('glossary', [
+            'course' => $this->getDataGenerator()->create_course()->id,
+        ]);
+
+        foreach ([FORMAT_MOODLE, FORMAT_HTML, FORMAT_PLAIN, FORMAT_MARKDOWN] as $format) {
+            $result = $this->write_entry($glossary, [
+                'concept' => 'Format ' . $format, 'definition' => 'Text', 'definitionformat' => $format,
+            ]);
+            $this->assertTrue($result['success'], 'format ' . $format);
+        }
+        foreach ([FORMAT_WIKI, 5, -1] as $format) {
+            $result = $this->write_entry($glossary, [
+                'concept' => 'Falsch ' . $format, 'definition' => 'Text', 'definitionformat' => $format,
+            ]);
+            $this->assertSame('glossaryentryformat', $result['errorcode'], 'format ' . $format);
+        }
+    }
+
+    /**
+     * Reserved single characters are refused (also after trimming); longer aliases may contain them.
+     */
+    public function test_reserved_single_character_aliases_are_refused_after_trimming(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $glossary = $this->getDataGenerator()->create_module('glossary', [
+            'course' => $this->getDataGenerator()->create_course()->id,
+        ]);
+
+        $trimmed = $this->write_entry($glossary, ['concept' => 'A', 'definition' => 'Text', 'aliases' => [' ! ']]);
+        $allowed = $this->write_entry($glossary, ['concept' => 'B', 'definition' => 'Text', 'aliases' => ['x', 'a$b']]);
+
+        $this->assertSame('errreservedkeywords', $trimmed['errorcode']);
+        $this->assertTrue($allowed['success'], json_encode($allowed));
+    }
+
+    public function test_a_refused_entry_reports_exact_code_message_and_neutral_values(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $glossary = $this->getDataGenerator()->create_module('glossary', [
+            'course' => $this->getDataGenerator()->create_course()->id, 'allowduplicatedentries' => 0,
+        ]);
+        $this->write_entry($glossary, ['concept' => 'Atom', 'definition' => 'First']);
+
+        $result = $this->write_entry($glossary, ['concept' => 'atom', 'definition' => 'Again']);
+
+        $this->assertSame([
+            'success' => false,
+            'entryid' => 0,
+            'approved' => false,
+            'errorcode' => 'errconceptalreadyexists',
+            'message' => get_string('errconceptalreadyexists', 'glossary'),
+        ], $result);
+    }
+
+    public function test_a_database_failure_is_reported_without_database_details(): void {
+        global $DB;
+        $this->resetAfterTest();
+        if ($DB->get_dbfamily() !== 'mysql') {
+            $this->markTestSkipped('MariaDB/MySQL failure trigger fixture required.');
+        }
+        $this->setAdminUser();
+        $glossary = $this->getDataGenerator()->create_module('glossary', [
+            'course' => $this->getDataGenerator()->create_course()->id,
+        ]);
+        $cfg = $DB->export_dbconfig();
+        $options = (array) ($cfg->dboptions ?? []);
+        $ddl = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
+            (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
+        $key = 'cp674' . bin2hex(random_bytes(8));
+        $ddl->query("CREATE TRIGGER $key BEFORE INSERT ON " . $DB->get_prefix() . 'glossary_entries
+            FOR EACH ROW SIGNAL SQLSTATE \'45000\' SET MESSAGE_TEXT = \'Synthetic secret table name\'');
+        try {
+            $result = $this->write_entry($glossary, ['concept' => 'Atom', 'definition' => 'Text']);
+        } finally {
+            if ($DB->is_transaction_started()) {
+                $DB->force_transaction_rollback(); // Clean up the deliberately broken red fixture.
+            }
+            $ddl->query("DROP TRIGGER IF EXISTS $key");
+            $ddl->close();
+        }
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(get_string('glossaryentryfailed', 'local_coursepilot'), $result['message']);
+        $this->assertStringNotContainsString('Synthetic', $result['message']);
+    }
+
+    public function test_an_entry_approved_by_default_and_then_withdrawn_raises_the_disapproval_event(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $glossary = $this->getDataGenerator()->create_module('glossary', [
+            'course' => $this->getDataGenerator()->create_course()->id,
+        ]);
+        $sink = $this->redirectEvents();
+
+        $result = $this->write_entry($glossary, ['concept' => 'Withdrawn', 'definition' => 'Text', 'approved' => false]);
+
+        $disapprovals = array_values(array_filter(
+            $sink->get_events(),
+            static fn($e) => $e instanceof \mod_glossary\event\entry_disapproved
+        ));
+        $this->assertCount(1, $disapprovals);
+        $this->assertSame($result['entryid'], (int) $disapprovals[0]->objectid);
+        $this->assertEquals(\context_module::instance($glossary->cmid)->id, $disapprovals[0]->contextid);
+        $this->assertEquals(
+            $result['entryid'],
+            $disapprovals[0]->get_record_snapshot('glossary_entries', $result['entryid'])->id
+        );
+        $this->assertSame([], array_filter($sink->get_events(), static fn($e) => $e instanceof \mod_glossary\event\entry_approved));
+    }
+
+    public function test_attachments_need_the_right_to_manage_own_files(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $teacher = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $glossary = $this->getDataGenerator()->create_module('glossary', ['course' => $course->id]);
+        $this->setUser($teacher);
+        upload_material_file::execute('worksheet.pdf', base64_encode('payload'));
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid, \context_user::instance($teacher->id)->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+
+        $result = $this->write_entry($glossary, [
+            'concept' => 'Atom', 'definition' => 'Text', 'attachment_files' => ['worksheet.pdf'],
+        ]);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('nopermissions', $result['errorcode']);
+    }
 }

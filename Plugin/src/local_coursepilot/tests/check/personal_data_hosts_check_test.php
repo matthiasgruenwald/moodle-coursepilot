@@ -45,4 +45,34 @@ final class personal_data_hosts_check_test extends \advanced_testcase {
 
         $this->assertSame(result::OK, $result->get_status());
     }
+
+    public function test_identifies_itself_for_the_status_report(): void {
+        $this->resetAfterTest();
+        $check = new personal_data_hosts_check();
+
+        $this->assertSame('webdav_personal_data_hosts', $check->get_id());
+        $this->assertSame(get_string('webdavcheck4name', 'local_coursepilot'), $check->get_name());
+    }
+
+    /**
+     * Where core keeps the action link of a check result (Moodle 5.2 and later) it leads to the plugin settings.
+     */
+    public function test_info_result_links_to_the_plugin_settings(): void {
+        $this->resetAfterTest();
+
+        $result = (new personal_data_hosts_check())->get_result();
+
+        if (!method_exists($result, 'get_action_link')) {
+            // Moodle 5.1 drops the link when the result is built, so there is nothing to observe.
+            $this->assertSame(result::INFO, $result->get_status());
+            return;
+        }
+        $link = $result->get_action_link();
+        $this->assertNotNull($link);
+        $this->assertSame(
+            (new \moodle_url('/admin/settings.php', ['section' => 'local_coursepilot']))->out(false),
+            $link->url->out(false)
+        );
+        $this->assertSame(get_string('webdavcheckactionlink', 'local_coursepilot'), $link->text);
+    }
 }

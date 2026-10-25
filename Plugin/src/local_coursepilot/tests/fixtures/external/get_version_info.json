@@ -1,0 +1,89 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": []
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": []
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "moodle_release": {
+                "class": "core_external\\external_value",
+                "desc": "Moodle release, e.g. \"5.0.2 (Build: 20250714)\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "moodle_version": {
+                "class": "core_external\\external_value",
+                "desc": "Moodle version stamp, e.g. \"2025041400.05\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "moodle_branch": {
+                "class": "core_external\\external_value",
+                "desc": "Moodle branch, e.g. \"500\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "plugin_version": {
+                "class": "core_external\\external_value",
+                "desc": "$plugin->version from the running source version.php",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "plugin_release": {
+                "class": "core_external\\external_value",
+                "desc": "$plugin->release, e.g. \"2.0.0-beta\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "plugin_version_db": {
+                "class": "core_external\\external_value",
+                "desc": "Plugin version registered in the database; a mismatch indicates a missing upgrade.php run",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "date": {
+                "class": "core_external\\external_value",
+                "desc": "Server date YYYY-MM-DD - fills \"last verified on\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing summary of the same version data",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

@@ -132,4 +132,23 @@ final class get_skill_test extends \advanced_testcase {
         set_config('remoteaccesscohorts', (string) $cohort->id, 'local_coursepilot');
         $generator->enrol_user($user->id, $generator->create_course()->id, 'editingteacher');
     }
+
+    /**
+     * A web service restricted to a course never reaches the system-wide skill corpus.
+     */
+    public function test_respects_the_external_context_restriction(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->grant_remote_access($user);
+        $this->setUser($user);
+        $course = $this->getDataGenerator()->create_course();
+
+        external_api::set_context_restriction(\context_course::instance($course->id));
+        try {
+            $this->expectException(\core_external\restricted_context_exception::class);
+            get_skill::execute('coursepilot');
+        } finally {
+            external_api::set_context_restriction(\context_system::instance());
+        }
+    }
 }

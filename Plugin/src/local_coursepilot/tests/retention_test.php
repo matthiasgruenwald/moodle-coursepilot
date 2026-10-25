@@ -17,6 +17,7 @@
 namespace local_coursepilot;
 
 use local_coursepilot\history\retention;
+use local_coursepilot\tests\caught_throwable;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -31,6 +32,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(observer::class)]
 #[CoversClass(\local_coursepilot\task\purge_history::class)]
 final class retention_test extends \advanced_testcase {
+    use caught_throwable;
+
     /**
      * Create a course, page activity and editing teacher.
      *
@@ -365,5 +368,175 @@ final class retention_test extends \advanced_testcase {
             new \xmldb_table('local_coursepilot_cm_version_file'),
             new \xmldb_index('fileid', XMLDB_INDEX_NOTUNIQUE, ['fileid'])
         ));
+    }
+
+    public function test_scheduled_purge_is_named_for_the_admin_overview(): void {
+        $task = new \local_coursepilot\task\purge_history();
+        $this->assertSame(get_string('taskpurgehistory', 'local_coursepilot'), $task->get_name());
+    }
+
+    /**
+     * A stored period that is not a number counts as invalid and is clamped to one day like zero.
+     */
+    public function test_a_non_numeric_stored_period_is_clamped_to_one_day(): void {
+        $this->resetAfterTest();
+
+        set_config('historyretentiondays', 'abc', 'local_coursepilot');
+        $e = null;
+        try {
+            $days = retention::days();
+        } catch (\Throwable $e) {
+            $days = null;
+        }
+
+        $this->assertNull($e);
+        $this->assertSame(1, $days);
+        set_config('historyretentiondays', '12', 'local_coursepilot');
+        $this->assertSame(12, retention::days());
+    }
+
+    /**
+     * The next write of an activity removes only the states older than the whole period, counted in days.
+     */
+    public function test_expiry_on_write_counts_whole_days(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, $cm] = $this->create_page();
+        set_config('historyretentiondays', 3, 'local_coursepilot');
+        $template = $DB->get_record('local_coursepilot_cm_version', ['cmid' => $cm->id], '*', MUST_EXIST);
+        $ids = [];
+        foreach ([2 * DAYSECS, 4 * DAYSECS] as $number => $age) {
+            $copy = clone $template;
+            unset($copy->id);
+            $copy->version = (int) $template->version + 1 + $number;
+            $copy->timecreated = time() - $age;
+            $ids[$age] = $DB->insert_record('local_coursepilot_cm_version', $copy);
+        }
+
+        retention::purge_expired_for_cm((int) $cm->id);
+
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['id' => $ids[2 * DAYSECS]]));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_version', ['id' => $ids[4 * DAYSECS]]));
+    }
+
+    /**
+     * The file sweep visits at most the allowed number of batches per run and remembers where it stopped.
+     */
+    public function test_the_file_sweep_stops_after_the_allowed_batches_and_remembers_its_position(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, $cm] = $this->create_page();
+        $versionid = (int) $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cm->id], MUST_EXIST);
+        $fileids = [];
+        foreach (['one.png', 'two.png', 'three.png', 'four.png'] as $name) {
+            $fileids[] = $this->link_file($versionid, 'mod_page', 'intro', $name);
+        }
+
+        $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(function () use ($fileids): void {
+            retention::enforce(1, 2);
+            $this->assertSame((string) $fileids[1], get_config('local_coursepilot', 'historyfilecleanupcursor'));
+
+            retention::enforce(1, 2);
+            $this->assertSame((string) $fileids[3], get_config('local_coursepilot', 'historyfilecleanupcursor'));
+
+            retention::enforce(1, 1);
+        }));
+        $this->assertSame('0', get_config('local_coursepilot', 'historyfilecleanupcursor'), 'The sweep wraps at the end.');
+    }
+
+    /**
+     * Deleting states removes their links and unreferenced metadata and leaves no open transaction behind.
+     */
+    public function test_delete_versions_commits_what_it_deleted(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, $cm] = $this->create_page();
+        $versionid = (int) $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cm->id], MUST_EXIST);
+        $fileid = $this->link_file($versionid, 'mod_page', 'intro', 'gone.png');
+
+        $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(fn() => retention::delete_versions([$versionid])));
+
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_version', ['id' => $versionid]));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $fileid]));
+    }
+
+    public function test_purging_the_states_of_given_users_touches_only_their_states_on_that_activity(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, $cm] = $this->create_page();
+        $other = $this->getDataGenerator()->create_module('page', ['course' => $cm->course]);
+        $template = $DB->get_record('local_coursepilot_cm_version', ['cmid' => $cm->id], '*', MUST_EXIST);
+        $add = function (int $cmid, int $userid, int $version) use ($DB, $template): int {
+            $copy = clone $template;
+            unset($copy->id);
+            $copy->cmid = $cmid;
+            $copy->userid = $userid;
+            $copy->version = $version;
+            return (int) $DB->insert_record('local_coursepilot_cm_version', $copy);
+        };
+        $a1 = $add((int) $cm->id, 901, 11);
+        $a2 = $add((int) $cm->id, 902, 12);
+        $a3 = $add((int) $cm->id, 903, 13);
+        $elsewhere = $add((int) $other->cmid, 901, 11);
+
+        retention::purge_cm_for_users((int) $cm->id, []);
+        $this->assertCount(4, $DB->get_records_list('local_coursepilot_cm_version', 'id', [$a1, $a2, $a3, $elsewhere]));
+
+        $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(
+            fn() => retention::purge_cm_for_users((int) $cm->id, ['x' => 901, 'y' => 903])
+        ));
+
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_version', ['id' => $a1]));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_version', ['id' => $a3]));
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['id' => $a2]));
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['id' => $elsewhere]));
+    }
+
+    public function test_deleting_states_waits_for_the_row_lock_that_a_concurrent_capture_holds(): void {
+        global $DB;
+        $this->resetAfterTest();
+        if ($DB->get_dbfamily() !== 'mysql') {
+            $this->markTestSkipped('MariaDB/MySQL second connection fixture required.');
+        }
+        [$course, $cm] = $this->create_page();
+        /** @var \mod_page_generator $modgen */
+        $modgen = $this->getDataGenerator()->get_plugin_generator('mod_page');
+        $other = $modgen->create_instance(['course' => $course->id]);
+        $old = (int) $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cm->id], MUST_EXIST);
+        $kept = (int) $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $other->cmid], MUST_EXIST);
+        $fileid = $this->link_file($old, 'mod_page', 'intro', 'shared.png');
+        $this->link_file($kept, 'mod_page', 'intro', 'shared.png');
+        $cfg = $DB->export_dbconfig();
+        $options = (array) ($cfg->dboptions ?? []);
+        $capture = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
+            (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
+        $capture->begin_transaction();
+        $capture->query('SELECT id FROM ' . $DB->get_prefix() . 'local_coursepilot_cm_file WHERE id = ' . $fileid . ' FOR UPDATE');
+        $DB->execute('SET SESSION innodb_lock_wait_timeout = 1');
+        try {
+            $e = null;
+            try {
+                retention::delete_versions([$old]);
+            } catch (\Throwable $caught) {
+                $e = $caught;
+            }
+        } finally {
+            if ($DB->is_transaction_started()) {
+                $DB->force_transaction_rollback(); // The refused deletion leaves its transaction open.
+            }
+            $capture->rollback();
+            $capture->close();
+            $DB->execute('SET SESSION innodb_lock_wait_timeout = 50');
+        }
+
+        $this->assertInstanceOf(\dml_exception::class, $e, 'The deletion has to wait for the concurrent capture.');
+        $this->assertStringContainsString('Lock wait timeout', $e->debuginfo);
+        $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['id' => $old]));
     }
 }

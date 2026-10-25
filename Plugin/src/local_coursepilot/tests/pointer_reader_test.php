@@ -87,4 +87,20 @@ final class pointer_reader_test extends \advanced_testcase {
 
         $this->assertSame('materialexternalerror', $exception->errorcode);
     }
+
+    /**
+     * The placeholder values travel as an object, the shape Moodle language strings address as {$a->...}.
+     */
+    public function test_webdav_exception_hands_its_placeholders_over_as_an_object(): void {
+        $exception = pointer_reader::webdav_exception(new webdav_error(webdav_error::AUTH_REJECTED));
+
+        $this->assertIsObject($exception->a);
+        $this->assertEquals(
+            (object) [
+                'errorclass' => webdav_error::label(webdav_error::AUTH_REJECTED),
+                'page' => webdav_setup_steps::LOCATION_SELECTION_PAGE,
+            ],
+            $exception->a
+        );
+    }
 }

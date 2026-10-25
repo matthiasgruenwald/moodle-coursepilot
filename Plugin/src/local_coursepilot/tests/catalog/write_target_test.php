@@ -21,6 +21,7 @@ use local_coursepilot\external\create_quiz;
 use local_coursepilot\external\update_module_settings;
 use local_coursepilot\external\update_quiz_settings;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * One checked target state behind the public create and update write tools
@@ -134,6 +135,71 @@ final class write_target_test extends \advanced_testcase {
         $this->assertSame($oncreate->getMessage(), $onupdate->getMessage());
         $this->assertSame(1, $this->count_modules('quiz'));
         $this->assertEquals(0, $this->instance('quiz', $quiz->cmid)->timeopen);
+    }
+
+    /**
+     * "Must be after" refuses equal dates and "not before" refuses earlier ones; each
+     * refusal names the later field and its reference and writes nothing.
+     *
+     * @param mixed[] $dates Dates written together in one patch.
+     * @param string $message Expected rule message.
+     */
+    #[DataProvider('refused_date_order_provider')]
+    public function test_date_order_rules_refuse_equal_or_reversed_dates(array $dates, string $message): void {
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $this->course->id]);
+
+        $error = $this->rejection(fn() => update_module_settings::execute($assign->cmid, json_encode($dates)));
+
+        $this->assertSame('combinationruleviolation', $error->errorcode);
+        $this->assertStringContainsString($message, $error->getMessage());
+        $this->assertEquals(0, $this->instance('assign', $assign->cmid)->duedate);
+    }
+
+    /**
+     * Dates at the limit of their rule, or without a set reference, are written.
+     *
+     * @param mixed[] $dates Dates written together in one patch.
+     */
+    #[DataProvider('accepted_date_order_provider')]
+    public function test_date_order_rules_accept_dates_at_the_limit(array $dates): void {
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $this->course->id]);
+
+        update_module_settings::execute($assign->cmid, json_encode($dates), confirmlearnerlocks: ['cutoffdate']);
+
+        foreach ($dates as $field => $value) {
+            $this->assertEquals($value, $this->instance('assign', $assign->cmid)->{$field});
+        }
+    }
+
+    /**
+     * Provides assign date patches that break one rule each, with the message each must produce.
+     *
+     * @return array<string, array{0: mixed[], 1: string}>
+     */
+    public static function refused_date_order_provider(): array {
+        return [
+            'due date equal to the opening' => [
+                ['allowsubmissionsfromdate' => 1900000000, 'duedate' => 1900000000],
+                '"duedate" must be after "allowsubmissionsfromdate".',
+            ],
+            'cut-off before the due date' => [
+                ['duedate' => 1900000000, 'cutoffdate' => 1899999999],
+                '"cutoffdate" must not precede "duedate".',
+            ],
+        ];
+    }
+
+    /**
+     * Provides assign date patches that stay within their rules.
+     *
+     * @return array<string, array{0: mixed[]}>
+     */
+    public static function accepted_date_order_provider(): array {
+        return [
+            'due date one second after the opening' => [['allowsubmissionsfromdate' => 1900000000, 'duedate' => 1900000001]],
+            'cut-off equal to the due date' => [['duedate' => 1900000000, 'cutoffdate' => 1900000000]],
+            'a date without its reference is not compared' => [['duedate' => -5]],
+        ];
     }
 
     /**
@@ -285,6 +351,45 @@ final class write_target_test extends \advanced_testcase {
         // Extending only the reference list stays valid: the native write guards missing limits.
         update_module_settings::execute($choice['cmid'], json_encode(['option' => ['Ja', 'Nein', 'Vielleicht']]));
         $this->assertTrue($this->has_option($choice['cmid'], 'Vielleicht'));
+    }
+
+    /**
+     * A material list that is not a list is refused before any file or activity is touched.
+     */
+    public function test_scalar_material_list_is_rejected_without_creating_the_folder(): void {
+        $error = $this->rejection(fn() => create_module::execute(
+            $this->course->id,
+            0,
+            'folder',
+            json_encode(['name' => 'Ordner', 'intro' => '', 'files' => 'blatt.pdf'])
+        ));
+
+        $this->assertSame('invalidmaterialreferencelist', $error->errorcode);
+        $this->assertSame(0, $this->count_modules('folder'));
+    }
+
+    /**
+     * A native refusal inside the caller's transaction leaves its rollback to the caller.
+     */
+    public function test_native_refusal_inside_a_callers_transaction_marks_it_for_rollback(): void {
+        global $DB;
+        $this->preventResetByRollback();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        assign_capability('mod/page:addinstance', CAP_PROHIBIT, $roleid, \context_course::instance($this->course->id)->id, true);
+        $DB->start_delegated_transaction();
+        try {
+            $error = $this->rejection(fn() => create_module::execute(
+                $this->course->id,
+                0,
+                'page',
+                json_encode(['name' => 'Refused page', 'intro' => '', 'page' => 'x'])
+            ));
+            $this->assertSame('moduledisable', $error->errorcode);
+            $this->assertTrue($DB->is_transaction_started());
+        } finally {
+            $DB->force_transaction_rollback();
+        }
+        $this->assertSame(0, $this->count_modules('page'));
     }
 
     /**

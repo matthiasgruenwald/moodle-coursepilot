@@ -298,4 +298,21 @@ final class activity_file_supplement_test extends \advanced_testcase {
         unset($_POST['sesskey']);
         return $response;
     }
+
+    public function test_only_declared_activity_types_accept_file_supplements(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $context = \context_course::instance($course->id);
+        $entry = ['path' => 'bild.png', 'filearea' => 'gallery_images', 'caption' => ''];
+
+        $this->assertTrue(\local_coursepilot\activity_file_supplement::supports('lightboxgallery'));
+        $this->assertFalse(\local_coursepilot\activity_file_supplement::supports('page'));
+        \local_coursepilot\activity_file_supplement::validate('page', $context, []);
+        try {
+            \local_coursepilot\activity_file_supplement::validate('page', $context, [$entry]);
+            $this->fail('Page has no file supplement.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('activityfilesunsupported', $e->errorcode);
+        }
+    }
 }

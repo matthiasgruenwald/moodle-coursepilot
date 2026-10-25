@@ -33,6 +33,7 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(create_workbench_download_links::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\oauth_lib::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\connection::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\workbench_ticket::class)]
 final class create_workbench_download_links_test extends \advanced_testcase {
     public function setUp(): void {
         parent::setUp();
@@ -45,7 +46,10 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         $this->store('blatt.pdf', 'inhalt eins');
         $this->store('ordner/blatt2.pdf', 'inhalt zwei');
 
-        $result = create_workbench_download_links::execute(['blatt.pdf', 'ordner/blatt2.pdf']);
+        $result = \core_external\external_api::clean_returnvalue(
+            create_workbench_download_links::execute_returns(),
+            create_workbench_download_links::execute(['blatt.pdf', 'ordner/blatt2.pdf'])
+        );
 
         $this->assertCount(2, $result['links']);
         $this->assertSame('blatt.pdf', $result['links'][0]['name']);
@@ -140,5 +144,18 @@ final class create_workbench_download_links_test extends \advanced_testcase {
             'filepath' => $directory,
             'filename' => $filename,
         ], $content);
+    }
+
+    public function test_missing_file_is_reported_by_its_relative_path(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            create_workbench_download_links::execute(['ordner/fehlt.pdf']);
+            $this->fail('A missing file must not yield a download link.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialfilenotfound', $e->errorcode);
+            $this->assertStringContainsString('ordner/fehlt.pdf', $e->getMessage());
+        }
     }
 }

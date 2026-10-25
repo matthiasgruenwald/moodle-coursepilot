@@ -64,4 +64,23 @@ final class activity_drift_test extends \advanced_testcase {
     public function test_id_is_unique_per_modname(): void {
         $this->assertNotSame((new activity_drift('label'))->get_id(), (new activity_drift('page'))->get_id());
     }
+
+    public function test_identifies_itself_per_module_type(): void {
+        $this->resetAfterTest();
+        $check = new activity_drift('label');
+
+        $this->assertSame('activity_drift_label', $check->get_id());
+        $this->assertSame(get_string('driftcheckname', 'local_coursepilot', 'label'), $check->get_name());
+    }
+
+    public function test_manually_reviewed_major_version_reports_ok_with_the_checked_text(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->branch = 400;
+
+        $result = (new activity_drift('label'))->get_result();
+
+        $this->assertSame(result::OK, $result->get_status());
+        $this->assertSame(get_string('driftstatuschecked', 'local_coursepilot'), $result->get_summary());
+    }
 }

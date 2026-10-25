@@ -16,6 +16,8 @@
 
 namespace local_coursepilot\history;
 
+use local_coursepilot\catalog\completion_settings;
+
 /**
  * Snapshot store of the change history (#385, Spec 0015 §10.4/§10.8).
  *
@@ -211,17 +213,11 @@ final class version_writer {
             'module' => (int) $cm->module,
             'modulename' => (string) $cm->modname,
             'instance' => (int) $cm->instance,
-            'completion' => (int) $cm->completion,
-            'completionview' => (int) $cm->completionview,
-            'completionexpected' => (int) $cm->completionexpected,
-            'completionusegrade' => $cm->completiongradeitemnumber === null ? 0 : 1,
-            'completionpassgrade' => (int) $cm->completionpassgrade,
-            'completiongradeitemnumber' => $cm->completiongradeitemnumber,
             'showdescription' => (int) $cm->showdescription,
             'downloadcontent' => $cm->downloadcontent,
             'lang' => (string) $cm->lang,
             'tags' => \core_tag_tag::get_item_tags_array('core', 'course_modules', $cm->id),
-        ]);
+        ], completion_settings::course_settings($cm));
 
         if (!empty($CFG->enableavailability)) {
             // Raw conditions as in get_moduleinfo_data(); profile masking

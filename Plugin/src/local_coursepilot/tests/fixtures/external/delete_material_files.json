@@ -1,0 +1,86 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "paths",
+                "type": "array",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "paths": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "File path relative to the material store, e.g. \"screenshot.png\"",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "path"
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "deleted": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Deleted file path relative to the material store",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            },
+            "freed_bytes": {
+                "class": "core_external\\external_value",
+                "desc": "Freed storage in bytes",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "path": {
+                "class": "core_external\\external_value",
+                "desc": "All deleted paths, comma-separated for access logging",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing success message",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

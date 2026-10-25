@@ -26,6 +26,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(location_selection_page::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\output\location_selection::class)]
 final class location_selection_page_test extends \advanced_testcase {
     use \local_coursepilot\tests\webdav\webdav_instance_fixture;
 

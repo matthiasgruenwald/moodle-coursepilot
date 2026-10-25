@@ -1,0 +1,4 @@
+{
+  "53-pgsql": { "default": true, "moodleRef": "origin/MOODLE_503_STABLE", "db": "pgsql", "php": "8.4" },
+  "52-mariadb": { "moodleRef": "origin/MOODLE_502_STABLE", "db": "mariadb", "php": "8.3" }
+}

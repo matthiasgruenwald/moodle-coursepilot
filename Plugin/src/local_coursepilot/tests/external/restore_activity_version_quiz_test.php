@@ -37,7 +37,9 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(restore_activity_version::class)]
+#[CoversClass(\local_coursepilot\history\version_restore::class)]
 #[CoversClass(arrangement::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\history\version_history::class)]
 final class restore_activity_version_quiz_test extends \advanced_testcase {
     /**
      * Creates course, quiz and two questions and then captures a clean
@@ -137,6 +139,27 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
         $this->assertSame($originalorder, array_column($this->slots((int) $quiz->id), 'id'));
         $this->assertStringContainsString('question arrangement', $result['message']);
         $this->assertStringContainsString('latest version', $result['message']);
+        $this->assertSame(
+            'Restored to version ' . $baselineversion . ' - no settings fields differ. '
+                . 'The question arrangement was also restored to version ' . $baselineversion . '. '
+                . 'Note: questions appear in their latest version; no version is pinned retroactively.',
+            $result['message']
+        );
+    }
+
+    /**
+     * Native history clients receive a numeric activity identity after restoring quiz arrangement.
+     */
+    public function test_native_quiz_restore_returns_an_integer_activity_identity(): void {
+        $this->resetAfterTest();
+        [, $quiz, , , $baselineversion] = $this->create_quiz_with_two_questions();
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id, $quiz->course, false, MUST_EXIST);
+        $originalorder = array_column($this->slots((int) $quiz->id), 'id');
+        $quizobj = \mod_quiz\quiz_settings::create($quiz->id);
+        \mod_quiz\structure::create_for_quiz($quizobj)->move_slot($originalorder[1], 0, 1);
+        $result = \local_coursepilot\history\version_restore::restore((int) $cm->id, $baselineversion);
+        $this->assertSame((int) $cm->id, $result['cmid']);
+        $this->assertSame($originalorder, array_column($this->slots((int) $quiz->id), 'id'));
     }
 
     /**
@@ -263,5 +286,24 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
 
         $this->assertSame($originalorder, array_column($this->slots((int) $quiz->id), 'id'));
         $this->assertSame('Extern geaendert', $DB->get_field('quiz', 'name', ['id' => $quiz->id]));
+    }
+
+    /**
+     * A quiz restore that would change nothing is refused: the arrangement route has no other effect.
+     */
+    public function test_restore_without_arrangement_difference_is_blocked(): void {
+        $this->resetAfterTest();
+        [, $quiz, , , $baselineversion] = $this->create_quiz_with_two_questions();
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id, $quiz->course, false, MUST_EXIST);
+        $before = array_column($this->slots((int) $quiz->id), 'id');
+
+        try {
+            \local_coursepilot\history\version_restore::restore((int) $cm->id, $baselineversion);
+            $this->fail('Expected writevehicleblocked');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('writevehicleblocked', $e->errorcode);
+            $this->assertSame(['modname' => 'quiz', 'write_route' => 'update_quiz_settings'], $e->a);
+        }
+        $this->assertSame($before, array_column($this->slots((int) $quiz->id), 'id'));
     }
 }

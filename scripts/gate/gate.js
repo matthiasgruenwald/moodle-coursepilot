@@ -4,6 +4,7 @@
  * Befund der statischen Pruefungen, bei fehlgeschlagenen Tests und bei Ratschenverletzung.
  *
  *   node scripts/gate/gate.js fast            Node-Tests + PHPUnit der Tests zu geaenderten Klassen
+ *   node scripts/gate/gate.js matrix          neue/geaenderte Tests auf privaten Instanzen mit anderer Moodle-Version und DB (matrix-profiles.json)
  *   node scripts/gate/gate.js full            Node-Tests + volle PHPUnit-Suite mit pcov, danach Bericht
  *   node scripts/gate/gate.js report <clover> Bericht aus einem vorhandenen Clover-Bericht (nur Messwerte)
  *   node scripts/gate/gate.js ratchet [clover] Ratsche: Baselines nur besser; mit Clover zusaetzlich Coverage, geaenderte Dateien und Methoden
@@ -12,6 +13,9 @@
  *   node scripts/gate/gate.js static          statische Pruefungen (moodle-cs, phpdoc, savepoints, Mustache, ESLint, PHPStan, Covers, englische Kommentare, deptrac-Schichtregeln)
  *   node scripts/gate/gate.js phpstan-baseline PHPStan-Baseline neu erzeugen
  *   node scripts/gate/gate.js ranking [n]     Fehlschlags-Rangliste nach Datei und Pruefung aus .gate-failures.log
+ *   node scripts/gate/gate.js mutation        Infection auf geänderten Produktionszeilen
+ *   node scripts/gate/gate.js mutation-pilot <classes/dir> Infection-Pilot auf einem Verzeichnis (Trend)
+ *   node scripts/gate/gate.js mutation-report <json> vorhandenen Infection-Bericht gegen den Git-Diff prüfen
  *
  * PHP laeuft per `docker exec` im Gate-Container (scripts/gate/setup-container.sh).
  * Ausgabe: eine Zeile pro Befund im Format `datei:zeile: regel: text`, zuletzt
@@ -24,11 +28,17 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const crypto = require('node:crypto');
 
 const staticChecks = require('./static');
 const failureLog = require('./failure-log');
 const ratchet = require('./ratchet');
 const deptrac = require('./deptrac');
+const mutation = require('./mutation');
+const hostLoad = require('./host-load');
+const mutationBase = require('./mutation-base');
+const mutationShard = require('./mutation-shard');
+const mutationFull = require('./mutation-full');
 
 const { PLUGIN_REL, PLUGIN_IN_CONTAINER, repoPath } = staticChecks;
 // GATE_REPO nur fuer Tests: das Repo, dessen Git-Stand und Baselines ausgewertet werden.
@@ -214,9 +224,10 @@ function reportFromFile(cloverPath) {
  * `#[CoversClass(...foo::class)]`; eine geaenderte Testdatei steht fuer sich.
  * @param {string[]} changed Repo-relative Pfade
  * @param {{file: string, content: string}[]} tests Testdateien (Pfad unter Plugin/)
+ * @param {string[]} interfaces Changed interface paths, tested via adapter contract groups.
  * @returns {{tests: string[], unmapped: string[]}}
  */
-function mapChangedToTests(changed, tests) {
+function mapChangedToTests(changed, tests, interfaces = []) {
   const picked = new Set();
   const unmapped = [];
   const prefix = `${PLUGIN_REL}/`;
@@ -229,7 +240,11 @@ function mapChangedToTests(changed, tests) {
       continue;
     }
     const short = path.basename(inner, '.php');
-    const hits = tests.filter(t => new RegExp(`CoversClass\\([^)]*\\b${short}::class`).test(t.content));
+    // Interfaces have no executable coverage target; adapters declare their contract group.
+    const target = interfaces.includes(rel)
+      ? new RegExp(`\\bGroup\\(['"]${short}['"]\\)`)
+      : new RegExp(`CoversClass\\([^)]*\\b${short}::class`);
+    const hits = tests.filter(t => target.test(t.content));
     if (hits.length === 0) {
       unmapped.push(rel);
     }
@@ -245,8 +260,8 @@ function sh(cmd, args, opts = {}) {
   return spawnSync(cmd, args, { cwd: REPO, encoding: 'utf8', stdio: opts.inherit ? childStdio : 'pipe', ...opts });
 }
 
-function dexec(args, opts = {}) {
-  return sh('docker', ['exec', '-w', `${PLUGIN_IN_CONTAINER}`, CONTAINER, ...args], opts);
+function dexec(args, opts = {}, container = CONTAINER) {
+  return sh('docker', ['exec', '-w', `${PLUGIN_IN_CONTAINER}`, container, ...args], opts);
 }
 
 function requireContainer() {
@@ -271,12 +286,12 @@ function preparePlugin() {
   }
 }
 
-function phpunit(extra, coverage) {
+function phpunit(extra, coverage, container = CONTAINER) {
   const php = ['php', '-d', 'memory_limit=-1'];
   if (coverage) {
     php.push('-d', 'pcov.enabled=1', '-d', `pcov.directory=${PLUGIN_IN_CONTAINER}`);
   }
-  return dexec([...php, '/var/www/html/vendor/bin/phpunit', '-c', 'phpunit.xml', ...extra], { inherit: true });
+  return dexec([...php, '/var/www/html/vendor/bin/phpunit', '-c', 'phpunit.xml', ...extra], { inherit: true }, container);
 }
 
 /** Ergebnis einer Pruefung ohne Dateibezug ins Fehlschlagslog. */
@@ -299,9 +314,20 @@ function changedFiles() {
   return `${tracked.stdout}\n${fresh.stdout}`.split('\n').filter(Boolean);
 }
 
+/** Tests for changed files: changed test classes, plus those covering changed production classes. */
+function selectTests(changed) {
+  const interfaces = changed.filter(rel => {
+    if (!rel.startsWith(`${PLUGIN_PREFIX}classes/`) || !rel.endsWith('.php')) return false;
+    const file = path.join(REPO, rel);
+    return fs.existsSync(file) && new RegExp(`^interface\\s+${path.basename(rel, '.php')}\\b`, 'm')
+      .test(fs.readFileSync(file, 'utf8'));
+  });
+  return mapChangedToTests(changed, staticChecks.readPluginTests(REPO), interfaces);
+}
+
 function runFast() {
   let ok = nodeTests();
-  const { tests, unmapped } = mapChangedToTests(changedFiles(), staticChecks.readPluginTests(REPO));
+  const { tests, unmapped } = selectTests(changedFiles());
   unmapped.forEach(f => console.log(`${f}:0: no-test-mapped: keine Testklasse mit CoversClass fuer diese Datei`));
   requireContainer();
   if (tests.length > 0) {
@@ -318,12 +344,68 @@ function runFast() {
   return ok;
 }
 
+/** Profiles of the matrix run: GATE_MATRIX_PROFILES (comma list) or the profiles marked `default`. */
+function matrixProfiles(env = process.env) {
+  const all = JSON.parse(fs.readFileSync(path.join(__dirname, 'matrix-profiles.json'), 'utf8'));
+  const names = env.GATE_MATRIX_PROFILES ? env.GATE_MATRIX_PROFILES.split(',').map(n => n.trim()).filter(Boolean)
+    : Object.keys(all).filter(n => all[n].default);
+  const unknown = names.filter(n => !all[n]);
+  if (unknown.length > 0 || names.length === 0) throw new Error(`Unknown or empty matrix profiles: ${unknown.join(', ') || '(none)'}; known: ${Object.keys(all).join(', ')}`);
+  return names.map(name => ({ name, ...all[name] }));
+}
+
+/** Since which commit tests count as new: GATE_MATRIX_BASE, else the last push of this branch, else the target base. */
+function matrixBase() {
+  if (process.env.GATE_MATRIX_BASE) return process.env.GATE_MATRIX_BASE;
+  const upstream = (git(['rev-parse', '--verify', '-q', '@{upstream}^{commit}']) || '').trim();
+  return (git(['merge-base', 'HEAD', upstream || resolveBase(loadBaseline().armedAt)]) || '').trim() || 'HEAD';
+}
+
+/** Run the new or changed tests on private instances with another Moodle version and database. */
+function runMatrix() {
+  hostLoad.assertHostCapacity();
+  const { changed } = changesSince(matrixBase());
+  const { tests } = selectTests([...changed.keys()]);
+  if (tests.length === 0) {
+    console.log('summary: mode=matrix no changed tests');
+    return true;
+  }
+  const script = path.join(__dirname, 'matrix-instance.sh');
+  const env = { ...process.env, GATE_DIR, GATE_REPO: REPO };
+  let ok = true;
+  for (const p of matrixProfiles()) {
+    const started = Date.now();
+    let passed = false;
+    try {
+      const up = sh('bash', [script, 'up', p.name, p.moodleRef, p.db, p.php], { inherit: true, env });
+      if (up.status !== 0) throw new Error(`matrix instance ${p.name} did not start (exit ${up.status})`);
+      const container = `kurspilot-gate-m-${p.name}-webserver-1`;
+      passed = phpunit(['--filter', `/\\b(${tests.join('|')})\\b/`], false, container).status === 0;
+    } catch (e) {
+      console.log(`gate:0: gate-error: ${e.message}`);
+    } finally {
+      // Containers run only during the check; the data stays for the next one.
+      sh('bash', [script, 'stop', p.name], { env });
+    }
+    logOutcome(`matrix-${p.name}`, passed);
+    console.log(`summary: mode=matrix profile=${p.name} phpunit=${passed ? 'ok' : 'fail'} tests=${tests.length} seconds=${Math.round((Date.now() - started) / 1000)}`);
+    ok = passed && ok;
+  }
+  return ok;
+}
+
 function runFull() {
+  hostLoad.assertHostCapacity();
   const nodePassed = nodeTests();
   requireContainer();
   preparePlugin();
   fs.rmSync(path.join(GATE_DIR, 'reports', 'clover.xml'), { force: true });
-  const passed = phpunit(['--coverage-clover', CLOVER_IN_CONTAINER], true).status === 0;
+  const coverageDir = path.join(GATE_DIR, 'reports', 'infection-coverage');
+  fs.rmSync(coverageDir, { recursive: true, force: true });
+  fs.mkdirSync(coverageDir, { recursive: true });
+  const passed = phpunit(['--coverage-clover', CLOVER_IN_CONTAINER,
+    '--coverage-xml', '/var/www/reports/infection-coverage/coverage-xml',
+    '--log-junit', '/var/www/reports/infection-coverage/junit.xml'], true).status === 0;
   logOutcome('phpunit', passed);
   if (!passed) {
     console.log('summary: mode=full phpunit=fail');
@@ -331,7 +413,256 @@ function runFull() {
   const clover = path.join(GATE_DIR, 'reports', 'clover.xml');
   printReport(clover, path.join(GATE_DIR, 'reports', 'gate-report.json'), true);
   const ratcheted = printRatchet(clover);
-  return printStatic(staticChecks.ALL_CHECKS) && ratcheted && nodePassed && passed;
+  const staticPassed = printStatic(staticChecks.ALL_CHECKS);
+  const mutated = passed && runMutation(undefined, true);
+  return staticPassed && ratcheted && nodePassed && passed && mutated;
+}
+
+/** Instances for the mutation run: GATE_MUTATION_INSTANCES (default 2), never in CI, fewer when work, memory or disk are short. */
+function planMutationShards(weights) {
+  const requested = mutationBase.forcedFull({ CI: process.env.CI, GITHUB_ACTIONS: process.env.GITHUB_ACTIONS })
+    ? 1 : Number(process.env.GATE_MUTATION_INSTANCES || 2);
+  if (!Number.isInteger(requested) || requested < 1) throw new Error('GATE_MUTATION_INSTANCES must be a positive integer');
+  const disk = fs.statfsSync(GATE_DIR);
+  const existing = [1, 2, 3].filter(i => fs.existsSync(`${GATE_DIR}-s${i}`)).length;
+  const { count, note } = mutationShard.shardCount({
+    requested, files: weights.length, weight: weights.reduce((n, [, w]) => n + w, 0),
+    minWeight: Number(process.env.GATE_MUTATION_SHARD_MIN_LINES ?? 200),
+    availableMb: hostLoad.availableMemoryMb(process.env.GATE_MEMINFO || undefined),
+    minMemMb: process.env.GATE_MIN_MEM_MB === undefined ? hostLoad.DEFAULT_MIN_MEM_MB : Number(process.env.GATE_MIN_MEM_MB),
+    freeDiskMb: Math.floor(disk.bavail * disk.bsize / 1048576), existing,
+  });
+  if (requested > 1) console.log(`mutation-shards: ${note}`);
+  return mutationShard.partition(weights, count);
+}
+
+const shardScript = path.join(__dirname, 'mutation-full-instance.sh');
+const shardTreeFile = inst => path.join(inst.dir, 'reports', '.shard-tree');
+const shardBash = (action, id) => sh('bash', [shardScript, action, id], { env: { ...process.env, GATE_DIR }, inherit: true });
+
+/** Bring the extra instances up with the current plugin, tests and coverage; an instance from an older tree is rebuilt. */
+function startMutationShards(extras, reuseCoverage, treeDigest) {
+  for (const inst of extras) {
+    if (fs.existsSync(inst.dir) && !(fs.existsSync(shardTreeFile(inst)) && fs.readFileSync(shardTreeFile(inst), 'utf8') === treeDigest)) {
+      shardBash('down', inst.id);
+    }
+    if (shardBash('up', inst.id).status !== 0) throw new Error(`mutation instance ${inst.id} did not start`);
+    fs.writeFileSync(shardTreeFile(inst), treeDigest);
+    const sync = sh('rsync', ['-a', '--delete', '--exclude', 'phpunit.xml', `${path.join(REPO, PLUGIN_REL)}/`, `${inst.dir}/plugin/`]);
+    if (sync.status !== 0) throw new Error(`mutation instance ${inst.id}: plugin sync failed: ${sync.stderr}`);
+    if (reuseCoverage) {
+      const cov = sh('rsync', ['-a', '--delete', `${path.join(GATE_DIR, 'reports', 'infection-coverage')}/`, `${inst.dir}/reports/infection-coverage/`]);
+      if (cov.status !== 0) throw new Error(`mutation instance ${inst.id}: coverage sync failed: ${cov.stderr}`);
+    }
+    const cfg = sh('docker', ['exec', '-w', '/var/www/html', inst.container, 'php', 'public/admin/tool/phpunit/cli/util.php', '--buildcomponentconfigs']);
+    if (cfg.status !== 0) throw new Error(`mutation instance ${inst.id}: PHPUnit configuration not built: ${cfg.stdout}${cfg.stderr}`);
+  }
+}
+
+/** Success removes the extra instances (unless kept); after a failure they stay, stopped, with their finished shards. */
+function stopMutationShards(extras, purge) {
+  for (const inst of extras) {
+    if (purge) shardBash('down', inst.id);
+    else sh('docker', ['stop', inst.container, `kurspilot-gate-${inst.id}-db-1`]);
+  }
+}
+
+/**
+ * Run all shards at once; a finished shard leaves an atomic done marker (key = tree, base, file split)
+ * and is not run again for the same key. Returns the indexes of failed shards.
+ */
+function runMutationShards(commands, { base, treeDigest, reuseCoverage, jsonName }) {
+  const jobs = [];
+  const index = [];
+  commands.forEach(({ inst, argv }, i) => {
+    const reports = path.join(inst.dir, 'reports');
+    const key = mutationShard.shardKey({ base, treeDigest, reuseCoverage, files: inst.files, setup: mutationBase.rulesDigest(REPO) });
+    const done = path.join(reports, 'infection-shard.done');
+    if (fs.existsSync(done) && fs.readFileSync(done, 'utf8') === key && fs.existsSync(path.join(reports, jsonName))) {
+      console.log(`mutation-shards: shard ${i} reused (same tree, base and files)`);
+      return;
+    }
+    fs.rmSync(done, { force: true });
+    fs.rmSync(path.join(reports, jsonName), { force: true });
+    jobs.push({ argv, log: path.join(reports, `infection-shard-${i}.log`), done, key });
+    index.push(i);
+  });
+  if (jobs.length === 0) return [];
+  const r = spawnSync(process.execPath, [path.join(__dirname, 'mutation-shard-run.js')], { input: JSON.stringify(jobs), encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`mutation shard runner failed: ${r.stderr}`);
+  return JSON.parse(r.stdout).map((code, k) => (code === 0 ? null : index[k])).filter(i => i !== null);
+}
+
+/** Execute real Infection; the host supplies its authoritative Git diff to the mount. */
+function runMutation(pilotDirectory, reuseCoverage = false) {
+  const ignores = mutation.parseIgnores(fs.readFileSync(path.join(REPO, 'scripts/gate/mutation-ignore.json'), 'utf8'));
+  const baseline = loadBaseline();
+  const startState = mutationBase.snapshot(REPO);
+  const { base, changed, fullBase, incremental } = mutationChanges(!pilotDirectory);
+  const stateFile = path.join(GATE_DIR, 'reports', 'mutation-green.json');
+  let files;
+  if (pilotDirectory) {
+    const directory = path.join(REPO, PLUGIN_REL, pilotDirectory);
+    if (!pilotDirectory.startsWith('classes/') || pilotDirectory.includes('..') || !fs.statSync(directory).isDirectory()) {
+      throw new Error('Pilot requires a production directory below classes/');
+    }
+    files = fs.readdirSync(directory, { recursive: true, withFileTypes: true })
+      .filter(e => e.isFile() && e.name.endsWith('.php'))
+      .map(e => path.relative(REPO, path.join(e.parentPath, e.name)));
+  } else {
+    files = [...changed.keys()].filter(f => f.startsWith(PLUGIN_PREFIX) && f.endsWith('.php')
+      && !f.startsWith(`${PLUGIN_PREFIX}tests/`) && fs.existsSync(path.join(REPO, f))
+      && !ratchet.isExcluded(f, baseline.excluded, PLUGIN_PREFIX));
+  }
+  fs.mkdirSync(path.join(GATE_DIR, 'reports'), { recursive: true });
+  if (files.length === 0) {
+    logOutcome('mutation', true);
+    console.log('summary: mutation no changed production PHP');
+    if (!pilotDirectory) mutationBase.recordGreen({ repo: REPO, stateFile, fullBase, started: startState });
+    return true;
+  }
+  requireContainer();
+  if (!reuseCoverage) preparePlugin();
+  const prefix = pilotDirectory ? 'infection-pilot' : 'infection';
+  const hostReport = path.join(GATE_DIR, 'reports', `${prefix}.json`);
+  fs.rmSync(hostReport, { force: true });
+  const environmentPath = path.join(GATE_DIR, 'reports', `${prefix}-environment.json`);
+  fs.rmSync(environmentPath, { force: true });
+  let environment = null;
+  if (ignores.some(e => e.qtypeSourceHash !== undefined)) {
+    fs.copyFileSync(path.join(__dirname, 'infection-environment.php'), path.join(GATE_DIR, 'reports', 'infection-environment.php'));
+    const captured = dexec(['php', '/var/www/reports/infection-environment.php', '/var/www/html/public']);
+    if (captured.status !== 0) throw new Error(`Infection environment capture failed: ${captured.stderr}`);
+    fs.writeFileSync(environmentPath, captured.stdout);
+    environment = mutation.parseEnvironment(captured.stdout);
+  }
+  const dependencies = ignores.flatMap(e => Object.keys(e.sourceHashes || {}));
+  const sourceHashes = Object.fromEntries([...new Set([...files, ...dependencies, 'composer.lock'])]
+    .map(f => [f, crypto.createHash('sha256').update(fs.readFileSync(path.join(REPO, f))).digest('hex')]));
+  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-sources.json`), JSON.stringify(sourceHashes, null, 2));
+  const lines = f => {
+    const ranges = changed.get(f);
+    return ranges === 'all' || !ranges ? fs.readFileSync(path.join(REPO, f), 'utf8').split('\n').length : ranges.reduce((n, [a, b]) => n + b - a + 1, 0);
+  };
+  const plan = pilotDirectory ? [files] : planMutationShards(files.map(f => [f, lines(f)]));
+  const instances = plan.map((list, i) => (i === 0
+    ? { dir: GATE_DIR, container: CONTAINER, files: list }
+    : { id: `s${i}`, dir: `${GATE_DIR}-s${i}`, container: `kurspilot-gate-s${i}-webserver-1`, files: list }));
+  const sharded = instances.length > 1;
+  const jsonName = sharded ? `${prefix}-shard.json` : `${prefix}.json`;
+  const config = {
+    source: { directories: [PLUGIN_IN_CONTAINER], excludes: ['tests', ...baseline.excluded.map(e => e.path)] },
+    phpUnit: { configDir: PLUGIN_IN_CONTAINER, customPath: '/var/www/html/vendor/bin/phpunit' },
+    // The measured full suite takes 17 minutes; broad covering sets must actually run.
+    timeout: 1800,
+    bootstrap: '/var/www/reports/infection-bootstrap.php',
+    logs: { json: `/var/www/reports/${jsonName}`, text: `/var/www/reports/${prefix}.log` },
+    tmpDir: `/var/www/reports/${prefix}-tmp`,
+    mutators: { '@default': true },
+  };
+  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-config.json`), JSON.stringify(config, null, 2));
+  fs.copyFileSync(path.join(__dirname, 'infection-bootstrap.php'), path.join(GATE_DIR, 'reports', 'infection-bootstrap.php'));
+  const treeDigest = sharded ? mutationFull.treeDigest(path.join(REPO, PLUGIN_REL)) : '';
+  const extras = instances.slice(1);
+  const guarded = fn => {
+    try { return fn(); } catch (e) { stopMutationShards(extras, false); throw e; }
+  };
+  if (sharded) guarded(() => startMutationShards(extras, reuseCoverage, treeDigest));
+  const commands = guarded(() => instances.map(inst => {
+    const reports = path.join(inst.dir, 'reports');
+    const args = [`--configuration=/var/www/reports/${prefix}-config.json`, '--threads=1',
+      '--only-covering-test-cases', '--no-progress', '--log-verbosity=all', '--debug',
+      `--filter=${inst.files.map(f => f.slice(PLUGIN_PREFIX.length)).join(',')}`];
+    if (reuseCoverage) {
+      args.push('--coverage=/var/www/reports/infection-coverage', '--skip-initial-tests');
+    } else {
+      args.push(`--initial-tests-php-options=-d memory_limit=-1 -d pcov.enabled=1 -d pcov.directory=${PLUGIN_IN_CONTAINER}`);
+      const mapped = mapChangedToTests(inst.files, staticChecks.readPluginTests(REPO));
+      if (mapped.unmapped.length === 0 && mapped.tests.length > 0) {
+        args.push(`--test-framework-options=--filter=/\\b(${mapped.tests.join('|')})\\b/`);
+      }
+    }
+    const dockerArgs = ['exec', '-w', PLUGIN_IN_CONTAINER];
+    if (!pilotDirectory) {
+      const headers = [];
+      for (const file of inst.files) {
+        const inner = file.slice(PLUGIN_PREFIX.length);
+        const ranges = changed.get(file);
+        const spans = ranges === 'all' ? [[1, fs.readFileSync(path.join(REPO, file), 'utf8').split('\n').length]] : ranges;
+        headers.push(`diff --git a/${inner} b/${inner}`, ...spans.map(([a, b]) => `@@ -0,0 +${a},${b - a + 1} @@`));
+      }
+      fs.writeFileSync(path.join(reports, 'infection.diff'), headers.join('\n') + '\n');
+      fs.writeFileSync(path.join(reports, 'infection-files.txt'), inst.files.map(f => f.slice(PLUGIN_PREFIX.length)).join('\n') + '\n');
+      const bin = path.join(reports, 'infection-bin');
+      fs.mkdirSync(bin, { recursive: true });
+      fs.copyFileSync(path.join(__dirname, 'infection-git.sh'), path.join(bin, 'git'));
+      fs.chmodSync(path.join(bin, 'git'), 0o755);
+      dockerArgs.push('-e', 'PATH=/var/www/reports/infection-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', '-e', `GATE_MUTATION_BASE=${base}`);
+      args.push('--git-diff-lines', `--git-diff-base=${base}`);
+    }
+    if (inst.id) {
+      fs.writeFileSync(path.join(reports, `${prefix}-config.json`), JSON.stringify(config, null, 2));
+    }
+    return { inst, args, argv: ['docker', ...dockerArgs, inst.container, 'php', '-d', 'memory_limit=-1', '/opt/dev-tools/vendor/bin/infection', ...args] };
+  }));
+  const args = commands[0].args;
+  const started = Date.now();
+  let status = 0;
+  if (!sharded) {
+    status = sh(commands[0].argv[0], commands[0].argv.slice(1), { inherit: true }).status;
+  } else {
+    const failed = guarded(() => runMutationShards(commands, { base, treeDigest, reuseCoverage, jsonName }));
+    status = failed.length === 0 ? 0 : 1;
+    if (status !== 0) console.log(`gate:0: gate-error: mutation shard(s) ${failed.join(', ')} failed; finished shards are kept for the next run`);
+  }
+  const elapsedSeconds = (Date.now() - started) / 1000;
+  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}.exit`), `${status}\n`);
+  fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-timer.json`), JSON.stringify({ elapsedSeconds, exit: status, base, files, args, shards: instances.map(i => i.files.length) }, null, 2));
+  if (status !== 0) {
+    stopMutationShards(extras, false);
+    throw new Error(`Infection failed: exit ${status}`);
+  }
+  if (sharded) {
+    const parts = guarded(() => instances.map(i => mutation.parseReport(fs.readFileSync(path.join(i.dir, 'reports', jsonName), 'utf8'))));
+    fs.writeFileSync(hostReport, JSON.stringify(mutationShard.mergeReports(parts)));
+    stopMutationShards(extras, process.env.GATE_MUTATION_KEEP_INSTANCES !== '1');
+  }
+  const report = mutation.parseReport(fs.readFileSync(hostReport, 'utf8'));
+  const found = mutation.evaluate(report, pilotDirectory ? new Map() : changed, ignores, !pilotDirectory, environment, sourceHashes);
+  found.map(ratchet.formatFinding).forEach(line => console.log(line));
+  failureLog.append(found.map(f => [new Date().toISOString(), f.rule, f.file, 'fail']));
+  logOutcome('mutation', found.length === 0);
+  console.log(`summary: mutation total=${report.stats.totalMutantsCount} escaped=${report.stats.escapedCount} errors=${report.stats.errorCount + report.stats.syntaxErrorCount} violations=${found.length} seconds=${elapsedSeconds} base=${incremental ? 'last-green' : 'full'}`);
+  if (found.length === 0 && !pilotDirectory) mutationBase.recordGreen({ repo: REPO, stateFile, fullBase, started: startState });
+  return found.length === 0;
+}
+
+/** Local runs may diff against the last green commit (`incremental`); everything else uses the full target base. */
+function mutationChanges(incremental = false) {
+  const base = resolveBase(loadBaseline().armedAt);
+  const fullBase = (git(['merge-base', 'HEAD', base]) || '').trim();
+  if (!fullBase) throw new Error(`No mutation comparison ancestor for ${base}`);
+  const chosen = incremental
+    ? mutationBase.mutationBase({ repo: REPO, stateFile: path.join(GATE_DIR, 'reports', 'mutation-green.json'), fullBase })
+    : { base: fullBase, incremental: false };
+  return { base: chosen.base, fullBase, incremental: chosen.incremental, ...changesSince(chosen.base) };
+}
+
+function printMutationReport(file) {
+  const ignores = mutation.parseIgnores(fs.readFileSync(path.join(REPO, 'scripts/gate/mutation-ignore.json'), 'utf8'));
+  const report = mutation.parseReport(fs.readFileSync(file, 'utf8'));
+  const environmentPath = file.replace(/\.json$/, '-environment.json');
+  const environment = environmentPath !== file && fs.existsSync(environmentPath)
+    ? mutation.parseEnvironment(fs.readFileSync(environmentPath, 'utf8')) : null;
+  const sourcesPath = file.replace(/\.json$/, '-sources.json');
+  const sources = sourcesPath !== file && fs.existsSync(sourcesPath) && ignores.some(e => e.sourceHashes !== undefined)
+    ? mutation.parseSourceHashes(fs.readFileSync(sourcesPath, 'utf8')) : {};
+  const found = mutation.evaluate(report, mutationChanges().changed, ignores, false, environment, sources);
+  found.map(ratchet.formatFinding).forEach(line => console.log(line));
+  failureLog.append(found.map(f => [new Date().toISOString(), f.rule, f.file, 'fail']));
+  logOutcome('mutation', found.length === 0);
+  console.log(`summary: mutation total=${report.stats.totalMutantsCount} escaped=${report.stats.escapedCount} violations=${found.length}`);
+  return found.length === 0;
 }
 
 /** Statische Pruefungen: Befunde als Zeilen, vollstaendig als JSON; Werkzeugfehler sind rot. */
@@ -571,8 +902,22 @@ function main(argv) {
     if (mode === 'fast') {
       return runFast();
     }
+    if (mode === 'matrix') {
+      return runMatrix();
+    }
     if (mode === 'full') {
       return runFull();
+    }
+    if (mode === 'mutation-report') {
+      return printMutationReport(arg);
+    }
+    if (mode === 'mutation') {
+      hostLoad.assertHostCapacity();
+      return runMutation();
+    }
+    if (mode === 'mutation-pilot') {
+      if (!arg) throw new Error('mutation-pilot requires a production directory');
+      return runMutation(arg);
     }
     if (mode === 'static') {
       return runStaticOnly();
@@ -596,7 +941,7 @@ function main(argv) {
       console.log(failureLog.report(arg ? Number(arg) : undefined));
       return true;
     }
-    console.error('Aufruf: gate.js fast | full | static | phpstan-baseline | report <clover.xml> | ratchet [clover.xml] | baseline [clover.xml] | edit | ranking [anzahl]');
+    console.error('Aufruf: gate.js fast | full | static | phpstan-baseline | report <clover.xml> | ratchet [clover.xml] | baseline [clover.xml] | edit | ranking [anzahl] | mutation | mutation-pilot <classes/dir> | mutation-report <json>');
     return false;
   } catch (e) {
     if (mode !== 'ranking') {
@@ -612,4 +957,4 @@ if (require.main === module) {
   process.exit(process.exitCode || (ok ? 0 : 1));
 }
 
-module.exports = { parseClover, buildReport, formatSummary, reportFromFile, mapChangedToTests, runRatchet };
+module.exports = { parseClover, buildReport, formatSummary, reportFromFile, mapChangedToTests, runRatchet, matrixProfiles };

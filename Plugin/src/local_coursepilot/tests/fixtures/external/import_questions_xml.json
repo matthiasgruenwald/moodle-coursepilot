@@ -1,0 +1,220 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "categoryid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "xmlcontent",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "confirmed",
+                "type": "bool",
+                "default": false
+            },
+            {
+                "name": "xmlpath",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "location",
+                "type": "string",
+                "default": "store"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "categoryid": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the target question bank category",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "xmlcontent": {
+                "class": "core_external\\external_value",
+                "desc": "Moodle question XML export as text (text door) - <file> blocks carry a material=\"<material-folder-path>\" attribute instead of real base64, the server resolves it server-side. Give exactly one of xmlcontent/xmlpath.",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "raw"
+            },
+            "confirmed": {
+                "class": "core_external\\external_value",
+                "desc": "true explicitly confirms a previously reported suspect case (an idnumber that came with no match in the target category) and creates the question anyway as a new entry. Omit or false on the first call.",
+                "required": 0,
+                "default": false,
+                "allownull": true,
+                "type": "bool"
+            },
+            "xmlpath": {
+                "class": "core_external\\external_value",
+                "desc": "Reference to an XML file in the material folder (reference door, bulk import of a foreign export with real base64 in <file> blocks) - e.g. \"export.xml\". Give exactly one of xmlcontent/xmlpath.",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "path"
+            },
+            "location": {
+                "class": "core_external\\external_value",
+                "desc": "\"store\" (default, the teacher's grown material store, read-only) or \"workbench\" (Coursepilot's own staging area)",
+                "required": 0,
+                "default": "store",
+                "allownull": true,
+                "type": "alpha"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "questions": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "One result entry per imported XML question",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Imported question name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "questionbankentryid": {
+                            "class": "core_external\\external_value",
+                            "desc": "question_bank_entries ID (0 for \"suspect\")",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "version": {
+                            "class": "core_external\\external_value",
+                            "desc": "New version number (0 for \"suspect\")",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "status": {
+                            "class": "core_external\\external_value",
+                            "desc": "\"first_import\" (first import) | \"reimport\" (new version of the same entry) | \"suspect\" (suspect case)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "alphaext"
+                        },
+                        "message": {
+                            "class": "core_external\\external_value",
+                            "desc": "Teacher-facing message",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "idnumber": {
+                            "class": "core_external\\external_value",
+                            "desc": "Supplied idnumber for a suspected collision; empty otherwise",
+                            "required": 0,
+                            "default": "",
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "categoryid": {
+                            "class": "core_external\\external_value",
+                            "desc": "Target category for a suspected collision; 0 otherwise",
+                            "required": 0,
+                            "default": 0,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "candidates": {
+                            "class": "core_external\\external_multiple_structure",
+                            "desc": "Nearby candidates in the target category; empty without suspicion",
+                            "required": 0,
+                            "default": [],
+                            "allownull": false,
+                            "content": {
+                                "class": "core_external\\external_single_structure",
+                                "desc": "",
+                                "required": 1,
+                                "default": null,
+                                "allownull": false,
+                                "keys": {
+                                    "questionid": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "questionid of the candidate's latest version",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "int"
+                                    },
+                                    "name": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Candidate question name",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "text"
+                                    },
+                                    "idnumber": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Candidate idnumber",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "text"
+                                    }
+                                }
+                            }
+                        },
+                        "questiontext_old": {
+                            "class": "core_external\\external_value",
+                            "desc": "Existing candidate question text, when available",
+                            "required": 0,
+                            "default": "",
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "questiontext_new": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question text to write or move, when available",
+                            "required": 0,
+                            "default": "",
+                            "allownull": true,
+                            "type": "raw"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

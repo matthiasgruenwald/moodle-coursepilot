@@ -79,6 +79,46 @@ final class tool_schema_contract_test extends \advanced_testcase {
         $this->assertSame('default', $schema['properties']['optionalstring']['default']);
     }
 
+    public function test_converter_maps_every_value_type_and_nested_structure_exactly(): void {
+        $parameters = new external_function_parameters([
+            'count' => new external_value(PARAM_INT, 'A count'),
+            'ratio' => new external_value(PARAM_FLOAT, 'A ratio'),
+            'flag' => new external_value(PARAM_BOOL, 'A flag', VALUE_DEFAULT, false),
+            'title' => new external_value(PARAM_TEXT, 'A title'),
+            'ids' => new external_multiple_structure(new external_value(PARAM_INT, 'One id'), 'Many ids'),
+            'range' => new external_single_structure([
+                'from' => new external_value(PARAM_INT, 'Start'),
+                'to' => new external_value(PARAM_INT, 'End', VALUE_OPTIONAL),
+            ], 'A range'),
+            'empty' => new external_single_structure([], 'Nothing inside', VALUE_OPTIONAL),
+        ]);
+
+        $this->assertSame([
+            'properties' => [
+                'count' => ['type' => 'integer', 'description' => 'A count'],
+                'ratio' => ['type' => 'number', 'description' => 'A ratio'],
+                'flag' => ['type' => 'boolean', 'description' => 'A flag', 'default' => false],
+                'title' => ['type' => 'string', 'description' => 'A title'],
+                'ids' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'integer', 'description' => 'One id'],
+                    'description' => 'Many ids',
+                ],
+                'range' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'from' => ['type' => 'integer', 'description' => 'Start'],
+                        'to' => ['type' => 'integer', 'description' => 'End'],
+                    ],
+                    'required' => ['from'],
+                    'description' => 'A range',
+                ],
+                'empty' => ['type' => 'object', 'properties' => [], 'description' => 'Nothing inside'],
+            ],
+            'required' => ['count', 'ratio', 'title', 'ids', 'range'],
+        ], external_schema_converter::from_parameters($parameters));
+    }
+
     public function test_every_registered_tool_schema_matches_moodle_parameters(): void {
         $schemas = tool_registry::schemas();
         $tools = tool_registry::allowed_tools();

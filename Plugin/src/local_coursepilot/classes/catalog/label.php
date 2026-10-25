@@ -23,7 +23,7 @@ namespace local_coursepilot\catalog;
  *
  * mod_label/db/install.xml only knows id, course, name, intro, introformat,
  * timemodified. course/timemodified are already in
- * {@see shared_block::BLOCKLIST}; "name" is added here because Moodle derives it
+ * {@see shared_block::blocked_fields()}; "name" is added here because Moodle derives it
  * itself from the intro (mod/label/lib.php: get_label_name()) - a
  * patch would be overwritten immediately.
  *

@@ -119,4 +119,24 @@ final class dismiss_pending_entry_test extends \advanced_testcase {
         );
         $this->assertTrue(\local_coursepilot\tool_registry::is_write('coursepilot_dismiss_pending_entry'));
     }
+
+    /**
+     * A web service restricted to a course cannot dismiss entries of the personal area.
+     */
+    public function test_respects_the_external_context_restriction(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $kennung = pending_write_notice::record('plan.md', 'create', 'storage_full', 0);
+        $course = $this->getDataGenerator()->create_course();
+
+        external_api::set_context_restriction(\context_course::instance($course->id));
+        try {
+            dismiss_pending_entry::execute($kennung);
+            $this->fail('The context restriction should have rejected the call.');
+        } catch (\core_external\restricted_context_exception $e) {
+            $this->assertNotSame([], pending_write_notice::list_grouped());
+        } finally {
+            external_api::set_context_restriction(\context_system::instance());
+        }
+    }
 }

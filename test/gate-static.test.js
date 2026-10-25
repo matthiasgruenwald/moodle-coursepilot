@@ -83,7 +83,7 @@ test('real plugin tests: every test class declares its coverage', () => {
 
 const fakeExec = (map, codeFor = () => 0) => (container, args) => {
   if (args.some(a => a.endsWith('/bin/deptrac'))) {
-    // Leerer deptrac-Lauf: keine Verstoesse, alles zugeordnet; die Baseline-Eintraege waeren veraltet.
+    // Leerer deptrac-Lauf: keine Verstöße, alles zugeordnet, keine Baseline-Ausnahmen.
     const out = args.includes('analyse') ? '{"files":{}}' : '';
     return { out, stdout: out, code: 0 };
   }
@@ -102,7 +102,7 @@ test('runStatic: every check appears in report lines and summary; findings do no
   for (const rule of ['moodle-cs-error', 'moodle-cs-warning', 'phpdoc', 'mustache', 'eslint', 'phpstan']) {
     assert.ok(rules.has(rule), rule);
   }
-  assert.deepEqual(r.errors.map(e => e.split(':')[0]), ['deptrac']);
+  assert.deepEqual(r.errors, []);
   assert.match(r.summary, /^summary: static moodle_cs_errors=10 moodle_cs_warnings=3 phpdoc=3 /);
   assert.match(r.summary, /mustache=2 eslint=3 phpstan=2 phpstan_reasons=0 covers=0/);
 });

@@ -1,0 +1,144 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "versions": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "One entry per version, sorted ascending by version number",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "version": {
+                            "class": "core_external\\external_value",
+                            "desc": "Consecutive version number per cmid, starting at 1",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "source": {
+                            "class": "core_external\\external_value",
+                            "desc": "\"moodle\" (normal write), \"discovered\" (retroactively recorded starting state before Coursepilot), \"cloned\" (clone), \"from_xml\" (created from activity XML) or \"superseded\" (marker on the old activity after replacement)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "discovered": {
+                            "class": "core_external\\external_value",
+                            "desc": "true if this state was retroactively recorded as a starting state (source = \"discovered\")",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        },
+                        "source_cmid": {
+                            "class": "core_external\\external_value",
+                            "desc": "Reference course module ID: clone origin (source = \"cloned\") or replacing activity (source = \"superseded\"), null otherwise",
+                            "required": 0,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "userid": {
+                            "class": "core_external\\external_value",
+                            "desc": "User ID that made the write",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "user": {
+                            "class": "core_external\\external_value",
+                            "desc": "Full name of that user",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "timestamp": {
+                            "class": "core_external\\external_value",
+                            "desc": "Unix timestamp of the write",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "summary_line": {
+                            "class": "core_external\\external_value",
+                            "desc": "Server-computed teacher-facing change line against the direct predecessor (who, when, what)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            },
+            "gap_notice": {
+                "class": "core_external\\external_value",
+                "desc": "Fixed notice about the structural gaps of the history - not computed per version",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            }
+        }
+    }
+}

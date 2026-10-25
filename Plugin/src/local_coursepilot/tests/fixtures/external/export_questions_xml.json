@@ -1,0 +1,105 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "questionids",
+                "type": "array",
+                "default": "(none)"
+            },
+            {
+                "name": "targetpath",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "placeholder",
+                "type": "bool",
+                "default": false
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "questionids": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "List of questionids (at least one)",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "questionid of any version of the question to export",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "int"
+                }
+            },
+            "targetpath": {
+                "class": "core_external\\external_value",
+                "desc": "Material folder path of the XML file to write, e.g. \"export.xml\" - required in the standard mode (placeholder=false), ignored in the placeholder mode.",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "path"
+            },
+            "placeholder": {
+                "class": "core_external\\external_value",
+                "desc": "Switch (Spec 0018 §7.2), default false: the complete, standard-conformant XML with real base64 is written to the material folder, the response only names the path. true instead returns the XML directly in the response as before, with named placeholders instead of embedded files - only for the template purpose (learning the structure), NOT suitable for sharing.",
+                "required": 0,
+                "default": false,
+                "allownull": true,
+                "type": "bool"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "xml": {
+                "class": "core_external\\external_value",
+                "desc": "ONLY filled in the placeholder mode: Moodle question XML export (a <quiz> root element with one <question> per requested question), embedded files replaced by named comment placeholders. Empty in the standard mode - the complete XML is in \"path\".",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "raw"
+            },
+            "path": {
+                "class": "core_external\\external_value",
+                "desc": "ONLY filled in the standard mode: material folder path of the written, complete XML file (real base64 in <file> blocks). Empty in the placeholder mode.",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "text"
+            },
+            "count": {
+                "class": "core_external\\external_value",
+                "desc": "Number of exported questions",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing message; explicitly names in the placeholder mode that the output is incomplete and not suitable for sharing, and which question is affected for missing files",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}
