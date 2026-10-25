@@ -59,18 +59,19 @@ final class oauth_budget_contract_test extends \advanced_testcase {
     }
 
     public function test_every_allowed_request_adds_exactly_one_hit_to_both_counters(): void {
-        global $DB;
         $this->resetAfterTest();
 
-        $waits = [];
-        for ($i = 0; $i < 3; $i++) {
-            $waits[] = oauth_budget::consume('register', '192.0.2.1', 10, 5, 3600);
-        }
+        $waits = $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(function (): array {
+            $waits = [];
+            for ($i = 0; $i < 3; $i++) {
+                $waits[] = oauth_budget::consume('register', '192.0.2.1', 10, 5, 3600);
+            }
+            return $waits;
+        }));
         $this->assertSame([0, 0, 0], $waits);
 
         $this->assertSame(3, $this->hits('register', '192.0.2.1'));
         $this->assertSame(3, $this->sitehits('register'));
-        $this->assertFalse($DB->is_transaction_started());
     }
 
     public function test_a_rejected_request_returns_its_site_unit_and_names_the_wait_in_whole_seconds(): void {

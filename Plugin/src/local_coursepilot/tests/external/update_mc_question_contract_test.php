@@ -509,12 +509,11 @@ final class update_mc_question_contract_test extends \advanced_testcase {
     }
 
     public function test_a_successful_write_leaves_no_transaction_open(): void {
-        global $DB;
         $created = $this->create_original();
 
-        update_mc_question::execute($created['questionid'], '{"name":"Renamed"}');
-
-        $this->assertFalse($DB->is_transaction_started());
+        $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(
+            fn() => update_mc_question::execute($created['questionid'], '{"name":"Renamed"}')
+        ));
     }
 
     public function test_a_patch_of_other_fields_does_not_revalidate_foreign_answers(): void {

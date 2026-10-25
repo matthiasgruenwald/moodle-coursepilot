@@ -17,6 +17,7 @@
 namespace local_coursepilot;
 
 use local_coursepilot\history\retention;
+use local_coursepilot\tests\caught_throwable;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -31,6 +32,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(observer::class)]
 #[CoversClass(\local_coursepilot\task\purge_history::class)]
 final class retention_test extends \advanced_testcase {
+    use caught_throwable;
+
     /**
      * Create a course, page activity and editing teacher.
      *
@@ -429,15 +432,16 @@ final class retention_test extends \advanced_testcase {
             $fileids[] = $this->link_file($versionid, 'mod_page', 'intro', $name);
         }
 
-        retention::enforce(1, 2);
-        $this->assertSame((string) $fileids[1], get_config('local_coursepilot', 'historyfilecleanupcursor'));
+        $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(function () use ($fileids): void {
+            retention::enforce(1, 2);
+            $this->assertSame((string) $fileids[1], get_config('local_coursepilot', 'historyfilecleanupcursor'));
 
-        retention::enforce(1, 2);
-        $this->assertSame((string) $fileids[3], get_config('local_coursepilot', 'historyfilecleanupcursor'));
+            retention::enforce(1, 2);
+            $this->assertSame((string) $fileids[3], get_config('local_coursepilot', 'historyfilecleanupcursor'));
 
-        retention::enforce(1, 1);
+            retention::enforce(1, 1);
+        }));
         $this->assertSame('0', get_config('local_coursepilot', 'historyfilecleanupcursor'), 'The sweep wraps at the end.');
-        $this->assertFalse($DB->is_transaction_started());
     }
 
     /**
@@ -450,9 +454,8 @@ final class retention_test extends \advanced_testcase {
         $versionid = (int) $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cm->id], MUST_EXIST);
         $fileid = $this->link_file($versionid, 'mod_page', 'intro', 'gone.png');
 
-        retention::delete_versions([$versionid]);
+        $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(fn() => retention::delete_versions([$versionid])));
 
-        $this->assertFalse($DB->is_transaction_started());
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_version', ['id' => $versionid]));
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_file', ['id' => $fileid]));
     }
@@ -479,13 +482,14 @@ final class retention_test extends \advanced_testcase {
         retention::purge_cm_for_users((int) $cm->id, []);
         $this->assertCount(4, $DB->get_records_list('local_coursepilot_cm_version', 'id', [$a1, $a2, $a3, $elsewhere]));
 
-        retention::purge_cm_for_users((int) $cm->id, ['x' => 901, 'y' => 903]);
+        $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(
+            fn() => retention::purge_cm_for_users((int) $cm->id, ['x' => 901, 'y' => 903])
+        ));
 
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_version', ['id' => $a1]));
         $this->assertFalse($DB->record_exists('local_coursepilot_cm_version', ['id' => $a3]));
         $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['id' => $a2]));
         $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['id' => $elsewhere]));
-        $this->assertFalse($DB->is_transaction_started());
     }
 
     public function test_deleting_states_waits_for_the_row_lock_that_a_concurrent_capture_holds(): void {

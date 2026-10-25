@@ -123,7 +123,9 @@ final class update_question_category_contract_test extends \advanced_testcase {
             'filtercondition' => json_encode(['filter' => ['category' => ['values' => [$this->categories['Other']]]]]),
         ]);
 
-        $result = update_question_category::execute($this->categories['Other'], 'Moved over', $this->categories['Remote']);
+        $result = $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(
+            fn() => update_question_category::execute($this->categories['Other'], 'Moved over', $this->categories['Remote'])
+        ));
 
         $this->assertSame([
             'id' => $this->categories['Other'],
@@ -147,7 +149,6 @@ final class update_question_category_contract_test extends \advanced_testcase {
             $this->categories['Other'] . ',' . $this->secondcontext,
             json_decode($reference->filtercondition, true)['cat']
         );
-        $this->assertFalse($DB->is_transaction_started());
     }
 
     public function test_the_subtree_follows_a_category_into_another_bank(): void {

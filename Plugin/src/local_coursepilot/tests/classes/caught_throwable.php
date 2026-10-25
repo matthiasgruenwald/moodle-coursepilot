@@ -57,4 +57,28 @@ trait caught_throwable {
             $this->fail('The call was expected to succeed but threw ' . get_class($e) . ': ' . $e->getMessage());
         }
     }
+
+    /**
+     * Runs a call and asserts that it leaves Moodle's transaction stack unchanged.
+     *
+     * Moodle keeps an outer transaction open for each PostgreSQL test, so the public boolean status cannot detect leaks.
+     *
+     * @param callable $call
+     * @return mixed What the call returns.
+     */
+    protected function assert_transaction_stack_unchanged(callable $call): mixed {
+        global $DB;
+        $transactions = new \ReflectionProperty(\moodle_database::class, 'transactions');
+        $before = count((array) $transactions->getValue($DB));
+
+        try {
+            return $call();
+        } finally {
+            $this->assertSame(
+                $before,
+                count((array) $transactions->getValue($DB)),
+                'The call must not leave a transaction open.'
+            );
+        }
+    }
 }

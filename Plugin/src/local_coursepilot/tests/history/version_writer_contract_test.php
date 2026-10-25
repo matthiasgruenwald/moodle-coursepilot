@@ -121,9 +121,11 @@ final class version_writer_contract_test extends \advanced_testcase {
         $second = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
         $DB->delete_records('local_coursepilot_cm_version');
 
-        version_writer::capture((int) $first->cmid, 5, 'moodle');
-        version_writer::capture((int) $first->cmid, 6, 'cloned', (int) $second->cmid);
-        version_writer::capture((int) $second->cmid, 7, 'moodle');
+        $this->assert_transaction_stack_unchanged(fn() => $this->succeeded(function () use ($first, $second): void {
+            version_writer::capture((int) $first->cmid, 5, 'moodle');
+            version_writer::capture((int) $first->cmid, 6, 'cloned', (int) $second->cmid);
+            version_writer::capture((int) $second->cmid, 7, 'moodle');
+        }));
 
         $rows = $DB->get_records('local_coursepilot_cm_version', null, 'cmid, version');
         $summary = array_map(static fn($r) => [
@@ -138,7 +140,6 @@ final class version_writer_contract_test extends \advanced_testcase {
             [(int) $first->cmid, 2, 'cloned', (int) $second->cmid, 6],
             [(int) $second->cmid, 1, 'moodle', null, 7],
         ], $summary);
-        $this->assertFalse($DB->is_transaction_started());
     }
 
     public function test_an_activity_without_history_gets_a_discovered_version_first(): void {
@@ -149,12 +150,13 @@ final class version_writer_contract_test extends \advanced_testcase {
         $DB->delete_records('local_coursepilot_cm_version', ['cmid' => $bare->cmid]);
         $this->assertGreaterThan(0, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $withhistory->cmid]));
 
-        $latest = version_writer::capture_on_update((int) $bare->cmid, 3);
+        $latest = $this->succeeded(fn() => $this->assert_transaction_stack_unchanged(
+            fn() => version_writer::capture_on_update((int) $bare->cmid, 3)
+        ));
 
         $rows = array_values($DB->get_records('local_coursepilot_cm_version', ['cmid' => $bare->cmid], 'version'));
         $this->assertSame(['discovered', 'moodle'], array_column($rows, 'source'));
         $this->assertEquals($latest, $rows[1]->id);
-        $this->assertFalse($DB->is_transaction_started());
 
         version_writer::capture_on_update((int) $bare->cmid, 3);
         $this->assertSame(3, $DB->count_records('local_coursepilot_cm_version', ['cmid' => $bare->cmid]));
@@ -167,15 +169,17 @@ final class version_writer_contract_test extends \advanced_testcase {
         $DB->delete_records('page', ['id' => $page->id]);
         $before = $DB->count_records('local_coursepilot_cm_version');
 
-        $direct = $this->caught(fn() => version_writer::capture((int) $page->cmid, 2));
+        $direct = $this->caught(fn() => $this->assert_transaction_stack_unchanged(
+            fn() => version_writer::capture((int) $page->cmid, 2)
+        ));
         $this->assertInstanceOf(\dml_exception::class, $direct);
-        $this->assertFalse($DB->is_transaction_started());
 
         $DB->delete_records('local_coursepilot_cm_version', ['cmid' => $page->cmid]);
         $before = $DB->count_records('local_coursepilot_cm_version');
-        $update = $this->caught(fn() => version_writer::capture_on_update((int) $page->cmid, 2));
+        $update = $this->caught(fn() => $this->assert_transaction_stack_unchanged(
+            fn() => version_writer::capture_on_update((int) $page->cmid, 2)
+        ));
         $this->assertInstanceOf(\dml_exception::class, $update);
-        $this->assertFalse($DB->is_transaction_started());
         $this->assertSame($before, $DB->count_records('local_coursepilot_cm_version'));
     }
 
