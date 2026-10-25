@@ -167,6 +167,12 @@ final class external_signature_snapshot_test extends \advanced_testcase {
     #[DataProvider('functions')]
     public function test_signature_matches_the_fixture(string $name): void {
         $class = __NAMESPACE__ . '\\' . $name;
+        foreach (['execute', 'execute_parameters', 'execute_returns'] as $method) {
+            $this->assertTrue(
+                (new \ReflectionMethod($class, $method))->isPublic(),
+                "{$name}::{$method}() must stay public: Moodle's external API calls it."
+            );
+        }
         $execute = new \ReflectionMethod($class, 'execute');
         $actual = [
             'execute' => [

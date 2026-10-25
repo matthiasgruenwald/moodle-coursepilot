@@ -158,4 +158,64 @@ final class client_registry_test extends \advanced_testcase {
         $this->assertNull($fallback['client_name']);
         $this->assertArrayNotHasKey('client_secret', $fallback);
     }
+
+    /**
+     * Every refusal names its RFC 7591 error code and tells the client what to fix.
+     */
+    public function test_registration_refusals_carry_exact_code_and_description(): void {
+        $this->resetAfterTest();
+        $registry = new client_registry();
+        $ok = 'https://client.example/callback';
+
+        $this->assertSame(
+            ['error' => 'invalid_client_metadata', 'error_description' => 'redirect_uris is required.'],
+            $registry->register_client(['redirect_uris' => []])
+        );
+        $this->assertSame(
+            ['error' => 'invalid_client_metadata', 'error_description' => 'Too many redirect_uris.'],
+            $registry->register_client(['redirect_uris' => array_fill(0, 11, $ok)])
+        );
+        $this->assertSame(
+            ['error' => 'invalid_redirect_uri', 'error_description' => 'redirect_uri is too long.'],
+            $registry->register_client(['redirect_uris' => ['https://client.example/' . str_repeat('x', 2048)]])
+        );
+        $this->assertSame(
+            [
+                'error' => 'invalid_redirect_uri',
+                'error_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / http://localhost).',
+            ],
+            $registry->register_client(['redirect_uris' => ['http://evil.example/callback']])
+        );
+    }
+
+    /**
+     * Ten redirect URIs are the limit and a dynamically registered client_id is 24 random bytes in hex.
+     */
+    public function test_registration_accepts_ten_redirects_and_issues_a_48_digit_client_id(): void {
+        $this->resetAfterTest();
+        $registry = new client_registry();
+
+        $response = $registry->register_client(['redirect_uris' => array_fill(0, 10, 'https://client.example/callback')]);
+
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{48}$/', $response['client_id']);
+    }
+
+    /**
+     * A second first lookup of the same metadata URL returns the record the first one stored.
+     */
+    public function test_caching_the_same_cimd_url_twice_returns_the_stored_client(): void {
+        $this->resetAfterTest();
+        $registry = new client_registry();
+        $registry->register_client(['client_name' => 'Earlier client', 'redirect_uris' => ['https://earlier.example/cb']]);
+        $url = 'https://client.example/metadata.json';
+        $metadata = ['client_name' => 'Metadata client', 'redirect_uris' => ['https://client.example/callback']];
+
+        $first = $registry->cache_cimd_client($url, $metadata);
+        $second = $registry->cache_cimd_client($url, ['redirect_uris' => ['https://other.example/callback']]);
+
+        $this->assertSame($url, $first->clientid);
+        $this->assertEquals($first->id, $second->id);
+        $this->assertSame($url, $second->clientid);
+        $this->assertSame('Metadata client', $second->clientname);
+    }
 }

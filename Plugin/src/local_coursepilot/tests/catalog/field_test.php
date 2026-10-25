@@ -91,4 +91,16 @@ final class field_test extends \advanced_testcase {
 
         $this->assertCount(1, array_unique($messages));
     }
+
+    /**
+     * Defaults and value lists are delivered as readable JSON: neither umlauts nor slashes are escaped.
+     */
+    public function test_json_fields_keep_unicode_and_slashes_unescaped(): void {
+        $field = new field('name', PARAM_TEXT, 'Bedeutung', false, 'Größe/Ä', ['a/b', 'ü'], null, 'lib.php:1');
+
+        $array = $field->to_array();
+
+        $this->assertSame('"Größe/Ä"', $array['default_json']);
+        $this->assertSame('["a/b","ü"]', $array['value_range']['values_json']);
+    }
 }

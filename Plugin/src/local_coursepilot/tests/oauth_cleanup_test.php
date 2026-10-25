@@ -209,6 +209,32 @@ final class oauth_cleanup_test extends \advanced_testcase {
         $this->assertSame(['boundary', 'foreign-active', 'pending-code', 'recent'], $kept);
     }
 
+    public function test_run_counts_every_step_and_measures_against_the_given_reference_time(): void {
+        global $DB, $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $real = time();
+        $now = $real + 5;
+        // Expired only relative to the given reference time, not to the clock.
+        $this->code('c', $real + 2);
+        $DB->insert_record(workbench_ticket::TABLE, (object) ['userid' => 2, 'path' => 't.txt',
+            'contenthash' => sha1('t'), 'tickethash' => hash('sha256', 't'), 'expires' => $real + 2,
+            'timecreated' => $real - 900]);
+        $this->connection($this->tokens('client-a', (int) $USER->id));
+        connection::revoke_token((int) max(array_keys(connection::active_tokens_for_user((int) $USER->id))));
+        $DB->insert_record(self::TOKEN, (object) ['accesstokenhash' => hash('sha256', 'legacy-a'),
+            'refreshtokenhash' => hash('sha256', 'legacy-r'), 'clientid' => 'client-a', 'userid' => $USER->id,
+            'expires' => $real + 600, 'refreshexpires' => $real + 600, 'revoked' => 1, 'timecreated' => $real - 99]);
+        $this->client('unused', $now - oauth_cleanup::CLIENT_UNUSED_TTL - 1);
+
+        // One code, one ticket, one revoked connection with its one token, one legacy token row, one client.
+        $this->assertSame(6, oauth_cleanup::run($now));
+        $this->assertSame(0, $DB->count_records(self::GRANT));
+        $this->assertSame(0, $DB->count_records(self::TOKEN));
+        $this->assertSame(0, $DB->count_records(self::CLIENT));
+        $this->assertSame(0, $DB->count_records(workbench_ticket::TABLE));
+    }
+
     public function test_task_is_registered_and_purges_budget_and_codes(): void {
         global $DB;
         $this->resetAfterTest();

@@ -343,4 +343,64 @@ final class remote_access_test extends \advanced_testcase {
 
         $this->assertSame([], remote_access::selected_cohort_member_counts());
     }
+
+    public function test_member_counts_list_every_selected_cohort_with_integer_values(): void {
+        $this->resetAfterTest();
+        $one = $this->getDataGenerator()->create_user();
+        $two = $this->getDataGenerator()->create_user();
+        $first = $this->create_selected_cohort($one->id, $two->id);
+        $second = $this->create_selected_cohort($one->id);
+        $empty = $this->create_selected_cohort();
+
+        $counts = remote_access::selected_cohort_member_counts();
+
+        $this->assertEqualsCanonicalizing([(int) $first->id, (int) $second->id, (int) $empty->id], array_keys($counts));
+        foreach ([[$first, 2], [$second, 1], [$empty, 0]] as [$cohort, $members]) {
+            $this->assertSame((int) $cohort->id, $counts[(int) $cohort->id]->id);
+            $this->assertSame($members, $counts[(int) $cohort->id]->members);
+            $this->assertSame($cohort->name, $counts[(int) $cohort->id]->name);
+        }
+    }
+
+    public function test_missing_cohort_ids_are_a_plain_list_of_the_vanished_ones(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $gone1 = $this->create_selected_cohort($user->id);
+        $kept = $this->create_selected_cohort($user->id);
+        $gone2 = $this->create_selected_cohort($user->id);
+        $DB->delete_records('cohort', ['id' => $gone1->id]);
+        $DB->delete_records('cohort', ['id' => $gone2->id]);
+
+        $this->assertSame([(int) $gone1->id, (int) $gone2->id], remote_access::missing_cohort_ids());
+        $this->assertNotContains((int) $kept->id, remote_access::missing_cohort_ids());
+    }
+
+    public function test_the_stored_selection_ignores_blanks_zeros_text_and_duplicates(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $kept = $this->create_selected_cohort($user->id);
+        $unknown = (int) $kept->id + 1000;
+
+        set_config('remoteaccesscohorts', '0,' . $kept->id . ',,abc,' . $kept->id, 'local_coursepilot');
+        $this->assertSame([], remote_access::missing_cohort_ids());
+        $this->assertTrue(remote_access::is_granted((int) $user->id));
+
+        set_config('remoteaccesscohorts', "{$unknown},{$unknown},0", 'local_coursepilot');
+        $this->assertSame([$unknown], remote_access::missing_cohort_ids());
+    }
+
+    public function test_the_current_user_is_used_when_no_user_is_given(): void {
+        $this->resetAfterTest();
+        $member = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $this->create_selected_cohort($member->id);
+
+        $this->setUser($member);
+        $this->assertTrue(remote_access::is_granted());
+        $this->setUser($other);
+        $this->assertFalse(remote_access::is_granted());
+        $this->setUser(0);
+        $this->assertFalse(remote_access::is_granted());
+    }
 }

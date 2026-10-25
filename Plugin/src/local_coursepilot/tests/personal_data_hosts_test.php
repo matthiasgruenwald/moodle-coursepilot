@@ -187,4 +187,19 @@ final class personal_data_hosts_test extends \advanced_testcase {
         personal_data_hosts::require_allowed_location(null, 'a.md');
         $this->assertTrue(personal_data_hosts::allowed('cloud.example.test'));
     }
+
+    /**
+     * An absent value is valid and is not passed on as null to the entry check.
+     */
+    public function test_admin_setting_accepts_an_absent_value(): void {
+        $this->resetAfterTest();
+        $setting = new personaldatahosts_setting('local_coursepilot/personaldatahosts', 'x', 'y', '', PARAM_RAW);
+
+        try {
+            $result = $setting->validate(null);
+        } catch (\TypeError $e) {
+            $this->fail('An absent value must not reach the entry check as null: ' . $e->getMessage());
+        }
+        $this->assertTrue($result);
+    }
 }

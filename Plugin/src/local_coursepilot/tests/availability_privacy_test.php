@@ -58,4 +58,11 @@ final class availability_privacy_test extends \advanced_testcase {
     public function test_document_without_condition_list_is_returned_unchanged(): void {
         $this->assertSame('{"op":"&"}', availability_privacy::sanitize('{"op":"&"}'));
     }
+
+    public function test_document_without_condition_list_keeps_all_of_its_keys(): void {
+        $this->assertSame(
+            '{"op":"&","show":true,"id":5}',
+            availability_privacy::sanitize('{"op":"&","show":true,"id":5}')
+        );
+    }
 }

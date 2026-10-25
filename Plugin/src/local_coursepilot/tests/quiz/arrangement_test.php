@@ -278,4 +278,94 @@ final class arrangement_test extends \advanced_testcase {
         $this->assertSame(0, $after['slots'][1]['requireprevious']);
         $this->assertSame('', $after['slots'][0]['displaynumber']);
     }
+
+    public function test_capture_has_exact_values_and_types_and_only_the_quiz_own_rows(): void {
+        global $DB;
+        $this->resetAfterTest();
+        // A decoy quiz created first, with its own section and feedback, so unconstrained queries would find it.
+        [, $decoy] = $this->create_quiz_with_two_questions();
+        $DB->insert_record('quiz_feedback', (object) [
+            'quizid' => $decoy->id, 'feedbacktext' => 'Decoy', 'feedbacktextformat' => FORMAT_HTML, 'mingrade' => 1,
+            'maxgrade' => 2,
+        ]);
+        [, $quiz, $question1] = $this->create_quiz_with_two_questions();
+        $DB->insert_record('quiz_feedback', (object) [
+            'quizid' => $quiz->id, 'feedbacktext' => 'Fertig/Größe', 'feedbacktextformat' => FORMAT_PLAIN, 'mingrade' => 0.5,
+            'maxgrade' => 12.5,
+        ]);
+        $DB->insert_record('quiz_feedback', (object) [
+            'quizid' => $quiz->id, 'feedbacktext' => 'Besser', 'feedbacktextformat' => FORMAT_HTML, 'mingrade' => 12.5,
+            'maxgrade' => 100,
+        ]);
+        $slots = $this->slots((int) $quiz->id);
+        $DB->set_field('quiz_slots', 'displaynumber', 'A1', ['id' => $slots[0]->id]);
+        $DB->set_field('quiz_slots', 'maxmark', 2.5, ['id' => $slots[0]->id]);
+        $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $slots[1]->id]);
+        $DB->set_field('question_references', 'version', 1, ['itemid' => $slots[1]->id, 'component' => 'mod_quiz']);
+        $entry1 = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $question1->id]);
+        $section = $DB->get_record('quiz_sections', ['quizid' => $quiz->id], '*', MUST_EXIST);
+        $DB->set_field('quiz_sections', 'heading', 'Teil 1', ['id' => $section->id]);
+        $DB->set_field('quiz_sections', 'shufflequestions', 1, ['id' => $section->id]);
+
+        $captured = arrangement::capture((int) $quiz->id);
+
+        $this->assertSame([
+            'id' => (int) $slots[0]->id, 'page' => (int) $slots[0]->page, 'displaynumber' => 'A1', 'requireprevious' => 0,
+            'maxmark' => 2.5, 'questionbankentryid' => $entry1, 'version' => null,
+        ], $captured['slots'][0]);
+        $this->assertSame(1, $captured['slots'][1]['requireprevious']);
+        $this->assertSame(1, $captured['slots'][1]['version']);
+        $this->assertSame('', $captured['slots'][1]['displaynumber']);
+        $this->assertSame([[
+            'firstslot' => 1, 'heading' => 'Teil 1', 'shufflequestions' => 1,
+        ]], $captured['sections']);
+        $this->assertSame([
+            ['feedbacktext' => 'Fertig/Größe', 'feedbacktextformat' => (int) FORMAT_PLAIN, 'mingrade' => 0.5, 'maxgrade' => 12.5],
+            ['feedbacktext' => 'Besser', 'feedbacktextformat' => (int) FORMAT_HTML, 'mingrade' => 12.5, 'maxgrade' => 100.0],
+        ], $captured['feedback']);
+    }
+
+    public function test_differs_compares_content_not_spelling_of_umlauts_and_slashes(): void {
+        $a = ['slots' => [['displaynumber' => 'Größe/Ä']], 'sections' => [], 'feedback' => []];
+
+        $this->assertFalse(arrangement::differs($a, $a));
+        $this->assertFalse(arrangement::differs($a, unserialize(serialize($a))));
+        $this->assertTrue(
+            arrangement::differs($a, ['slots' => [['displaynumber' => 'Größe/B']], 'sections' => [], 'feedback' => []])
+        );
+        $this->assertTrue(arrangement::differs($a, ['slots' => [], 'sections' => [], 'feedback' => []]));
+    }
+
+    public function test_restore_is_refused_for_a_quiz_with_attempts_and_names_the_quiz(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, $quiz] = $this->create_quiz_with_two_questions();
+        $state = arrangement::capture((int) $quiz->id);
+        $DB->insert_record('quiz_attempts', (object) [
+            'quiz' => $quiz->id, 'userid' => 2, 'attempt' => 1, 'uniqueid' => 987654, 'layout' => '', 'currentpage' => 0,
+            'preview' => 0, 'state' => 'finished', 'timestart' => time(), 'timefinish' => time(), 'timemodified' => time(),
+            'timemodifiedoffline' => 0, 'timecheckstate' => null, 'sumgrades' => 0, 'gradednotificationsenttime' => null,
+        ]);
+
+        try {
+            arrangement::restore((int) $quiz->id, $state);
+            $this->fail('A quiz with attempts must not be restored.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('arrangementrestoreblocked', $e->errorcode);
+            $this->assertEquals(['quizid' => $quiz->id], $e->a);
+        }
+    }
+
+    public function test_slots_that_no_longer_exist_are_skipped_during_restore(): void {
+        $this->resetAfterTest();
+        [, $quiz] = $this->create_quiz_with_two_questions();
+        $state = arrangement::capture((int) $quiz->id);
+        $original = array_column($state['slots'], 'id');
+        array_unshift($state['slots'], array_replace($state['slots'][0], ['id' => 987654]));
+        $state['slots'][] = array_replace($state['slots'][1], ['id' => 987655]);
+
+        arrangement::restore((int) $quiz->id, $state);
+
+        $this->assertSame($original, array_map('intval', array_column($this->slots((int) $quiz->id), 'id')));
+    }
 }

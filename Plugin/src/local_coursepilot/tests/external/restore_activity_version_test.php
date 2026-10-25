@@ -756,6 +756,68 @@ final class restore_activity_version_test extends \advanced_testcase {
     }
 
     /**
+     * A replaced attachment without a recycle-bin copy stays as it is while the other one comes back.
+     */
+    public function test_restore_keeps_a_replaced_attachment_that_has_no_recycle_bin_copy(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id] +
+            ((int) $CFG->branch >= 502 ? [
+                'markingworkflow' => 1, 'markingallocation' => 1, 'markercount' => 2,
+                'multimarkmethod' => 'average', 'multimarkrounding' => 2,
+            ] : []));
+        $context = \context_module::instance($assign->cmid);
+        $this->create_material_file('a.pdf', 'Original A');
+        $this->create_material_file('b.pdf', 'Original B');
+        update_module_settings::execute($assign->cmid, '{"introattachments":["a.pdf","b.pdf"]}');
+        $this->create_material_file('a.pdf', 'Replacement A');
+        $this->create_material_file('b.pdf', 'Replacement B');
+        update_module_settings::execute($assign->cmid, '{"introattachments":["a.pdf","b.pdf"]}');
+        $DB->delete_records('files', [
+            'contextid' => $context->id,
+            'component' => \local_coursepilot\activity_file_trash::COMPONENT,
+            'filearea' => \local_coursepilot\activity_file_trash::FILEAREA,
+            'filename' => 'b.pdf',
+        ]);
+
+        $result = restore_activity_version::execute($assign->cmid, 2);
+        $result = external_api::clean_returnvalue(restore_activity_version::execute_returns(), $result);
+
+        $files = get_file_storage()->get_area_files($context->id, 'mod_assign', 'introattachment', 0, 'filename', false);
+        $this->assertSame(
+            ['a.pdf' => 'Original A', 'b.pdf' => 'Replacement B'],
+            array_column(
+                array_map(static fn($file) => [$file->get_filename(), $file->get_content()], $files),
+                1,
+                0
+            )
+        );
+        $this->assertSame('Restored to version 2. File restored from the recycle bin: a.pdf.', $result['message']);
+    }
+
+    /**
+     * Completion failures other than the data-loss confirmation are real errors of the restore.
+     */
+    public function test_restore_fails_when_completion_cannot_be_written_for_another_reason(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_MANUAL,
+        ]);
+        set_completion::execute($page->cmid, json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC]));
+        set_config('enablecompletion', 0);
+
+        try {
+            restore_activity_version::execute($page->cmid, 1);
+            $this->fail('The completion failure should not be reduced to a warning.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('completionnotenabled', $e->errorcode);
+        }
+    }
+
+    /**
      * The module-specific completion field also comes back - via
      * set_completion, not via the generic patch (there it is on the
      * blocklist of assign/choice, ticket #461).
@@ -764,7 +826,9 @@ final class restore_activity_version_test extends \advanced_testcase {
         global $DB;
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
-        $assign = $this->getDataGenerator()->get_plugin_generator('mod_assign')->create_instance([
+        /** @var \mod_assign_generator $modgen */
+        $modgen = $this->getDataGenerator()->get_plugin_generator('mod_assign');
+        $assign = $modgen->create_instance([
             'course' => $course->id,
             'completion' => COMPLETION_TRACKING_AUTOMATIC,
         ]);

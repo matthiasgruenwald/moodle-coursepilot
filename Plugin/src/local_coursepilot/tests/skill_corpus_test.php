@@ -320,4 +320,75 @@ final class skill_corpus_test extends \advanced_testcase {
         $content = preg_replace('/\s+/u', ' ', skill_corpus::get('activity-types')['content']);
         $this->assertStringContainsString('Call the operation create. Reserve supported for field-catalog guarantees', $content);
     }
+
+    /**
+     * Calls a private static method of skill_corpus.
+     *
+     * @param string $method
+     * @param mixed ...$arguments
+     * @return mixed
+     */
+    private function call_private(string $method, mixed ...$arguments): mixed {
+        return (new \ReflectionMethod(skill_corpus::class, $method))->invoke(null, ...$arguments);
+    }
+
+    public function test_the_catalog_lists_adapters_before_references_each_sorted_by_name(): void {
+        $entries = skill_corpus::list();
+
+        $kinds = array_column($entries, 'kind');
+        $this->assertSame(['adapter', 'reference'], array_values(array_unique($kinds)));
+        foreach (['adapter', 'reference'] as $kind) {
+            $names = array_column(array_filter($entries, static fn($e) => $e['kind'] === $kind), 'name');
+            // The catalog follows the sorted file paths, so "x-y.md" precedes "x.md".
+            $sorted = array_map(static fn($name) => $name . '.md', $names);
+            sort($sorted);
+            $this->assertSame($sorted, array_map(static fn($name) => $name . '.md', $names), $kind);
+        }
+        foreach ($entries as $entry) {
+            $this->assertSame(basename($entry['path'], '.md'), $entry['name']);
+            $this->assertSame(mb_strlen(file_get_contents($entry['path'])), $entry['length']);
+        }
+    }
+
+    public function test_the_trigger_comes_from_the_frontmatter_description_only(): void {
+        $with = "---\nname: x\ndescription:   Use it for tests  \n---\nbody";
+        $bodyonly = "---\nname: x\n---\n# Title\ndescription: not part of the frontmatter\n";
+
+        $this->assertSame('Use it for tests', $this->call_private('trigger_of', $with));
+        // Without a description in the frontmatter the first non-empty line, the delimiter itself, is used.
+        $this->assertSame('---', $this->call_private('trigger_of', $bodyonly));
+        $this->assertSame('Heading', $this->call_private('trigger_of', "\n  ##\t Heading  \nmore"));
+        $this->assertSame('---', $this->call_private('trigger_of', "---\nNo closing delimiter\n"));
+        $this->assertSame('', $this->call_private('trigger_of', "\n  \n"));
+    }
+
+    public function test_references_are_found_in_both_notations_once_and_in_order(): void {
+        $content = 'See coursepilot_get_skill("alpha") and skills/beta.md, again coursepilot_get_skill(\'alpha\'),'
+            . ' plus skills/gamma_1.md and coursepilot_get_skill("delta-2").';
+
+        $this->assertSame(['alpha', 'delta-2', 'beta', 'gamma_1'], $this->call_private('referenced_names', $content));
+        $this->assertSame([], $this->call_private('referenced_names', 'no references here'));
+    }
+
+    public function test_an_unknown_name_is_refused_with_the_name_and_the_valid_names(): void {
+        $e = null;
+        try {
+            skill_corpus::get('does-not-exist');
+        } catch (\moodle_exception $e) {
+            $e = $e;
+        }
+
+        $this->assertInstanceOf(\moodle_exception::class, $e);
+        $this->assertSame('unknownskillname', $e->errorcode);
+        $this->assertSame(
+            ['name' => 'does-not-exist', 'names' => implode(', ', array_column(skill_corpus::list(), 'name'))],
+            $e->a
+        );
+    }
+
+    public function test_the_corpus_version_is_release_and_version_of_the_plugin(): void {
+        $plugin = plugin_meta::current();
+
+        $this->assertSame($plugin->release . ' (' . $plugin->version . ')', skill_corpus::get('coursepilot')['corpus_version']);
+    }
 }

@@ -2114,5 +2114,1962 @@
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/catalog/url.php": "d3d65beda1c2b8d712d02dfc4dd8e407947903ac610177754a21822fe1883464"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/client_registry.php",
+    "line": 79,
+    "mutator": "ArrayItemRemoval",
+    "hash": "84feefe4bbd381c1bf3122a4314729e97bfdd905146d7cb2c3c4e0e89142e0df",
+    "reason": "Removing 'none' from the accepted token_endpoint_auth_method list sends a requested 'none' through the fallback branch, which assigns 'none' as well. Every value other than 'client_secret_post' therefore ends as 'none' in both variants, so the stored method, the generated-secret decision ($authmethod === 'client_secret_post') and the registration response are identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/client_registry.php": "eaa1e1e74235ae708851f8729b9a0f5d7e6c8b2bca9b69f6802a039b372f197f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_cleanup.php",
+    "line": 89,
+    "mutator": "DecrementInteger",
+    "hash": "5fd1bb5a4f6c663ff10031b1bba65b669b00afdf38e9ffae43c1b888116f8c43",
+    "reason": "Mutation in delete_dead_connections(): get_records_sql(..., -1, $batch) instead of 0. Moodle's moodle_database::normalise_limit_from_num() maps a limitfrom of exactly -1 to 0 before the query is built (lib/dml/moodle_database.php, \"We explicitly treat these cases as 0\"; identical in Moodle 5.0 to 5.3 and used by every driver), and the debugging notice only concerns values below -1. The mutated call therefore selects the same rows as limitfrom 0; limitnum stays $batch.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_cleanup.php": "b7ed2b8e286b08bc50a103ca3509748e89b7e895de9cc1679c3d8232da67fa66"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_cleanup.php",
+    "line": 127,
+    "mutator": "DecrementInteger",
+    "hash": "8c9078c76ac7d730da109075abc63a045dca6b3795fb81e51ca68e96a3c6a88b",
+    "reason": "Mutation in delete_unused_clients(): get_records_sql(..., -1, $batch) instead of 0. Moodle's moodle_database::normalise_limit_from_num() maps a limitfrom of exactly -1 to 0 before the query is built (lib/dml/moodle_database.php, \"We explicitly treat these cases as 0\"; identical in Moodle 5.0 to 5.3 and used by every driver), and the debugging notice only concerns values below -1. The mutated call therefore selects the same rows as limitfrom 0; limitnum stays $batch.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_cleanup.php": "b7ed2b8e286b08bc50a103ca3509748e89b7e895de9cc1679c3d8232da67fa66"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/oauth_cleanup.php",
+    "line": 147,
+    "mutator": "DecrementInteger",
+    "hash": "1190e068b3f0e057aa3b8a76b2ad8fab65078eece3e43809e77f75019fc3d4ab",
+    "reason": "Mutation in delete_batch(): get_records_select(..., -1, $batch) instead of 0. Moodle's moodle_database::normalise_limit_from_num() maps a limitfrom of exactly -1 to 0 before the query is built (lib/dml/moodle_database.php, \"We explicitly treat these cases as 0\"; identical in Moodle 5.0 to 5.3 and used by every driver), and the debugging notice only concerns values below -1. The mutated call therefore selects the same rows as limitfrom 0; limitnum stays $batch.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/oauth_cleanup.php": "b7ed2b8e286b08bc50a103ca3509748e89b7e895de9cc1679c3d8232da67fa66"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/mark_memory.php",
+    "line": 63,
+    "mutator": "CastInt",
+    "hash": "c9f582af95ac1a8b9dec17994bbd3ad56caf365c072e0e08c48272156c6b68a1",
+    "reason": "Mutation in lookup(): the (int) cast of $USER->id inside the get_record conditions. The value is only used as a bound query parameter against the integer column userid; a numeric string id from $USER and its (int) cast select the same row on MariaDB and PostgreSQL, because the DML layer sends every parameter as text and the database converts it to the column type. (int) of a user id is therefore redundant here.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/mark_memory.php": "e93b41aa779fbdb210f14d8b58d3acdcb4638814acdeaac384ab324c9b675172"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/mark_memory.php",
+    "line": 104,
+    "mutator": "CastInt",
+    "hash": "a5031141aa077d32030df0499efe6b15cec51fb179dcd5363ee3efdbf08c8e11",
+    "reason": "Mutation in remember(): the (int) cast of $USER->id inside the get_field conditions. The value is only used as a bound query parameter against the integer column userid; a numeric string id from $USER and its (int) cast select the same row on MariaDB and PostgreSQL, because the DML layer sends every parameter as text and the database converts it to the column type. (int) of a user id is therefore redundant here.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/mark_memory.php": "e93b41aa779fbdb210f14d8b58d3acdcb4638814acdeaac384ab324c9b675172"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/mark_memory.php",
+    "line": 95,
+    "mutator": "CastInt",
+    "hash": "977e1c101f096b01bfcd2f7579b64b724bea2f12015f0cf6fe3f02f86e602b86",
+    "reason": "Mutation in remember(): the (int) cast of $USER->id in the record handed to insert_record()/update_record(). The DML layer writes the value into the integer column userid; a numeric string and the int are stored as the same number, and no later code reads the in-memory property.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/mark_memory.php": "e93b41aa779fbdb210f14d8b58d3acdcb4638814acdeaac384ab324c9b675172"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/mark_memory.php",
+    "line": 70,
+    "mutator": "CastString",
+    "hash": "c97c5f90a0d307006346c8aa81034a7828e7638eb2c164b819aeb532a5995a85",
+    "reason": "The right operand is ($etag ?? ''), and lookup() declares $etag as ?string, so the coalesce already yields a string; the additional (string) cast is a no-op. The left operand keeps its cast, so the comparison is unchanged.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/mark_memory.php": "e93b41aa779fbdb210f14d8b58d3acdcb4638814acdeaac384ab324c9b675172"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/mark_memory.php",
+    "line": 74,
+    "mutator": "CastBool",
+    "hash": "f08666cf03a39e46f1856c8ef05d5b6347d5832a8bbeeee3eb2278a87a3d63b1",
+    "reason": "lookup() declares the return type ?bool without strict_types, so PHP coerces the stored ismarked value ('0' or '1' from the int(1) column) to false or true on return exactly as the explicit (bool) cast does. Values and the null case are unchanged.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/mark_memory.php": "e93b41aa779fbdb210f14d8b58d3acdcb4638814acdeaac384ab324c9b675172"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/event/tool_access_failed.php",
+    "line": 77,
+    "mutator": "MethodCallRemoval",
+    "hash": "89ffba95ed05eb6f54b58d6c580b0d75a5d5f1a32a473633d521b2359e6fafde",
+    "reason": "Mutation: parent::validate_data() removed in tool_access_failed::validate_data(). Moodle's \\core\\event\\base::validate_data() is an intentionally empty extension hook (\"Override if you want to validate event properties when creating new events\"; lib/classes/event/base.php, empty and identical in Moodle 5.0 to 5.3). Removing the parent:: call therefore executes nothing, and the class's own check of the 'reason' value that follows is unchanged.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/event/tool_access_failed.php": "28f613815f11a18f457e52a76c1c25eebae7d83e8a02d9468e19210d0a3856a5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/event/tool_access_succeeded.php",
+    "line": 72,
+    "mutator": "MethodCallRemoval",
+    "hash": "73487d50dbc8a6a17d186cacb4e3300625a1223f66022e2b25b423ef31a72759",
+    "reason": "Mutation: parent::validate_data() removed in tool_access_succeeded::validate_data(). Moodle's \\core\\event\\base::validate_data() is an intentionally empty extension hook (\"Override if you want to validate event properties when creating new events\"; lib/classes/event/base.php, empty and identical in Moodle 5.0 to 5.3). Removing the parent:: call therefore executes nothing, and the class's own check of the 'reason' value that follows is unchanged.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/event/tool_access_succeeded.php": "435b32a01da65f3f341c3baedf0542f4fb451c8cdb1818a751b12550d36d5b52"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/check/webdav_repository_check.php",
+    "line": 65,
+    "mutator": "CastInt",
+    "hash": "94fd335af948f83cdc23040480e7a98b33fe88155f171580798c0822ea9a1c02",
+    "reason": "Mutation: the (int) cast of $USER->id in webdav_repository_check::get_result(). The value passed on is $USER->id, which Moodle keeps as an int or a numeric string. webdav_setup_steps::catalog() declares int $userid and neither file declares strict_types, so PHP's coercive typing turns the numeric string into the identical int at the call; the cast only differs for null or non-numeric values, which a logged-in $USER->id never holds.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/check/webdav_repository_check.php": "459fda85e5a49c9c882022dc2aa8f42c6e25cf651eb65d9f7294ddd0ce731ae5",
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_setup_steps.php": "28826a3dfd060c410e3f6a16c75278951b8fd86d3046aaba541026e9742055e7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/check/webdav_user_instances_check.php",
+    "line": 61,
+    "mutator": "CastInt",
+    "hash": "8658aa25beb1284280731138f3b6b1ef3b0b7a9faa93100c28a43423c051198d",
+    "reason": "Mutation: the (int) cast of $USER->id in webdav_user_instances_check::get_result(). The value passed on is $USER->id, which Moodle keeps as an int or a numeric string. webdav_setup_steps::catalog() declares int $userid and neither file declares strict_types, so PHP's coercive typing turns the numeric string into the identical int at the call; the cast only differs for null or non-numeric values, which a logged-in $USER->id never holds.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/check/webdav_user_instances_check.php": "c9a2fa04900b8fc795c56da829c0241af12be04479110c6ea411f55a3fc0439f",
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_setup_steps.php": "28826a3dfd060c410e3f6a16c75278951b8fd86d3046aaba541026e9742055e7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/observer.php",
+    "line": 41,
+    "mutator": "CastInt",
+    "hash": "6d277bc2f410af408ef30e2785095b3f283b07dc5d1b5c20fea087d09d7b91f0",
+    "reason": "Mutation: the (int) cast of the objectid passed to version_writer::capture() in observer. The value is a course module id taken from an event that Moodle core creates with the module id from the course_modules record (an int or a numeric string). The called method declares an int parameter and neither file declares strict_types, so PHP's coercive typing converts the numeric string to the identical int at the call; the cast differs only for null or non-numeric values, which these core events do not carry in objectid/userid (base::create() falls back to $USER->id when userid is not set).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/observer.php": "4e5c903eb88d94ac0c0a4cad6894d6c7e369c0ac1d439fdf00f2ad2cab489e38",
+      "Plugin/src/local_coursepilot/classes/history/version_writer.php": "12a8df60fd3ea8e312ebf89fd9ce9a3ce76699db532ea59796083c87fe15f533"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/observer.php",
+    "line": 41,
+    "mutator": "CastInt",
+    "hash": "225f0e15f2f5af0301aefc5c3535b04a93cc64409e57c1853909c503ab2a3589",
+    "reason": "Mutation: the (int) cast of the userid passed to version_writer::capture() in observer. The value is a course module id taken from an event that Moodle core creates with the module id from the course_modules record (an int or a numeric string). The called method declares an int parameter and neither file declares strict_types, so PHP's coercive typing converts the numeric string to the identical int at the call; the cast differs only for null or non-numeric values, which these core events do not carry in objectid/userid (base::create() falls back to $USER->id when userid is not set).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/observer.php": "4e5c903eb88d94ac0c0a4cad6894d6c7e369c0ac1d439fdf00f2ad2cab489e38",
+      "Plugin/src/local_coursepilot/classes/history/version_writer.php": "12a8df60fd3ea8e312ebf89fd9ce9a3ce76699db532ea59796083c87fe15f533"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/observer.php",
+    "line": 51,
+    "mutator": "CastInt",
+    "hash": "985f1d022b0b842d6994ae1ad8d9be1d2e01bfdc4eb92c9c53f4064e499d6076",
+    "reason": "Mutation: the (int) cast of the objectid passed to version_writer::capture_on_update() in observer. The value is a course module id taken from an event that Moodle core creates with the module id from the course_modules record (an int or a numeric string). The called method declares an int parameter and neither file declares strict_types, so PHP's coercive typing converts the numeric string to the identical int at the call; the cast differs only for null or non-numeric values, which these core events do not carry in objectid/userid (base::create() falls back to $USER->id when userid is not set).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/observer.php": "4e5c903eb88d94ac0c0a4cad6894d6c7e369c0ac1d439fdf00f2ad2cab489e38",
+      "Plugin/src/local_coursepilot/classes/history/version_writer.php": "12a8df60fd3ea8e312ebf89fd9ce9a3ce76699db532ea59796083c87fe15f533"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/observer.php",
+    "line": 51,
+    "mutator": "CastInt",
+    "hash": "c211fa780a34d5e6acb56faa58893c3af787704d073321d6b1fd4a5a7b6260e5",
+    "reason": "Mutation: the (int) cast of the userid passed to version_writer::capture_on_update() in observer. The value is a course module id taken from an event that Moodle core creates with the module id from the course_modules record (an int or a numeric string). The called method declares an int parameter and neither file declares strict_types, so PHP's coercive typing converts the numeric string to the identical int at the call; the cast differs only for null or non-numeric values, which these core events do not carry in objectid/userid (base::create() falls back to $USER->id when userid is not set).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/observer.php": "4e5c903eb88d94ac0c0a4cad6894d6c7e369c0ac1d439fdf00f2ad2cab489e38",
+      "Plugin/src/local_coursepilot/classes/history/version_writer.php": "12a8df60fd3ea8e312ebf89fd9ce9a3ce76699db532ea59796083c87fe15f533"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/observer.php",
+    "line": 63,
+    "mutator": "CastInt",
+    "hash": "205070def9738968ef31db134aa4da8066fbb7e2e890f4de0922f4338ab9de7d",
+    "reason": "Mutation: the (int) cast of the objectid passed to retention::purge_cm() in observer. The value is a course module id taken from an event that Moodle core creates with the module id from the course_modules record (an int or a numeric string). The called method declares an int parameter and neither file declares strict_types, so PHP's coercive typing converts the numeric string to the identical int at the call; the cast differs only for null or non-numeric values, which these core events do not carry in objectid/userid (base::create() falls back to $USER->id when userid is not set).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/observer.php": "4e5c903eb88d94ac0c0a4cad6894d6c7e369c0ac1d439fdf00f2ad2cab489e38",
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/observer.php",
+    "line": 75,
+    "mutator": "CastInt",
+    "hash": "fac99892b5c72bf602aff5d5d3da4032fc8508e22a7255d389a4b2b017094972",
+    "reason": "Mutation: the (int) cast of the objectid passed to retention::purge_course() in observer. The value is a course module id taken from an event that Moodle core creates with the module id from the course_modules record (an int or a numeric string). The called method declares an int parameter and neither file declares strict_types, so PHP's coercive typing converts the numeric string to the identical int at the call; the cast differs only for null or non-numeric values, which these core events do not carry in objectid/userid (base::create() falls back to $USER->id when userid is not set).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/observer.php": "4e5c903eb88d94ac0c0a4cad6894d6c7e369c0ac1d439fdf00f2ad2cab489e38",
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/observer.php",
+    "line": 91,
+    "mutator": "CastInt",
+    "hash": "3878002b9c50fabd52dd07086b7b525f8c0b996c1763658f07b11abeef670dcc",
+    "reason": "Mutation: the (int) cast of the context instanceid assigned to $cmid before it is handed to version_writer::capture_on_update() in observer. The value is a course module id taken from an event that Moodle core creates with the module id from the course_modules record (an int or a numeric string). The called method declares an int parameter and neither file declares strict_types, so PHP's coercive typing converts the numeric string to the identical int at the call; the cast differs only for null or non-numeric values, which these core events do not carry in objectid/userid (base::create() falls back to $USER->id when userid is not set).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/observer.php": "4e5c903eb88d94ac0c0a4cad6894d6c7e369c0ac1d439fdf00f2ad2cab489e38",
+      "Plugin/src/local_coursepilot/classes/history/version_writer.php": "12a8df60fd3ea8e312ebf89fd9ce9a3ce76699db532ea59796083c87fe15f533"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/observer.php",
+    "line": 92,
+    "mutator": "CastInt",
+    "hash": "848f5e0537e40394cdfaac75b9c03dda23ff8088f3556ccc655847b3c7f69c29",
+    "reason": "Mutation: the (int) cast of the userid passed to version_writer::capture_on_update() in observer. The value is a course module id taken from an event that Moodle core creates with the module id from the course_modules record (an int or a numeric string). The called method declares an int parameter and neither file declares strict_types, so PHP's coercive typing converts the numeric string to the identical int at the call; the cast differs only for null or non-numeric values, which these core events do not carry in objectid/userid (base::create() falls back to $USER->id when userid is not set).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/observer.php": "4e5c903eb88d94ac0c0a4cad6894d6c7e369c0ac1d439fdf00f2ad2cab489e38",
+      "Plugin/src/local_coursepilot/classes/history/version_writer.php": "12a8df60fd3ea8e312ebf89fd9ce9a3ce76699db532ea59796083c87fe15f533"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/check/personal_data_hosts_check.php",
+    "line": 59,
+    "mutator": "ArrayItemRemoval",
+    "hash": "7dcb4c1067485f07dae9bcbfc1ab8ab3333c26e33761e4263d9865ee63e333f0",
+    "reason": "The mutation empties the query parameters of the settings link created for the INFO result. On the Moodle 5.1 gate environment core\\check\\result::__construct() takes only ($status, $summary, $details) and silently drops the fourth argument, so the action_link never leaves the method and its URL cannot be observed. Moodle 5.2 and 5.3 keep the link and expose it through result::get_action_link(); the new test of this check asserts the section=local_coursepilot query there, so the mutation is only unobservable in the 5.1 environment this gate runs in.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/check/personal_data_hosts_check.php": "da3efc65e61c2c509490d87708ecdccc032418ae9607cf1308ecbf86bcf91711"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 110,
+    "mutator": "CastInt",
+    "hash": "c72ad691c2b285d03788c2e7506fbb1794c4ef27920ba21e4f08a0ab3d5eb9b4",
+    "reason": "The (int) cast of the category id before it is passed to persist_new_version(), whose parameter is declared int $categoryid. PHP's coercive typing mode applies (neither file declares strict_types), so a numeric-string id from the database is converted to the identical int when it reaches the int parameter; the cast only differs for null or non-numeric values, which a question or category row never provides.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 111,
+    "mutator": "CastInt",
+    "hash": "eac546ed4ff48ee766f9afd4249cd565690389ffd138ca1d1d399eb95a463234",
+    "reason": "The (int) cast of the question id before get_question_bank_entry(int $questionid) in lib/questionlib.php. PHP's coercive typing mode applies (neither file declares strict_types), so a numeric-string id from the database is converted to the identical int when it reaches the int parameter; the cast only differs for null or non-numeric values, which a question or category row never provides.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 293,
+    "mutator": "CastInt",
+    "hash": "8b2583a5be77b9195fc13a9b2e89271b67c4407c117f5de098a2545268f2d7f4",
+    "reason": "The (int) cast of the bank entry id before question_suspect_gate::latest_version_question(int $entryid). PHP's coercive typing mode applies (neither file declares strict_types), so a numeric-string id from the database is converted to the identical int when it reaches the int parameter; the cast only differs for null or non-numeric values, which a question or category row never provides.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_suspect_gate.php": "6b97d98a7449e9a80cf584eb0982b901e01434fe2af46dcb5a8c41c6164c0b93"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 296,
+    "mutator": "CastInt",
+    "hash": "c38e8cdac06e496c3c76bc6e6827ed9d59fdaa9a753e9d1a51f50427d40ebcb0",
+    "reason": "The (int) cast of the new question id before embed_images(), whose parameter is declared int $questionid. PHP's coercive typing mode applies (neither file declares strict_types), so a numeric-string id from the database is converted to the identical int when it reaches the int parameter; the cast only differs for null or non-numeric values, which a question or category row never provides.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 316,
+    "mutator": "CastInt",
+    "hash": "7e25939bd887e766965736be46e8b8d3ef918bea86854684edb97bfe0497b62f",
+    "reason": "question_import::result() already returns questionbankentryid as (int) $version->questionbankentryid, and update_mc_question reads it from there ($imported['questions'][0]), so the second cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 317,
+    "mutator": "CastInt",
+    "hash": "63b0ce6f53596498694db72d8370c751d407f4eeab4fca69924a3b49a3f8899d",
+    "reason": "question_import::result() already returns version as (int) $version->version, and update_mc_question reads it from there, so the second cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 248,
+    "mutator": "CastString",
+    "hash": "4806b5d498c6bbc7bcb3a6f4c1afdfdaacfe47a1097c46a61f60f7b4ed12620c",
+    "reason": "($entry->idnumber ?? '') is a string or the empty string: question_bank_entries.idnumber is a char column and the DML layer returns text or null, so the (string) cast before trim() changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 259,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "b664b871d8933b56743878446db66b8953c72d58893bcb0f67116b51e579e7e5",
+    "reason": "The mutation drops the closing </quiz> line of the wrapper around the question XML. Moodle's qformat_xml reads the text with xmlize(), which ignores well-formedness errors unless reporterrors is requested (lib/xmlize.php: \"exception will be thrown if the XML is not well-formed. Otherwise errors are ignored\"), and guard_quiz_root() only requires the opening <quiz> tag, so the single question inside the unterminated root is parsed exactly as with the closing tag.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 368,
+    "mutator": "CastString",
+    "hash": "091af365749011de91747cacd1c9a9754aa7bd14660db57a8c96282033ca34c2",
+    "reason": "$mode is only compared strictly with 'single' and 'multiple' (in_array(..., true) and ===). Any non-string patch value, cast or not, is never identical to those strings, so both variants reach the same invalid_parameter_exception 'selectionmode must be single or multiple.'; for strings the cast is a no-op.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 372,
+    "mutator": "IncrementInteger",
+    "hash": "f67c634806c8b406724a5bde271ad57b016c8a9b9f32d16e515d36fa7115bac5",
+    "reason": "options->single is only used as a truth value: question_xml writes it through qformat_xml, which emits <single>true</single> for any non-zero value, and the import reads that boolean back. Storing 2 instead of 1 for the single mode therefore produces the same XML and the same stored question.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 416,
+    "mutator": "ArrayItemRemoval",
+    "hash": "43a4d239431fc2b6cb3944c7ad42c3b5dcaaed69fa2b81501f71243554736c4d",
+    "reason": "The array built here is only read by question_xml::validate_answers(), which uses count() and the 'fraction' key of each element (validate_fraction_range(), the positive-count filter and the sum). The 'answer' key is never read, so omitting it changes no validation.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_xml.php": "9d82dde80dabd3dfa6f4f9e99760dec36d27e49f7649fe921c06d21664fbac32"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 417,
+    "mutator": "ArrayItem",
+    "hash": "3000323e9c48f813f05a3cb7b8a533040288b808ebc7be93134734f3feaacaeb",
+    "reason": "The array built here is only read by question_xml::validate_answers(), which uses count() and the 'fraction' key. The value of the 'answer' element (here turned into a comparison result) is never read.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_xml.php": "9d82dde80dabd3dfa6f4f9e99760dec36d27e49f7649fe921c06d21664fbac32"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 419,
+    "mutator": "ArrayItem",
+    "hash": "42554673db6dff7ee402bf7379f36ddf79643e3613e9126a3813ef15f7fe8abc",
+    "reason": "The array built here is only read by question_xml::validate_answers(), which uses count() and the 'fraction' key. The value of the 'feedback' element is never read.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_xml.php": "9d82dde80dabd3dfa6f4f9e99760dec36d27e49f7649fe921c06d21664fbac32"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 420,
+    "mutator": "CastArray",
+    "hash": "8bc60d20ac0b7fa211d83cfcf8842bb5e053155ac1cefe96b6302d3962514101",
+    "reason": "$question->options->answers is already an array (a native question_answers list, or the list of answer objects assigned in this call). The (array) cast of an array is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_xml.php": "9d82dde80dabd3dfa6f4f9e99760dec36d27e49f7649fe921c06d21664fbac32"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 420,
+    "mutator": "UnwrapArrayValues",
+    "hash": "7999bfb1e384f3d1bc7811eaa9e1ae2fb2ebaec264d361efed7930cbc16d1b34",
+    "reason": "array_values() only renumbers the keys of the answer list. question_xml::validate_answers() works with count() and array_filter()/array_map() over the 'fraction' values and ignores keys, so the keyed list validates identically.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_xml.php": "9d82dde80dabd3dfa6f4f9e99760dec36d27e49f7649fe921c06d21664fbac32"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 447,
+    "mutator": "IncrementInteger",
+    "hash": "fe6745be11f42b997720f0421471cffc1b217a275569a7181a8e53b9b0e5bd13",
+    "reason": "The placeholder id of the n-th answer becomes -(n+2) instead of -(n+1). Both are negative, and Moodle's file storage rejects negative item ids (file_storage: Invalid itemid), so no stored file can be found under either id and qformat_xml::write_answer() exports the answer without files in both variants.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 448,
+    "mutator": "CastString",
+    "hash": "fc19f1517f4f148111a4dc82d69e6b3c7f9eb621d968a54105b3e4ea0a204bd1",
+    "reason": "The answer text is a scalar from the JSON patch. qformat_xml::writetext() escapes it through xml_escape(), which returns int, float, bool and null values unchanged and interpolates them into the XML text, exactly the text the string cast would produce; no other code reads $object->answer.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 451,
+    "mutator": "CastString",
+    "hash": "09782f20a1b8c9546da31e526f7f9037c990b923ffd353e0207b253276651751",
+    "reason": "The feedback text is a scalar from the JSON patch (isset() excludes null). qformat_xml::writetext() escapes it through xml_escape(), which returns int, float and bool values unchanged and interpolates them into the XML text, exactly the text the string cast would produce; no other code reads $object->feedback.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 526,
+    "mutator": "DecrementInteger",
+    "hash": "86db2c451ed4a215ef5b49e19e60ef7e7684bd69375d841cae291c86883cb993",
+    "reason": "resolve_into_draft() passes the itemid only to file_prepare_draft_area(), which pre-fills the draft with files already stored at (category context, question, questiontext, itemid). No question file is stored at item id 0 (question ids start at 1) or at -1 (file storage rejects negative item ids), so the draft starts empty in both variants and receives only the requested image.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 531,
+    "mutator": "DecrementInteger",
+    "hash": "0a6ce3749c84d1ea469bf1c8798c7e56d62a6a7e191f5ccd075bc0eb4e360140",
+    "reason": "resolve_into_draft() passes the itemid only to file_prepare_draft_area(), which pre-fills the draft with files already stored at (category context, question, answerfeedback, itemid). No answer file is stored at item id 0 (answer ids start at 1) or at -1 (file storage rejects negative item ids), so the draft starts empty in both variants and receives only the requested image.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 582,
+    "mutator": "TrueValue",
+    "hash": "c2eb7ad47040696ad6a377425a61b80b758f2687339c0a4dbc8ce5be13d6d059",
+    "reason": "file_save_draft_area_files() is given the options array; subdirs only decides whether files in sub-folders of the draft are saved. The drafts built here contain only root-level files: assert_allowed_embed_extensions() accepts plain string paths only, so resolve_into_draft() copies every image to the draft root, and the pre-filled part is empty (no question file area item 0). With no sub-folder content, subdirs true and false save the same files.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 582,
+    "mutator": "DecrementInteger",
+    "hash": "1cbd050a9a0aad885f0f4d7ef3b0c1c9059a1b64c472bc53ba75c54b78c64db1",
+    "reason": "file_save_draft_area_files() is given the options array; filelib.php normalises maxbytes == USER_CAN_IGNORE_FILE_SIZE_LIMITS (-1) to 0 (\"unlimited\") before using it, so maxbytes -1 and 0 are the same limit.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 582,
+    "mutator": "ArrayItemRemoval",
+    "hash": "d595561abaf38bed0640d0ea63919e8616a47b168a4f6a9121bf664866bdd066",
+    "reason": "file_save_draft_area_files() is given the options array; the removed subdirs entry then defaults to false inside file_save_draft_area_files(). subdirs only matters for sub-folder content, and the drafts built here contain only root-level files (plain string paths are copied to the draft root; the pre-filled item 0 is empty), so true and false save the same files.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 596,
+    "mutator": "MethodCallRemoval",
+    "hash": "737611db5bb2ccd7fcf684248dcb3370575b62c0d40bec2e66d3faacb97831cd",
+    "reason": "file_save_draft_area_files() returns the text with draftfile.php URLs of the draft rewritten to @@PLUGINFILE@@; the question text of this call can only contain the @@PLUGINFILE@@ placeholder already (the draft item id is created inside this call and unknown to the caller), so $new equals the text read from the row just before and the set_field() rewrites the same value.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 619,
+    "mutator": "MethodCallRemoval",
+    "hash": "36b3e0bb444664beec0e7574ace59ec59c4ca188a84cf1dc90a01200a7789ca9",
+    "reason": "file_save_draft_area_files() returns the feedback with draftfile.php URLs of the draft rewritten to @@PLUGINFILE@@; the feedback of this call can only contain the @@PLUGINFILE@@ placeholder already (the draft item id is created inside this call and unknown to the caller), so $new equals the feedback just read from the row and the set_field() rewrites the same value.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 614,
+    "mutator": "CastInt",
+    "hash": "a5a82f59b96072a47c5a6156dbdb2ea58a20d8f002fd96e4a3776a13c1b6e943",
+    "reason": "The (int) cast of the answer id passed as the itemid of file_save_draft_area_files(). The id comes from a database row as a numeric string; the function uses it only as a query parameter and file record value, which the database layer converts to the same integer, so the cast changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 616,
+    "mutator": "CastString",
+    "hash": "133d130d2714a3e152a8429861a33a0ad3a56196e5de82233c508e7df58ff149",
+    "reason": "The (string) cast of the answer feedback read from question_answers.feedback. That column is NOT NULL text, so the value is already a string and the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 603,
+    "mutator": "Throw_",
+    "hash": "03d9e5e8385a65db75132968faab58abdb36dc3dc0eec57efe4fa17b793865e1",
+    "reason": "Mutation of the throw statement itself of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 604,
+    "mutator": "Concat",
+    "hash": "d900d2e87418a69043b097e3f0c46f146e4da5fdadc9e00044b5d628e231057a",
+    "reason": "Mutation of the concatenation order of the first operands of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 604,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "c0f71ded9f98b60daa1720747c01267afa51364156a52d7285d6621f3a9f2ad3",
+    "reason": "Mutation of the first literal operand of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 604,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "f6c3c77b0d6636df1ff14642d7aba9aab8a45faee22bb532ccee7c60b1f0ccd4",
+    "reason": "Mutation of the index operand of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 604,
+    "mutator": "Concat",
+    "hash": "d715feae51527c0266d7cf7f780b025e9d3bd250f9a41a46361f2d1d090d0a50",
+    "reason": "Mutation of the concatenation order after the index of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 604,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "ac5d57b5e297fd19c6affbd6d15c5ad6f3fb3a50ed49b44358149cbf3726e24a",
+    "reason": "Mutation of the literal after the index of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 604,
+    "mutator": "Concat",
+    "hash": "862c7569ffd4d3020e23077efa227c683cfc9e57f9e8add11f47d9cb24f99b8f",
+    "reason": "Mutation of the concatenation order before the count of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 604,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "f669a992d125c568a8bc3b64a2258328309c7a4cd68a4dd79c6a71e973abac0e",
+    "reason": "Mutation of the count operand of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 604,
+    "mutator": "Concat",
+    "hash": "e37cbc34b4999be9df007544de0f5364665862dd56ae89a364edd9944e3399ab",
+    "reason": "Mutation of the concatenation order at the end of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 604,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "ce4a23d7ebaee83c1b7fc8bf6a48f5c51b7c9fba6367a5639a798c416d30d031",
+    "reason": "Mutation of the closing literal of the 'feedback_images refers to answer option' exception. embed_images() throws here when a feedback_images position has no written answer row. The case cannot occur: the image positions come from the positions in the patch's answers list, and question_import::import() verifies after writing (verify_roundtrip) that the saved answers equal the imported XML answers, rolling back and throwing 'Round-trip check failed' before embed_images() runs. A patch whose answer list is not fully written (for example an answer with empty text, which qtype_multichoice skips) is therefore refused earlier, so every position in range refers to a written row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_mc_question.php": "bdfa2296de5b7cd64991c6a5687ecbe8ee2e60f3a86b0bf502c477b2f32096d8",
+      "Plugin/src/local_coursepilot/classes/question_import.php": "d664c5440cc4df2c07f3bf2a526afd950eca25dc14b265a3a97a64821aa2d4e9"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/course_module_placement.php",
+    "line": 66,
+    "mutator": "FalseValue",
+    "hash": "a4005b7a0bae4accea47482f932e596d963648499ec1b7be55a9942268b0362a",
+    "reason": "The guard is unreachable. $position is the array_search() result of the cm id in modinfo->sections[sectionnum]. The cm_info comes from the same course_modinfo, and course_modinfo builds its cms only from the section sequences that also fill ->sections (get_array_of_activities walks each section's sequence), so a cm that get_cm() returns is always listed in its own section; array_search() never yields false, and whether the condition tests false or true, the branch is not taken.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/course_module_placement.php": "85850e68367112b6d042a790f3834670a53f5fb61359da316fde424e74878eea"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/course_module_placement.php",
+    "line": 67,
+    "mutator": "Throw_",
+    "hash": "c2d6385d35a0a7888adf76935e62dd786aa2211ab548f47137e7bbdeef8acc01",
+    "reason": "The coding_exception sits behind the unreachable guard on array_search() === false (see the sibling mutation on the condition): every cm_info returned by get_cm() is listed in modinfo->sections[its sectionnum] because the cms are built from the same section sequences, so the throw is never executed.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/course_module_placement.php": "85850e68367112b6d042a790f3834670a53f5fb61359da316fde424e74878eea"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/course_module_placement.php",
+    "line": 70,
+    "mutator": "CastInt",
+    "hash": "1498580fde166b4122373135fa46a32179855d4ad59dda11ba30090d95ffd11e",
+    "reason": "Argument $after->section of move_to(int $cmid, int $sectionid, ?int $beforecmid). The section id comes from the cm_info of the course cache (an int or a numeric string); PHP's coercive typing (no strict_types in either file) turns the numeric string into the identical int at the call, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/course_module_placement.php": "85850e68367112b6d042a790f3834670a53f5fb61359da316fde424e74878eea"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/course_module_placement.php",
+    "line": 70,
+    "mutator": "CastInt",
+    "hash": "9651bc2e8bfc184630e1aa95ba381d58c1814a015078283985ec0d4c00fe772b",
+    "reason": "Argument $successor of move_to(..., ?int $beforecmid). The successor comes from modinfo->sections (cm ids as int or numeric string); coercive typing converts a numeric string into the identical int at the call (null is passed through the ternary), so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/course_module_placement.php": "85850e68367112b6d042a790f3834670a53f5fb61359da316fde424e74878eea"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/course_module_placement.php",
+    "line": 81,
+    "mutator": "CastInt",
+    "hash": "d4f0910919f6fea27847dd7fc0bb9ea530b872d44be28196f17a4fa3a0176ddb",
+    "reason": "course_of() declares the return type int and the file has no strict_types, so returning the numeric string from get_field() is coerced to the identical int; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/course_module_placement.php": "85850e68367112b6d042a790f3834670a53f5fb61359da316fde424e74878eea"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/course_module_placement.php",
+    "line": 139,
+    "mutator": "FalseValue",
+    "hash": "2772eb5057d3aa26e77d62cae4c023b026fae0c9ef840a8885cd77b58d0fa655",
+    "reason": "delete_module($info, true) would only request deferred deletion if some plugin function course_module_background_deletion_recommended() returns true (course_delete_module() in course/lib.php). The only provider in Moodle core is tool_recyclebin, which answers true only while the course bin is enabled; this method forces tool_recyclebin coursebinenable to 0 for the duration of the call, so no plugin recommends background deletion and both values delete at once.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/course_module_placement.php": "85850e68367112b6d042a790f3834670a53f5fb61359da316fde424e74878eea"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/course_module_placement.php",
+    "line": 146,
+    "mutator": "FunctionCallRemoval",
+    "hash": "fde618c1691b533c3cd158cbc8b328e5a895c0a21a95c0fc20e6384ca30fffc2",
+    "reason": "The rebuild_course_cache() in the finally block repeats what course_delete_module() already does at its end for the deleted module (course/lib.php rebuilds the course cache after removing the module), so the cache is fresh with or without it. The forced-setting restore in the same block is tested separately.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/course_module_placement.php": "85850e68367112b6d042a790f3834670a53f5fb61359da316fde424e74878eea"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/cm_references.php",
+    "line": 56,
+    "mutator": "CastString",
+    "hash": "5712461766cbb691bcbbb84cdc8c79c3438033db7fb10398eff640bfddd80a44",
+    "reason": "tree_points_at(string $availability, ...) is called with the availability column of rows selected with 'availability IS NOT NULL', i.e. a string; the cast is a no-op and the parameter is typed string anyway.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/cm_references.php": "c0ea543ae5d8f10b16e13f6e02a9e295290ead0aebf875a9368c15936df69bda"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/cm_references.php",
+    "line": 73,
+    "mutator": "CastString",
+    "hash": "536b2c1f0849753cbc191469b7e8154da6d56bef7a52f5ccdb1c6227366ede8d",
+    "reason": "tree_points_at(string $availability, ...) is called with the availability column of rows selected with 'availability IS NOT NULL', i.e. a string; the cast is a no-op and the parameter is typed string anyway.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/cm_references.php": "c0ea543ae5d8f10b16e13f6e02a9e295290ead0aebf875a9368c15936df69bda"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/cm_references.php",
+    "line": 141,
+    "mutator": "DecrementInteger",
+    "hash": "e551e09de2640beb99413afc94c9fe5dcfb405ba73144d524d8c4d532289415a",
+    "reason": "The default of a missing 'cm' key only has to be different from 0 so that a condition without cm is not called dangling. -1 and -2 are both non-zero, so the comparison with 0 gives the same result.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/cm_references.php": "c0ea543ae5d8f10b16e13f6e02a9e295290ead0aebf875a9368c15936df69bda"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/cm_references.php",
+    "line": 157,
+    "mutator": "DecrementInteger",
+    "hash": "dd34f03362e2e3d6218090b5fec9724fcba7e360f23a9cb2d82192e0d6e802ba",
+    "reason": "The default of a missing 'cm' key only has to differ from the id that is looked for. $cmid is a real course module id (> 0) from references_to(), so -1 and -2 never match it; the result is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/cm_references.php": "c0ea543ae5d8f10b16e13f6e02a9e295290ead0aebf875a9368c15936df69bda"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/cm_references.php",
+    "line": 157,
+    "mutator": "IncrementInteger",
+    "hash": "1acc72f6afc5dcbffe7db8e5b382db2a80afdbb5be15c30b23c1502fe1a79978",
+    "reason": "The default of a missing 'cm' key becomes -0, that is 0. $cmid is a real course module id (> 0, references_to() reads the course_modules row with MUST_EXIST), so a node without cm matches it with neither -1 nor 0; the result is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/cm_references.php": "c0ea543ae5d8f10b16e13f6e02a9e295290ead0aebf875a9368c15936df69bda"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_suspect_gate.php",
+    "line": 132,
+    "mutator": "DecrementInteger",
+    "hash": "1ef77634c2cc43af0bd71838dedd18d2c97573e37140ead8f7664d3b901e3ea0",
+    "reason": "moodle_database::normalise_limit_from_num() maps a limitfrom of exactly -1 to 0 before the query is built (\"We explicitly treat these cases as 0\", lib/dml/moodle_database.php, identical in Moodle 5.0 to 5.3), and the developer-mode notice only concerns values below -1, so the query is the same as with 0.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/question_suspect_gate.php": "6b97d98a7449e9a80cf584eb0982b901e01434fe2af46dcb5a8c41c6164c0b93"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_suspect_gate.php",
+    "line": 182,
+    "mutator": "CastInt",
+    "hash": "e19a5e5f012bee6327a5aaa453c0e33e59399b3b6a5f95c4514cd65ba309b67f",
+    "reason": "latest_version_question(int $entryid) declares an int parameter and the file has no strict_types; the entry id from the SQL result is a numeric string which coercive typing converts to the identical int, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/question_suspect_gate.php": "6b97d98a7449e9a80cf584eb0982b901e01434fe2af46dcb5a8c41c6164c0b93"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_suspect_gate.php",
+    "line": 185,
+    "mutator": "CastString",
+    "hash": "a67e4adfcae7a84863a4fdb95eba82b5885182200875c1e61e54e12bdaf50bae",
+    "reason": "$latest->name comes from the NOT NULL char column question.name of a fetched row, so it is already a string; the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/question_suspect_gate.php": "6b97d98a7449e9a80cf584eb0982b901e01434fe2af46dcb5a8c41c6164c0b93"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/question_suspect_gate.php",
+    "line": 186,
+    "mutator": "CastString",
+    "hash": "62c0cce120eefe7e7acb1aed786783cff55c3c7064eba13821865d09cce96415",
+    "reason": "($row->idnumber ?? '') is a string (char column) or the empty string for null, so the (string) cast around it is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/question_suspect_gate.php": "6b97d98a7449e9a80cf584eb0982b901e01434fe2af46dcb5a8c41c6164c0b93"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pending_write_notice.php",
+    "line": 196,
+    "mutator": "DoWhile",
+    "hash": "17ea0bafb85d1b6c3026e00a989f8fc99e14224738fdc5267d9dee88109cc42f",
+    "reason": "The do-while repeats the draw only when random_string(8) returns an identifier that is already open for the user, a collision among 36^8 or more values. The public interface gives no way to supply the random value (random_string() is a global Moodle function), so the repeat cannot be provoked and the one-pass variant behaves identically in every reachable run. Declared as practically, not logically, equivalent: the loop only guards against an astronomically unlikely collision.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pending_write_notice.php": "949a541c8a353b8453d59e2e76a5174b61c6360e8d9a319787fdb40182651c3e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/write_gate.php",
+    "line": 113,
+    "mutator": "CastInt",
+    "hash": "878f7938001f9eeb94c1957149413c4babe29a15ae71823a9c1df139804d5fa7",
+    "reason": "$CFG->branch is a numeric string such as '501' and reviewed_up_to_major() returns an int; PHP compares a numeric string with an int numerically, so the (int) cast gives the same comparison result.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/write_gate.php": "1ca7d792b54b825445ab4dc5823ec8f22c4c923f6a863d73dc69a28923bcb9d2"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/write_gate.php",
+    "line": 179,
+    "mutator": "FalseValue",
+    "hash": "5b6ba4620370fab02ddfe556df7592800d24f3b431dcfeca3a5112938efcb009",
+    "reason": "get_config() returns false for a missing key. With the condition changed to === true the code falls through to json_decode(false), i.e. json_decode(''), which returns null, and the following is_array() check then returns the same empty list as the early return.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/write_gate.php": "1ca7d792b54b825445ab4dc5823ec8f22c4c923f6a863d73dc69a28923bcb9d2"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_restore.php",
+    "line": 191,
+    "mutator": "IfNegation",
+    "hash": "63af516b62b6c81698742e814ad2685f425826bd13614a3ab1e3817e01aa7678",
+    "reason": "The branch only decides whether $current (a file with the target name whose content differs and which has no recycle-bin copy) is added to $tobuild. resolve_restore_into_draft() starts from file_prepare_draft_area(), which already puts every file currently stored in the area into the draft, and then deletes and re-creates the draft copy of each given file from the given stored_file. Re-adding the current file recreates the identical draft file, and leaving it out keeps the pre-filled identical copy, so the saved attachment list is the same.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/history/version_restore.php": "7b4de2be147699a605a42bde3d38bc66323464e4a26526f1b00ec2e3460e21ec",
+      "Plugin/src/local_coursepilot/classes/activity_file_trash.php": "404c2cf32818e8a64308e055f2c326ded4553993aa44bf12fd1db9a96c1ad087"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_version_info.php",
+    "line": 70,
+    "mutator": "CastInt",
+    "hash": "1dbb82e65ec3a5e35ab5d5368a3fc5e33d1da914884fe56ccc5d3d657c4815c2",
+    "reason": "$plugin->version is assigned in version.php as an integer literal, so the (int) cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_version_info.php": "cb0ce1414fcba73d07954e39f50a5e91bdc77b412454d2b04cb7bdd374cd0c24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_version_info.php",
+    "line": 71,
+    "mutator": "CastString",
+    "hash": "7c3c64009391076aaaead71e2ffd08dba130514cb051664f780acc52aa78e4fa",
+    "reason": "$plugin->release is assigned in version.php as a string literal, so the (string) cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_version_info.php": "cb0ce1414fcba73d07954e39f50a5e91bdc77b412454d2b04cb7bdd374cd0c24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_version_info.php",
+    "line": 73,
+    "mutator": "CastObject",
+    "hash": "6993f6b449b94db736295d6f22e2f57109fb92cb1877e454b067341c4875289e",
+    "reason": "The placeholder values are handed to get_string() as $a. Moodle's string manager treats an array like an object ((array) $a, replacing {$a->key}), so the rendered text is identical for the array and the object.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_version_info.php": "cb0ce1414fcba73d07954e39f50a5e91bdc77b412454d2b04cb7bdd374cd0c24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_version_info.php",
+    "line": 80,
+    "mutator": "CastInt",
+    "hash": "c427940a7451b38c9130217457c8a6506532c762a02d76f413b652485ef789c5",
+    "reason": "The value is substituted into the language string as {$a}; an int and its numeric-string form render identically.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_version_info.php": "cb0ce1414fcba73d07954e39f50a5e91bdc77b412454d2b04cb7bdd374cd0c24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_version_info.php",
+    "line": 84,
+    "mutator": "CastString",
+    "hash": "b5dc47dec143e8a4c65aca181c037b44e9b7262561f1ce8b91a50375434ab871",
+    "reason": "$CFG->release is assigned in version.php as a string, so the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_version_info.php": "cb0ce1414fcba73d07954e39f50a5e91bdc77b412454d2b04cb7bdd374cd0c24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_version_info.php",
+    "line": 85,
+    "mutator": "CastString",
+    "hash": "5f0fc31d30f0068a545a362bc8e02944b7a1cf764601ca6bf4ce5640506ad20e",
+    "reason": "$CFG->version is read from the config table as a string, so the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_version_info.php": "cb0ce1414fcba73d07954e39f50a5e91bdc77b412454d2b04cb7bdd374cd0c24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_version_info.php",
+    "line": 86,
+    "mutator": "CastString",
+    "hash": "10340852400c74fe9cd6206c78f0939ad4965f26786394b1dceed97809ba89ac",
+    "reason": "$CFG->branch is assigned in version.php as a string ('501'), so the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_version_info.php": "cb0ce1414fcba73d07954e39f50a5e91bdc77b412454d2b04cb7bdd374cd0c24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_version_info.php",
+    "line": 89,
+    "mutator": "FalseValue",
+    "hash": "988a82f2e61c3affc0e3359e5970ec79d4d4061e7814fa7110eacba262e00b53",
+    "reason": "For $installed === false the branch gives 0; for the changed condition the else branch gives (int) false, which is 0 as well. A real stored version is a string, never boolean true, so the condition is false in both variants for every other value.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_version_info.php": "cb0ce1414fcba73d07954e39f50a5e91bdc77b412454d2b04cb7bdd374cd0c24"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 99,
+    "mutator": "CastInt",
+    "hash": "e532a76788dad4021d194b987fc876dc3659e11e3ef365790fe1d1992134c884",
+    "reason": "The courseid in the response: validate_parameters() with a PARAM_INT declaration already returns an int, so the (int) cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 101,
+    "mutator": "CastInt",
+    "hash": "7a40dbb7359874e898c480d44ef7fe94b06d4cf6ddf38329ee7ae3bae38b9aa5",
+    "reason": "The sectionnum in the filters block: validate_parameters() with a PARAM_INT declaration already returns an int, so the (int) cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 106,
+    "mutator": "CastInt",
+    "hash": "933f4cb75091d6d10bb9a6ee3d762b7473cdcdf978b7e048ff7d4a15225414bf",
+    "reason": "courseid passed to sections(int $courseid, ...): validate_parameters() with a PARAM_INT declaration already returns an int, so the (int) cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 107,
+    "mutator": "CastInt",
+    "hash": "0d864135d4bdd31915c6cfeb0397ceec176a939e02d34faa4a871d915a19fbc4",
+    "reason": "sectionnum passed to sections(..., int $sectionnum, ...): validate_parameters() with a PARAM_INT declaration already returns an int, so the (int) cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 150,
+    "mutator": "CastInt",
+    "hash": "994b8e42d2b176d2c1284772d020a61c485625d0a44c507a6744a32025f934be",
+    "reason": "Section id passed to modules(int $sectionid, ...). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 147,
+    "mutator": "CastString",
+    "hash": "6cc2c33fd0b93d28057ddf843b0ce0da1c6c5ddf04f3fa507b3f48501faf029e",
+    "reason": "Section summary passed to content_field(string $html, ...). The value is the summary column or the empty string for null. The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 149,
+    "mutator": "CastString",
+    "hash": "30d950c851c6194907a2a77913134242e3dac8004317e740f405e245d11b533f",
+    "reason": "Section availability passed to availability_privacy::sanitize(string $availability) as a string or the empty string for null. The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b",
+      "Plugin/src/local_coursepilot/classes/availability_privacy.php": "e2723900060385a0efd0eb86013a723f27e8f631a392f8b64e2c6837084608c3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 206,
+    "mutator": "CastString",
+    "hash": "7bcefe2a0df33fbf6dc3df65ab16ed9dd3d4a623447ca3202d98c51922e54139",
+    "reason": "Module availability passed to availability_privacy::sanitize(string $availability) as a string or the empty string for null. The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b",
+      "Plugin/src/local_coursepilot/classes/availability_privacy.php": "e2723900060385a0efd0eb86013a723f27e8f631a392f8b64e2c6837084608c3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 185,
+    "mutator": "UnwrapArrayValues",
+    "hash": "dad830fafdd7737315fb764080032c983a17ba018bee38ecfff5fb09fb8f38df",
+    "reason": "The list is sorted by usort() directly afterwards, which renumbers the keys; array_values() before it only renumbers keys that usort() discards anyway.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 187,
+    "mutator": "CastString",
+    "hash": "a36d2335b93d86914c0292ea70249f0a8ed3e62e8c343eb191312749c44e8c79",
+    "reason": "Section sequence passed to sequence_index(string $sequence, int $cmid). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 187,
+    "mutator": "CastInt",
+    "hash": "fe105da138a85f1cbb8244d1eef539b293ced04e5244fbc57cabcab195879b0e",
+    "reason": "cmid passed to sequence_index(string $sequence, int $cmid). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 188,
+    "mutator": "CastString",
+    "hash": "3295ab5de4b8636c946a895c33d9a1797b7475c4fde7a651278f81c1d1c15586",
+    "reason": "Section sequence passed to sequence_index(string $sequence, int $cmid). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 188,
+    "mutator": "CastInt",
+    "hash": "882da82920409bf12762ad881bfddb516ac8923a88f05d3c1b5c7f2b1ba5aebf",
+    "reason": "cmid passed to sequence_index(string $sequence, int $cmid). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 193,
+    "mutator": "CastString",
+    "hash": "c15566b63fb84953847ed33f6afd0480612ceba5c8d0d2533f01e036bf128e81",
+    "reason": "Module name passed to module_details(string $modname, int, int, bool). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 193,
+    "mutator": "CastInt",
+    "hash": "844e266fd05d07797de75bfc918ecf0495444c9b08e9e12a8118cf6a8762dba7",
+    "reason": "Instance id passed to module_details(string, int $instanceid, int, bool). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 193,
+    "mutator": "CastInt",
+    "hash": "edd2c57a30f9d289c2f02180aac902404d912e844ad69bb8d0c05af103b35911",
+    "reason": "cmid passed to module_details(string, int, int $cmid, bool). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 196,
+    "mutator": "CastString",
+    "hash": "7878fa131488371bc9d78b460001d7c7056eebe87a67d977ab50dae9b8f290cf",
+    "reason": "The module name is the modules.name column (varchar NOT NULL) of the joined row, already a string; the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 210,
+    "mutator": "CastInt",
+    "hash": "01fb00d4f2e105d92ab96442f0a3e4ec217ec01b728e25394fc2cecdb5851be9",
+    "reason": "visible passed to shared_block::derive_visibility(int $visible, int $visibleoncoursepage). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 210,
+    "mutator": "CastInt",
+    "hash": "52769e1def40bbe81bf50b91033d0e00008215969514f5a275c02b251be36842",
+    "reason": "visibleoncoursepage passed to shared_block::derive_visibility(int, int $visibleoncoursepage). The called method declares the parameter with this scalar type and the file has no strict_types, so PHP's coercive typing converts the value from the database (numeric string or string) to the identical typed value at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b",
+      "Plugin/src/local_coursepilot/classes/catalog/shared_block.php": "0dead2dcb7676bff4324e6457017b9c4e2cafd6f3707c3310fb4223f07686334"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 223,
+    "mutator": "UnwrapArrayFilter",
+    "hash": "320d212dcb537701186d399054f7c65736a3e5575fa644d50ae1d61aa6c85714",
+    "reason": "array_filter() only drops zero ids from the section sequence (empty entries). Their removal shifts the positions of all following ids by the same amount, and sequence_index() is only used to compare two positions with <=>, so the relative order of the modules is the same with or without the zero entries.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php",
+    "line": 223,
+    "mutator": "UnwrapArrayValues",
+    "hash": "6002db3795a739f22a636b079eb5de9d7499876051c8665fce92c83411ac86b4",
+    "reason": "array_values() renumbers the filtered list. Without it array_search() returns the original position instead of the compacted one, and both only serve the <=> comparison of two positions in the same list, so the relative order is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_course_catalog.php": "5b901b3caccf829e7124082f6924b73e477372ac4faced8915747b97ef1b568b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php",
+    "line": 103,
+    "mutator": "CastInt",
+    "hash": "1d2136c2ba618afa3a962966334f0b281d5d36ebfbbd3efc1beaa596f8e73d45",
+    "reason": "context_module::instance() takes the course module id; the id from the SQL result is a numeric string and the context factory looks the module up by that id through the database layer, which treats the string and the int identically; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php": "fdac0c9c4083a6d0af2d0789fece11e943c5f4a7ea6d4fdf9c7f0515d85038d5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php",
+    "line": 104,
+    "mutator": "MethodCallRemoval",
+    "hash": "837e669463edf1eb72ff976251cacd4629e0b69e5e39154dd4013680aee7ea9b",
+    "reason": "Validation of the context of an existing question bank. The course context was validated with validate_context() just before. A restriction (external_api::validate_context) accepts a context when the restriction context is equal to it or one of its ancestors; if it accepted the course context, the restriction is the course, one of its ancestors or the system, and each of them is also an ancestor of the module context below the course. The second call therefore cannot reject anything the first one accepted.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php": "fdac0c9c4083a6d0af2d0789fece11e943c5f4a7ea6d4fdf9c7f0515d85038d5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php",
+    "line": 111,
+    "mutator": "CastInt",
+    "hash": "8ff648a6e9bfb64e10a05c1dcb5cf3be14eef9db799c86845556f0f2dc931259",
+    "reason": "The contextid of the reused bank. The id comes from a context or database object that already holds it as an int (the response is declared PARAM_INT and the unchanged value already satisfies the type check of the contract tests), so the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php": "fdac0c9c4083a6d0af2d0789fece11e943c5f4a7ea6d4fdf9c7f0515d85038d5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php",
+    "line": 124,
+    "mutator": "MethodCallRemoval",
+    "hash": "f3d62efb9af2abd4ad26f952e5316ca6d565c456d26a098eed349b27b70b0122",
+    "reason": "Validation of the context of the newly created question bank. The course context was validated with validate_context() just before. A restriction (external_api::validate_context) accepts a context when the restriction context is equal to it or one of its ancestors; if it accepted the course context, the restriction is the course, one of its ancestors or the system, and each of them is also an ancestor of the module context below the course. The second call therefore cannot reject anything the first one accepted.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php": "fdac0c9c4083a6d0af2d0789fece11e943c5f4a7ea6d4fdf9c7f0515d85038d5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php",
+    "line": 125,
+    "mutator": "FunctionCallRemoval",
+    "hash": "8eb1b6d70af1e1caefacaa2f8346ae303ea90a4740d149618fea5a753935b810",
+    "reason": "The capability local/coursepilot:use is checked on the module context of a bank that was created a moment ago in this call. That context has no role overrides of its own (it did not exist before), so has_capability() evaluates the same overrides and role assignments as for the course context, on which the capability was just required; the check cannot give a different answer.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php": "fdac0c9c4083a6d0af2d0789fece11e943c5f4a7ea6d4fdf9c7f0515d85038d5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php",
+    "line": 131,
+    "mutator": "CastInt",
+    "hash": "1719e51574c5b2c4aae11571345c9a6bbf4a2c1f9ce70249ceb7077c9ceccb87",
+    "reason": "The contextid of the created bank. The id comes from a context or database object that already holds it as an int (the response is declared PARAM_INT and the unchanged value already satisfies the type check of the contract tests), so the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_bank.php": "fdac0c9c4083a6d0af2d0789fece11e943c5f4a7ea6d4fdf9c7f0515d85038d5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php",
+    "line": 82,
+    "mutator": "CastInt",
+    "hash": "d8cdbcf785a0e7e94235dd7d166a9aa5ff41084f98563ecae869d19f3440d0e9",
+    "reason": "context::instance_by_id() reads the context row by id through the database layer; the context id from the category row is a numeric string, treated like the int, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php": "07812a764128400b246f79a733678bf31b7e0e6e80b436ed5ea8de0f130ce147"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php",
+    "line": 87,
+    "mutator": "ArrayItemRemoval",
+    "hash": "c758e480f372ae0f3a87bca72930e4581b0f956f8cbfeecb81e54276f43e4093",
+    "reason": "The lookup of an existing category by name is restricted by parent; a category's context is always the context of its parent (Moodle creates subcategories in the parent's context and moves them together with the subtree), so (parent, name) already implies the context and the contextid condition cannot exclude a row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php": "07812a764128400b246f79a733678bf31b7e0e6e80b436ed5ea8de0f130ce147"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php",
+    "line": 98,
+    "mutator": "CastInt",
+    "hash": "3d4478cb424f4a414de91128882d0be0a84a9e9bcb8e6cbea48d2b6eabc16d07",
+    "reason": "The contextid in the response. The id comes from a context or database object that already holds it as an int (the response is declared PARAM_INT and the unchanged value already satisfies the type check of the contract tests), so the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php": "07812a764128400b246f79a733678bf31b7e0e6e80b436ed5ea8de0f130ce147"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php",
+    "line": 117,
+    "mutator": "CastInt",
+    "hash": "57987aa05bd28a519835ff86036bcc0b9bc7f5c70163672e934f0e00d9791068",
+    "reason": "insert_record() returns the new row id as an int (the default returnid), so the (int) cast around it converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php": "07812a764128400b246f79a733678bf31b7e0e6e80b436ed5ea8de0f130ce147"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php",
+    "line": 120,
+    "mutator": "CastInt",
+    "hash": "cdc549704c2188b358f6cec740eaecdd9251ed79699cbda7a5222482feadeba5",
+    "reason": "The contextid in the response. The id comes from a context or database object that already holds it as an int (the response is declared PARAM_INT and the unchanged value already satisfies the type check of the contract tests), so the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_question_category.php": "07812a764128400b246f79a733678bf31b7e0e6e80b436ed5ea8de0f130ce147"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_section.php",
+    "line": 96,
+    "mutator": "CastString",
+    "hash": "aaa20b45255c04e71a916b3d2f2738e79013d7838657a492a6eb95149e4eed5a",
+    "reason": "($sectioninfo->name ?? '') is the section name string or the empty string for null; the cast of a string is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_section.php": "d2fd8a926740f3a90c74892ed5f914d12131f8c6a3456080f9cd12be968ff0ef"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_section.php",
+    "line": 112,
+    "mutator": "CastInt",
+    "hash": "75691984df0a6d07a880c2ba843ca6859dd1b6702022c0045b30b996d1442cc3",
+    "reason": "validate_parameters() with a PARAM_INT declaration already returns an int for sectionnum; the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_section.php": "d2fd8a926740f3a90c74892ed5f914d12131f8c6a3456080f9cd12be968ff0ef"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_section.php",
+    "line": 136,
+    "mutator": "CastObject",
+    "hash": "ff262e7138e5647a57d3c7026712c839e4358cb3ac42542c5f2c4cb3529a2aa5",
+    "reason": "The placeholder values are handed to get_string() as $a. Moodle's string manager treats an array like an object (it converts $a with (array) and replaces {$a->key}), so the rendered message is identical for the array and the object.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_section.php": "d2fd8a926740f3a90c74892ed5f914d12131f8c6a3456080f9cd12be968ff0ef"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_quiz_question_categories.php",
+    "line": 73,
+    "mutator": "MethodCallRemoval",
+    "hash": "174dedf6af3e108c5e17b3e567c307add3f1b5f8f6350a31f2f22b54f5a1e37d",
+    "reason": "Validation of the quiz module context. The course context was validated with validate_context() just before. A restriction (external_api::validate_context) accepts a context when the restriction context is equal to it or one of its ancestors; if it accepted the course context, the restriction is the course, one of its ancestors or the system, and each of them is also an ancestor of the module context below the course. The second call therefore cannot reject anything the first one accepted.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_quiz_question_categories.php": "79b860b3cac26f68db966999b876ab4a9c4b08ba9411a7d26458b6b5da4622d4"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_quiz_question_categories.php",
+    "line": 78,
+    "mutator": "ArrayItemRemoval",
+    "hash": "af66bbb690b3c636e092555e09eec7fce212556ca9c21a976bf46fa22a092871",
+    "reason": "$before is only consulted with isset($before[$category->id]) for categories of this quiz context. Without the contextid condition it additionally contains categories of other contexts, which are never looked up, and the categories created by question_get_default_category() after this call exist in neither variant, so the set of ids that decide 'new or not' is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_quiz_question_categories.php": "79b860b3cac26f68db966999b876ab4a9c4b08ba9411a7d26458b6b5da4622d4"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/ensure_quiz_question_categories.php",
+    "line": 90,
+    "mutator": "CastInt",
+    "hash": "8bf687725c916f35b0f9442fc5f869fc6ed20a56072d56b4149b006dba4e2291",
+    "reason": "The contextid in the response. The id comes from a context or database object that already holds it as an int (the response is declared PARAM_INT and the unchanged value already satisfies the type check of the contract tests), so the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/ensure_quiz_question_categories.php": "79b860b3cac26f68db966999b876ab4a9c4b08ba9411a7d26458b6b5da4622d4"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php",
+    "line": 77,
+    "mutator": "FalseValue",
+    "hash": "990ef11a4b2e77780ca8c39100e87ffd3839ef02a236236fb049fe9334cf7baa",
+    "reason": "The fourth parameter of get_coursemodule_from_id() only adds a sectionnum column to the returned row. The row is read for modname, id, instance and course only, so the additional column changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php": "efd978c38dd8508cad276a954c1c972cb5dda9dfdea4b5f64b016c2e7ab208da"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php",
+    "line": 89,
+    "mutator": "CastInt",
+    "hash": "6d65e0769a70053d92b71bb5d4d58c11e7e41c9d1f10bb3fa44d3cd7930c0fdc",
+    "reason": "slot_lineage_rows(int $quizid) declares an int and the file has no strict_types; the instance id from the course module row is a numeric string which coercive typing converts to the identical int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php": "efd978c38dd8508cad276a954c1c972cb5dda9dfdea4b5f64b016c2e7ab208da"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php",
+    "line": 95,
+    "mutator": "CastInt",
+    "hash": "4c2821aea1152a2249e0f7dec17337bb23687e8bb15c95e87c2ffbf29c363f03",
+    "reason": "course_of_context(int $contextid, array &$cache) declares an int and the file has no strict_types; the context id from the SQL result is a numeric string which coercive typing converts to the identical int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php": "efd978c38dd8508cad276a954c1c972cb5dda9dfdea4b5f64b016c2e7ab208da"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php",
+    "line": 96,
+    "mutator": "DecrementInteger",
+    "hash": "a1954beb9959d974a692a32af651785bdb66517f74ce0fe1506d7c419623a043",
+    "reason": "$entrycourseid is 0 (no course) or a course id > 0, and $courseid is the id of the quiz's course (> 0). With -1 instead of 0 the first operand is true for an entry without course, but the second operand ($entrycourseid === $courseid) is then false anyway because 0 never equals a real course id; the combination gives the same result for every input.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php": "efd978c38dd8508cad276a954c1c972cb5dda9dfdea4b5f64b016c2e7ab208da"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php",
+    "line": 102,
+    "mutator": "CastString",
+    "hash": "b11a831150c6d2e7d29675734fe3cafcd6f2229feaf139509de5189f19ef67c8",
+    "reason": "questionname comes from question.name (varchar NOT NULL), already a string; the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php": "efd978c38dd8508cad276a954c1c972cb5dda9dfdea4b5f64b016c2e7ab208da"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php",
+    "line": 127,
+    "mutator": "UnwrapArrayValues",
+    "hash": "1b10ca460f6268fa350634ce2d3c96f5fb066badb2a1b05d88dc28bba354da3b",
+    "reason": "array_values() only renumbers the result of get_records_sql() (keyed by slot); the rows are afterwards only iterated with foreach in their SQL order, so keys play no role.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php": "efd978c38dd8508cad276a954c1c972cb5dda9dfdea4b5f64b016c2e7ab208da"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php",
+    "line": 161,
+    "mutator": "CastInt",
+    "hash": "a79cf54dcaf5286a5b999b181c8327dde60d510b03b02d7c02560674f782a0fe",
+    "reason": "context::instanceid of a course context is stored as an int on the context object; the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php": "efd978c38dd8508cad276a954c1c972cb5dda9dfdea4b5f64b016c2e7ab208da"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 89,
+    "mutator": "FalseValue",
+    "hash": "75bbfd33ac1199e9497b06ff5cbfc96f4ad737640793fa3968add0f3f5f79554",
+    "reason": "The fourth parameter of get_coursemodule_from_id() only adds a sectionnum column to the returned row; $cm is read for id, instance and course only, so the additional column changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 103,
+    "mutator": "CastInt",
+    "hash": "211b5196ff48b96d18160d85b93448429664ddd2fdf09829fcc3d8b64dde4c26",
+    "reason": "quiz_has_attempts($quizid) uses the id only as a query parameter against the integer column quiz.id; the DML layer treats the numeric string and the int identically.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 107,
+    "mutator": "CastInt",
+    "hash": "73842215d9f1ae624683d47d20c3af294f2659ec26b37fe2fbbf5d0e84c8cf9f",
+    "reason": "$quiz->cmid is only used by quiz_add_quiz_question() as an id for lookups and context creation, where the database layer and context factory treat a numeric string and the int identically.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 112,
+    "mutator": "CastInt",
+    "hash": "0581fb5bb251bcc97ebbd32b3ebf896394e54d93e60471f1bafc1c5e2cfa611e",
+    "reason": "The id from a PARAM_INT array element is already an int after validate_parameters(); the cast converts an int to an int, and it is only a DML parameter here.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 119,
+    "mutator": "CastInt",
+    "hash": "fda6079b491a8e3fdfa48a27d17c3c7f6ed3ab80c1f8d657b01bf302bfc4be0b",
+    "reason": "quiz_add_quiz_question(int $questionid, ...): the value from a PARAM_INT array is already an int after validate_parameters(); the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 122,
+    "mutator": "CastInt",
+    "hash": "088c2809f768e12b1fdd8e3d5e435655797a34e79684becadc3f315fc9ac238a",
+    "reason": "get_question_bank_entry(int $questionid) in lib/questionlib.php: the value from a PARAM_INT array is already an int. The called function declares the parameter as int and the file has no strict_types, so coercive typing turns the numeric string into the identical int at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 125,
+    "mutator": "CastInt",
+    "hash": "92b458a6c17880064d30762aefef838ec3658418505151070de5515274cd0eea",
+    "reason": "The requested question id comes from a PARAM_INT array and is already an int after validate_parameters(); the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 127,
+    "mutator": "CastString",
+    "hash": "4de1e2a32f42591606a4bb1e95f3f7cab0ae95f1bb06237bd3fd092915b90144",
+    "reason": "$question->name is the question.name column (varchar NOT NULL) of a fetched row, already a string; the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 128,
+    "mutator": "CastBool",
+    "hash": "c519d290b36f7907142da0bc4d5fea864f39e6cc9e1a7632fefd6ede01a59719",
+    "reason": "$added is the result of the comparison $result !== false, already a bool; the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 133,
+    "mutator": "CastInt",
+    "hash": "b23707b4508457299bffca9165b72385b97c0b0f35ee35e6b476719588110df4",
+    "reason": "version_writer::capture_on_update(int $cmid, int $userid, ...). The called function declares the parameter as int and the file has no strict_types, so coercive typing turns the numeric string into the identical int at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5",
+      "Plugin/src/local_coursepilot/classes/history/version_writer.php": "12a8df60fd3ea8e312ebf89fd9ce9a3ce76699db532ea59796083c87fe15f533"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 133,
+    "mutator": "CastInt",
+    "hash": "e0c57fbc5e156fd5b17c93b46612c4e0ccb81498eea4ac7c1fe9f8ba59cd0672",
+    "reason": "version_writer::capture_on_update(int $cmid, int $userid, ...): $USER->id is an int or numeric string. The called function declares the parameter as int and the file has no strict_types, so coercive typing turns the numeric string into the identical int at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5",
+      "Plugin/src/local_coursepilot/classes/history/version_writer.php": "12a8df60fd3ea8e312ebf89fd9ce9a3ce76699db532ea59796083c87fe15f533"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 140,
+    "mutator": "CastInt",
+    "hash": "83bb649e734504e63da708ffb6056693cfa31e15c9383a27cd00ec5186c055df",
+    "reason": "slot_state(int $quizid): the quiz id from the quiz row is a numeric string. The called function declares the parameter as int and the file has no strict_types, so coercive typing turns the numeric string into the identical int at the call; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php",
+    "line": 201,
+    "mutator": "CastString",
+    "hash": "e0c607849f815c4a9a6ee14a8feddf83292313edde2fd0a2dbc63acbe8b7f5f8",
+    "reason": "questionname is the question.name column (varchar NOT NULL) of the joined row, already a string; the cast is the identity.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/add_questions_to_quiz.php": "7b7453b6a5876d7118d37690a59f9ef014ad68fdc8442d66ae929eb4ea3ad4f5"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/move_module.php",
+    "line": 85,
+    "mutator": "FalseValue",
+    "hash": "e6af1369bb880285ac48d6588b29a33b046b38fc30dce972614cb41e8dbfc42a",
+    "reason": "The fourth parameter of get_coursemodule_from_id() only adds a sectionnum column to the returned row; $cm is read for id, course, name and modname only, so the additional column changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/move_module.php": "702a1eb97e03319673156c60489daebe5b53ab8d9e1324b230a35cac1a02b17a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/move_module.php",
+    "line": 116,
+    "mutator": "CastInt",
+    "hash": "8b227784771167584cd909c5ce84d94b4daa5406efbca193df2ca89974214101",
+    "reason": "The course module id passed to move_to(). course_module_placement::move_to(int $cmid, int $sectionid, ?int $beforecmid) declares int parameters and the file has no strict_types, so coercive typing turns the numeric string from the course module or section row into the identical int; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/move_module.php": "702a1eb97e03319673156c60489daebe5b53ab8d9e1324b230a35cac1a02b17a",
+      "Plugin/src/local_coursepilot/classes/course_module_placement.php": "85850e68367112b6d042a790f3834670a53f5fb61359da316fde424e74878eea"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/move_module.php",
+    "line": 116,
+    "mutator": "CastInt",
+    "hash": "bff85388be35f69c0eaafeb41550149cdbcffd4302e24376b7e69e83b375731c",
+    "reason": "The section id passed to move_to(). course_module_placement::move_to(int $cmid, int $sectionid, ?int $beforecmid) declares int parameters and the file has no strict_types, so coercive typing turns the numeric string from the course module or section row into the identical int; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/move_module.php": "702a1eb97e03319673156c60489daebe5b53ab8d9e1324b230a35cac1a02b17a",
+      "Plugin/src/local_coursepilot/classes/course_module_placement.php": "85850e68367112b6d042a790f3834670a53f5fb61359da316fde424e74878eea"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/move_module.php",
+    "line": 126,
+    "mutator": "CastInt",
+    "hash": "c0a46e3d13b48e5b0ecfd56f9839e4523e86a4ab1e775fb83c98ed0649623398",
+    "reason": "validate_parameters() with a PARAM_INT declaration already returns an int for sectionnum; the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/move_module.php": "702a1eb97e03319673156c60489daebe5b53ab8d9e1324b230a35cac1a02b17a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/move_section.php",
+    "line": 111,
+    "mutator": "CastInt",
+    "hash": "8ccb9e6d57f403783133fd397c4c925898d401f0422929acf58be55f79394bdc",
+    "reason": "The section id in the already-there response: section_info::id is stored as an int on the course cache object, so the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/move_section.php": "20041952b5eb41be2cbf113aae0e3ea7ad9a957526f3fadb92e92178c0b197cb"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/move_section.php",
+    "line": 112,
+    "mutator": "CastInt",
+    "hash": "76e7f831ee8eb29092f63ed807b6fe3529536cba8e4ebc0878b85e6adf859a24",
+    "reason": "$to comes from validate_parameters() with PARAM_INT and is already an int; the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/move_section.php": "20041952b5eb41be2cbf113aae0e3ea7ad9a957526f3fadb92e92178c0b197cb"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/move_section.php",
+    "line": 122,
+    "mutator": "GreaterThan",
+    "hash": "bf1763e163b55914d29c4bdc56ff967963b2cc20804c46326e767c240c2d78e5",
+    "reason": "The case $to === $from is answered earlier in execute() with the 'already at position' response and never reaches this line, so for every value that reaches it the conditions $to > $from and $to >= $from give the same result.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/move_section.php": "20041952b5eb41be2cbf113aae0e3ea7ad9a957526f3fadb92e92178c0b197cb"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/move_section.php",
+    "line": 131,
+    "mutator": "CastInt",
+    "hash": "981cc78d98802248c187efe406aa5b2e91b34a7fda7ab55d80070eeef77e5573",
+    "reason": "$to comes from validate_parameters() with PARAM_INT and is already an int; the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/move_section.php": "20041952b5eb41be2cbf113aae0e3ea7ad9a957526f3fadb92e92178c0b197cb"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pointer_location.php",
+    "line": 99,
+    "mutator": "CastString",
+    "hash": "be33d39b046e2b12a3d90b23f093ba41dd3c49d40df8a81561aec2dea4b5c23d",
+    "reason": "The Moodle path of a moodle() location. The value is a string by construction: the fingerprint (server, basepath, account), the relative path and the Moodle path are stored and handed over as strings, and every use of the cast value (strtolower(), trim(), string concatenation) converts any scalar to the identical text anyway, so the cast changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pointer_location.php": "30c144b2ffe434bea98d371cc197293cf217a15da74db45b02ae035a63800ec3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pointer_location.php",
+    "line": 101,
+    "mutator": "CastString",
+    "hash": "c50ad570bf443d7be40f7de45af754351313f73435880c6db0799876fca619f9",
+    "reason": "The fingerprint server before strtolower(). The value is a string by construction: the fingerprint (server, basepath, account), the relative path and the Moodle path are stored and handed over as strings, and every use of the cast value (strtolower(), trim(), string concatenation) converts any scalar to the identical text anyway, so the cast changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pointer_location.php": "30c144b2ffe434bea98d371cc197293cf217a15da74db45b02ae035a63800ec3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pointer_location.php",
+    "line": 102,
+    "mutator": "CastString",
+    "hash": "eedb5aac25193e28f6a53dfffd05b82823770d7dfa0710aa534c8323407ce363",
+    "reason": "The fingerprint account. The value is a string by construction: the fingerprint (server, basepath, account), the relative path and the Moodle path are stored and handed over as strings, and every use of the cast value (strtolower(), trim(), string concatenation) converts any scalar to the identical text anyway, so the cast changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pointer_location.php": "30c144b2ffe434bea98d371cc197293cf217a15da74db45b02ae035a63800ec3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pointer_location.php",
+    "line": 103,
+    "mutator": "CastString",
+    "hash": "e07b16d1fa0b93805f096f6467c9235e726ab4e678e45928ca3dbc60c3896394",
+    "reason": "The fingerprint base path before trim(). The value is a string by construction: the fingerprint (server, basepath, account), the relative path and the Moodle path are stored and handed over as strings, and every use of the cast value (strtolower(), trim(), string concatenation) converts any scalar to the identical text anyway, so the cast changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pointer_location.php": "30c144b2ffe434bea98d371cc197293cf217a15da74db45b02ae035a63800ec3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pointer_location.php",
+    "line": 104,
+    "mutator": "CastString",
+    "hash": "f17cb6ba272aa00ee52732317dc9c8c07aacd85c4984eb96d2e60999cfa0d3fd",
+    "reason": "The relative path of an external() location before trim(). The value is a string by construction: the fingerprint (server, basepath, account), the relative path and the Moodle path are stored and handed over as strings, and every use of the cast value (strtolower(), trim(), string concatenation) converts any scalar to the identical text anyway, so the cast changes nothing. external() requires the relative path as a string, so it is never null.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/pointer_location.php": "30c144b2ffe434bea98d371cc197293cf217a15da74db45b02ae035a63800ec3"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/upload_material_file.php",
+    "line": 102,
+    "mutator": "CastObject",
+    "hash": "6b4d3c9577cefb1dcebb1baf6280e1c03c084c717f17e1ff7c3bde4e91ffede3",
+    "reason": "The placeholder values are handed to get_string() as $a. Moodle's string manager treats an array like an object (it converts $a with (array) and replaces {$a->key}), so the rendered message is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/upload_material_file.php": "3e70a5eb293dccce5512f4d6255b66f9e54371475583e576b2effb84a6827630"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/delete_material_files.php",
+    "line": 97,
+    "mutator": "CastObject",
+    "hash": "67d987012c6acc88d173549f1a2337258873e37e0a8f021d2b38402bb1ee54ea",
+    "reason": "The placeholder values are handed to get_string() as $a. Moodle's string manager treats an array like an object (it converts $a with (array) and replaces {$a->key}), so the rendered message is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/delete_material_files.php": "d4c79615f90c9adcf4f8fb678bc3ef3c7fcbe5ac147a517aacd73c4a5ed7fd46"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_loose_material_files.php",
+    "line": 58,
+    "mutator": "MethodCallRemoval",
+    "hash": "e80a4c6998bd3df8c36839e40ac1f65c867615a3d85c766e9d034aca89df554b",
+    "reason": "validate_parameters() is called with an empty parameter declaration and an empty value list: there is nothing to clean or reject, the result is discarded, and an empty declaration cannot raise an exception.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_loose_material_files.php": "49a3d655fbe419436e4942e42cdb531b61cc470d0fcbce631ceb1318dd53c18f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/report_loose_material_files.php",
+    "line": 78,
+    "mutator": "IncrementInteger",
+    "hash": "1fbe8618d7b1f828ddf994c9b0dd4abe55d02a7a17229f0316a2992e55e5ebfd",
+    "reason": "max(1, $now - timecreated) differs from max(0, ...) only when the age is below one second, where floor(1 / DAYSECS) and floor(0 / DAYSECS) are both 0; for every other age the maximum is the age itself, so the result is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/report_loose_material_files.php": "49a3d655fbe419436e4942e42cdb531b61cc470d0fcbce631ceb1318dd53c18f"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 75,
+    "mutator": "DecrementInteger",
+    "hash": "7a0d197ae683ed79ba26be22222284d9428fa356a9e7233e4d6449f0c78e97a4",
+    "reason": "A parent of -1 instead of 0 as default: both are not greater than 0, so execute() treats both as 'keep the current parent' ($params['parent'] > 0 is false in both cases).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 85,
+    "mutator": "CastInt",
+    "hash": "dc2a49984b35d8c5a1c37d54c821d9d5e603b1ab68cebc209a41eca16e9a603f",
+    "reason": "A (int) cast of an id on line 85. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 103,
+    "mutator": "CastInt",
+    "hash": "9453fdb84866dfa4101f675ad4e35b50ae7a2678ef8f9ba3739060c2a4ada4a5",
+    "reason": "A (int) cast of an id on line 103. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 111,
+    "mutator": "CastInt",
+    "hash": "1f8813662a8f38a50b8d587209b2d903bddb8523b6538fb24dea4bd55c118b61",
+    "reason": "A (int) cast of an id on line 111. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 136,
+    "mutator": "CastInt",
+    "hash": "3e8dddbfa2703836886de4954b89e54e7b293b99a1541f2fe9dfd35e55f86b28",
+    "reason": "A (int) cast of an id on line 136. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 149,
+    "mutator": "CastInt",
+    "hash": "15540bdee11ce5f98f23d19e0183a92c1a322fc762782f756d3f2c0338e0caf8",
+    "reason": "A (int) cast of an id on line 149. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 150,
+    "mutator": "CastInt",
+    "hash": "5c0d6cd3e73abe8e33bebfd7fa5bba3a7157a4ae7559ac423a62d49479623c0d",
+    "reason": "A (int) cast of an id on line 150. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 151,
+    "mutator": "CastInt",
+    "hash": "849589d7da761767cbe4ac9e55657170de5b5e62aadb4a830af90cf5e40a4334",
+    "reason": "A (int) cast of an id on line 151. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 157,
+    "mutator": "CastInt",
+    "hash": "7f2aa1838886c8484b94bc5615b6dd32df3967653180d6336202eb890415945f",
+    "reason": "A (int) cast of an id on line 157. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 158,
+    "mutator": "CastInt",
+    "hash": "2d68f51f6d3595424e50d7e9730c656c78e121001cf981be713574f2ced7d5f6",
+    "reason": "A (int) cast of an id on line 158. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 159,
+    "mutator": "CastInt",
+    "hash": "723ec04019f1878c909165ac9018bf376d66fa50d49116543fc0c3960ca91ef2",
+    "reason": "A (int) cast of an id on line 159. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 160,
+    "mutator": "CastInt",
+    "hash": "a1ff48e4f818d8ab896b90c9e1d5313df622905d46023ebd153cdc237a2d70e9",
+    "reason": "A (int) cast of an id on line 160. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 162,
+    "mutator": "CastInt",
+    "hash": "042eaade6c00ccd54edc0fa0dee26f3ad002b72ce2ff480490025dfda5905e1b",
+    "reason": "A (int) cast of an id on line 162. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 105,
+    "mutator": "CastInt",
+    "hash": "05865ef477a6c6dc70c61dded50f5a5f97d8f7a61f9571bdaf573989eb4a03b5",
+    "reason": "Left operand of the comparison of the target and source context ids. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 105,
+    "mutator": "CastInt",
+    "hash": "1345afea1a6bce51bfb758ddf581c4fa31cda1d660ce319df67d06ec16ce0efc",
+    "reason": "Right operand of the comparison of the target and source context ids. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 129,
+    "mutator": "CastInt",
+    "hash": "79a88a4e99eaae3807ce85cd0aee5ec0105997ab1fc20028be8aa416bfc23e83",
+    "reason": "Operand of the comparison of the category's context id with the target context id. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 140,
+    "mutator": "CastInt",
+    "hash": "e74697235b14f75b4c4fd3cf80b1bbd7ed9cd7e87681dcc7b63bf2cd45e71322",
+    "reason": "Left operand of the comparison of the category's context id with the target context id. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 140,
+    "mutator": "CastInt",
+    "hash": "b125315bf4924b69490d588858b4fa3df9546752a2090f441a5cf871cc5edb04",
+    "reason": "Right operand of the comparison of the category's context id with the target context id. The id comes from a question_categories or context row (numeric string) or from validate_parameters(); the called function or the DML layer treats the numeric string and the int identically (typed int parameters are coerced, ids in queries are parameters), and ids inside this method are compared with each other as ints on both sides, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 175,
+    "mutator": "CastInt",
+    "hash": "5ff3e2410b8748efb9991db828df2367d893f5cfe5d61108372940efe8efe4f3",
+    "reason": "The context id in the response: context objects hold their id as an int, so the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 100,
+    "mutator": "GreaterThan",
+    "hash": "8b915da9ae5c6601d185d3641e54ad8f33d546245fe57fbbaa9fad10c5c02a79",
+    "reason": "For parent 0 the changed condition takes the first branch and loads question_categories row $targetparentid; for parent 0, $targetparentid is (int) $category->parent, which is exactly the row the second branch loads with ['id' => $category->parent]. Both branches therefore return the same record.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 118,
+    "mutator": "ArrayItemRemoval",
+    "hash": "fc1cfd84692e4bb47b93fe316d0016bdaddbdf2bb31caddea03d82478d778faa",
+    "reason": "The lookup for a name collision is restricted by parent and name; all subcategories of one parent share the parent's context (Moodle creates and moves them together), so (parent, name) already implies the context and the contextid condition cannot exclude a row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_question_category.php",
+    "line": 140,
+    "mutator": "LogicalAnd",
+    "hash": "68fa21550d6c4e1e125849c0bb60b1ef89f53ef961169205ab176ca066fdd4ae",
+    "reason": "With || the cross-context block also runs for a move inside one bank. question_move_category_to_context(), applied with the same old and new context id, moves files and tags from a context to itself and sets the contextid of subcategories to the value they already have, and move_question_set_references() returns at once for equal contexts (lib/questionlib.php: if ($delete || $oldcontextid !== $newcontextid)); the stored result is the same. When $moved is false both variants skip the block.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/update_question_category.php": "49110e6161037de95643f375f9360b227093e6fbfb08beb4e0511777faab8f96"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/retention.php",
+    "line": 172,
+    "mutator": "DecrementInteger",
+    "hash": "c36a074a705d73f42d06950866412109ab2b76d9ec3ab757d948c504a9b2c2c9",
+    "reason": "Mutation in purge_expired_batch(): get_records_select(..., -1, $limit) instead of 0. moodle_database::normalise_limit_from_num() maps a limitfrom of exactly -1 to 0 before the query is built (\"We explicitly treat these cases as 0\", lib/dml/moodle_database.php, identical in Moodle 5.0 to 5.3), and the developer-mode notice only concerns values below -1; limitnum stays $limit, so the same rows are selected as with limitfrom 0.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/retention.php",
+    "line": 197,
+    "mutator": "DecrementInteger",
+    "hash": "3cd642d5a12ee525d1e3aa25dfd1c086c5a28b1fe56cf416478c6de2d3853038",
+    "reason": "Mutation in sweep_file_batch(): get_records_select(..., -1, $limit) instead of 0. moodle_database::normalise_limit_from_num() maps a limitfrom of exactly -1 to 0 before the query is built (\"We explicitly treat these cases as 0\", lib/dml/moodle_database.php, identical in Moodle 5.0 to 5.3), and the developer-mode notice only concerns values below -1; limitnum stays $limit, so the same rows are selected as with limitfrom 0.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/retention.php",
+    "line": 190,
+    "mutator": "CastInt",
+    "hash": "58c25b9fd07487773b08ab1875deaa024edc5921caaa0c5bb310f32ba99eefc9",
+    "reason": "The cursor is only used as a query parameter of 'id > ?'. moodle_database::fix_sql_params() converts boolean parameters to int and the database compares the numeric string with the integer column identically, so get_config()'s string or false value behaves like its (int) cast.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/retention.php",
+    "line": 224,
+    "mutator": "CastInt",
+    "hash": "79cd13cec36c40f1e72bd40b871c2abe7be568351e2273a5fe25160d69d868c5",
+    "reason": "end($fileids) is the last key of an array built with array_keys() of get_records_select(), i.e. an int already, and set_config() stores the value as text anyway; the cast converts an int to an int.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/retention.php",
+    "line": 109,
+    "mutator": "UnwrapArrayValues",
+    "hash": "531ee1139121cc878874e51c917bb176ca902bcfe0e6360d538bbbde36b64026",
+    "reason": "Renumbering of the user id list before get_in_or_equal(). moodle_database::get_in_or_equal() with the default SQL_PARAMS_QM type already returns array_values($items) as its parameter list (lib/dml/moodle_database.php: $params = array_values($items) in both branches), so renumbering the keys beforehand changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/retention.php",
+    "line": 243,
+    "mutator": "UnwrapArrayValues",
+    "hash": "209e10cde0ea359e811609d20c736dc3d25cf74f9a5449d296c8e76fcd9bb123",
+    "reason": "Renumbering of the version id list before get_in_or_equal(). moodle_database::get_in_or_equal() with the default SQL_PARAMS_QM type already returns array_values($items) as its parameter list (lib/dml/moodle_database.php: $params = array_values($items) in both branches), so renumbering the keys beforehand changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/retention.php",
+    "line": 264,
+    "mutator": "UnwrapArrayValues",
+    "hash": "52c3b140ba40a9db93748c7f0f9bd73f5a6880130d30fbadadcfc3d22c7cde85",
+    "reason": "Renumbering of the file id list before get_in_or_equal(). moodle_database::get_in_or_equal() with the default SQL_PARAMS_QM type already returns array_values($items) as its parameter list (lib/dml/moodle_database.php: $params = array_values($items) in both branches), so renumbering the keys beforehand changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/retention.php",
+    "line": 271,
+    "mutator": "UnwrapArrayValues",
+    "hash": "3924db6ffdbcc9d0d20c97de9f6e0b5a012a8a8f561a9709a66943b5740f236d",
+    "reason": "Renumbering of the orphan id list (array_diff keeps the original keys) before get_in_or_equal(). moodle_database::get_in_or_equal() with the default SQL_PARAMS_QM type already returns array_values($items) as its parameter list (lib/dml/moodle_database.php: $params = array_values($items) in both branches), so renumbering the keys beforehand changes nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/history/retention.php": "fa065b5744a2e0aca9db2305649270efc50096b3e657339bd3fa2cd8db6bc20e"
+    }
   }
 ]
