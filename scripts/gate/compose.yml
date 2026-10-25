@@ -20,6 +20,7 @@ services:
       - "${GATE_DIR}/java:/opt/java:ro"
       - "${GATE_DIR}/plugin:/var/www/html/public/local/coursepilot"
     environment:
+      PHP_INI-session.upload_progress.enabled: "0"
       MOODLE_DOCKER_DBTYPE: mariadb
       MOODLE_DOCKER_DBNAME: moodle_gate
       MOODLE_DOCKER_DBUSER: moodle
