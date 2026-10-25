@@ -5408,5 +5408,249 @@
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/admin_connections_page.php",
+    "line": 67,
+    "mutator": "CastInt",
+    "hash": "199a2bf94f129309deee033da4fdfd4c3a4203423900561f6ee0a83c99b87179",
+    "reason": "page_data(): connection_storage_location::describe(int $userid) coerces the numeric string $token->userid from the SQL row to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/admin_connections_page.php": "cfa95f816885cb1aa2ca8167a606eec4ccf1100560d03427e646b8fbaa84a6c6"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/connections_page.php",
+    "line": 42,
+    "mutator": "CastInt",
+    "hash": "cddd209f8a1854aba59bc1bb58298bc8f887356369fee8597040fcc717b7c469",
+    "reason": "response(): connection::revoke_token(int $id, ?int $owneruserid) coerces $USER->id (int or numeric string) to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/connections_page.php": "fcc3533408724e1e3111ee6e13bcfb0c6943344dd93697de57465459a19acfeb"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/connections_page.php",
+    "line": 46,
+    "mutator": "CastInt",
+    "hash": "7caa2929630952365228eb772bc7cb3543bb72093a10fbc7d1f9e886face0f10",
+    "reason": "response(): connection::active_tokens_for_user(int $userid) coerces $USER->id (int or numeric string) to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/connections_page.php": "fcc3533408724e1e3111ee6e13bcfb0c6943344dd93697de57465459a19acfeb"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection_page.php",
+    "line": 47,
+    "mutator": "CastInt",
+    "hash": "75a7072538a5283aa1f9e63048f33444c305dc5f496c1f40e1ce42c911d3471f",
+    "reason": "response(): location_selection::setup_state(int $userid) coerces $USER->id (int or numeric string) to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/location_selection_page.php": "5e260fbb8bc7882951c8c12d3d08af2dc787d651b3ba930d1113f25c5b2dd97b"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/http_response.php",
+    "line": 56,
+    "mutator": "CastString",
+    "hash": "b7119d49aab3f1b18988a8c4eb16de63baea36837befe5df31272815ecb70fee",
+    "reason": "json(): (string) json_encode(...) assigned to $body, which goes to the constructor parameter 'string $body'. json_encode() returns a string or false; in non-strict mode false is coerced to '' by the parameter exactly as the cast does.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/http_response.php": "e363b619919dbf7e476ff54791e559672adfded7b58cf5dd4a461e0ba73664f1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_modules.php",
+    "line": 60,
+    "mutator": "DecrementInteger",
+    "hash": "964f446f83140d46b88d842ff1f263dfbc74849c66859946fd17a9fca32c01be",
+    "reason": "execute(): the PHP default of $sectionnum is -2 instead of -1. Any negative value selects all sections ('$params[sectionnum] >= 0' is false for both), and the Moodle web service default comes from execute_parameters(), not from this PHP default.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_modules.php": "7c29de7befd1768c4bb9397ddc8532a1efd9c21d122477ec9dbc2da1708d128e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_modules.php",
+    "line": 95,
+    "mutator": "UnwrapArrayValues",
+    "hash": "82d6888a0022511e9ac310c74af04429b5575cd12ed6591c2c33ab6ea7c42c42",
+    "reason": "execute(): array_values() before usort(). usort() reindexes the array it sorts, so the keys of get_records_sql() (course module ids) never reach the result.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_modules.php": "7c29de7befd1768c4bb9397ddc8532a1efd9c21d122477ec9dbc2da1708d128e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_modules.php",
+    "line": 97,
+    "mutator": "CastInt",
+    "hash": "1cb3f4e651b026b762a7fef614eadd2378e969cf7c12ac05b76ca8a8f6fb9fa6",
+    "reason": "execute(): sequence_index(string $sequence, int $cmid) coerces the numeric string $a->cmid to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_modules.php": "7c29de7befd1768c4bb9397ddc8532a1efd9c21d122477ec9dbc2da1708d128e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_modules.php",
+    "line": 98,
+    "mutator": "CastInt",
+    "hash": "86dd45aba852fd789e4a9675c083d438840afb93afa6e34cb60c9ba8356d4759",
+    "reason": "execute(): sequence_index(string $sequence, int $cmid) coerces the numeric string $b->cmid to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_modules.php": "7c29de7befd1768c4bb9397ddc8532a1efd9c21d122477ec9dbc2da1708d128e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_modules.php",
+    "line": 118,
+    "mutator": "CastInt",
+    "hash": "94cca6e0babe1d48f6ff7471309f0abb1c32874fcd38ccfbd0fd89299301778c",
+    "reason": "execute(): shared_block::derive_visibility(int $visible, int $visibleoncoursepage) coerces the numeric string to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_modules.php": "7c29de7befd1768c4bb9397ddc8532a1efd9c21d122477ec9dbc2da1708d128e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_modules.php",
+    "line": 118,
+    "mutator": "CastInt",
+    "hash": "0fa88e7108ae781e51fb90c8ed5bed75b3be10dd93c01d0f04cf8cdbae7e2417",
+    "reason": "execute(): shared_block::derive_visibility(int $visible, int $visibleoncoursepage) coerces the numeric string to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_modules.php": "7c29de7befd1768c4bb9397ddc8532a1efd9c21d122477ec9dbc2da1708d128e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_modules.php",
+    "line": 132,
+    "mutator": "UnwrapArrayFilter",
+    "hash": "ae92541a832facecc4ecf889db9f14e901820fa77928a7869ad82bfef075135a",
+    "reason": "sequence_index(): without array_filter() the id list also holds zeros for empty entries of the sequence string. The index is only used to order activities of the same section against each other, and the positions of the real ids keep their relative order (zeros shift later ids uniformly), and $cmid is never 0, so the order is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_modules.php": "7c29de7befd1768c4bb9397ddc8532a1efd9c21d122477ec9dbc2da1708d128e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_modules.php",
+    "line": 132,
+    "mutator": "UnwrapArrayValues",
+    "hash": "576a03a7978ae58c86970f74ef3a3b76e0f33f404580486c61d45db63c9b52d0",
+    "reason": "sequence_index(): without array_values() array_search() returns the original key of the filtered list. The index is only compared between activities of one section, and the keys keep the relative order of the ids, so the ordering is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/get_modules.php": "7c29de7befd1768c4bb9397ddc8532a1efd9c21d122477ec9dbc2da1708d128e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/list_courses.php",
+    "line": 55,
+    "mutator": "MethodCallRemoval",
+    "hash": "cec13a8c889a792f37f311453492ca26bb6d2b94ae9e13a96739bca837a2fbcf",
+    "reason": "execute(): validate_parameters() is called with an empty parameter description and an empty array, so it validates nothing and returns an empty array that is not used.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/list_courses.php": "97ed676bfcafe4c37807ee5c65065128f0b6c091edc8eb41e9710b43bfa3201c"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/list_courses.php",
+    "line": 66,
+    "mutator": "CastString",
+    "hash": "6481a1f54df722784d7760f96830ac73f038015d81011d299e661d7e488185ad",
+    "reason": "execute(): course.fullname is a NOT NULL char column (lib/db/install.xml), so enrol_get_my_courses() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/list_courses.php": "97ed676bfcafe4c37807ee5c65065128f0b6c091edc8eb41e9710b43bfa3201c"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/list_courses.php",
+    "line": 67,
+    "mutator": "CastString",
+    "hash": "072f4f861877fb3b9ba80bc655c2b01e05aa094748e2cde711d9b526fd0e34a0",
+    "reason": "execute(): course.shortname is a NOT NULL char column (lib/db/install.xml), so enrol_get_my_courses() delivers a string already.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/external/list_courses.php": "97ed676bfcafe4c37807ee5c65065128f0b6c091edc8eb41e9710b43bfa3201c"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 86,
+    "mutator": "DecrementInteger",
+    "hash": "7b72fb7389e576f2ffdd4b0ec19c57e3e6ff54a0b8aeba02ed6e7e5598a44e8b",
+    "reason": "the default sleeper is usleep((int) ($seconds * 1_000_000)) and is only reached with the production retry delay of 0.2 s; a difference of one microsecond (or the removed cast, which hands usleep() the integral float 200000.0) cannot be observed by any test or by the server, and the injected sleeper used by the tests replaces this code. Here: the factor is 999999.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php": "ff7babde04407970c4321ae05a97c673418e8848c2f14fbb421d1818ac735c5e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 86,
+    "mutator": "IncrementInteger",
+    "hash": "3e335f2b9d972b201a9a064b65fa13cdd35a2ba5f0774e6534f53b99b268855e",
+    "reason": "the default sleeper is usleep((int) ($seconds * 1_000_000)) and is only reached with the production retry delay of 0.2 s; a difference of one microsecond (or the removed cast, which hands usleep() the integral float 200000.0) cannot be observed by any test or by the server, and the injected sleeper used by the tests replaces this code. Here: the factor is 1000001.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php": "ff7babde04407970c4321ae05a97c673418e8848c2f14fbb421d1818ac735c5e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 86,
+    "mutator": "CastInt",
+    "hash": "b064f4c021daf4a825d9a49077cbee3140741170eafa48c71c7bbae5225e3f40",
+    "reason": "the default sleeper is usleep((int) ($seconds * 1_000_000)) and is only reached with the production retry delay of 0.2 s; a difference of one microsecond (or the removed cast, which hands usleep() the integral float 200000.0) cannot be observed by any test or by the server, and the injected sleeper used by the tests replaces this code. Here: the cast is removed.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php": "ff7babde04407970c4321ae05a97c673418e8848c2f14fbb421d1818ac735c5e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 438,
+    "mutator": "FalseValue",
+    "hash": "65d6388b91252c8179d3a73b28c16eaabfb638ef54ddce37b64c4b8dbf668104",
+    "reason": "sniff_mimetype_from_content(): finfo::buffer() returns false only when libmagic itself fails, which does not depend on the content passed; with the mutation the 'false' case would not be reached by any input, and the conditional is otherwise unchanged.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php": "ff7babde04407970c4321ae05a97c673418e8848c2f14fbb421d1818ac735c5e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav_storage_port.php",
+    "line": 189,
+    "mutator": "DecrementInteger",
+    "hash": "793b4d40b9b899e54883f27203f64357e661404fad6e58367b6a5a9d348e017b",
+    "reason": "read(): $entry['timemodified'] ?? 0. The entry comes from webdav_client::entry_from_prop(), which always sets 'timemodified' (0 when the server sent no date), so the default of the coalesce is never used. Here: the default is -1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav_storage_port.php": "7e45ffd407270277a5e658b96c33785539ead62a888dd56ad8385eff06d252ab",
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php": "ff7babde04407970c4321ae05a97c673418e8848c2f14fbb421d1818ac735c5e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav_storage_port.php",
+    "line": 189,
+    "mutator": "IncrementInteger",
+    "hash": "69e2e19f07e2a2b77c3cab3a99cf91c8a689e8bd22edc648aee8b5ddbbeafed3",
+    "reason": "read(): $entry['timemodified'] ?? 0. The entry comes from webdav_client::entry_from_prop(), which always sets 'timemodified' (0 when the server sent no date), so the default of the coalesce is never used. Here: the default is 1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav_storage_port.php": "7e45ffd407270277a5e658b96c33785539ead62a888dd56ad8385eff06d252ab",
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php": "ff7babde04407970c4321ae05a97c673418e8848c2f14fbb421d1818ac735c5e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav_storage_port.php",
+    "line": 397,
+    "mutator": "UnwrapArrayValues",
+    "hash": "928330ad0a368ece1801fdc38f4bf43f684688c14fee9790efd7986a1ab2c56e",
+    "reason": "base_segments(): array_values() around array_filter(). The result is only spread into other lists ([...$segments, ...$extra]) or joined by implode(), neither of which depends on the preserved keys.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav_storage_port.php": "7e45ffd407270277a5e658b96c33785539ead62a888dd56ad8385eff06d252ab",
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php": "ff7babde04407970c4321ae05a97c673418e8848c2f14fbb421d1818ac735c5e"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav_storage_port.php",
+    "line": 398,
+    "mutator": "UnwrapTrim",
+    "hash": "ec8b091ffdf4d65bf1af6ab77d8d859db33aaecbd077ecf03efb7a05f5e1b97e",
+    "reason": "base_segments(): trim($this->baserelativepath, '/') before explode('/'). The empty segments that leading and trailing slashes would produce are removed by the array_filter() right after, so the segment list is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav_storage_port.php": "7e45ffd407270277a5e658b96c33785539ead62a888dd56ad8385eff06d252ab",
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php": "ff7babde04407970c4321ae05a97c673418e8848c2f14fbb421d1818ac735c5e"
+    }
   }
 ]
