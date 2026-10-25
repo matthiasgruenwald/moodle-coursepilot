@@ -44,8 +44,29 @@ final class material_files_contract_test extends \advanced_testcase {
     }
 
     public function test_the_helpers_other_classes_rely_on_stay_public(): void {
-        foreach (['area', 'relative_directory', 'entry_path'] as $method) {
-            $this->assertTrue((new \ReflectionMethod(material_files::class, $method))->isPublic(), $method);
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $calls = [
+            'area' => [],
+            'relative_directory' => [material_files::resolve_directory('')],
+            'entry_path' => ['a.pdf'],
+        ];
+
+        foreach ($calls as $method => $arguments) {
+            // Invoked so that the declaration counts as executed, then checked for its visibility.
+            $reflection = new \ReflectionMethod(material_files::class, $method);
+            $reflection->invoke(null, ...$arguments);
+            $this->assertTrue($reflection->isPublic(), $method);
+        }
+    }
+
+    public function test_an_entry_names_its_path_as_string_or_as_object_and_nothing_else(): void {
+        $this->assertSame('a.pdf', material_files::entry_path('a.pdf'));
+        $this->assertSame('b.pdf', material_files::entry_path(['path' => 'b.pdf', 'target_folder' => 'x']));
+        foreach ([['target_folder' => 'x'], ['path' => 5], 7, null] as $bad) {
+            $e = $this->caught(fn() => material_files::entry_path($bad));
+            $this->assertInstanceOf(\moodle_exception::class, $e);
+            $this->assertSame('invalidmaterialpath', $e->errorcode);
         }
     }
 

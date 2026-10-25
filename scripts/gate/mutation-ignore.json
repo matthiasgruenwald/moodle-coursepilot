@@ -4871,5 +4871,542 @@
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/external/report_clone_lineage.php": "efd978c38dd8508cad276a954c1c972cb5dda9dfdea4b5f64b016c2e7ab208da"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/material_files.php",
+    "line": 548,
+    "mutator": "DecrementInteger",
+    "hash": "023c6ff6ec4a9515aeb44235b8f6e0e6846489acbe258bdffef43678516d8095",
+    "reason": "quota_warning(): the default of an unset $CFG->userquota is -1 instead of 0. Both are not positive; private_files_storage_port::remaining_quota() applies the same test ($quota <= 0, same config key) and returns null for them, so quota_warning() has already returned at '$remaining === null'.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/material_files.php": "792765c7f9f402c7718e8e3ddba38fda85f6760cbf1921a570d9adad6de43445",
+      "Plugin/src/local_coursepilot/classes/private_files_storage_port.php": "593b205e2f48f2732325b705eb1a1db5baf5f8305fcc2294c062469419187f6a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/material_files.php",
+    "line": 548,
+    "mutator": "IncrementInteger",
+    "hash": "4d798be9ea93c20108146dcae89f117b8e751ae5c63942a978267448f86c2338",
+    "reason": "quota_warning(): the default of an unset $CFG->userquota is 1 instead of 0. An unset quota makes private_files_storage_port::remaining_quota() return null (it reads the same key with the default 0), so the function returns at '$remaining === null' before $quota is used.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/material_files.php": "792765c7f9f402c7718e8e3ddba38fda85f6760cbf1921a570d9adad6de43445",
+      "Plugin/src/local_coursepilot/classes/private_files_storage_port.php": "593b205e2f48f2732325b705eb1a1db5baf5f8305fcc2294c062469419187f6a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/material_files.php",
+    "line": 548,
+    "mutator": "CastInt",
+    "hash": "66aed370a131db760f03bc6bba371e7ef8a68d3591cc2f666b57524a3a1a1f31",
+    "reason": "quota_warning(): $quota without the (int) cast is the numeric string of the configuration (or int); '$quota <= 0' and the division '$remainingafter / $quota' evaluate identically for a numeric string in PHP 8.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/material_files.php": "792765c7f9f402c7718e8e3ddba38fda85f6760cbf1921a570d9adad6de43445",
+      "Plugin/src/local_coursepilot/classes/private_files_storage_port.php": "593b205e2f48f2732325b705eb1a1db5baf5f8305fcc2294c062469419187f6a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/material_files.php",
+    "line": 549,
+    "mutator": "LessThanOrEqualTo",
+    "hash": "5fd27efd308c5a216830fbc0e45228c3c3303a1c9cea6a65c65a556ad2f8626e",
+    "reason": "quota_warning(): '$quota < 0' instead of '<= 0'. A quota of exactly 0 means unlimited and private_files_storage_port::remaining_quota() then returns null (it tests '$quota <= 0' on the same key), so the left operand '$remaining === null' already returns before $quota is compared.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/material_files.php": "792765c7f9f402c7718e8e3ddba38fda85f6760cbf1921a570d9adad6de43445",
+      "Plugin/src/local_coursepilot/classes/private_files_storage_port.php": "593b205e2f48f2732325b705eb1a1db5baf5f8305fcc2294c062469419187f6a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/material_files.php",
+    "line": 552,
+    "mutator": "DecrementInteger",
+    "hash": "ab2659cad6071cc56f693b2dd19498a969a16e1aa144337899b80ca7aaa6fa40",
+    "reason": "quota_warning(): max(-1, ...) instead of max(0, ...). The only difference is the value -1 instead of 0 when the growth exceeds the remaining space; both stay far below the warning ratio, and the message prints it with format_float(x / 1048576, 1), which renders both -1/1048576 and 0 as '0.0' (number_format() has not returned '-0' since PHP 8.0).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/material_files.php": "792765c7f9f402c7718e8e3ddba38fda85f6760cbf1921a570d9adad6de43445",
+      "Plugin/src/local_coursepilot/classes/private_files_storage_port.php": "593b205e2f48f2732325b705eb1a1db5baf5f8305fcc2294c062469419187f6a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/material_files.php",
+    "line": 573,
+    "mutator": "DecrementInteger",
+    "hash": "ebbfb433c767e7abab0c3f64c494a263677336b8154ce2f896a7d5b35753d942",
+    "reason": "guard_embed_size(): the default of an unset $CFG->maxbytes is -1 instead of 0. Both fall under '$maxbytes <= 0' and return without a limit, so the outcome is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/material_files.php": "792765c7f9f402c7718e8e3ddba38fda85f6760cbf1921a570d9adad6de43445",
+      "Plugin/src/local_coursepilot/classes/private_files_storage_port.php": "593b205e2f48f2732325b705eb1a1db5baf5f8305fcc2294c062469419187f6a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/material_files.php",
+    "line": 773,
+    "mutator": "TrueValue",
+    "hash": "6715840e9ac81307022f8ce021f3197d9a74e717da5bdba323252e3cc0a548e1",
+    "reason": "used_contenthashes(): the array is only used for array_keys($hashes); the stored value (true or false) is never read, so the result is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/material_files.php": "792765c7f9f402c7718e8e3ddba38fda85f6760cbf1921a570d9adad6de43445",
+      "Plugin/src/local_coursepilot/classes/private_files_storage_port.php": "593b205e2f48f2732325b705eb1a1db5baf5f8305fcc2294c062469419187f6a"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 92,
+    "mutator": "CastBool",
+    "hash": "9231f84b64a861d501e02ca3cad69366b87022918fac18b32840b0f86bedcc61",
+    "reason": "create(): $oldvisible without the (bool) cast is the int 0/1 of cm_info::visible (or true). It is only passed to course_module_placement::set_visible(int $cmid, bool $visible), whose bool parameter coerces 0/1 to the same boolean in non-strict mode.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 96,
+    "mutator": "FalseValue",
+    "hash": "2010b05721443240b22f0b86c25e3864db37af952e806b69e90b00e70037bd3f",
+    "reason": "create(): the fourth argument of get_coursemodule_from_id() ($sectionnum flag) only adds a 'sectionnum' property to the returned record. The record is used for activity_backup::export() (reads id and modname), activity_file_supplement::apply() (modname, id) and nothing else, none of which reads sectionnum.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 112,
+    "mutator": "CastInt",
+    "hash": "81c8381915809a2749b25b0b98d75d39cd850e74b90adc7f0b7135ddff1e4cba",
+    "reason": "create(): supersede(int $newcmid, int $oldcmid, int $userid) coerces the (int or numeric string) $USER->id to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 137,
+    "mutator": "CastInt",
+    "hash": "f7dab9cb4625dde7ee5261bbc1ddb40aa2371cedfdc4419516edd5566df0b6e4",
+    "reason": "create(): version_writer::capture(int $cmid, int $userid, ...) coerces the (int or numeric string) $USER->id to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 179,
+    "mutator": "ArrayItemRemoval",
+    "hash": "a45ce59005fbeffb4bb973420861eff91282286c620ed56c40a9fc053179c319",
+    "reason": "chain(): the 'courseid' condition of the marker query is dropped. The loop right after only keeps markers whose cmid and sourcecmid are both in get_fast_modinfo($courseid)->cms, i.e. activities of this course, so markers of other courses are filtered out either way.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 187,
+    "mutator": "CastInt",
+    "hash": "6d290bb13094affd9c4d640f8ee516d7f161ec02b508d07718d0cf262a597829",
+    "reason": "chain(): (int) as array key of $next. PHP converts decimal integer strings used as array keys to int keys, so the key is identical with or without the cast.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 188,
+    "mutator": "CastInt",
+    "hash": "1329b38cfcd793585692649c49f4af98f0aee4e41248b0421ad51c3d06e5f6e5",
+    "reason": "chain(): (int) as array key of $previous; PHP converts decimal integer strings used as array keys to int keys, so the key is identical with or without the cast.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 188,
+    "mutator": "CastInt",
+    "hash": "2767a73de296d854186b0681d9ca42197e3beaa344150cacb5e33d598007e76f",
+    "reason": "chain(): (int) on the value stored in $previous. The value is only used by walk() as the next array key and as index into $cms, both of which treat the numeric string like the int; the result of chain() contains only counts and end($successors), which comes from $next.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 208,
+    "mutator": "UnwrapArrayValues",
+    "hash": "3d5bdc7ed41ebc1124ba262e44d1b40e2efc5829c1b6ffc2116604f251a4ae55",
+    "reason": "walk(): array_values() around array_slice(..., true). The callers use the result with end() and count() (chain()) and array_filter() followed by count(), none of which depends on the keys.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 385,
+    "mutator": "UnwrapTrim",
+    "hash": "8aeeb444e107bea84160483d65ba7c31e0287f4d3182a19abc75ddb34c8d7b76",
+    "reason": "is_ignored(): is_numeric(trim($text)) without trim. Since PHP 8.0 is_numeric() accepts leading and trailing whitespace, and trim() strips only whitespace characters that is_numeric() accepts as well (space, tab, newline, carriage return, vertical tab; XML 1.0 content cannot carry NUL), so both give the same answer.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/xml_activity_creator.php": "33e32d236e5eace4829c4bf465b7626f2e702f50604dd486f77ba5cb3f5612b1"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 146,
+    "mutator": "CastInt",
+    "hash": "05d9986fe18eb6f14111aff280504f23a63b03e5a3d0d9c309f3ad9a635b1d8c",
+    "reason": "create_activity(): 'module' => $module->id without (int). The value is the module row id from can_add_moduleinfo(); add_moduleinfo() only copies it into the numeric course_modules.module column, where insert_record() normalises the numeric string to the same value.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 163,
+    "mutator": "CastInt",
+    "hash": "6c51504f034af63570b819ac70551176f7a8c024de3ce3fc7b47428bef6563ea",
+    "reason": "create_activity(): ensure_assign_grade_item(string $modname, int $cmid) coerces the numeric string $created->coursemodule to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 164,
+    "mutator": "CastInt",
+    "hash": "7d8be663ee09a26a3a94da611f1a12e2d5249fbe936c8a1b35f33ce36d541cd4",
+    "reason": "create_activity(): the closure is declared ': int', so the non-strict return type coerces the numeric string $created->coursemodule to the same int; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 213,
+    "mutator": "CastInt",
+    "hash": "dd1ca413d6664a4b8e5b4d6daf97b68585b70ecccf089b8ccb4a82d878c74aa2",
+    "reason": "update_activity(): ensure_assign_grade_item(string $modname, int $cmid) coerces $cm->id (int or numeric string) to the same int; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 230,
+    "mutator": "FalseValue",
+    "hash": "77a858a8be3f953973d2be1448f5ebd5cba4f72bfa9fa924baa24aaa6399c896",
+    "reason": "ensure_assign_grade_item(): the fourth argument of get_coursemodule_from_id() only adds a 'sectionnum' property to the record; the function reads only course, instance and idnumber from it.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 231,
+    "mutator": "ArrayItemRemoval",
+    "hash": "df1fa204ded448df553d5bca0f86e3c4294b811f7172360c81bc1603bff5da77",
+    "reason": "ensure_assign_grade_item(): the 'courseid' condition is dropped from the grade_items lookup. The remaining conditions itemtype='mod', itemmodule='assign', iteminstance and itemnumber=0 already identify the item: iteminstance is the unique assign instance id, and an instance belongs to exactly one course, so the course condition never excludes a row.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 237,
+    "mutator": "GreaterThan",
+    "hash": "0074e20129cf88da68a8abaaa700d6c47661e3063098c51f6b6308b29c153825",
+    "reason": "ensure_assign_grade_item(): '$count >= 1' instead of '> 1'. The case count === 1 returned two lines above, so the comparison is only reached with a count other than 1 and both operators behave identically.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 245,
+    "mutator": "ArrayItemRemoval",
+    "hash": "0d8b60ff9829865acbf592fdc15ba5785c4fa39d5735d5e0825704903e89ac4c",
+    "reason": "ensure_assign_grade_item(): the seeding grade_update() call is followed by assign_grade_item_update($assignment), which sets itemname, idnumber and the final grade type on the same item with its own, complete parameter array, so the final item is identical whichever seeding parameter is missing or malformed. The seed only needs to make the item exist (the call itself is covered by the test that deletes the item). Here: one element of the seed parameter array is dropped.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 246,
+    "mutator": "ArrayItem",
+    "hash": "2dc09a7cf5edc06f21afc61f0dd477cde105a964dc1044c6c93e0210ae5fc127",
+    "reason": "ensure_assign_grade_item(): the seeding grade_update() call is followed by assign_grade_item_update($assignment), which sets itemname, idnumber and the final grade type on the same item with its own, complete parameter array, so the final item is identical whichever seeding parameter is missing or malformed. The seed only needs to make the item exist (the call itself is covered by the test that deletes the item). Here: the 'itemname' element turns into a comparison.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 246,
+    "mutator": "ArrayItem",
+    "hash": "0a4a47025d6e2d7f1592f212aea440a12a9bc4099c4c350fe8c506016a5a9bf8",
+    "reason": "ensure_assign_grade_item(): the seeding grade_update() call is followed by assign_grade_item_update($assignment), which sets itemname, idnumber and the final grade type on the same item with its own, complete parameter array, so the final item is identical whichever seeding parameter is missing or malformed. The seed only needs to make the item exist (the call itself is covered by the test that deletes the item). Here: the 'idnumber' element turns into a comparison.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 299,
+    "mutator": "Continue_",
+    "hash": "5460ae7cc7022ad0eaaec447d7a8e96f792a950731d6b25a7e1f14446b00acb3",
+    "reason": "assert_parallel_array_lengths(): 'break' instead of 'continue' in a loop over the parallel_array_lengths rules. Only choice declares this option and it has exactly one rule (catalog/choice.php), so no rule follows the skipped one.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 484,
+    "mutator": "FalseValue",
+    "hash": "4f6756800abcdce86e553749d51546f904df551b4b70e2b7c426c38eff747afa",
+    "reason": "resolve_draft(): get_area_files(..., includedirs true instead of false). The directory entries have the filename '.', which cannot equal a basename of a material path (material file names must match the policy of material_files::area()), so in_array() never selects them.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/write_target.php",
+    "line": 600,
+    "mutator": "Continue_",
+    "hash": "b6cca53aa6f7fb970723cc67896504f6ce7ab2e93768cea69c8fd7d50d870275",
+    "reason": "derive_editor_columns(): 'break' instead of 'continue'. Each catalog declares at most one editor_content entry (page: page, assign: activityeditor), so no entry follows the skipped one.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/write_target.php": "f2e0af343058b5916edda217578e4dc86c16cde20199fce52f814f59aa38bc48"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/context_files.php",
+    "line": 246,
+    "mutator": "UnwrapArrayValues",
+    "hash": "46fac045cef5a63224567dbfac6275a2f895cf734133f68bcee5069bb8652465",
+    "reason": "migrate_legacy_files(): file_exists(...$target) with the string-keyed array instead of array_values(). PHP 8.1 spreads string keys as named arguments; the keys contextid, component, filearea, itemid, filepath and filename are exactly the parameter names of file_storage::file_exists(), so the call is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/context_files.php": "06857e2a3d58597ed311a6f19407a3a1512ce25f893ccd1229ec7748bfb6ac30"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/context_files.php",
+    "line": 251,
+    "mutator": "CastInt",
+    "hash": "a278639385e51a3d2f3295c4c6ee4be4b6ea29585af268592534f1d548e6b769",
+    "reason": "migrate_legacy_files(): file_storage::create_file_from_storedfile() accepts a stored_file or a file id and resolves a numeric string id like the int through get_file_by_id(); the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/context_files.php": "06857e2a3d58597ed311a6f19407a3a1512ce25f893ccd1229ec7748bfb6ac30"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/context_files.php",
+    "line": 254,
+    "mutator": "MethodCallRemoval",
+    "hash": "d5496de97bbd7c898aca2d51dff7d3d026925da3befe9f46c63adc467d3e18b7",
+    "reason": "migrate_legacy_files(): $legacy->close() directly before the return. The mysqli and pgsql recordset classes call close() in their destructor and $legacy goes out of scope at the return, so the result set is released either way (verified: removing the call leaves all context_files tests green).",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/context_files.php": "06857e2a3d58597ed311a6f19407a3a1512ce25f893ccd1229ec7748bfb6ac30"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/http_endpoint.php",
+    "line": 42,
+    "mutator": "CastInt",
+    "hash": "1cc15dc87f33c017f308300a648271c5530de45d25f5893c328b316cb7c8f890",
+    "reason": "browse(): location_selection::page_state(int $userid, ...) coerces $USER->id (int or numeric string) to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/http_endpoint.php": "ef91bb0a9b24b08b698ff3b8b4e5dc61a15cc801d075ee3fdc7086f2db9e2f73"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/http_endpoint.php",
+    "line": 43,
+    "mutator": "CastString",
+    "hash": "90cb63dde000a8989e870dfc41e4f431523c308980622e48792d267a1f42da03",
+    "reason": "browse(): (string) json_encode(...) for the body of http_response, whose constructor takes 'string $body'. json_encode() returns a string or false; in non-strict mode false is coerced to '' by the parameter, exactly as the cast does.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/http_endpoint.php": "ef91bb0a9b24b08b698ff3b8b4e5dc61a15cc801d075ee3fdc7086f2db9e2f73"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/http_endpoint.php",
+    "line": 45,
+    "mutator": "CastString",
+    "hash": "06d02b7de56871bc2b2fedae70682d5897f2af5cc90f1829bd86d7d1b050f361",
+    "reason": "browse(): (string) json_encode(...) for the body of http_response, whose constructor takes 'string $body'. json_encode() returns a string or false; in non-strict mode false is coerced to '' by the parameter, exactly as the cast does.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/http_endpoint.php": "ef91bb0a9b24b08b698ff3b8b4e5dc61a15cc801d075ee3fdc7086f2db9e2f73"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/history_page.php",
+    "line": 58,
+    "mutator": "CastInt",
+    "hash": "2b73d3293a495b5afe103cb37e111327f69bbc1d2533c2d38957d820c5730a02",
+    "reason": "response(): history_page::activities_data(int $courseid) coerces $course->id (int or numeric string) to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/history_page.php": "d105bcade9bea689d00b28956687f91051e1d204b85b3f22899c7619b04614fc"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/history_page.php",
+    "line": 72,
+    "mutator": "FalseValue",
+    "hash": "14c61d39b71e842be4a85cc3e1d351f8cdee06274d2e2d18cf9da78b7373a8d6",
+    "reason": "configure(): the fourth argument of get_coursemodule_from_id() only adds a 'sectionnum' property to the returned record; configure() uses course, name (via the caller) and passes the record to require_login(), none of which reads sectionnum.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/output/history_page.php": "d105bcade9bea689d00b28956687f91051e1d204b85b3f22899c7619b04614fc"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/image_preview.php",
+    "line": 67,
+    "mutator": "FunctionCallRemoval",
+    "hash": "861be044fd41c0cfd2051fdc11324f649d4058ebf59832e14412894f53bd83be",
+    "reason": "PHP 8 GdImage objects are freed by reference counting and imagedestroy() has been a no-op since PHP 8.0 (deprecated in 8.5); the image is released when the variable goes out of scope either way, and nothing observable depends on the call. Here: imagedestroy($source) in build().",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/image_preview.php": "d1b006f5cbe2edd484ccb3e1a1dd14fed05055444b5a5187b1c736884b692896"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/image_preview.php",
+    "line": 72,
+    "mutator": "FunctionCallRemoval",
+    "hash": "169d4fba2ef48f987608ad9fb4b46dfdb4498a41fbae2d6e948cf26c5a2856bf",
+    "reason": "PHP 8 GdImage objects are freed by reference counting and imagedestroy() has been a no-op since PHP 8.0 (deprecated in 8.5); the image is released when the variable goes out of scope either way, and nothing observable depends on the call. Here: imagedestroy($canvas) in build().",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/image_preview.php": "d1b006f5cbe2edd484ccb3e1a1dd14fed05055444b5a5187b1c736884b692896"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 76,
+    "mutator": "CastInt",
+    "hash": "acba01ff94afbca109515cd3cc371437955d554c426434c294871156d2c0e88e",
+    "reason": "resolve(): the method parameter is declared int (resolve_owned(int $instanceid), fresh_options(int $instanceid)); non-strict mode coerces the numeric string to the same int, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 78,
+    "mutator": "CastInt",
+    "hash": "da681eb82100b0c2e65c4a7014b097f33f4912aa3861ae5a80d30fbd5b93b6f0",
+    "reason": "resolve(): the method parameter is declared int (resolve_owned(int $instanceid), fresh_options(int $instanceid)); non-strict mode coerces the numeric string to the same int, so the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 126,
+    "mutator": "CastInt",
+    "hash": "4829fedd6229492560478c850bc6cdb76ad130b0ca074ddcf8c70b8e209d06e2",
+    "reason": "resolve_owned(): storage_anchor::own_context()->id is an int, and (int) $record->contextid is compared with !==; without the cast the string column value would differ, but the DML record delivers the same numeric id; verified: all resolver tests (own and foreign contexts) stay green without the cast.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 135,
+    "mutator": "CastInt",
+    "hash": "c403c28dd280576a5bed9f22b48e81ee6a5141108284e83633bc0e4c599a8f22",
+    "reason": "resolve_owned(): webdav_setup_steps::enabled_for_user(int $userid) coerces $USER->id to the same int in non-strict mode; the cast is redundant.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 244,
+    "mutator": "UnwrapArrayValues",
+    "hash": "1f5b10d870768de8c472ff0c773504f509920e48340700668e4a36224148fa52",
+    "reason": "is_iserv_listing(): array_values() before sort(). sort() reindexes the array, so the comparison with the area list is independent of the keys that array_filter() preserves.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 307,
+    "mutator": "DecrementInteger",
+    "hash": "eaa05c61f4de200d9f9fdf2e78329a68e36d0eb9523a38c24a3f92f40e66e4ef",
+    "reason": "base_url(): the default of a missing webdav_port is -1 instead of 0; both are not positive and no port is appended ($port > 0), so the URL is identical.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 177,
+    "mutator": "CastString",
+    "hash": "2aec3299c08c186a0b572e30ac396f2b6c3f68c9866e18b8ac348f1c4e865ee4",
+    "reason": "transport(): the operand is `$options[...] ?? ''`, i.e. already a string (option values come from get_records()->value) or the string '', so the (string) cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 178,
+    "mutator": "CastString",
+    "hash": "c3197fb7c68667a85e0fe328c6722808c50818d6cc8b09979959df34700bb9f2",
+    "reason": "transport(): the operand is `$options[...] ?? ''`, i.e. already a string (option values come from get_records()->value) or the string '', so the (string) cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 279,
+    "mutator": "CastString",
+    "hash": "4c374144ccc879fd98f9da254fe8a33b7627f001f7e4a3fa950c776801c4494d",
+    "reason": "fingerprint(): the operand is `$options[...] ?? ''`, i.e. already a string (option values come from get_records()->value) or the string '', so the (string) cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 280,
+    "mutator": "CastString",
+    "hash": "a8df28ff693d6c25df106e0c42d9fb551a6071417b445af2e20649d301aedd93",
+    "reason": "fingerprint(): the operand is `$options[...] ?? ''`, i.e. already a string (option values come from get_records()->value) or the string '', so the (string) cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 281,
+    "mutator": "CastString",
+    "hash": "7cab81c5775aaf1cadcd265d0c80d026d6adcaf89f8a8147c18e8a16ea42f9a9",
+    "reason": "fingerprint(): the operand is `$options[...] ?? ''`, i.e. already a string (option values come from get_records()->value) or the string '', so the (string) cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 309,
+    "mutator": "CastString",
+    "hash": "5149d46bc06b3d6b773d3c0cf29dbebbc5e0301ed3c25ca74917307a05123ecc",
+    "reason": "base_url(): the operand is `$options[...] ?? ''`, i.e. already a string (option values come from get_records()->value) or the string '', so the (string) cast converts a string to a string.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php",
+    "line": 294,
+    "mutator": "CastString",
+    "hash": "95fc8436e2a6c756222c3742cfcee4c7ffda4bf67f9e9616afe7012c707a691f",
+    "reason": "normalised_fingerprint(): (string) inside trim(...). trim() takes a string parameter and coerces int, float and bool arguments to the same text in non-strict mode, and the operand is `$fingerprint[...] ?? ''`, so the explicit cast adds nothing.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/webdav/webdav_instance.php": "9634720d07ec7a8f71f8e9e8c785660301c30feb71b8ff3ee06b7173c6bf0406"
+    }
   }
 ]
