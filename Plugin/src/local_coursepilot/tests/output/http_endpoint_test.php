@@ -155,6 +155,6 @@ final class http_endpoint_test extends \advanced_testcase {
         $response->send();
         $body = ob_get_clean();
         $this->assertSame($response->body, $body);
-        $this->assertSame(200, http_response_code());
+        $this->assertSame(200, \http_response_code());
     }
 }

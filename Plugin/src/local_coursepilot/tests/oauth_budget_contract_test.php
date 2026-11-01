@@ -77,13 +77,22 @@ final class oauth_budget_contract_test extends \advanced_testcase {
     public function test_a_rejected_request_returns_its_site_unit_and_names_the_wait_in_whole_seconds(): void {
         $this->resetAfterTest();
 
-        $this->assertSame(0, oauth_budget::consume('register', '192.0.2.1', 10, 1, 1));
-        $wait = oauth_budget::consume('register', '192.0.2.1', 10, 1, 1);
+        // The one-second window follows the real clock: repeat with a fresh scope until both calls share one second.
+        $samewindow = false;
+        for ($attempt = 0; $attempt < 5 && !$samewindow; $attempt++) {
+            $scope = 'register' . $attempt;
+            $start = time();
+            $first = oauth_budget::consume($scope, '192.0.2.1', 10, 1, 1);
+            $wait = oauth_budget::consume($scope, '192.0.2.1', 10, 1, 1);
+            $samewindow = time() === $start;
+        }
+        $this->assertTrue($samewindow, 'Both calls must fall into one window to judge the rejection.');
 
+        $this->assertSame(0, $first);
         // A window of one second always has between zero and one second left; at least one second is reported.
         $this->assertSame(1, $wait);
-        $this->assertSame(1, $this->hits('register', '192.0.2.1'));
-        $this->assertSame(1, $this->sitehits('register'));
+        $this->assertSame(1, $this->hits($scope, '192.0.2.1'));
+        $this->assertSame(1, $this->sitehits($scope));
     }
 
     public function test_the_wait_never_exceeds_the_window_and_is_never_negative(): void {
