@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\external;
 
+use local_coursepilot\tests\caught_throwable;
 use core_external\external_api;
 
 /**
@@ -35,6 +36,8 @@ use core_external\external_api;
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class export_questions_xml_test extends \advanced_testcase {
+    use caught_throwable;
+
     /**
      * An unknown question ID fails with the existing not-found error.
      */
@@ -338,5 +341,30 @@ final class export_questions_xml_test extends \advanced_testcase {
   </question>
 </quiz>
 XML;
+    }
+
+    public function test_the_right_to_manage_own_files_is_checked_before_the_material_store_is_resolved(): void {
+        global $DB, $USER;
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $imported = import_questions_xml::execute($categoryid, self::multichoice_xml('Frage', 'Text', 'Feedback'));
+        $imported = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $imported);
+        $entryid = $imported['questions'][0]['questionbankentryid'];
+        $version = $DB->get_record('question_versions', ['questionbankentryid' => $entryid], '*', MUST_EXIST);
+        // A pointer whose material store is nested in the context area.
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($USER->id)->id, 'component' => 'user', 'filearea' => 'private',
+            'itemid' => 0, 'filepath' => '/coursepilot/', 'filename' => '.coursepilot-location.json',
+        ], json_encode([
+            'context_area' => ['location' => 'moodle', 'path' => 'coursepilot'],
+            'material_store' => ['location' => 'moodle', 'path' => 'coursepilot/Material'],
+        ]));
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid, \context_user::instance($USER->id)->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+
+        $e = $this->caught(fn() => export_questions_xml::execute([(int) $version->questionid], 'export.xml'));
+
+        $this->assertInstanceOf(\required_capability_exception::class, $e);
     }
 }

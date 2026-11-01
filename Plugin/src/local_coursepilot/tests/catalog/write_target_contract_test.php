@@ -82,10 +82,13 @@ final class write_target_contract_test extends \advanced_testcase {
     }
 
     public function test_the_list_length_rule_judges_only_two_lists_that_are_named_changes_of_a_list_pair(): void {
-        $equal = write_target::update(choice::class, ['limit' => [1, 2]], ['option' => ['a', 'b']], []);
-        $referencescalar = write_target::update(choice::class, ['limit' => [1, 2]], ['option' => 'ab'], []);
-        $fieldscalar = write_target::update(choice::class, ['limit' => 3], ['option' => ['a', 'b']], []);
-        $unnamed = write_target::update(choice::class, ['name' => 'x'], ['option' => ['a', 'b'], 'limit' => [1]], []);
+        $update = fn(array $fields, array $state): write_target => $this->succeeded(
+            fn() => write_target::update(choice::class, $fields, $state, [])
+        );
+        $equal = $update(['limit' => [1, 2]], ['option' => ['a', 'b']]);
+        $referencescalar = $update(['limit' => [1, 2]], ['option' => 'ab']);
+        $fieldscalar = $update(['limit' => 3], ['option' => ['a', 'b']]);
+        $unnamed = $update(['name' => 'x'], ['option' => ['a', 'b'], 'limit' => [1]]);
 
         foreach ([$equal, $referencescalar, $fieldscalar, $unnamed] as $target) {
             $this->assertInstanceOf(write_target::class, $target);
@@ -94,10 +97,13 @@ final class write_target_contract_test extends \advanced_testcase {
 
     public function test_an_unset_date_counts_as_no_date_for_the_rule(): void {
         // Only one side of the pair exists in the state: nothing to compare, nothing to refuse.
-        $fieldonly = write_target::update(assign::class, ['duedate' => 1], [], []);
-        $referenceonly = write_target::update(assign::class, ['allowsubmissionsfromdate' => 5], [], []);
-        $choicefield = write_target::update(choice::class, ['timeclose' => 1], [], ['timeclose']);
-        $choicereference = write_target::update(choice::class, ['timeopen' => 5], [], []);
+        $update = fn(string $class, array $fields, array $named): write_target => $this->succeeded(
+            fn() => write_target::update($class, $fields, [], $named)
+        );
+        $fieldonly = $update(assign::class, ['duedate' => 1], []);
+        $referenceonly = $update(assign::class, ['allowsubmissionsfromdate' => 5], []);
+        $choicefield = $update(choice::class, ['timeclose' => 1], ['timeclose']);
+        $choicereference = $update(choice::class, ['timeopen' => 5], []);
 
         foreach ([$fieldonly, $referenceonly, $choicefield, $choicereference] as $target) {
             $this->assertInstanceOf(write_target::class, $target);
@@ -105,7 +111,7 @@ final class write_target_contract_test extends \advanced_testcase {
     }
 
     public function test_a_date_before_1970_is_still_a_set_date_and_an_absent_partner_is_none(): void {
-        $target = write_target::update(assign::class, ['duedate' => -5], [], []);
+        $target = $this->succeeded(fn() => write_target::update(assign::class, ['duedate' => -5], [], []));
 
         $this->assertInstanceOf(write_target::class, $target);
     }
@@ -396,7 +402,7 @@ final class write_target_contract_test extends \advanced_testcase {
         $cm = get_coursemodule_from_id('page', $page->cmid, 0, false, MUST_EXIST);
         $current = (new \ReflectionMethod(module_settings::class, 'read_settings'))->invoke(null, (int) $cm->id);
 
-        $patch = write_target::update_activity(
+        $patch = $this->succeeded(fn() => write_target::update_activity(
             page::class,
             $cm,
             $course,
@@ -404,7 +410,7 @@ final class write_target_contract_test extends \advanced_testcase {
             $current,
             material_files::LOCATION_STORE,
             []
-        );
+        ));
 
         $this->assertSame(['page' => ['text' => '<p>New</p>', 'format' => FORMAT_HTML, 'itemid' => 0]], $patch);
         $this->assertSame('<p>New</p>', $DB->get_field('page', 'content', ['id' => $cm->instance]));
@@ -437,23 +443,23 @@ final class write_target_contract_test extends \advanced_testcase {
         $context = \context_course::instance($course->id);
 
         $flat = (object) ['intro' => 'Flat text', 'introformat' => 4];
-        $this->apply_image_change($flat, $context);
+        $this->succeeded(fn() => $this->apply_image_change($flat, $context));
         $this->assertSame('Flat text', $flat->introeditor['text']);
         $this->assertSame(4, $flat->introeditor['format']);
         $this->assertGreaterThan(0, $flat->introeditor['itemid']);
 
         $bare = new \stdClass();
-        $this->apply_image_change($bare, $context);
+        $this->succeeded(fn() => $this->apply_image_change($bare, $context));
         $this->assertSame('', $bare->introeditor['text']);
         $this->assertSame(FORMAT_HTML, $bare->introeditor['format']);
 
         $broken = (object) ['introeditor' => 'not an array', 'intro' => 'From flat'];
-        $this->apply_image_change($broken, $context);
+        $this->succeeded(fn() => $this->apply_image_change($broken, $context));
         $rebuilt = (array) $broken;
         $this->assertSame('From flat', $rebuilt['introeditor']['text']);
 
         $existing = (object) ['introeditor' => ['text' => 'Kept', 'format' => 2, 'itemid' => 1], 'intro' => 'Ignored'];
-        $this->apply_image_change($existing, $context);
+        $this->succeeded(fn() => $this->apply_image_change($existing, $context));
         $this->assertSame('Kept', $existing->introeditor['text']);
         $this->assertSame(2, $existing->introeditor['format']);
         $this->assertGreaterThan(1, $existing->introeditor['itemid']);

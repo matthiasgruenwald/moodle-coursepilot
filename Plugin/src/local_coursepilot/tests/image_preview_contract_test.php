@@ -85,7 +85,7 @@ final class image_preview_contract_test extends \advanced_testcase {
     ): void {
         $source = imagecreatetruecolor($width, $height);
 
-        $result = image_preview::build($this->png($source));
+        $result = $this->succeeded(fn() => image_preview::build($this->png($source)));
 
         $this->assertSame(
             ['image_base64', 'mimetype', 'width', 'height'],
@@ -131,5 +131,20 @@ final class image_preview_contract_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\moodle_exception::class, $e);
         $this->assertSame('materialpreviewunsupported', $e->errorcode);
+    }
+
+    public function test_transparent_pixels_become_white_even_in_a_one_pixel_image(): void {
+        $source = imagecreatetruecolor(1, 1);
+        imagealphablending($source, false);
+        imagesavealpha($source, true);
+        imagefill($source, 0, 0, imagecolorallocatealpha($source, 0, 0, 0, 127));
+
+        $result = $this->succeeded(fn() => image_preview::build($this->png($source)));
+
+        $decoded = imagecreatefromstring(base64_decode($result['image_base64'], true));
+        $rgb = imagecolorat($decoded, 0, 0);
+        $this->assertGreaterThan(240, ($rgb >> 16) & 255);
+        $this->assertGreaterThan(240, ($rgb >> 8) & 255);
+        $this->assertGreaterThan(240, $rgb & 255);
     }
 }

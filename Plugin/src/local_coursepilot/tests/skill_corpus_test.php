@@ -391,4 +391,12 @@ final class skill_corpus_test extends \advanced_testcase {
 
         $this->assertSame($plugin->release . ' (' . $plugin->version . ')', skill_corpus::get('coursepilot')['corpus_version']);
     }
+
+    public function test_the_closing_delimiter_is_searched_after_the_opening_line_only(): void {
+        // A delimiter right on the opening line's newline belongs to the opening: the real close comes later.
+        $this->assertSame('foo', $this->call_private('trigger_of', "---\n---\ndescription: foo\n---\nBody"));
+        $this->assertSame('---', $this->call_private('trigger_of', "---\n---\nname: x\n---\ndescription: bar\n"));
+        // An empty first frontmatter line closes at once; the later description is body text.
+        $this->assertSame('---', $this->call_private('trigger_of', "---\n\n---\ndescription: foo\n---\nBody"));
+    }
 }

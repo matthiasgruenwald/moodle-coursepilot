@@ -123,9 +123,9 @@ final class material_store_tools_contract_test extends \advanced_testcase {
     public function test_the_size_guard_accepts_up_to_the_limit_and_names_both_numbers_above_it(): void {
         $this->setup_user();
 
-        $this->assertNull($this->call_private('guard_size_against_limit', 100, 100));
-        $this->assertNull($this->call_private('guard_size_against_limit', 5, 100));
-        $this->assertNull($this->call_private('guard_size_against_limit', 500, 0), 'No limit at all.');
+        $this->assertNull($this->succeeded(fn() => $this->call_private('guard_size_against_limit', 100, 100)));
+        $this->assertNull($this->succeeded(fn() => $this->call_private('guard_size_against_limit', 5, 100)));
+        $this->assertNull($this->succeeded(fn() => $this->call_private('guard_size_against_limit', 500, 0)), 'No limit at all.');
 
         $e = $this->caught(fn() => $this->call_private('guard_size_against_limit', 101, 100));
         $this->assertInstanceOf(\moodle_exception::class, $e);

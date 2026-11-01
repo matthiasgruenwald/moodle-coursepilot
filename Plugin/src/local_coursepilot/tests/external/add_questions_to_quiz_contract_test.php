@@ -92,7 +92,7 @@ final class add_questions_to_quiz_contract_test extends \advanced_testcase {
         $c = $this->question('Frage C');
         quiz_add_quiz_question($b->id, $this->quiz);
 
-        $result = add_questions_to_quiz::execute((int) $this->quiz->cmid, [$a->id, $b->id, $c->id]);
+        $result = $this->succeeded(fn() => add_questions_to_quiz::execute((int) $this->quiz->cmid, [$a->id, $b->id, $c->id]));
 
         $this->assert_declared_types($result, add_questions_to_quiz::execute_returns());
         $this->assertSame([

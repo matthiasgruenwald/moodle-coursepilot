@@ -24,6 +24,7 @@
 
 namespace local_coursepilot\catalog;
 
+use local_coursepilot\tests\caught_throwable;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 defined('MOODLE_INTERNAL') || die();
@@ -38,6 +39,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(drift_check::class)]
 final class drift_check_messages_test extends \advanced_testcase {
+    use caught_throwable;
+
     /**
      * Checks catalog definition data against the real label table.
      *
@@ -138,10 +141,10 @@ final class drift_check_messages_test extends \advanced_testcase {
         );
         $this->assertSame(
             ['Callable source "local_coursepilot\catalog\label::modname::extra()" no longer exists on this instance.'],
-            $this->violations(['fields' => $this->label_fields_with_callable(
+            $this->succeeded(fn() => $this->violations(['fields' => $this->label_fields_with_callable(
                 'intro',
                 'local_coursepilot\catalog\label::modname::extra()'
-            )])
+            )]))
         );
     }
 

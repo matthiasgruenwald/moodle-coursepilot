@@ -109,6 +109,8 @@ final class pending_write_translation_test extends \advanced_testcase {
         );
 
         $this->assertSame('pendingwritefailed', $exception->errorcode);
+        $this->assertIsObject($exception->a);
+        $this->assertSame('plan.md', $exception->a->path);
         $message = $exception->getMessage();
         $this->assertStringContainsString('plan.md', $message);
         $this->assertStringContainsString('overwrite', $message);
@@ -146,6 +148,8 @@ final class pending_write_translation_test extends \advanced_testcase {
         );
 
         $this->assertSame('pendingnotewritefailed', $exception->errorcode);
+        $this->assertIsObject($exception->a);
+        $this->assertSame('plan.md', $exception->a->path);
         $this->assertSame([], pending_write_notice::list_grouped());
     }
 }

@@ -241,6 +241,55 @@ final class private_files_storage_port_test extends storage_port_contract_test {
     }
 
     /**
+     * An append with a stale checksum is refused and leaves the stored content untouched.
+     */
+    public function test_append_with_a_stale_checksum_is_refused_and_keeps_the_content(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $first = $port->write($area, 'plan.md', 'one');
+        $port->write($area, 'plan.md', 'two');
+
+        try {
+            $port->append($area, 'plan.md', '+three', $first['checksum']);
+            $this->fail('A storage_conflict_exception was expected.');
+        } catch (\local_coursepilot\storage_conflict_exception $e) {
+            $this->assertSame('two', $port->read($area, 'plan.md')['content']);
+        }
+    }
+
+    /**
+     * A create-only append onto an existing file is refused and keeps the content.
+     */
+    public function test_a_create_only_append_onto_an_existing_file_is_refused(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $port->write($area, 'plan.md', 'present');
+
+        try {
+            $port->append($area, 'plan.md', '+more', storage_port::MISSING_CHECKSUM);
+            $this->fail('A storage_conflict_exception was expected.');
+        } catch (\local_coursepilot\storage_conflict_exception $e) {
+            $this->assertSame('present', $port->read($area, 'plan.md')['content']);
+        }
+    }
+
+    /**
+     * A create-only write over an existing file is refused and keeps the content.
+     */
+    public function test_a_create_only_write_over_an_existing_file_is_refused(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $port->write($area, 'plan.md', 'present');
+
+        try {
+            $port->write($area, 'plan.md', 'replacement', storage_port::MISSING_CHECKSUM);
+            $this->fail('A storage_conflict_exception was expected.');
+        } catch (\local_coursepilot\storage_conflict_exception $e) {
+            $this->assertSame('present', $port->read($area, 'plan.md')['content']);
+        }
+    }
+
+    /**
      * Conditional creation and replacement retain image provenance through the port.
      */
     public function test_conditional_writes_retain_source_metadata(): void {

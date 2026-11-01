@@ -203,8 +203,18 @@ final class report_clone_lineage_contract_test extends \advanced_testcase {
         $DB->set_field('question_categories', 'contextid', SYSCONTEXTID, ['id' => $categoryof($system)]);
         $DB->set_field('question_categories', 'contextid', 987654, ['id' => $categoryof($vanished)]);
 
-        $result = report_clone_lineage::execute((int) $this->quiz->cmid);
+        $warnings = [];
+        set_error_handler(static function (int $errno, string $message) use (&$warnings): bool {
+            $warnings[] = $message;
+            return true;
+        });
+        try {
+            $result = $this->succeeded(fn() => report_clone_lineage::execute((int) $this->quiz->cmid));
+        } finally {
+            restore_error_handler();
+        }
 
+        $this->assertSame([], $warnings);
         $this->assertSame(['shared_reference', 'shared_reference'], array_column($result['questions'], 'status'));
         $this->assertSame([0, 0], array_column($result['questions'], 'source_course_id'));
     }

@@ -116,7 +116,7 @@ final class activity_tools_contract_test extends \advanced_testcase {
         [$quiz, $questions, $category] = $this->quizzes();
         $keep = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $questions['Second']->id]);
 
-        $plan = get_quiz_cleanup_plan::execute((int) $quiz->cmid, [$keep]);
+        $plan = $this->succeeded(fn() => get_quiz_cleanup_plan::execute((int) $quiz->cmid, [$keep]));
 
         $this->assert_declared_types($plan, get_quiz_cleanup_plan::execute_returns());
         $this->assertSame('Target <b>quiz</b>', $plan['quizname']);

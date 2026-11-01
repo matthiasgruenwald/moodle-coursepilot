@@ -16,6 +16,9 @@
 
 namespace local_coursepilot;
 
+use local_coursepilot\tests\async_deletion_hook;
+use local_coursepilot\tests\caught_throwable;
+use local_coursepilot\tests\failing_database_write;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 defined('MOODLE_INTERNAL') || die();
@@ -29,6 +32,9 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(course_module_placement::class)]
 final class course_module_placement_test extends \advanced_testcase {
+    use caught_throwable;
+    use failing_database_write;
+
     use \local_coursepilot\tests\caught_throwable;
 
     /**
@@ -154,7 +160,7 @@ final class course_module_placement_test extends \advanced_testcase {
         $sectionid = (int) $this->section_id((int) $course->id, 1);
         $other = (int) $this->getDataGenerator()->create_module('page', ['course' => $course->id], ['section' => 2])->cmid;
 
-        course_module_placement::move_to($c, $sectionid, $a);
+        $this->succeeded(fn() => course_module_placement::move_to($c, $sectionid, $a));
         $this->assertSame([$c, $a, $b], $this->order((int) $course->id, 1));
 
         course_module_placement::move_to($c, $sectionid, null);
@@ -334,5 +340,60 @@ final class course_module_placement_test extends \advanced_testcase {
             $e->getMessage() . ($e instanceof \moodle_exception ? (string) $e->debuginfo : '')
         );
         $this->assertSame(['coursebinenable' => 1], $CFG->forced_plugin_settings['tool_recyclebin']);
+    }
+
+    public function test_discarding_a_half_made_row_refreshes_the_course_cache(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $this->assertArrayHasKey((int) $page->cmid, get_fast_modinfo($course->id)->get_cms());
+        $DB->set_field('course_modules', 'instance', 0, ['id' => $page->cmid]);
+
+        course_module_placement::discard_failed((int) $page->cmid);
+
+        $this->assertFalse($DB->record_exists('course_modules', ['id' => $page->cmid]));
+        $this->assertArrayNotHasKey((int) $page->cmid, get_fast_modinfo($course->id)->get_cms());
+    }
+
+    public function test_a_failed_activity_is_deleted_at_once_even_when_a_plugin_recommends_background_deletion(): void {
+        global $DB;
+        $this->resetAfterTest();
+        require_once(__DIR__ . '/fixtures/background_deletion_hook.php');
+        \cache::make('core', 'plugin_functions')->purge();
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        async_deletion_hook::$recommend = true;
+        try {
+            course_module_placement::discard_failed((int) $page->cmid);
+        } finally {
+            async_deletion_hook::$recommend = false;
+            \cache::make('core', 'plugin_functions')->purge();
+        }
+
+        $this->assertFalse($DB->record_exists('course_modules', ['id' => $page->cmid]));
+    }
+
+    public function test_a_deletion_that_fails_midway_still_refreshes_the_course_cache(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $this->assertCount(1, get_fast_modinfo($course->id)->get_instances_of('page'));
+
+        $e = $this->with_failing_write(
+            'course_modules',
+            'DELETE',
+            '1',
+            fn() => $this->caught(fn() => course_module_placement::discard_failed((int) $page->cmid))
+        );
+
+        $this->assertInstanceOf(\Throwable::class, $e);
+        $this->assertTrue($DB->record_exists('course_modules', ['id' => $page->cmid]));
+        $this->assertSame(
+            $DB->record_exists('page', ['id' => $page->id]),
+            count(get_fast_modinfo($course->id)->get_instances_of('page')) === 1
+        );
     }
 }

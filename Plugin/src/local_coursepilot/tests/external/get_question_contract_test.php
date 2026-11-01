@@ -82,7 +82,7 @@ final class get_question_contract_test extends \advanced_testcase {
         $this->mc('Decoy', [0, 1]);
         $question = $this->mc('Target', [0, 1, 0]);
 
-        $result = get_question::execute($this->categoryid, 'Target');
+        $result = $this->succeeded(fn() => get_question::execute($this->categoryid, 'Target'));
 
         $this->assert_declared_types($result, get_question::execute_returns());
         $answerids = array_keys($DB->get_records('question_answers', ['question' => $question->id], 'id'));

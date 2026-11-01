@@ -90,6 +90,7 @@ final class admin_pointer_tools_contract_test extends \advanced_testcase {
 
     public function test_open_notes_and_external_targets_are_recognised_from_the_raw_documents(): void {
         $this->resetAfterTest();
+        $this->assertTrue((new \ReflectionMethod(pointer_scan::class, 'has_external_target'))->isPublic());
         $user = $this->getDataGenerator()->create_user();
         $id = (int) $user->id;
         $this->assertFalse(pointer_scan::has_open_pending($id));
@@ -114,7 +115,6 @@ final class admin_pointer_tools_contract_test extends \advanced_testcase {
             pointer_scan::has_external_target(['context_area' => ['location' => 'moodle'], 'material_store' => 'external'])
         );
         $this->assertFalse(pointer_scan::has_external_target(null));
-        $this->assertTrue((new \ReflectionMethod(pointer_scan::class, 'has_external_target'))->isPublic());
     }
 
     public function test_external_targets_are_found_per_user_and_each_state_has_its_defect(): void {

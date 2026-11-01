@@ -16,6 +16,7 @@
 
 namespace local_coursepilot;
 
+use local_coursepilot\tests\caught_throwable;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -28,6 +29,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(material_composition::class)]
 final class material_composition_test extends \advanced_testcase {
+    use caught_throwable;
+
     /** @var string Bundled font. */
     private const FONT = __DIR__ . '/../fonts/FreeSansBold.ttf';
 
@@ -146,10 +149,10 @@ final class material_composition_test extends \advanced_testcase {
      * A crop narrower than one pixel still yields a one-pixel part.
      */
     public function test_degenerate_crop_keeps_at_least_one_pixel(): void {
-        [, $width, $height] = material_composition::render(
+        [, $width, $height] = $this->succeeded(fn() => material_composition::render(
             [$this->part($this->png(10, 10), '', ['x0' => 0.49, 'y0' => 0.49, 'x1' => 0.5, 'y1' => 0.5])],
             'horizontal'
-        );
+        ));
 
         $this->assertSame([1, 1], [$width, $height]);
     }
@@ -168,6 +171,24 @@ final class material_composition_test extends \advanced_testcase {
             'zero height' => [['x0' => 0.0, 'y0' => 0.5, 'x1' => 1.0, 'y1' => 0.5]],
             'inverted' => [['x0' => 0.8, 'y0' => 0.0, 'x1' => 0.2, 'y1' => 1.0]],
         ];
+    }
+
+    /**
+     * The refusal carries the coordinates as an object, for the range and for the positive-area rule.
+     */
+    public function test_invalid_crop_exception_carries_the_coordinates_as_an_object(): void {
+        $crops = [
+            ['x0' => 0.0, 'y0' => 0.0, 'x1' => 1.5, 'y1' => 1.0],
+            ['x0' => 0.5, 'y0' => 0.0, 'x1' => 0.5, 'y1' => 1.0],
+        ];
+        foreach ($crops as $crop) {
+            try {
+                material_composition::render([$this->part($this->png(4, 4), '', $crop)], 'horizontal');
+                $this->fail('Invalid crop must be refused.');
+            } catch (\moodle_exception $e) {
+                $this->assertEquals((object) $crop, $e->a);
+            }
+        }
     }
 
     /**
@@ -193,7 +214,9 @@ final class material_composition_test extends \advanced_testcase {
         $this->assertSame('materialcropsourceunsupported', $this->refusal([$this->part($this->png(2, 2), '', null, 'a.svg')]));
         $this->assertSame('materialcropsourceunsupported', $this->refusal([$this->part('not an image', '', null, 'b.png')]));
         // Upper-case extensions are accepted.
-        [, $width] = material_composition::render([$this->part($this->png(2, 2), '', null, 'C.PNG')], 'horizontal');
+        [, $width] = $this->succeeded(
+            fn() => material_composition::render([$this->part($this->png(2, 2), '', null, 'C.PNG')], 'horizontal')
+        );
         $this->assertSame(2, $width);
         try {
             material_composition::render([$this->part($this->png(2, 2), '', null, 'x.svg')], 'horizontal');

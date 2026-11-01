@@ -325,4 +325,36 @@ final class set_restriction_contract_test extends \advanced_testcase {
         $this->assertInstanceOf(\moodle_exception::class, $e);
         $this->assertSame('["teacher_grade:' . $second . '"]', $e->a['ids']);
     }
+
+    public function test_a_group_of_another_course_is_not_found(): void {
+        $this->setup_course();
+        $othercourse = $this->getDataGenerator()->create_course();
+        $group = $this->getDataGenerator()->create_group(['courseid' => $othercourse->id]);
+
+        $e = $this->failure([['type' => 'group', 'group_id' => (int) $group->id]]);
+
+        $this->assertInstanceOf(\moodle_exception::class, $e);
+        $this->assertSame('restrictiongroupnotfound', $e->errorcode);
+        $this->assertSame(['field' => 'group_id', 'value' => (string) $group->id], $e->a);
+    }
+
+    public function test_an_activity_id_beyond_the_integer_range_is_not_found_instead_of_failing(): void {
+        $this->setup_course();
+
+        $e = $this->failure([['type' => 'completion', 'activity_cmid' => '99999999999999999999', 'status' => 'pass']]);
+
+        $this->assertInstanceOf(\moodle_exception::class, $e);
+        $this->assertSame('restrictionactivitynotfound', $e->errorcode);
+    }
+
+    public function test_a_disabled_availability_type_is_reported_as_invalid_restriction_json(): void {
+        $this->setup_course();
+        \core\plugininfo\availability::enable_plugin('date', 0);
+
+        $e = $this->failure([['type' => 'date', 'direction' => 'from', 'timestamp' => 1767225600]]);
+
+        $this->assertInstanceOf(\moodle_exception::class, $e);
+        $this->assertSame('invalidrestrictionjson', $e->errorcode);
+        $this->assertSame(['field' => 'conditions_json'], $e->a);
+    }
 }

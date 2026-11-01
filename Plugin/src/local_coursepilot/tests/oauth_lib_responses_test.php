@@ -16,6 +16,7 @@
 
 namespace local_coursepilot;
 
+use local_coursepilot\tests\caught_throwable;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -29,6 +30,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 #[CoversClass(oauth_lib::class)]
 final class oauth_lib_responses_test extends \advanced_testcase {
+    use caught_throwable;
+
     /** @var string Issuer root. */
     private const ROOT = 'https://cp.example';
 
@@ -84,10 +87,11 @@ final class oauth_lib_responses_test extends \advanced_testcase {
      */
     #[DataProvider('known_paths')]
     public function test_known_discovery_paths_serve_metadata_without_caching(string $path): void {
+        $metadata = $this->succeeded(fn() => oauth_lib::authorization_server_metadata(self::ROOT));
         $this->assertSame([
             'status' => 200,
             'headers' => ['Cache-Control' => 'no-store'],
-            'body' => oauth_lib::authorization_server_metadata(self::ROOT),
+            'body' => $metadata,
         ], oauth_lib::handle_discovery(self::ROOT, $path));
     }
 
@@ -176,21 +180,15 @@ final class oauth_lib_responses_test extends \advanced_testcase {
      * Redirect parameters leave out null and empty values; with nothing left the URI stays as it is.
      */
     public function test_redirect_url_drops_empty_parameters(): void {
+        $build = fn(string $url, array $params): string => $this->succeeded(
+            fn() => oauth_lib::build_redirect_url($url, $params)
+        );
         $this->assertSame(
             'https://c.example/cb?code=abc&state=0',
-            html_entity_decode(oauth_lib::build_redirect_url(
-                'https://c.example/cb',
-                ['code' => 'abc', 'error' => null, 'x' => '', 'state' => '0']
-            ))
+            html_entity_decode($build('https://c.example/cb', ['code' => 'abc', 'error' => null, 'x' => '', 'state' => '0']))
         );
-        $this->assertSame(
-            'https://c.example/cb?q=1&code=abc',
-            oauth_lib::build_redirect_url('https://c.example/cb?q=1', ['code' => 'abc'])
-        );
-        $this->assertSame(
-            'https://c.example/cb',
-            oauth_lib::build_redirect_url('https://c.example/cb', ['error' => null, 'state' => ''])
-        );
+        $this->assertSame('https://c.example/cb?q=1&code=abc', $build('https://c.example/cb?q=1', ['code' => 'abc']));
+        $this->assertSame('https://c.example/cb', $build('https://c.example/cb', ['error' => null, 'state' => '']));
     }
 
     /**
@@ -199,9 +197,11 @@ final class oauth_lib_responses_test extends \advanced_testcase {
     public function test_registration_helpers_are_public_and_agree(): void {
         $this->resetAfterTest();
 
-        $registered = oauth_lib::register_client(['client_name' => 'Direkt', 'redirect_uris' => ['https://client.example/cb']]);
+        $registered = $this->succeeded(
+            fn() => oauth_lib::register_client(['client_name' => 'Direkt', 'redirect_uris' => ['https://client.example/cb']])
+        );
         $client = oauth_lib::get_client($registered['client_id']);
-        $described = oauth_lib::client_registration_response($client);
+        $described = $this->succeeded(fn() => oauth_lib::client_registration_response($client));
 
         $this->assertSame('Direkt', $registered['client_name']);
         $this->assertSame($registered, $described);

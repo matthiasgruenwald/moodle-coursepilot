@@ -150,7 +150,7 @@ final class move_question_contract_test extends \advanced_testcase {
         $existing = $this->question('Target', 'Existing', 'dup-1');
         $DB->set_field('question', 'questiontext', 'Existing text', ['id' => $existing->id]);
 
-        $result = move_question::execute((int) $moving->id, $this->categories['Target']);
+        $result = $this->succeeded(fn() => move_question::execute((int) $moving->id, $this->categories['Target']));
 
         $this->assertSame([
             'status' => 'suspect',
@@ -289,5 +289,20 @@ final class move_question_contract_test extends \advanced_testcase {
 
         $this->assertInstanceOf(\moodle_exception::class, $e);
         $this->assertSame('nopermissions', $e->errorcode);
+    }
+
+    public function test_a_rename_caused_only_by_the_core_wildcard_match_is_not_reported_as_a_resolved_collision(): void {
+        global $DB;
+        $this->setup_banks();
+        // The core clash check uses LIKE, where "_" matches any character; the exact-match gate sees no collision.
+        $this->question('Target', 'Existing', 'AB1');
+        $moving = $this->question('Source', 'Moving', 'A_1');
+
+        $result = move_question::execute((int) $moving->id, $this->categories['Target']);
+
+        $this->assertSame('moved', $result['status']);
+        $this->assertNotSame('A_1', $DB->get_field('question_bank_entries', 'idnumber', ['id' => $this->entry_of($moving)]));
+        $this->assertFalse($result['idnumber_disambiguated']);
+        $this->assertSame('Question moved to the target category.', $result['message']);
     }
 }

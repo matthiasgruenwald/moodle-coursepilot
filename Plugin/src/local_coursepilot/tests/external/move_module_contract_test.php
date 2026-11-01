@@ -96,7 +96,17 @@ final class move_module_contract_test extends \advanced_testcase {
         $this->assertSame('Activity "C" moved to section "Algebra" at position 1.', $middle['message']);
         $this->assertSame(['A', 'C', 'B'], $this->order(2));
 
-        $beyond = move_module::execute($this->pages['C'], 2, 2);
+        $warnings = [];
+        set_error_handler(static function (int $errno, string $message) use (&$warnings): bool {
+            $warnings[] = $message;
+            return true;
+        });
+        try {
+            $beyond = move_module::execute($this->pages['C'], 2, 2);
+        } finally {
+            restore_error_handler();
+        }
+        $this->assertSame([], $warnings, 'The position after the last activity must not read past the list.');
         $this->assertSame('Activity "C" moved to section "Algebra".', $beyond['message']);
         $this->assertSame(['A', 'B', 'C'], $this->order(2));
 

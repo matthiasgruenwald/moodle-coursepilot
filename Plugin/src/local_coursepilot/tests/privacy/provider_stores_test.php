@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\privacy;
 
+use local_coursepilot\tests\caught_throwable;
 use core_privacy\local\metadata\collection;
 use core_privacy\local\metadata\types\database_table;
 use core_privacy\local\metadata\types\subsystem_link;
@@ -39,6 +40,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 #[CoversClass(provider::class)]
 final class provider_stores_test extends \core_privacy\tests\provider_testcase {
+    use caught_throwable;
+
     /** @var string[] The system-context stores. */
     private const STORES = [
         'local_coursepilot_oauth_code', 'local_coursepilot_oauth_token', 'local_coursepilot_oauth_grant',
@@ -275,7 +278,9 @@ final class provider_stores_test extends \core_privacy\tests\provider_testcase {
         }
         $grantid = $this->seed('local_coursepilot_oauth_grant', (int) $user->id);
 
-        $this->export_context_data_for_user($user->id, \context_system::instance(), 'local_coursepilot');
+        $this->succeeded(
+            fn() => $this->export_context_data_for_user($user->id, \context_system::instance(), 'local_coursepilot')
+        );
         $data = $this->exported(\context_system::instance(), [get_string('pluginname', 'local_coursepilot')]);
 
         $this->assertSame(['oauth_codes', 'oauth_tokens', 'oauth_connections', 'workbench_tickets'], array_keys((array) $data));
@@ -312,7 +317,7 @@ final class provider_stores_test extends \core_privacy\tests\provider_testcase {
         ]);
         $fakeuser = (object) ['id' => $course->id];
 
-        provider::export_user_data($this->approved_contexts($fakeuser, [$coursectx->id]));
+        $this->succeeded(fn() => provider::export_user_data($this->approved_contexts($fakeuser, [$coursectx->id])));
 
         /** @var \core_privacy\tests\request\content_writer $exported */
         $exported = writer::with_context($coursectx);
@@ -454,7 +459,9 @@ final class provider_stores_test extends \core_privacy\tests\provider_testcase {
         }
         $this->seed('local_coursepilot_oauth_grant', (int) $user->id);
 
-        provider::export_user_data($this->approved_contexts($user, [$usercontext->id, \context_system::instance()->id]));
+        $this->succeeded(
+            fn() => provider::export_user_data($this->approved_contexts($user, [$usercontext->id, \context_system::instance()->id]))
+        );
 
         $marks = $this->exported($usercontext, [
             get_string('pluginname', 'local_coursepilot'), get_string('privacy:metadata:context_mark', 'local_coursepilot'),
@@ -464,6 +471,8 @@ final class provider_stores_test extends \core_privacy\tests\provider_testcase {
             $marks->entries
         );
         $system = $this->exported(\context_system::instance(), [get_string('pluginname', 'local_coursepilot')]);
+        $this->assertIsObject($system);
+        $this->assertObjectHasProperty('oauth_connections', $system);
         $this->assertCount(1, $system->oauth_connections);
     }
 

@@ -86,7 +86,17 @@ final class setup_tools_contract_test extends \advanced_testcase {
         $this->setUser($user);
         $id = (int) $user->id;
 
-        $none = webdav_setup_steps::catalog($id);
+        $warnings = [];
+        set_error_handler(static function (int $errno, string $message) use (&$warnings): bool {
+            $warnings[] = $message;
+            return true;
+        });
+        try {
+            $none = webdav_setup_steps::catalog($id);
+        } finally {
+            restore_error_handler();
+        }
+        $this->assertSame([], $warnings);
         $this->assertSame([false, false, false], array_values(array_map(static fn($s) => $s['ok'], $none)));
         $this->assertFalse(webdav_setup_steps::enabled_for_user($id));
 

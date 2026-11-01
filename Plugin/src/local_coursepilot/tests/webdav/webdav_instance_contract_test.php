@@ -113,7 +113,7 @@ final class webdav_instance_contract_test extends \advanced_testcase {
             'basepath' => '//Coursepilot//', 'account' => $this->fixturekonto]);
         $partial = pointer_location::external($instanceid, 'x', ['server' => $this->fixtureserver]);
 
-        $this->assertInstanceOf(resolved_webdav_instance::class, webdav_instance::resolve($trimmed));
+        $this->assertInstanceOf(resolved_webdav_instance::class, $this->succeeded(fn() => webdav_instance::resolve($trimmed)));
         $e = $this->caught(fn() => webdav_instance::resolve($partial));
         $this->assertInstanceOf(\moodle_exception::class, $e);
         $this->assertSame('webdavfingerprintchanged', $e->errorcode);
@@ -122,7 +122,7 @@ final class webdav_instance_contract_test extends \advanced_testcase {
         $this->drop_option($bare, 'webdav_path');
         $this->drop_option($bare, 'webdav_user');
         $emptyparts = pointer_location::external($bare, 'x', ['server' => $this->fixtureserver]);
-        $this->assertInstanceOf(resolved_webdav_instance::class, webdav_instance::resolve($emptyparts));
+        $this->assertInstanceOf(resolved_webdav_instance::class, $this->succeeded(fn() => webdav_instance::resolve($emptyparts)));
     }
 
     /**
@@ -158,7 +158,9 @@ final class webdav_instance_contract_test extends \advanced_testcase {
         }
         $fingerprint = webdav_instance::fingerprint_of($instanceid);
 
-        $resolved = webdav_instance::resolve(pointer_location::external($instanceid, 'x', $fingerprint));
+        $resolved = $this->succeeded(
+            fn() => webdav_instance::resolve(pointer_location::external($instanceid, 'x', $fingerprint))
+        );
 
         $this->assertSame($expected, $resolved->directory_url(''));
     }
@@ -220,6 +222,6 @@ final class webdav_instance_contract_test extends \advanced_testcase {
             ['server' => 1234, 'basepath' => 'Coursepilot', 'account' => 5678]
         );
 
-        $this->assertInstanceOf(resolved_webdav_instance::class, webdav_instance::resolve($pointer));
+        $this->assertInstanceOf(resolved_webdav_instance::class, $this->succeeded(fn() => webdav_instance::resolve($pointer)));
     }
 }

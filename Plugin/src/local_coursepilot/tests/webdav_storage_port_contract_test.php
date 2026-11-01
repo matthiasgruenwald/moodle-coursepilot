@@ -140,7 +140,7 @@ final class webdav_storage_port_contract_test extends \advanced_testcase {
         $this->fake->seed_folder('/Teach/Ctx');
         $port = new webdav_storage_port($this->instanceid, '/Teach//Ctx/', $this->fake);
 
-        $port->write($this->area(), 'plan.md', 'x');
+        $this->succeeded(fn() => $port->write($this->area(), 'plan.md', 'x'));
 
         foreach ($this->fake->requests() as $request) {
             $this->assertStringNotContainsString('//', substr($request['url'], strlen('https://')), $request['url']);

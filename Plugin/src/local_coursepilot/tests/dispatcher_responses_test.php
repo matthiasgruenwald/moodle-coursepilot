@@ -16,6 +16,7 @@
 
 namespace local_coursepilot;
 
+use local_coursepilot\tests\caught_throwable;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -28,6 +29,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(dispatcher::class)]
 final class dispatcher_responses_test extends \advanced_testcase {
+    use caught_throwable;
+
     /**
      * Creates a user with a valid OAuth access token and remote access; returns the token.
      *
@@ -374,5 +377,115 @@ final class dispatcher_responses_test extends \advanced_testcase {
         $this->assertSame('text', $result['content'][0]['type']);
         $this->assertSame($result['structuredContent'], json_decode($result['content'][0]['text'], true));
         $this->assertSame(['content', 'structuredContent', 'resultType'], array_keys($modern['body']['result']));
+    }
+
+    public function test_ping_and_a_successful_tool_call_are_status_200_with_the_full_envelope(): void {
+        $this->resetAfterTest();
+
+        $ping = $this->call(['method' => 'ping']);
+        $tool = $this->call(['method' => 'tools/call', 'params' => ['name' => 'coursepilot_get_version_info']]);
+
+        $this->assertSame(200, $ping['status']);
+        $this->assertSame(200, $tool['status']);
+        $this->assertSame(['jsonrpc', 'id', 'result'], array_keys($tool['body']));
+        $this->assertSame('2.0', $tool['body']['jsonrpc']);
+        $this->assertSame(5, $tool['body']['id']);
+    }
+
+    public function test_the_text_copy_of_a_tool_result_keeps_unicode_and_slashes_readable(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->release = 'Größe/x';
+
+        $response = $this->call(['method' => 'tools/call', 'params' => ['name' => 'coursepilot_get_version_info']]);
+
+        $text = $response['body']['result']['content'][0]['text'];
+        $this->assertStringContainsString('"moodle_release":"Größe/x"', $text);
+    }
+
+    public function test_a_tool_name_that_is_no_string_is_an_unknown_tool_and_no_fatal_error(): void {
+        $this->resetAfterTest();
+        $notices = [];
+        set_error_handler(static function (int $errno, string $message) use (&$notices): bool {
+            $notices[] = $message;
+            return true;
+        });
+        try {
+            $response = $this->succeeded(
+                fn() => $this->call(['method' => 'tools/call', 'params' => ['name' => ['coursepilot_get_version_info']]])
+            );
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame(404, $response['status']);
+        $this->assertSame(-32601, $response['body']['error']['code']);
+        $this->assertSame('Unknown tool: Array', $response['body']['error']['message']);
+    }
+
+    public function test_authenticating_replaces_a_context_restriction_left_by_an_earlier_request(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+
+        \core_external\external_api::set_context_restriction(\context_course::instance($course->id));
+        try {
+            $response = $this->call(['method' => 'tools/call', 'params' => ['name' => 'coursepilot_get_version_info']]);
+        } finally {
+            \core_external\external_api::set_context_restriction(\context_system::instance());
+        }
+
+        $this->assertArrayNotHasKey('isError', $response['body']['result']);
+        $this->assertArrayHasKey('structuredContent', $response['body']['result']);
+    }
+
+    public function test_a_failed_tool_call_is_logged_with_its_message_but_without_database_details(): void {
+        $this->resetAfterTest();
+        set_config('loglevel', 3, 'local_coursepilot');
+        $sink = $this->redirectEvents();
+
+        $response = $this->call(['method' => 'tools/call', 'params' => [
+            'name' => 'coursepilot_get_module_settings', 'arguments' => ['cmid' => 987654321],
+        ]]);
+
+        $text = $response['body']['result']['content'][0]['text'];
+        $this->assertTrue($response['body']['result']['isError']);
+        $this->assertStringNotContainsString('SELECT', $text);
+        $failed = array_values(array_filter($sink->get_events(), fn($e) => $e instanceof event\tool_access_failed));
+        $this->assertCount(1, $failed);
+        $this->assertSame($text, $failed[0]->other['reason']);
+        $this->assertSame('coursepilot_get_module_settings', $failed[0]->other['toolname']);
+        $this->assertArrayNotHasKey('detail', $failed[0]->other);
+    }
+
+    public function test_an_invalid_parameter_error_explains_the_parameter_instead_of_the_generic_text(): void {
+        $this->resetAfterTest();
+
+        $response = $this->call(['method' => 'tools/call', 'params' => [
+            'name' => 'coursepilot_get_module_settings', 'arguments' => ['cmid' => 'abc'],
+        ]]);
+
+        $text = $response['body']['result']['content'][0]['text'];
+        $this->assertNotSame(get_string('invalidparameter', 'debug'), $text);
+        $this->assertStringContainsString('cmid', $text);
+    }
+
+    public function test_a_tool_result_with_a_mimetype_but_no_image_stays_a_single_text_block(): void {
+        $this->resetAfterTest();
+        $token = $this->token();
+        $call = fn(string $tool, array $arguments): array => dispatcher::handle(
+            ['jsonrpc' => '2.0', 'id' => 7, 'method' => 'tools/call', 'params' => ['name' => $tool, 'arguments' => $arguments]],
+            $token,
+            $this->headers()
+        );
+        $written = $call('coursepilot_write_context_file', ['path' => 'plan.md', 'content' => "Größe/x\n"]);
+        $this->assertArrayNotHasKey('isError', $written['body']['result']);
+
+        $read = $call('coursepilot_read_context_file', ['path' => 'plan.md']);
+
+        $result = $read['body']['result'];
+        $this->assertCount(1, $result['content']);
+        $this->assertSame('text', $result['content'][0]['type']);
+        $this->assertArrayHasKey('mimetype', $result['structuredContent']);
+        $this->assertStringContainsString('"content":"Größe/x\n"', $result['content'][0]['text']);
     }
 }

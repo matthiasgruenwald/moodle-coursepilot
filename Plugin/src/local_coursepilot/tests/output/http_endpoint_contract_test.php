@@ -113,6 +113,8 @@ final class http_endpoint_contract_test extends \advanced_testcase {
             ['error' => get_string('workbenchticketinvalid', 'local_coursepilot')],
             json_decode($response->body, true)
         );
+        // Default JSON encoding: the em dash of the message stays escaped.
+        $this->assertSame(json_encode(['error' => get_string('workbenchticketinvalid', 'local_coursepilot')]), $response->body);
         $events = $sink->get_events();
         $this->assertCount(1, $events);
         $this->assertInstanceOf(\local_coursepilot\event\tool_access_failed::class, $events[0]);
@@ -131,6 +133,7 @@ final class http_endpoint_contract_test extends \advanced_testcase {
         $body = json_decode($response->body, true);
         $this->assertSame(['error'], array_keys($body));
         $this->assertNotSame('', $body['error']);
+        $this->assertSame(json_encode($body), $response->body);
         $events = $sink->get_events();
         $this->assertCount(1, $events);
         $this->assertInstanceOf(\local_coursepilot\event\tool_access_failed::class, $events[0]);
@@ -287,5 +290,21 @@ final class http_endpoint_contract_test extends \advanced_testcase {
         $this->assertNotSame($plain->body, $modern->body);
         $this->assertStringNotContainsString('\/', $plain->body);
         $this->assertStringNotContainsString('\u', $plain->body);
+    }
+
+    public function test_the_headers_of_the_web_server_request_are_read_when_the_api_exists(): void {
+        $previous = $_SERVER['HTTP_X_CP_PROBE'] ?? null;
+        $_SERVER['HTTP_X_CP_PROBE'] = 'present';
+        try {
+            $headers = http_endpoint::request_headers();
+        } finally {
+            if ($previous === null) {
+                unset($_SERVER['HTTP_X_CP_PROBE']);
+            } else {
+                $_SERVER['HTTP_X_CP_PROBE'] = $previous;
+            }
+        }
+
+        $this->assertSame('present', $headers['X-Cp-Probe'] ?? null);
     }
 }

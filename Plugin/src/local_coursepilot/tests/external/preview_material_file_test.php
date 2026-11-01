@@ -163,9 +163,17 @@ final class preview_material_file_test extends \advanced_testcase {
 
         $result = preview_material_file::execute('blatt.pdf');
 
+        $this->assertSame(
+            ['path', 'available', 'message', 'mimetype', 'image_base64', 'width', 'height'],
+            array_keys($result)
+        );
+        $this->assertSame('blatt.pdf', $result['path']);
         $this->assertFalse($result['available']);
         $this->assertNotEmpty($result['message']);
+        $this->assertNull($result['mimetype']);
         $this->assertNull($result['image_base64']);
+        $this->assertNull($result['width']);
+        $this->assertNull($result['height']);
     }
 
     public function test_missing_file_throws(): void {
@@ -274,5 +282,37 @@ final class preview_material_file_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('materialpathiscontext', $e->errorcode);
         }
+    }
+
+    public function test_an_upper_case_image_extension_is_previewed_like_a_lower_case_one(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->store_png('BILD.PNG', 40, 20);
+
+        $result = preview_material_file::execute('BILD.PNG');
+
+        $this->assertTrue($result['available']);
+        $this->assertSame([40, 20], [$result['width'], $result['height']]);
+    }
+
+    public function test_the_context_restriction_of_the_web_service_is_checked_first(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->store_png('bild.png', 40, 20);
+        $course = $this->getDataGenerator()->create_course();
+
+        external_api::set_context_restriction(\context_course::instance($course->id));
+        try {
+            $thrown = null;
+            try {
+                preview_material_file::execute('bild.png');
+            } catch (\Throwable $caught) {
+                $thrown = $caught;
+            }
+        } finally {
+            external_api::set_context_restriction(\context_system::instance());
+        }
+
+        $this->assertInstanceOf(\core_external\restricted_context_exception::class, $thrown);
     }
 }

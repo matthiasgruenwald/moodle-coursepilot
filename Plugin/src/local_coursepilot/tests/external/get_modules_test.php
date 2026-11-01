@@ -100,6 +100,38 @@ final class get_modules_test extends \advanced_testcase {
     }
 
     /**
+     * The section filter resolves the section number inside the requested course only.
+     */
+    public function test_the_section_number_is_resolved_inside_the_requested_course(): void {
+        $this->resetAfterTest();
+        $teacher = $this->getDataGenerator()->create_user();
+        $first = $this->getDataGenerator()->create_course(['numsections' => 2]);
+        $second = $this->getDataGenerator()->create_course(['numsections' => 2]);
+        foreach ([$first, $second] as $course) {
+            $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        }
+        $this->setUser($teacher);
+        /** @var \mod_page_generator $generator */
+        /** @var \mod_page_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_page');
+        $generator->create_instance(['course' => $first->id, 'section' => 1]);
+        /** @var \mod_page_generator $generator */
+        /** @var \mod_page_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_page');
+        $page = $generator->create_instance([
+            'course' => $second->id,
+            'section' => 1,
+        ]);
+
+        $result = external_api::clean_returnvalue(
+            get_modules::execute_returns(),
+            get_modules::execute($second->id, 1)
+        );
+
+        $this->assertSame([(int) $page->cmid], array_column($result, 'cmid'));
+    }
+
+    /**
      * Reject enrolled users lacking local/coursepilot:use.
      */
     public function test_rejects_user_without_capability(): void {
@@ -162,5 +194,23 @@ final class get_modules_test extends \advanced_testcase {
             }
         }
         return null;
+    }
+
+    public function test_a_section_number_selects_the_section_of_the_requested_course_only(): void {
+        $this->resetAfterTest();
+        $first = $this->getDataGenerator()->create_course(['numsections' => 2]);
+        $second = $this->getDataGenerator()->create_course(['numsections' => 2]);
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $first->id, 'editingteacher');
+        $this->getDataGenerator()->enrol_user($teacher->id, $second->id, 'editingteacher');
+        $this->setUser($teacher);
+        /** @var \mod_page_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_page');
+        $page = $generator->create_instance(['course' => $first->id, 'section' => 1]);
+        $generator->create_instance(['course' => $second->id, 'section' => 1]);
+
+        $result = get_modules::execute($first->id, 1);
+
+        $this->assertSame([(int) $page->cmid], array_column($result, 'cmid'));
     }
 }

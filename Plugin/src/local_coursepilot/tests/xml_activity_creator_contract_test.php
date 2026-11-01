@@ -40,6 +40,28 @@ final class xml_activity_creator_contract_test extends \advanced_testcase {
     private string $xml;
 
     /**
+     * A lightboxgallery XML without timemodified is refused with the export hint.
+     */
+    public function test_a_lightboxgallery_xml_without_timemodified_is_refused_with_the_export_hint(): void {
+        if (!\core_component::get_component_directory('mod_lightboxgallery')) {
+            $this->markTestSkipped('mod_lightboxgallery is not installed in this environment.');
+        }
+        $this->setup_course();
+        $xml = '<activity id="1" moduleid="1" modulename="lightboxgallery" contextid="1"><lightboxgallery/></activity>';
+
+        $e = $this->caught(
+            fn() => xml_activity_creator::preview_supersede((int) $this->course->id, 'lightboxgallery', $xml, 987654)
+        );
+
+        $this->assertInstanceOf(\invalid_parameter_exception::class, $e);
+        $this->assertSame(
+            'activity_xml requires <timemodified> in <lightboxgallery>. '
+                . 'Use the complete XML from coursepilot_export_default_activity.',
+            $e->getMessage()
+        );
+    }
+
+    /**
      * Course with an editing teacher and a book activity XML.
      */
     private function setup_course(): void {

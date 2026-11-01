@@ -216,8 +216,13 @@ final class pseudofield_carry_forward_contract_test extends \advanced_testcase {
     public function test_choice_options_are_rebuilt_from_the_table_unless_the_patch_names_them(): void {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->create_module('choice', ['course' => $course->id, 'option' => ['X1', 'X2', 'X3']]);
         $choice = $this->getDataGenerator()->create_module('choice', ['course' => $course->id, 'option' => ['A', 'B']]);
         $cm = get_coursemodule_from_id('choice', $choice->cmid, 0, false, MUST_EXIST);
+        global $DB;
+        $ids = array_keys($DB->get_records('choice_options', ['choiceid' => $choice->id], 'id'));
+        $DB->set_field('choice_options', 'maxanswers', 3, ['id' => $ids[0]]);
+        $DB->set_field('choice_options', 'maxanswers', 4, ['id' => $ids[1]]);
 
         $info = new \stdClass();
         pseudofield_carry_forward::apply('choice', choice::class, $info, [], $cm, []);
@@ -225,7 +230,7 @@ final class pseudofield_carry_forward_contract_test extends \advanced_testcase {
         pseudofield_carry_forward::apply('choice', choice::class, $named, [], $cm, ['option' => ['X']]);
 
         $this->assertSame(['A', 'B'], $info->option);
-        $this->assertCount(2, $info->limit);
+        $this->assertSame([3, 4], array_map('intval', $info->limit));
         $this->assertCount(2, $info->optionid);
         $this->assertSame(array_values($info->optionid), $info->optionid);
         $this->assertFalse(property_exists($named, 'option'));

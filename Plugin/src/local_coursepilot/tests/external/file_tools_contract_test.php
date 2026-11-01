@@ -83,7 +83,7 @@ final class file_tools_contract_test extends \advanced_testcase {
         $this->user_with_image();
         $part = ['sourcepath' => 'part.png', 'location' => 'store', 'expected_contenthash' => ''];
 
-        $result = compose_material_file::execute([$part], 'vertical', 'OUT.PNG');
+        $result = $this->succeeded(fn() => compose_material_file::execute([$part], 'vertical', 'OUT.PNG'));
 
         $this->assertSame(
             ['path', 'sources', 'created', 'width', 'height', 'size', 'contenthash', 'message'],
@@ -243,10 +243,10 @@ final class file_tools_contract_test extends \advanced_testcase {
     public function test_the_glossary_report_has_integer_ids_the_indexes_and_the_gap_notice(): void {
         $glossary = $this->glossary();
 
-        $result = add_glossary_entries::execute((int) $glossary->cmid, [
+        $result = $this->succeeded(fn() => add_glossary_entries::execute((int) $glossary->cmid, [
             ['concept' => 'Atom', 'definition' => 'Small'],
             ['concept' => 'Ion', 'definition' => 'Charged'],
-        ]);
+        ]));
 
         $this->assertSame(['cmid', 'entries', 'gap_notice'], array_keys($result));
         $this->assertSame((int) $glossary->cmid, $result['cmid']);

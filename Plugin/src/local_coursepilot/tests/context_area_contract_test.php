@@ -100,7 +100,7 @@ final class context_area_contract_test extends \advanced_testcase {
         $this->user();
 
         $first = context_area::write('a.md', 'one');
-        $second = context_area::write('a.md', 'three');
+        $second = $this->succeeded(fn() => context_area::write('a.md', 'three'));
 
         $this->assertTrue($first['created']);
         $this->assertFalse($second['created']);

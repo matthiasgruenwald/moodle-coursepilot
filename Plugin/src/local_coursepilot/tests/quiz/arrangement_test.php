@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\quiz;
 
+use local_coursepilot\tests\caught_throwable;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 defined('MOODLE_INTERNAL') || die();
@@ -34,6 +35,8 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  */
 #[CoversClass(arrangement::class)]
 final class arrangement_test extends \advanced_testcase {
+    use caught_throwable;
+
     /**
      * Creates quiz with two questions.
      *
@@ -364,7 +367,7 @@ final class arrangement_test extends \advanced_testcase {
         array_unshift($state['slots'], array_replace($state['slots'][0], ['id' => 987654]));
         $state['slots'][] = array_replace($state['slots'][1], ['id' => 987655]);
 
-        arrangement::restore((int) $quiz->id, $state);
+        $this->succeeded(fn() => arrangement::restore((int) $quiz->id, $state));
 
         $this->assertSame($original, array_map('intval', array_column($this->slots((int) $quiz->id), 'id')));
     }

@@ -16,6 +16,7 @@
 
 namespace local_coursepilot;
 
+use local_coursepilot\tests\caught_throwable;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -30,6 +31,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(material_files::class)]
 final class material_files_contract_test extends \advanced_testcase {
+    use caught_throwable;
+
     use tests\caught_throwable;
 
     /**
@@ -98,7 +101,7 @@ final class material_files_contract_test extends \advanced_testcase {
 
     public function test_valid_names_pass_whatever_the_case_of_the_extension(): void {
         foreach (['report_1-final.pdf', 'SCAN.PNG', 'a.Docx'] as $filename) {
-            $this->assertNull((material_files::area()->checkwritablename)($filename), $filename);
+            $this->assertNull($this->succeeded(fn() => (material_files::area()->checkwritablename)($filename)), $filename);
         }
     }
 

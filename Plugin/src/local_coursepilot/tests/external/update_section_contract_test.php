@@ -88,11 +88,11 @@ final class update_section_contract_test extends \advanced_testcase {
     public function test_only_fields_that_really_change_are_reported(): void {
         $this->setup_course();
 
-        $result = update_section::execute(
+        $result = $this->succeeded(fn() => update_section::execute(
             (int) $this->course->id,
             1,
             json_encode(['name' => 'Old name', 'visible' => 1, 'summary' => 'Next'])
-        );
+        ));
 
         $this->assertSame(['summary'], array_column($result['changes'], 'field'));
         $this->assertSame('Changed: "summary" from "Old summary" to "Next".', $result['message']);
@@ -120,7 +120,7 @@ final class update_section_contract_test extends \advanced_testcase {
         $this->setup_course();
         update_section::execute((int) $this->course->id, 1, '{"visible":0}');
 
-        $result = update_section::execute((int) $this->course->id, 1, '{"visible":1}');
+        $result = $this->succeeded(fn() => update_section::execute((int) $this->course->id, 1, '{"visible":1}'));
 
         $this->assertSame('Changed: "visible" from 0 to 1.', $result['message']);
     }

@@ -107,7 +107,7 @@ final class small_tools_contract_test extends \advanced_testcase {
         $this->assertInstanceOf(\moodle_exception::class, $nonstring);
         $this->assertSame('invalidfieldname', $nonstring->errorcode);
 
-        catalog_fields::validate(choice::class, ['display' => '1']);
+        $this->succeeded(fn() => catalog_fields::validate(choice::class, ['display' => '1']));
         $bad = $this->caught(fn() => catalog_fields::validate(choice::class, ['display' => 7]));
         $this->assertInstanceOf(\moodle_exception::class, $bad);
         $this->assertSame('invalidfieldvalue', $bad->errorcode);

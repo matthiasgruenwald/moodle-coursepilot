@@ -450,4 +450,45 @@ final class crop_material_file_contract_test extends \advanced_testcase {
 
         $this->assertSame($result, external_api::clean_returnvalue(crop_material_file::execute_returns(), $result));
     }
+
+    /**
+     * Stores a palette GIF whose first colour is transparent and whose last pixel is opaque green.
+     *
+     * @param string $filename File name.
+     * @param int $size Width and height.
+     */
+    private function store_transparent_gif(string $filename, int $size): void {
+        $image = imagecreate($size, $size);
+        $transparent = imagecolorallocate($image, 255, 0, 0);
+        imagecolortransparent($image, $transparent);
+        $green = imagecolorallocate($image, 0, 255, 0);
+        if ($size > 1) {
+            imagesetpixel($image, $size - 1, $size - 1, $green);
+        }
+        ob_start();
+        imagegif($image);
+        $this->store($filename, ob_get_clean());
+    }
+
+    public function test_pixels_a_palette_gif_marks_transparent_stay_fully_transparent_in_the_png(): void {
+        $this->setup_user();
+        $this->store_transparent_gif('g.gif', 3);
+
+        crop_material_file::execute('g.gif', 'out.png', 0.0, 0.0, 1.0, 1.0);
+
+        $result = $this->load('out.png');
+        $this->assertSame([0, 0, 0, 127], $this->pixel($result, 0, 0));
+        $this->assertSame([0, 0, 0, 127], $this->pixel($result, 2, 0));
+        $this->assertSame([0, 0, 0, 127], $this->pixel($result, 0, 2));
+        $this->assertSame([0, 255, 0, 0], $this->pixel($result, 2, 2));
+    }
+
+    public function test_a_one_pixel_transparent_gif_stays_transparent_in_the_png(): void {
+        $this->setup_user();
+        $this->store_transparent_gif('one.gif', 1);
+
+        crop_material_file::execute('one.gif', 'one.png', 0.0, 0.0, 1.0, 1.0);
+
+        $this->assertSame([0, 0, 0, 127], $this->pixel($this->load('one.png'), 0, 0));
+    }
 }

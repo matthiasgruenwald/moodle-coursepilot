@@ -16,6 +16,7 @@
 
 namespace local_coursepilot;
 
+use local_coursepilot\tests\caught_throwable;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 defined('MOODLE_INTERNAL') || die();
@@ -30,6 +31,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(activity_backup::class)]
 final class activity_backup_scaffold_test extends \advanced_testcase {
+    use caught_throwable;
+
     protected function setUp(): void {
         parent::setUp();
         $this->preventResetByRollback();
@@ -292,12 +295,14 @@ final class activity_backup_scaffold_test extends \advanced_testcase {
         $course = $this->course_as_editing_teacher();
         $declaration = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 
-        $padded = $this->restore_keeping_scaffold((int) $course->id, 1, "\n  " . $this->page_xml('Mit Leerraum'));
-        $declared = $this->restore_keeping_scaffold(
+        $padded = $this->succeeded(
+            fn() => $this->restore_keeping_scaffold((int) $course->id, 1, "\n  " . $this->page_xml('Mit Leerraum'))
+        );
+        $declared = $this->succeeded(fn() => $this->restore_keeping_scaffold(
             (int) $course->id,
             1,
             '<?xml version="1.0" encoding="ISO-8859-1"?>' . "\n  " . $this->page_xml('Mit Deklaration')
-        );
+        ));
 
         $this->assertSame(
             $declaration . $this->page_xml('Mit Leerraum'),

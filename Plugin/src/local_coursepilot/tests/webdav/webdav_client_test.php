@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\webdav;
 
+use local_coursepilot\tests\caught_throwable;
 use local_coursepilot\tests\webdav\fake_webdav_transport;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -31,6 +32,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(webdav_client::class)]
 #[CoversClass(\local_coursepilot\webdav\webdav_error::class)]
 final class webdav_client_test extends \advanced_testcase {
+    use caught_throwable;
+
     /**
      * Fixed retry clock: the sleeper advances time rather than waiting,
      * as required by the specification.
@@ -301,7 +304,7 @@ final class webdav_client_test extends \advanced_testcase {
     }
 
     public function test_429_and_503_are_treated_as_unclear_and_retried(): void {
-        $codes = [429, 503];
+        $codes = [400, 429, 503];
         foreach ($codes as $code) {
             $calls = 0;
             $transport = new class ($code, $calls) implements webdav_transport {
@@ -345,7 +348,7 @@ final class webdav_client_test extends \advanced_testcase {
                     $time += $s;
                 },
             );
-            $this->assertSame('ok', $client->get('https://fake.example/dav/x.md'), (string) $code);
+            $this->assertSame('ok', $this->succeeded(fn() => $client->get('https://fake.example/dav/x.md')), (string) $code);
         }
     }
 

@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\webdav;
 
+use local_coursepilot\tests\caught_throwable;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -33,6 +34,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(webdav_setup_steps::class)]
 final class webdav_setup_steps_test extends \advanced_testcase {
+    use caught_throwable;
+
     use webdav_instance_fixture;
 
     public function test_catalog_does_not_throw_for_userid_zero(): void {
@@ -93,5 +96,20 @@ final class webdav_setup_steps_test extends \advanced_testcase {
         $DB->set_field('repository', 'visible', 0, ['type' => 'webdav']);
 
         $this->assertFalse(webdav_setup_steps::enabled_for_user((int) $user->id));
+    }
+
+    public function test_the_repository_step_follows_the_repository_record_and_its_visibility(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->create_webdav_instance($user);
+        $this->setUser($user);
+
+        $visible = $this->succeeded(fn() => webdav_setup_steps::catalog((int) $user->id));
+        $DB->delete_records('repository', ['type' => 'webdav']);
+        $missing = $this->succeeded(fn() => webdav_setup_steps::catalog((int) $user->id));
+
+        $this->assertTrue($visible[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['ok']);
+        $this->assertFalse($missing[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['ok']);
     }
 }

@@ -214,7 +214,7 @@ final class ensure_tools_contract_test extends \advanced_testcase {
         $reused = ensure_section::execute((int) $this->course->id, 1);
         $renamed = ensure_section::execute((int) $this->course->id, 1, 'Renamed');
         $again = ensure_section::execute((int) $this->course->id, 1, 'Renamed');
-        $zero = ensure_section::execute((int) $this->course->id, 0);
+        $zero = $this->succeeded(fn() => ensure_section::execute((int) $this->course->id, 0));
 
         foreach ([$created, $reused, $renamed] as $result) {
             $this->assert_declared_types($result, ensure_section::execute_returns());

@@ -83,7 +83,7 @@ final class move_section_contract_test extends \advanced_testcase {
     public function test_the_last_position_is_a_valid_target_and_the_first_section_is_not(): void {
         $this->setup_course();
 
-        $last = move_section::execute((int) $this->course->id, 1, 4);
+        $last = $this->succeeded(fn() => move_section::execute((int) $this->course->id, 1, 4));
         $this->assertSame(['S0', 'S2', 'S3', 'S4', 'S1'], $this->names());
         $this->assertSame(4, $last['sectionnum']);
 
@@ -139,5 +139,14 @@ final class move_section_contract_test extends \advanced_testcase {
             assign_capability($capability, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
             accesslib_clear_all_caches_for_unit_testing();
         }
+    }
+
+    public function test_the_section_id_is_returned_as_an_integer_for_a_move_to_the_same_position(): void {
+        $this->setup_course();
+
+        $result = $this->succeeded(fn() => move_section::execute((int) $this->course->id, 2, 2));
+
+        $this->assertIsInt($result['id']);
+        $this->assertSame(2, $result['sectionnum']);
     }
 }

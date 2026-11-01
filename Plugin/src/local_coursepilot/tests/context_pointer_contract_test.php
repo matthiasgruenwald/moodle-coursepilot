@@ -100,7 +100,7 @@ final class context_pointer_contract_test extends \advanced_testcase {
 
     #[DataProvider('good_paths')]
     public function test_a_path_is_trimmed_and_normalised(string $path, string $expected): void {
-        $this->assertSame($expected, context_pointer::validate_path($path));
+        $this->assertSame($expected, $this->succeeded(fn() => context_pointer::validate_path($path)));
     }
 
     /**
@@ -269,5 +269,30 @@ final class context_pointer_contract_test extends \advanced_testcase {
             $this->assertInstanceOf(\moodle_exception::class, $e, json_encode($document));
             $this->assertSame('pointerincomplete', $e->errorcode);
         }
+    }
+
+    public function test_a_fractional_instance_id_is_truncated_like_an_integer_and_zero_is_refused(): void {
+        $resolve = fn($instanceid) => context_pointer::resolve_target(
+            ['context_area' => $this->external(['instanceid' => $instanceid]), 'material_store' => $this->moodle('M')],
+            'context_area'
+        );
+        $messages = [];
+        set_error_handler(static function (int $errno, string $message) use (&$messages): bool {
+            $messages[] = $message;
+            return true;
+        });
+        try {
+            $fraction = $this->succeeded(fn() => $resolve(2.5));
+            $text = $this->succeeded(fn() => $resolve('3.7'));
+            $half = $this->caught(fn() => $resolve(0.5));
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame(2, $fraction->instanceid);
+        $this->assertSame(3, $text->instanceid);
+        $this->assertInstanceOf(\moodle_exception::class, $half);
+        $this->assertSame('pointerincomplete', $half->errorcode);
+        $this->assertSame([], $messages);
     }
 }
