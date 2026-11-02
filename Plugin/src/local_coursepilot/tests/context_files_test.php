@@ -28,6 +28,8 @@ namespace local_coursepilot;
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class context_files_test extends \advanced_testcase {
+    use \local_coursepilot\tests\caught_throwable;
+
     public function test_resolve_directory_defaults_to_root(): void {
         $this->resetAfterTest();
         $this->assertSame('/coursepilot/', context_files::resolve_directory(''));
@@ -266,8 +268,11 @@ final class context_files_test extends \advanced_testcase {
         ], '# Neu');
 
         ob_start();
-        $copied = context_files::migrate_legacy_files();
-        $log = ob_get_clean();
+        try {
+            $copied = $this->succeeded(fn() => context_files::migrate_legacy_files());
+        } finally {
+            $log = ob_get_clean();
+        }
 
         $this->assertSame(0, $copied);
         $this->assertStringContainsString('vorlagen.md', $log);
@@ -278,6 +283,43 @@ final class context_files_test extends \advanced_testcase {
             context_files::ITEMID,
             '/coursepilot/',
             'vorlagen.md'
+        )->get_content());
+    }
+
+    /**
+     * Skip collisions without overwriting, also for a name that sorts before the array key (Spec 0016 §3.1).
+     */
+    public function test_migrate_legacy_files_skips_collisions_of_a_file_sorting_before_the_word_filename(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $contextid = context_files::own_context()->id;
+        $this->create_legacy_file($contextid, '/coursepilot/', 'alpha.md', '# Alt');
+        get_file_storage()->create_file_from_string([
+            'contextid' => $contextid,
+            'component' => context_files::COMPONENT,
+            'filearea' => context_files::FILEAREA,
+            'itemid' => context_files::ITEMID,
+            'filepath' => '/coursepilot/',
+            'filename' => 'alpha.md',
+        ], '# Neu');
+
+        ob_start();
+        try {
+            $copied = $this->succeeded(fn() => context_files::migrate_legacy_files());
+        } finally {
+            $log = ob_get_clean();
+        }
+
+        $this->assertSame(0, $copied);
+        $this->assertStringContainsString('alpha.md', $log);
+        $this->assertSame('# Neu', get_file_storage()->get_file(
+            $contextid,
+            context_files::COMPONENT,
+            context_files::FILEAREA,
+            context_files::ITEMID,
+            '/coursepilot/',
+            'alpha.md'
         )->get_content());
     }
 

@@ -103,6 +103,8 @@ final class move_section_contract_test extends \advanced_testcase {
 
         $this->assertSame('Section "S2" is already at position 2.', $result['message']);
         $this->assertSame(2, $result['sectionnum']);
+        $this->assertIsInt($result['id']);
+        $this->assertSame(2, $result['sectionnum']);
         $this->assertSame(['S0', 'S1', 'S2', 'S3', 'S4'], $this->names());
     }
 

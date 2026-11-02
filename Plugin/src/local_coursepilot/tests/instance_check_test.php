@@ -108,4 +108,19 @@ final class instance_check_test extends \advanced_testcase {
         $this->assertNull($result['httpcode']);
         $this->assertSame('selfcheckrequestfailed', $result['detail']);
     }
+
+    public function test_self_check_reports_a_url_blocked_by_the_curl_security_helper_without_httpcode(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        // Blocked requests return early with empty curl info and error number 0, so no status code exists.
+        $CFG->curlsecurityblockedhosts = '127.0.0.1';
+        $CFG->curlsecurityallowedport = '';
+
+        $result = instance_check::self_check('https://127.0.0.1');
+        $this->assertDebuggingCalled();
+
+        $this->assertFalse($result['ok']);
+        $this->assertNull($result['httpcode']);
+        $this->assertSame('selfcheckrequestfailed', $result['detail']);
+    }
 }

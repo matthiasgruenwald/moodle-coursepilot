@@ -200,6 +200,22 @@ final class course_module_placement_test extends \advanced_testcase {
         $this->assertNull($e);
     }
 
+    public function test_discarding_a_half_made_row_leaves_the_course_cache_without_it(): void {
+        global $DB;
+        [$course] = $this->course_with_pages();
+        $cmid = (int) $DB->insert_record('course_modules', (object) [
+            'course' => $course->id, 'module' => $DB->get_field('modules', 'id', ['name' => 'page']),
+            'instance' => 0, 'section' => $this->section_id((int) $course->id, 1),
+        ]);
+        course_add_cm_to_section($course, $cmid, 1);
+        rebuild_course_cache($course->id, true);
+        get_fast_modinfo($course->id);
+
+        course_module_placement::discard_failed($cmid);
+
+        $this->assertArrayNotHasKey($cmid, get_fast_modinfo($course->id)->get_cms());
+    }
+
     public function test_discarding_a_half_made_row_completes_its_link_and_touches_no_other_activity(): void {
         global $DB;
         [$course, [$a, $b]] = $this->course_with_pages();

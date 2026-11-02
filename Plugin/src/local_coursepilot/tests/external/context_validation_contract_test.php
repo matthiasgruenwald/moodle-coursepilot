@@ -89,6 +89,7 @@ final class context_validation_contract_test extends \advanced_testcase {
     }
 
     public function test_the_right_to_use_the_plugin_is_checked_in_the_context_of_a_newly_created_bank(): void {
+        global $DB;
         $this->setup_teacher();
         \core\event\manager::phpunit_replace_observers([[
             'eventname' => '\core\event\course_module_created',
@@ -98,7 +99,14 @@ final class context_validation_contract_test extends \advanced_testcase {
             'includefile' => null,
         ]]);
 
-        $e = $this->caught(fn() => ensure_question_bank::execute((int) $this->course->id, 'Bank B'));
+        try {
+            $e = $this->caught(fn() => ensure_question_bank::execute((int) $this->course->id, 'Bank B'));
+        } finally {
+            // Later tests of the same process must not inherit the observer or its prohibition.
+            \core\event\manager::phpunit_reset();
+            $DB->delete_records('role_capabilities', ['capability' => 'local/coursepilot:use', 'permission' => CAP_PROHIBIT]);
+            accesslib_clear_all_caches_for_unit_testing();
+        }
 
         $this->assertInstanceOf(\required_capability_exception::class, $e);
     }

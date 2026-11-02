@@ -26,8 +26,8 @@ namespace local_coursepilot\tests;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class local_http_server {
-    /** @var resource|null Server process. */
-    private $process = null;
+    /** @var int Process ID of the server, 0 when none runs. */
+    private int $pid = 0;
 
     /** @var string Directory with the router script. */
     private string $directory;
@@ -47,11 +47,16 @@ final class local_http_server {
         $probe = stream_socket_server('tcp://127.0.0.1:0');
         $this->port = (int) substr(strrchr(stream_socket_get_name($probe, false), ':'), 1);
         fclose($probe);
-        $this->process = proc_open(
-            [PHP_BINARY, '-S', '127.0.0.1:' . $this->port, '-t', $this->directory, $this->directory . '/router.php'],
-            [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']],
-            $pipes
+        // A shell start avoids proc_open(), which fails with EBADF when the test runner has closed its standard descriptors.
+        $command = sprintf(
+            '%s -S %s -t %s %s >/dev/null 2>%s </dev/null & echo $!',
+            escapeshellarg(PHP_BINARY),
+            escapeshellarg('127.0.0.1:' . $this->port),
+            escapeshellarg($this->directory),
+            escapeshellarg($this->directory . '/router.php'),
+            escapeshellarg($this->directory . '/server.log')
         );
+        $this->pid = (int) trim((string) shell_exec($command));
         for ($attempt = 0; $attempt < 100; $attempt++) {
             $socket = @stream_socket_client('tcp://127.0.0.1:' . $this->port, $errno, $errstr, 0.2);
             if ($socket) {
@@ -60,8 +65,10 @@ final class local_http_server {
             }
             usleep(50000);
         }
+        $log = (string) @file_get_contents($this->directory . '/server.log');
+        $detail = sprintf('pid=%d connect=%s %s', $this->pid, $errno, $errstr);
         $this->stop();
-        throw new \RuntimeException('The local HTTP test server did not start.');
+        throw new \RuntimeException('The local HTTP test server did not start (' . $detail . '): ' . trim($log));
     }
 
     /**
@@ -91,13 +98,13 @@ final class local_http_server {
      * Stops the server and removes its files.
      */
     public function stop(): void {
-        if (is_resource($this->process)) {
-            proc_terminate($this->process);
-            proc_close($this->process);
-            $this->process = null;
+        if ($this->pid > 0) {
+            exec('kill ' . $this->pid . ' 2>/dev/null');
+            $this->pid = 0;
         }
         if (is_dir($this->directory)) {
             @unlink($this->directory . '/router.php');
+            @unlink($this->directory . '/server.log');
             @rmdir($this->directory);
         }
     }

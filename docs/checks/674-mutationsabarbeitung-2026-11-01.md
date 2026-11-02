@@ -1,5 +1,8 @@
 # #674: Abarbeitung der überlebenden Mutanten (Stand 2026-11-01)
 
+> **ENTWURF / ZWISCHENSTAND.** #674 ist nicht abgeschlossen: offene Identitäten bleiben, die Neumessung
+> mit `mutation-full.js` steht aus. Dieser Bericht wird bei jedem Meilenstein fortgeschrieben.
+
 Messbasis: Volllauf #673 (Baseline `4161c4f`), danach dateiweise Fokusläufe mit
 Infection 0.29.14 (PCOV) im Gate-Container (Moodle 5.1.7, PHP 8.4.27, MariaDB 11.4).
 Produktionsquellen unverändert gegenüber `872f842`; Tests und Ignore-Liste bis `e309f24`.

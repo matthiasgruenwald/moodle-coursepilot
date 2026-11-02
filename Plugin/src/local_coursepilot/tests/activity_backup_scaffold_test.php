@@ -394,6 +394,34 @@ final class activity_backup_scaffold_test extends \advanced_testcase {
     }
 
     /**
+     * A finished restore releases the controller and its log handles even when collection of cycles is off.
+     */
+    public function test_restore_releases_its_controller_resources(): void {
+        $this->resetAfterTest();
+        $course = $this->course_as_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Restore me']);
+        $cm = get_coursemodule_from_id('page', $page->cmid, 0, false, MUST_EXIST);
+        // Warm up lazily opened handles once, then measure with cycle collection off.
+        activity_backup::restore((int) $course->id, null, activity_backup::backup($cm));
+        $backupid = activity_backup::backup($cm);
+        $gc = gc_enabled();
+        gc_collect_cycles();
+        gc_disable();
+        try {
+            $before = count(scandir('/proc/self/fd'));
+            $restoredid = activity_backup::restore((int) $course->id, null, $backupid);
+            $after = count(scandir('/proc/self/fd'));
+        } finally {
+            if ($gc) {
+                gc_enable();
+            }
+        }
+
+        $this->assertSame($before, $after);
+        $this->assertGreaterThan(0, $restoredid);
+    }
+
+    /**
      * Removes a backup directory a test created.
      *
      * @param string $backupid

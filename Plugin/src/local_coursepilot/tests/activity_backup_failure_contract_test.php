@@ -86,14 +86,76 @@ final class activity_backup_failure_contract_test extends \advanced_testcase {
         $cm = get_coursemodule_from_id('page', $page->cmid, 0, false, MUST_EXIST);
         $before = glob($CFG->tempdir . '/backup/*', GLOB_ONLYDIR) ?: [];
 
+        // The refused write is the final status update, so the plan has already written its temporary directory.
         $e = $this->with_failing_write(
             'backup_controllers',
             'UPDATE',
-            '1',
+            'NEW.status = ' . \backup::STATUS_FINISHED_OK,
             fn() => $this->caught(fn() => activity_backup::backup($cm))
         );
 
         $this->assertInstanceOf(\dml_exception::class, $e);
         $this->assertSame($before, glob($CFG->tempdir . '/backup/*', GLOB_ONLYDIR) ?: []);
+    }
+
+    public function test_a_backup_that_fails_while_running_releases_its_controller_resources(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $cm = get_coursemodule_from_id('page', $page->cmid, 0, false, MUST_EXIST);
+        $condition = 'NEW.status = ' . \backup::STATUS_FINISHED_OK;
+        $fail = fn() => $this->with_failing_write(
+            'backup_controllers',
+            'UPDATE',
+            $condition,
+            fn() => $this->caught(fn() => activity_backup::backup($cm))
+        );
+        // Warm up lazily opened handles once, then measure with cycle collection off.
+        $fail();
+        $gc = gc_enabled();
+        gc_collect_cycles();
+        gc_disable();
+        try {
+            $before = count(scandir('/proc/self/fd'));
+            $e = $fail();
+            $after = count(scandir('/proc/self/fd'));
+        } finally {
+            if ($gc) {
+                gc_enable();
+            }
+        }
+
+        $this->assertInstanceOf(\dml_exception::class, $e);
+        $this->assertSame($before, $after);
+    }
+
+    public function test_a_failing_cleanup_after_a_failed_restore_is_reported_as_incomplete_with_its_cause(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $backupid = activity_backup::backup(get_coursemodule_from_id('page', $page->cmid, 0, false, MUST_EXIST));
+        $cmids = $DB->get_fieldset_select('course_modules', 'id', 'course = ?', [$course->id]);
+
+        // The native instance link fails, and so does the removal of the half-made course module row.
+        $e = $this->with_failing_write(
+            'course_modules',
+            'UPDATE',
+            'OLD.instance = 0 AND NEW.instance > 0',
+            fn() => $this->with_failing_write(
+                'course_modules',
+                'DELETE',
+                '1',
+                fn() => $this->caught(fn() => activity_backup::restore((int) $course->id, null, $backupid))
+            )
+        );
+
+        $this->assertInstanceOf(\moodle_exception::class, $e);
+        $this->assertSame('activitycleanupincomplete', $e->errorcode);
+        $this->assertStringContainsString('Synthetic database failure', (string) $e->debuginfo);
+        // The half-made row stayed behind because its removal was refused.
+        $this->assertGreaterThan(count($cmids), $DB->count_records('course_modules', ['course' => $course->id]));
     }
 }

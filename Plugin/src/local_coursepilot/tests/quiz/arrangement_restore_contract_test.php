@@ -44,7 +44,6 @@ final class arrangement_restore_contract_test extends \advanced_testcase {
         $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
         $this->setUser($teacher);
         /** @var \mod_quiz_generator $generator */
-        /** @var \mod_quiz_generator $generator */
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
         $quiz = $generator->create_instance(['course' => $course->id]);
         $qbank = $this->getDataGenerator()->create_module('qbank', ['course' => $course->id]);
@@ -94,6 +93,51 @@ final class arrangement_restore_contract_test extends \advanced_testcase {
             \mod_quiz\event\section_shuffle_updated::class,
             \mod_quiz\event\section_title_updated::class,
         ])));
+    }
+
+    public function test_a_maxmark_difference_of_exactly_the_tolerance_is_not_restored(): void {
+        global $DB;
+        [$quiz] = $this->quiz_with_two_questions();
+        $slotid = (int) $this->slots($quiz)[0]->id;
+        $DB->set_field('quiz_slots', 'maxmark', 0.0000002, ['id' => $slotid]);
+        $target = arrangement::capture((int) $quiz->id);
+        $target['slots'][0]['maxmark'] = 0.0000001;
+        $sink = $this->redirectEvents();
+
+        arrangement::restore((int) $quiz->id, $target);
+
+        $names = array_map(static fn($e) => get_class($e), $sink->get_events());
+        $this->assertNotContains(\mod_quiz\event\slot_mark_updated::class, $names);
+        $this->assertEqualsWithDelta(0.0000002, (float) $DB->get_field('quiz_slots', 'maxmark', ['id' => $slotid]), 1e-12);
+    }
+
+    public function test_a_maxmark_difference_above_the_tolerance_is_restored(): void {
+        global $DB;
+        [$quiz] = $this->quiz_with_two_questions();
+        $slotid = (int) $this->slots($quiz)[0]->id;
+        $target = arrangement::capture((int) $quiz->id);
+        $DB->set_field('quiz_slots', 'maxmark', 3.5, ['id' => $slotid]);
+
+        arrangement::restore((int) $quiz->id, $target);
+
+        $this->assertEqualsWithDelta(
+            (float) $target['slots'][0]['maxmark'],
+            (float) $DB->get_field('quiz_slots', 'maxmark', ['id' => $slotid]),
+            1e-9
+        );
+    }
+
+    public function test_a_stored_require_previous_value_above_one_is_restored_as_a_flag(): void {
+        global $DB;
+        [$quiz] = $this->quiz_with_two_questions();
+        $slotid = (int) $this->slots($quiz)[1]->id;
+        $DB->set_field('quiz_slots', 'requireprevious', 2, ['id' => $slotid]);
+        $target = arrangement::capture((int) $quiz->id);
+        $DB->set_field('quiz_slots', 'requireprevious', 0, ['id' => $slotid]);
+
+        arrangement::restore((int) $quiz->id, $target);
+
+        $this->assertSame('1', (string) $DB->get_field('quiz_slots', 'requireprevious', ['id' => $slotid]));
     }
 
     public function test_an_emptied_section_heading_is_restored(): void {
@@ -148,7 +192,6 @@ final class arrangement_restore_contract_test extends \advanced_testcase {
     public function test_restored_feedback_replaces_the_quiz_rows_and_leaves_other_quizzes_alone(): void {
         global $DB;
         [$quiz] = $this->quiz_with_two_questions();
-        /** @var \mod_quiz_generator $generator */
         /** @var \mod_quiz_generator $generator */
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
         $other = $generator->create_instance([
