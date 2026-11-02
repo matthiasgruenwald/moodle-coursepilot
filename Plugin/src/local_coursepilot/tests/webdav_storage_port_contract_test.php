@@ -134,6 +134,23 @@ final class webdav_storage_port_contract_test extends \advanced_testcase {
         $this->assertSame('Hello world', $port->read($this->area(), 'dir/plan.md')['content']);
     }
 
+    public function test_without_etags_write_and_append_return_the_readable_modification_checksum(): void {
+        $this->setup_instance();
+        $this->fake->without_etags();
+        $port = new webdav_storage_port($this->instanceid, 'Base', $this->fake);
+
+        $written = $port->write($this->area(), 'plan.md', 'Hello');
+        $afterwrite = $port->read($this->area(), 'plan.md');
+        $this->assertGreaterThan(0, $afterwrite['timemodified']);
+        $this->assertSame($afterwrite['checksum'], $written['checksum']);
+
+        $appended = $port->append($this->area(), 'plan.md', ' world', $written['checksum']);
+        $afterappend = $port->read($this->area(), 'plan.md');
+        $this->assertSame($afterappend['checksum'], $appended['checksum']);
+        $this->assertNotSame($written['checksum'], $appended['checksum']);
+        $this->assertSame('Hello world', $afterappend['content']);
+    }
+
     public function test_empty_parts_of_the_base_folder_never_reach_the_server_as_double_slashes(): void {
         $this->setup_instance();
         $this->fake->seed_folder('/Teach');
@@ -165,6 +182,12 @@ final class webdav_storage_port_contract_test extends \advanced_testcase {
             array_filter($this->fake->requests(), static fn(array $r): bool => $r['method'] === 'PROPFIND')
         );
         $this->assertSame('0', $propfinds[0]['headers']['Depth']);
+        $rootchecks = array_values(array_filter(
+            $propfinds,
+            static fn(array $r): bool => str_ends_with($r['url'], '/Base/')
+        ));
+        $this->assertCount(1, $rootchecks);
+        $this->assertSame('0', $rootchecks[0]['headers']['Depth']);
     }
 
     public function test_a_write_whose_result_cannot_be_read_back_reports_the_content_length_and_a_zero_time(): void {

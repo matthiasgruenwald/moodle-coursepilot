@@ -91,9 +91,10 @@ final class version_writer_snapshot_contract_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course();
-        $forum = $this->getDataGenerator()->create_module('forum', [
+        // Creation triggers the history observer too; its failure must be an assertion failure.
+        $forum = $this->succeeded(fn() => $this->getDataGenerator()->create_module('forum', [
             'course' => $course->id, 'grade_forum' => 100, 'gradepass_forum' => 55,
-        ]);
+        ]));
 
         $info = json_decode($DB->get_field(
             'local_coursepilot_cm_version',

@@ -19,6 +19,7 @@ namespace local_coursepilot;
 
 use local_coursepilot\tests\caught_throwable;
 use local_coursepilot\tests\webdav\fake_webdav_transport;
+use local_coursepilot\tests\webdav\stale_read_transport;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -142,6 +143,27 @@ final class context_area_contract_test extends \advanced_testcase {
         $this->assertSame('mine', context_area::read('keep.md')['content']);
         $this->assertSame('fresh', context_area::read('new.md')['content']);
         $this->assertSame('also fresh', context_area::read('later.md')['content']);
+    }
+
+    public function test_supplementing_preserves_a_file_created_after_the_missing_file_read(): void {
+        global $USER;
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->grant_webdav_capability($USER);
+        $instanceid = $this->create_webdav_instance($USER, ['webdav_path' => '']);
+        $this->write_v2_pointer($USER, 'context_area', $instanceid, 'Ctx', [
+            'server' => $this->fixtureserver, 'basepath' => '', 'account' => $this->fixturekonto,
+        ]);
+        $fake = new fake_webdav_transport();
+        $fake->seed_folder('/Ctx');
+        $racing = new stale_read_transport($fake, '/Ctx/new.md', $fake);
+        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $racing);
+
+        $created = context_area::supplement_missing(['new.md' => 'template']);
+
+        $this->assertSame([], $created);
+        $this->assertSame('handaenderung', context_area::read('new.md')['content']);
+        $this->assertSame([], pending_write_notice::list_grouped());
     }
 
     public function test_a_failing_external_write_records_the_pending_note_without_a_course(): void {

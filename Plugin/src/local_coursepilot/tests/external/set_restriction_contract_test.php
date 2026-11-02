@@ -326,6 +326,20 @@ final class set_restriction_contract_test extends \advanced_testcase {
         $this->assertSame('["teacher_grade:' . $second . '"]', $e->a['ids']);
     }
 
+    public function test_an_unknown_group_is_refused_even_when_the_course_has_other_groups(): void {
+        global $DB;
+        $this->setup_course();
+        $this->getDataGenerator()->create_group(['courseid' => $this->course->id]);
+        $before = $DB->get_field('course_modules', 'availability', ['id' => $this->target]);
+
+        $e = $this->failure([['type' => 'group', 'group_id' => 987654]]);
+
+        $this->assertInstanceOf(\moodle_exception::class, $e);
+        $this->assertSame('restrictiongroupnotfound', $e->errorcode);
+        $this->assertSame(['field' => 'group_id', 'value' => '987654'], $e->a);
+        $this->assertSame($before, $DB->get_field('course_modules', 'availability', ['id' => $this->target]));
+    }
+
     public function test_a_group_of_another_course_is_not_found(): void {
         $this->setup_course();
         $othercourse = $this->getDataGenerator()->create_course();

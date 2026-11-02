@@ -17,6 +17,7 @@
 namespace local_coursepilot\external;
 
 use core_external\external_api;
+use local_coursepilot\tests\caught_throwable;
 use local_coursepilot\tool_registry;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -31,6 +32,28 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(create_activity_from_xml::class)]
 final class create_activity_from_xml_test extends \advanced_testcase {
+    use caught_throwable;
+
+    public function test_context_restriction_is_checked_before_the_activity_xml(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $other = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $before = $DB->count_records('course_modules', ['course' => $course->id]);
+        external_api::set_context_restriction(\context_course::instance($other->id));
+        try {
+            $e = $this->caught(fn() => create_activity_from_xml::execute($course->id, 'book', 1, '<activity/>'));
+        } finally {
+            external_api::set_context_restriction(\context_system::instance());
+        }
+
+        $this->assertInstanceOf(\core_external\restricted_context_exception::class, $e);
+        $this->assertSame($before, $DB->count_records('course_modules', ['course' => $course->id]));
+    }
+
     public function test_lightboxgallery_missing_timemodified_is_rejected_without_mutation(): void {
         global $DB;
         if (!\core_plugin_manager::instance()->get_plugin_info('mod_lightboxgallery')) {

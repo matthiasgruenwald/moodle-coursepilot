@@ -54,6 +54,27 @@ final class admin_connections_page_test extends \advanced_testcase {
         $this->assertNotEmpty($row['storagelocationlines']);
     }
 
+    public function test_connection_row_reports_an_open_pending_write(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->issue_token((int) $user->id);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user', 'filearea' => 'private', 'itemid' => 0,
+            'filepath' => '/coursepilot/', 'filename' => '.coursepilot-pending.json',
+        ], json_encode(['ABCDEFGH' => [
+            'timestamp' => time(), 'path' => 'a.md', 'operation' => 'create', 'error_class' => 'x',
+        ]]));
+
+        $data = admin_connections_page::page_data(connection::active_tokens());
+
+        $this->assertCount(1, $data['rows']);
+        $this->assertContains(
+            ['text' => get_string('storagelocationmarkerpending', 'local_coursepilot')],
+            $data['rows'][0]['storagelocationlines']
+        );
+    }
+
     /**
      * Issue an active token for $userid through the regular OAuth flow.
      *
