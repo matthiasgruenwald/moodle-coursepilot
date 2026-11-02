@@ -126,7 +126,7 @@ final class activity_file_trash {
 
         $fs = get_file_storage();
         $draftitemid = 0;
-        file_prepare_draft_area($draftitemid, $targetcontextid, $component, $filearea, 0);
+        file_prepare_draft_area($draftitemid, $targetcontextid, $component, $filearea, 0, ['subdirs' => true]);
 
         $usercontext = \context_user::instance($USER->id);
         foreach ($files as $source) {

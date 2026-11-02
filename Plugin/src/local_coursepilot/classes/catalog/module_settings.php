@@ -76,6 +76,17 @@ final class module_settings {
             [$fieldname => $draftitemid]
         );
         $moduleinfo->{$fieldname} = $draftitemid;
+        if ($cm->modname === 'folder') {
+            // Folder updates read the draft ID from the HTTP request instead of moduleinfo.
+            file_save_draft_area_files(
+                $draftitemid,
+                context_module::instance($cmid)->id,
+                'mod_folder',
+                'content',
+                0,
+                ['subdirs' => true]
+            );
+        }
         \update_moduleinfo($cm, $moduleinfo, $course);
     }
 

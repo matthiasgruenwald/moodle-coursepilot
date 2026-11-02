@@ -91,17 +91,21 @@ final class version_writer_snapshot_contract_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course();
-        // Creation triggers the history observer too; its failure must be an assertion failure.
-        $forum = $this->succeeded(fn() => $this->getDataGenerator()->create_module('forum', [
-            'course' => $course->id, 'grade_forum' => 100, 'gradepass_forum' => 55,
-        ]));
+        // The fixture must exist before testing capture, without an observer capture during setup.
+        $sink = $this->redirectEvents();
+        try {
+            $forum = $this->getDataGenerator()->create_module('forum', [
+                'course' => $course->id, 'grade_forum' => 100, 'gradepass_forum' => 55,
+            ]);
+        } finally {
+            $sink->close();
+        }
 
-        $info = json_decode($DB->get_field(
-            'local_coursepilot_cm_version',
-            'moduleinfo_json',
-            ['id' => $this->capture_or_fail((int) $forum->cmid)]
-        ), true);
+        $versionid = $this->capture_or_fail((int) $forum->cmid);
+        $version = $DB->get_record('local_coursepilot_cm_version', ['id' => $versionid], '*', MUST_EXIST);
+        $info = json_decode($version->moduleinfo_json, true);
 
+        $this->assertEquals($forum->cmid, $version->cmid);
         $this->assertSame(format_float(55, 2), $info['gradepass_forum']);
     }
 
