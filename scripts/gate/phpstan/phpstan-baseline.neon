@@ -154,15 +154,6 @@ parameters:
 			path: ../html/public/local/coursepilot/classes/check/webdav_user_instances_check.php
 
 		-
-			# reason: COMPLETION_CRITERIA_TYPE_ACTIVITY is defined in completion/criteria/completion_criteria.php and used to select activity-completion references. That core directory is absent from phpstan.neon scanDirectories; scan its declaration to remove this loading debt.
-			# evidence: {"classes/cm_references.php":["'criteriatype' => COMPLETION_CRITERIA_TYPE_ACTIVITY,"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Constant COMPLETION_CRITERIA_TYPE_ACTIVITY not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: ../html/public/local/coursepilot/classes/cm_references.php
-
-		-
 			# reason: move_after() uses cm_info::$section as the section database ID, distinct from sectionnum. PHPStan does not resolve that cm_info property; verify the core property contract and type the lookup before removing this suppression.
 			# evidence: {"classes/course_module_placement.php":["self::move_to($cmid, (int) $after->section, $successor === null ? null : (int) $successor);"]}
 			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
@@ -953,15 +944,6 @@ parameters:
 			identifier: method.alreadyNarrowedType
 			count: 1
 			path: ../html/public/local/coursepilot/tests/catalog/quiz_catalog_contract_test.php
-
-		-
-			# reason: COMPLETION_CRITERIA_TYPE_ACTIVITY is defined in completion/criteria/completion_criteria.php and used to select activity-completion references. That core directory is absent from phpstan.neon scanDirectories; scan its declaration to remove this loading debt.
-			# evidence: {"tests/cm_references_test.php":["'criteriatype' => COMPLETION_CRITERIA_TYPE_ACTIVITY,"]}
-			# resolution: https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714
-			message: '#^Constant COMPLETION_CRITERIA_TYPE_ACTIVITY not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: ../html/public/local/coursepilot/tests/cm_references_test.php
 
 		-
 			# reason: create_instance() is called on the concrete generator returned by 'mod_page', 'mod_quiz', but Moodle declares get_plugin_generator() as component_generator_base, which lacks this method. The attached call and receiver assignment identify the concrete generator; improve its static return typing/stubs.
