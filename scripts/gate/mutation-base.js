@@ -14,6 +14,9 @@ const BOUND_FILES = ['scripts/gate/mutation-ignore.json', 'scripts/gate/mutation
 
 const forcedFull = env => Boolean(env.CI || env.GITHUB_ACTIONS || env.GATE_MUTATION_FULL === '1');
 
+/** `gate full` mutates in CI and when asked (GATE_MUTATION=1); a local push does not wait for it. */
+const runsMutationInFull = env => Boolean(env.CI || env.GITHUB_ACTIONS || env.GATE_MUTATION === '1');
+
 const git = (repo, args) => spawnSync('git', args, { cwd: repo, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 const isAncestor = (repo, a, b) => git(repo, ['merge-base', '--is-ancestor', a, b]).status === 0;
 
@@ -74,4 +77,4 @@ function recordGreen({ repo, stateFile, fullBase, started, env = process.env }) 
   }
 }
 
-module.exports = { mutationBase, recordGreen, snapshot, rulesDigest, forcedFull };
+module.exports = { mutationBase, recordGreen, snapshot, rulesDigest, forcedFull, runsMutationInFull };

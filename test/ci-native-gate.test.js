@@ -29,6 +29,8 @@ test('CI wiring: full on the minimum version is mandatory with target history an
   assert.match(quality, /format\('origin\/\{0\}', github\.base_ref\)/);
   assert.match(quality, /github\.event\.before/);
   assert.match(quality, /npm run gate -- full/);
+  assert.match(quality, /matrix:\s+part: \[0, 1, 2, 3\]/);
+  assert.match(quality, /GATE_MUTATION_PART: \$\{\{ matrix\.part \}\}\/4/);
   assert.match(quality, /if: always\(\)[\s\S]*actions\/upload-artifact@v4/);
   assert.match(quality, /name: gate-trend-MOODLE_501_STABLE-/);
   assert.match(quality, /if-no-files-found: error/);

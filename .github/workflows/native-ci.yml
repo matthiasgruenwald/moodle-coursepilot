@@ -45,11 +45,16 @@ concurrency:
 
 jobs:
   quality:
-    name: Full quality gate (Moodle 5.1, MariaDB, PHP 8.4)
+    name: Full quality gate (Moodle 5.1, MariaDB, PHP 8.4, Teil ${{ matrix.part }}/4)
     runs-on: ubuntu-22.04
-    # The measured PR mutation run already took 165 minutes before slow mutants were included.
+    # Each part runs the full suite and the ratchet, but mutates only its quarter of the changed files.
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [0, 1, 2, 3]
     timeout-minutes: 360
     env:
+      GATE_MUTATION_PART: ${{ matrix.part }}/4
       GATE_MOODLE_REF: origin/MOODLE_501_STABLE
       # PR: actual target branch. Push: compare the state before the push.
       GATE_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event_name == 'push' && github.event.before || format('origin/{0}', inputs.target_branch) }}
@@ -107,7 +112,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gate-trend-MOODLE_501_STABLE-${{ github.sha }}
+          name: gate-trend-MOODLE_501_STABLE-teil${{ matrix.part }}-${{ github.sha }}
           path: ${{ env.GATE_DIR }}/reports/
           if-no-files-found: error
           retention-days: 30

@@ -50,7 +50,7 @@ Container auf:
 ```bash
 npm run gate -- fast               # Node-Tests + PHPUnit der Tests zu geänderten Klassen
 npm run gate -- matrix             # neue/geänderte Tests auf Moodle 5.3 + PostgreSQL (private Instanz, vor dem Push)
-npm run gate -- full               # Node-Tests + volle Suite mit pcov, danach Bericht (rund 15 Minuten)
+npm run gate -- full               # Node-Tests + volle Suite mit pcov, danach Bericht (rund 15 Minuten); Mutation nur in CI oder mit GATE_MUTATION=1
 npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
 npm run gate -- ratchet [clover.xml] # Ratsche; ohne Clover nur die Baselines
 npm run gate -- baseline [clover.xml] # Coverage-Baseline anheben (nie senken)
@@ -82,6 +82,13 @@ Produktionsklasse `classes/…/foo.php` gehört zu Tests mit
 Ohne Zuordnung meldet das Gate `no-test-mapped`.
 
 ### Mutationsprüfung
+
+Wo sie läuft: `gate full` (also der pre-push-Hook) führt die Mutation **nur in CI** aus, lokal nur auf
+Wunsch (`npm run gate -- mutation` oder `GATE_MUTATION=1 npm run gate -- full`). Grund: Auf einem großen
+Diff gegen `dev` dauert sie Stunden, und CI prüft dasselbe verbindlich ein zweites Mal. Der CI-Job
+`quality` läuft als Matrix aus vier Teilen (`GATE_MUTATION_PART=i/4`): Jeder Teil führt Suite und
+Ratsche vollständig aus, mutiert aber nur sein Viertel der geänderten Dateien (Aufteilung nach
+Zeilenzahl, `mutation-shard.js`). `Gate (required)` verlangt alle vier Teile.
 
 `full` erzeugt neben Clover auch PHPUnit-XML-Coverage und JUnit unter
 `reports/infection-coverage/`. Infection 0.29 aus dem versionierten Composer-Lockfile

@@ -43,7 +43,8 @@ nicht automatisch zugesagt.
 `quality` richtet einen isolierten Gate-Container mit Moodle 5.1, PHP 8.4, MariaDB 11.4
 und PCOV ein (`scripts/gate/setup-container.sh`, versionierte Composer-Lockfiles).
 Dort läuft derselbe `npm run gate -- full`-Einstieg wie lokal: Node-Verträge,
-volle PHPUnit-Suite, Coverage-/CRAP-Ratsche und alle statischen Prüfungen. Die übrigen
+volle PHPUnit-Suite, Coverage-/CRAP-Ratsche und alle statischen Prüfungen. Der Job läuft als Matrix
+aus vier Teilen (`GATE_MUTATION_PART=i/4`); jeder mutiert nur sein Viertel der geänderten Dateien. Die übrigen
 fünf PHPUnit-Kombinationen erheben keine zweite Coverage-Regel. Das frühere feste
 80-%-Skript samt Vertragstest ist entfernt.
 
