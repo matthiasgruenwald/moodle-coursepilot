@@ -375,7 +375,7 @@ final class provider implements
     private static function export_system_context(\context_system $context, int $userid): void {
         global $DB;
 
-        $codes = $DB->get_records('local_coursepilot_oauth_code', ['userid' => $userid]);
+        $codes = $DB->get_records('local_coursepilot_oauth_code', ['userid' => $userid], 'id ASC');
         $exportedcodes = array_map(static fn($record): \stdClass => (object) [
             'clientid' => $record->clientid,
             'redirecturi' => $record->redirecturi,
@@ -383,7 +383,7 @@ final class provider implements
             'used' => transform::yesno($record->used),
         ], array_values($codes));
 
-        $tokens = $DB->get_records('local_coursepilot_oauth_token', ['userid' => $userid]);
+        $tokens = $DB->get_records('local_coursepilot_oauth_token', ['userid' => $userid], 'id ASC');
         $exportedtokens = array_map(static fn($record): \stdClass => (object) [
             'clientid' => $record->clientid,
             'expires' => transform::datetime($record->expires),
@@ -392,14 +392,14 @@ final class provider implements
             'timecreated' => transform::datetime($record->timecreated),
         ], array_values($tokens));
 
-        $grants = $DB->get_records('local_coursepilot_oauth_grant', ['userid' => $userid]);
+        $grants = $DB->get_records('local_coursepilot_oauth_grant', ['userid' => $userid], 'id ASC');
         $exportedgrants = array_map(static fn($record): \stdClass => (object) [
             'id' => $record->id, 'clientid' => $record->clientid,
             'revoked' => transform::yesno($record->revoked),
             'timecreated' => transform::datetime($record->timecreated),
         ], array_values($grants));
 
-        $tickets = $DB->get_records('local_coursepilot_workbench_ticket', ['userid' => $userid]);
+        $tickets = $DB->get_records('local_coursepilot_workbench_ticket', ['userid' => $userid], 'id ASC');
         $exportedtickets = array_map(static fn($record): \stdClass => (object) [
             'path' => $record->path,
             'expires' => transform::datetime($record->expires),
