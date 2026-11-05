@@ -21,6 +21,7 @@ if ! git diff --quiet HEAD --; then
   echo "pre-push: versionierte Dateien sind geaendert; erst committen oder stashen, sonst prueft das Gate nicht den gepushten Stand." >&2
   exit 1
 fi
-# Cheap first: new tests on another Moodle version/database, then the expensive full gate.
+# Cheap first: new tests on another Moodle version/database, then the full gate. Mutation runs in CI only
+# (locally: GATE_MUTATION=1 or `gate mutation`), so a push does not wait hours for it.
 node scripts/gate/gate.js matrix || exit 1
 exec node scripts/gate/gate.js full

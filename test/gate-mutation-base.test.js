@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { mutationBase, recordGreen, snapshot, rulesDigest } = require('../scripts/gate/mutation-base');
+const { mutationBase, recordGreen, snapshot, rulesDigest, runsMutationInFull } = require('../scripts/gate/mutation-base');
 
 function fixture() {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-mutation-base-'));
@@ -120,4 +120,12 @@ test('mutation base: green is not recorded when the run started dirty or HEAD mo
     assert.equal(fs.existsSync(f.stateFile), false);
     assert.equal(recordGreen({ ...f.args(), started: snapshot(f.repo) }), true);
   } finally { f.done(); }
+});
+
+test('gate full mutates in CI and on request, not on a plain local push', () => {
+  assert.equal(runsMutationInFull({}), false);
+  assert.equal(runsMutationInFull({ GATE_MUTATION: '0' }), false);
+  assert.equal(runsMutationInFull({ GATE_MUTATION: '1' }), true);
+  assert.equal(runsMutationInFull({ CI: 'true' }), true);
+  assert.equal(runsMutationInFull({ GITHUB_ACTIONS: 'true' }), true);
 });

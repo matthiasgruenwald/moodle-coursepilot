@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { partition, shardCount, mergeReports, shardKey } = require('../scripts/gate/mutation-shard');
+const { partition, selectPart, shardCount, mergeReports, shardKey } = require('../scripts/gate/mutation-shard');
 const mutation = require('../scripts/gate/mutation');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -101,5 +101,19 @@ test('shard runner: jobs run concurrently, only a successful job leaves its done
     assert.deepEqual(fs.readdirSync(dir).filter(f => f.endsWith('.tmp')), []);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('selectPart: the parts of a split are disjoint and together every file', () => {
+  const weights = [['a.php', 50], ['b.php', 40], ['c.php', 30], ['d.php', 20], ['e.php', 10]];
+  const parts = [0, 1, 2].map(i => selectPart(weights, `${i}/3`));
+  assert.deepEqual(parts.flat().sort(), ['a.php', 'b.php', 'c.php', 'd.php', 'e.php']);
+  assert.deepEqual(parts, partition(weights, 3));
+});
+
+test('selectPart: a part without files is empty, a malformed part is refused', () => {
+  assert.deepEqual(selectPart([['a.php', 5]], '3/4'), []);
+  for (const bad of ['4/4', '0/0', 'x', '1', '-1/2']) {
+    assert.throws(() => selectPart([['a.php', 5]], bad), /GATE_MUTATION_PART/, bad);
   }
 });

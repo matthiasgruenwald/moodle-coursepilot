@@ -299,8 +299,11 @@ function logOutcome(check, ok) {
   failureLog.append([[new Date().toISOString(), check, '-', ok ? 'ok' : 'fail']]);
 }
 
+/** Hooks export GIT_DIR and friends; Node fixtures that run git in temp repos must not inherit them (they hit the real repo). */
+const withoutGitEnv = env => Object.fromEntries(Object.entries(env).filter(([k]) => !k.startsWith('GIT_')));
+
 function nodeTests() {
-  const ok = sh('npm', ['test', '--silent'], { inherit: true }).status === 0;
+  const ok = sh('npm', ['test', '--silent'], { inherit: true, env: withoutGitEnv(process.env) }).status === 0;
   logOutcome('node-tests', ok);
   return ok;
 }
@@ -414,7 +417,12 @@ function runFull() {
   printReport(clover, path.join(GATE_DIR, 'reports', 'gate-report.json'), true);
   const ratcheted = printRatchet(clover);
   const staticPassed = printStatic(staticChecks.ALL_CHECKS);
-  const mutated = passed && runMutation(undefined, true);
+  // Mutation is the slow part (hours on a large diff): CI always runs it, locally only on demand.
+  const mutated = !passed || !mutationBase.runsMutationInFull(process.env)
+    ? passed : runMutation(undefined, true);
+  if (passed && !mutationBase.runsMutationInFull(process.env)) {
+    console.log('summary: mutation skipped (runs in CI; locally on demand: npm run gate -- mutation or GATE_MUTATION=1)');
+  }
   return staticPassed && ratcheted && nodePassed && passed && mutated;
 }
 
@@ -500,6 +508,10 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
   const startState = mutationBase.snapshot(REPO);
   const { base, changed, fullBase, incremental } = mutationChanges(!pilotDirectory);
   const stateFile = path.join(GATE_DIR, 'reports', 'mutation-green.json');
+  const lines = f => {
+    const ranges = changed.get(f);
+    return ranges === 'all' || !ranges ? fs.readFileSync(path.join(REPO, f), 'utf8').split('\n').length : ranges.reduce((n, [a, b]) => n + b - a + 1, 0);
+  };
   let files;
   if (pilotDirectory) {
     const directory = path.join(REPO, PLUGIN_REL, pilotDirectory);
@@ -513,6 +525,8 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
     files = [...changed.keys()].filter(f => f.startsWith(PLUGIN_PREFIX) && f.endsWith('.php')
       && !f.startsWith(`${PLUGIN_PREFIX}tests/`) && fs.existsSync(path.join(REPO, f))
       && !ratchet.isExcluded(f, baseline.excluded, PLUGIN_PREFIX));
+    // CI matrix: each job mutates one balanced part of the changed files; the parts together are the whole run.
+    if (process.env.GATE_MUTATION_PART) files = mutationShard.selectPart(files.map(f => [f, lines(f)]), process.env.GATE_MUTATION_PART);
   }
   fs.mkdirSync(path.join(GATE_DIR, 'reports'), { recursive: true });
   if (files.length === 0) {
@@ -540,10 +554,6 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
   const sourceHashes = Object.fromEntries([...new Set([...files, ...dependencies, 'composer.lock'])]
     .map(f => [f, crypto.createHash('sha256').update(fs.readFileSync(path.join(REPO, f))).digest('hex')]));
   fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-sources.json`), JSON.stringify(sourceHashes, null, 2));
-  const lines = f => {
-    const ranges = changed.get(f);
-    return ranges === 'all' || !ranges ? fs.readFileSync(path.join(REPO, f), 'utf8').split('\n').length : ranges.reduce((n, [a, b]) => n + b - a + 1, 0);
-  };
   const plan = pilotDirectory ? [files] : planMutationShards(files.map(f => [f, lines(f)]));
   const instances = plan.map((list, i) => (i === 0
     ? { dir: GATE_DIR, container: CONTAINER, files: list }

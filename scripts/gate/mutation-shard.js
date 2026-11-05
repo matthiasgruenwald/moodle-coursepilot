@@ -25,6 +25,13 @@ function partition(weights, n) {
   return shards.filter(s => s.files.length > 0).map(s => s.files.sort());
 }
 
+/** The files of part `spec` ("i/n", i counted from 0) of a balanced split; an out-of-range part is empty. */
+function selectPart(weights, spec) {
+  const m = /^(\d+)\/(\d+)$/.exec(spec);
+  if (!m || Number(m[2]) < 1 || Number(m[1]) >= Number(m[2])) throw new Error(`GATE_MUTATION_PART must be "i/n" with 0 <= i < n, got "${spec}"`);
+  return partition(weights, Number(m[2]))[Number(m[1])] || [];
+}
+
 /**
  * How many instances this run may use: the requested number, reduced by too little work, memory or disk.
  * @returns {{count: number, note: string}}
@@ -55,4 +62,4 @@ function shardKey(parts) {
   return crypto.createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 }
 
-module.exports = { partition, shardCount, mergeReports, shardKey, INSTANCE_MEMORY_MB, INSTANCE_DISK_MB };
+module.exports = { partition, selectPart, shardCount, mergeReports, shardKey, INSTANCE_MEMORY_MB, INSTANCE_DISK_MB };
