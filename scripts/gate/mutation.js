@@ -19,6 +19,16 @@ function parseSourceHashes(text) {
   return sources;
 }
 
+/** Infection/Symfony treat plain excludes as unanchored path substrings. Anchor repo-relative exclusions. */
+function infectionExcludePatterns(paths) {
+  return paths.map(value => {
+    const directory = value.endsWith('/');
+    const relative = value.replace(/\/$/, '');
+    const escaped = relative.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return `#^${escaped}${directory ? '(?:/|$)' : '$'}#`;
+  });
+}
+
 function parseIgnores(text) {
   const entries = JSON.parse(text);
   if (!Array.isArray(entries)) throw new Error('mutation-ignore: expected an array');
@@ -128,4 +138,4 @@ function evaluate(report, changed, ignores, diffSelected = false, environment = 
   return findings;
 }
 
-module.exports = { parseIgnores, parseReport, parseEnvironment, parseSourceHashes, identity, evaluate };
+module.exports = { parseIgnores, parseReport, parseEnvironment, parseSourceHashes, infectionExcludePatterns, identity, evaluate };

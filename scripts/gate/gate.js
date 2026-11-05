@@ -561,7 +561,7 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
   const sharded = instances.length > 1;
   const jsonName = sharded ? `${prefix}-shard.json` : `${prefix}.json`;
   const config = {
-    source: { directories: [PLUGIN_IN_CONTAINER], excludes: ['tests', ...baseline.excluded.map(e => e.path)] },
+    source: { directories: [PLUGIN_IN_CONTAINER], excludes: mutation.infectionExcludePatterns(['tests/', ...baseline.excluded.map(e => e.path)]) },
     phpUnit: { configDir: PLUGIN_IN_CONTAINER, customPath: '/var/www/html/vendor/bin/phpunit' },
     // The measured full suite takes 17 minutes; broad covering sets must actually run.
     timeout: 1800,
