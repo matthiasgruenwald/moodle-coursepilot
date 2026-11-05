@@ -745,6 +745,27 @@ final class update_quiz_settings_test extends \advanced_testcase {
     }
 
     /**
+     * A teacher who may edit activities still needs the Coursepilot use capability to write.
+     */
+    public function test_write_without_the_coursepilot_use_capability_fails(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance(['course' => $course->id]);
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        assign_capability('local/coursepilot:use', CAP_PROHIBIT, $roleid, \context_system::instance()->id, true);
+        $name = (string) $DB->get_field('quiz', 'name', ['id' => $quiz->id]);
+
+        try {
+            update_quiz_settings::execute($quiz->cmid, json_encode(['name' => 'Ohne Recht']));
+            $this->fail('The write must be refused without local/coursepilot:use.');
+        } catch (\required_capability_exception $e) {
+            $this->assertStringContainsString('Use Coursepilot in a course', $e->getMessage());
+        }
+        $this->assertSame($name, (string) $DB->get_field('quiz', 'name', ['id' => $quiz->id]));
+    }
+
+    /**
      * Patching creates a history entry.
      */
     public function test_patch_creates_a_history_version(): void {
@@ -785,9 +806,7 @@ final class update_quiz_settings_test extends \advanced_testcase {
     public function test_drift_blocks_update_quiz_settings(): void {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
-        $quiz = $this->getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance([
-            'course' => $course->id,
-        ]);
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
 
         \local_coursepilot\write_gate::all_statuses();
         set_config('driftviolations_quiz', json_encode(['Spalte "grade" fehlt.']), 'local_coursepilot');
