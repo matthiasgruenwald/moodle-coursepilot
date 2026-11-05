@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * Corrects Moodle's directory-path PHPDoc at the storage boundary.
+ * The core implementation treats $filepath as a string (get_file(), strlen(), SQL
+ * path comparison); its @param int is a documentation typo, not an API contract.
+ */
+class file_storage {
+    /**
+     * @param int $contextid
+     * @param string $component
+     * @param string $filearea
+     * @param int $itemid
+     * @param string $filepath
+     * @param bool $recursive
+     * @param bool $includedirs
+     * @param string $sort
+     * @return array<string, stored_file>
+     */
+    public function get_directory_files(
+        $contextid,
+        $component,
+        $filearea,
+        $itemid,
+        $filepath,
+        $recursive = false,
+        $includedirs = true,
+        $sort = 'filepath, filename'
+    ) {
+    }
+}
+
+// PHPStan requires referenced return types to exist in the stub set.
+class stored_file {
+}

@@ -29,6 +29,7 @@ namespace local_coursepilot;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(connection::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(workbench_ticket::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\workbench_ticket_redemption_failed::class)]
 final class oauth_connection_test extends \advanced_testcase {
     /**
      * Provides tokens.
@@ -474,5 +475,36 @@ final class oauth_connection_test extends \advanced_testcase {
     public static function races(): array {
         return [['rotate', 'revoke'], ['revoke', 'rotate'], ['rotate', 'rotate'],
             ['rotate', 'replay'], ['replay', 'rotate'], ['bulk', 'rotate'], ['rotate', 'bulk']];
+    }
+
+    public function test_confidential_client_must_present_its_secret(): void {
+        $this->resetAfterTest();
+        $registered = oauth_lib::handle_registration('POST', json_encode([
+            'client_name' => 'Synthetic secret client', 'redirect_uris' => ['https://client.example/callback'],
+            'token_endpoint_auth_method' => 'client_secret_post',
+        ]), '192.0.2.1')['body'];
+        $request = ['grant_type' => 'refresh_token', 'client_id' => $registered['client_id'],
+            'refresh_token' => 'unknown-synthetic-token'];
+
+        $missing = connection::handle_token('POST', $request);
+        $wrong = connection::handle_token('POST', $request + ['client_secret' => 'falsch']);
+        $right = connection::handle_token('POST', $request + ['client_secret' => $registered['client_secret']]);
+
+        $this->assertSame(401, $missing['status']);
+        $this->assertSame(['error' => 'invalid_client'], $wrong['body']);
+        $this->assertSame(400, $right['status']);
+        $this->assertSame(['error' => 'invalid_grant'], $right['body']);
+    }
+
+    public function test_refresh_grant_without_refresh_token_is_an_invalid_request(): void {
+        $this->resetAfterTest();
+        $client = oauth_lib::handle_registration('POST', json_encode([
+            'client_name' => 'Synthetic client', 'redirect_uris' => ['https://client.example/callback'],
+        ]), '192.0.2.1')['body']['client_id'];
+
+        $response = connection::handle_token('POST', ['grant_type' => 'refresh_token', 'client_id' => $client]);
+
+        $this->assertSame(400, $response['status']);
+        $this->assertSame(['error' => 'invalid_request'], $response['body']);
     }
 }

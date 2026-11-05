@@ -125,4 +125,26 @@ final class compare_activity_versions_test extends \advanced_testcase {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
     }
+
+    public function test_the_context_restriction_of_the_web_service_is_checked_before_the_history_is_read(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $other = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        \core_external\external_api::set_context_restriction(\context_course::instance($other->id));
+        try {
+            $thrown = null;
+            try {
+                compare_activity_versions::execute((int) $page->cmid, 1, 2);
+            } catch (\Throwable $caught) {
+                $thrown = $caught;
+            }
+        } finally {
+            \core_external\external_api::set_context_restriction(\context_system::instance());
+        }
+
+        $this->assertInstanceOf(\core_external\restricted_context_exception::class, $thrown);
+    }
 }

@@ -33,6 +33,7 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(activity_backup::class)]
 #[CoversClass(export_default_activity::class)]
 #[CoversClass(xml_activity_creator::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\course_module_placement::class)]
 final class discard_failed_callers_test extends \advanced_testcase {
     /**
      * Sets up course.
@@ -141,5 +142,27 @@ final class discard_failed_callers_test extends \advanced_testcase {
             $this->assert_fails(fn() => xml_activity_creator::create($course->id, 'book', 1, $mismatch, false, $replaces));
             $this->assertSame($before, $this->course_state($course->id));
         }
+    }
+
+    public function test_discarding_an_unknown_cmid_changes_nothing(): void {
+        [$course] = $this->setup_course();
+        $before = $this->course_state($course->id);
+
+        course_module_placement::discard_failed(999999);
+
+        $this->assertSame($before, $this->course_state($course->id));
+    }
+
+    public function test_half_made_activity_is_linked_to_its_instance_and_removed_completely(): void {
+        global $DB;
+        [$course] = $this->setup_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Halbfertig']);
+        // The restore recorded its instance but failed before linking it to the course module.
+        $DB->set_field('course_modules', 'instance', 0, ['id' => $page->cmid]);
+
+        course_module_placement::discard_failed((int) $page->cmid, (int) $page->id);
+
+        $this->assertFalse($DB->record_exists('course_modules', ['id' => $page->cmid]));
+        $this->assertFalse($DB->record_exists('page', ['id' => $page->id]));
     }
 }

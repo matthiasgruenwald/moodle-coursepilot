@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * Corrects the XML parser's return contract at the Moodle boundary.
+ * readquestions() returns false after xml_format_exception; its core PHPDoc
+ * currently says array only. The plugin must retain its explicit failure checks.
+ */
+class qformat_xml extends qformat_default {
+    /**
+     * @param string[] $lines
+     * @return stdClass[]|false
+     */
+    public function readquestions($lines) {
+    }
+}
+
+// PHPStan requires referenced inheritance types to exist in the stub set.
+class qformat_default {
+}

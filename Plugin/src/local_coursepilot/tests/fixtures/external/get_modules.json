@@ -1,0 +1,124 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "courseid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "sectionnum",
+                "type": "int",
+                "default": -1
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "sectionnum": {
+                "class": "core_external\\external_value",
+                "desc": "Section number (0-based, -1 = all sections)",
+                "required": 0,
+                "default": -1,
+                "allownull": true,
+                "type": "int"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_multiple_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "content": {
+            "class": "core_external\\external_single_structure",
+            "desc": "",
+            "required": 1,
+            "default": null,
+            "allownull": false,
+            "keys": {
+                "cmid": {
+                    "class": "core_external\\external_value",
+                    "desc": "Course module ID (use for update calls)",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "int"
+                },
+                "sectionnum": {
+                    "class": "core_external\\external_value",
+                    "desc": "Section number",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "int"
+                },
+                "modname": {
+                    "class": "core_external\\external_value",
+                    "desc": "Module type (page, assign, label, url...)",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                },
+                "name": {
+                    "class": "core_external\\external_value",
+                    "desc": "Display name of the activity",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                },
+                "visible": {
+                    "class": "core_external\\external_value",
+                    "desc": "Visible (1) or hidden (0)",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "int"
+                },
+                "visibleoncoursepage": {
+                    "class": "core_external\\external_value",
+                    "desc": "Stealth: 1 = shown on course page, 0 = stealth",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "int"
+                },
+                "coursepagevisibility": {
+                    "class": "core_external\\external_value",
+                    "desc": "shown | stealth",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                },
+                "availability_status": {
+                    "class": "core_external\\external_value",
+                    "desc": "shown | stealth | hidden",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            }
+        }
+    }
+}

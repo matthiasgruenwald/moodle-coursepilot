@@ -1,0 +1,185 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "questionid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "targetcategoryid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "confirmed",
+                "type": "bool",
+                "default": false
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "questionid": {
+                "class": "core_external\\external_value",
+                "desc": "questionid of any version of the question to move",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "targetcategoryid": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the target question bank category",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "confirmed": {
+                "class": "core_external\\external_value",
+                "desc": "true explicitly confirms a previously reported suspect case (idnumber collision in the target category) and moves it anyway. Omit or false on the first call.",
+                "required": 0,
+                "default": false,
+                "allownull": true,
+                "type": "bool"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "status": {
+                "class": "core_external\\external_value",
+                "desc": "\"moved\" (moved) or \"suspect\" (suspect case)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "alpha"
+            },
+            "questionbankentryid": {
+                "class": "core_external\\external_value",
+                "desc": "Unchanged identity of the question_bank_entries row",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "versionids": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "All versions of the question in version order (empty for \"suspect\")",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "questionid of a retained version",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "int"
+                }
+            },
+            "idnumber_disambiguated": {
+                "class": "core_external\\external_value",
+                "desc": "true if a confirmed move resolved an idnumber collision via the core suffix mechanism",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing message",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "idnumber": {
+                "class": "core_external\\external_value",
+                "desc": "Supplied idnumber for a suspected collision; empty otherwise",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "text"
+            },
+            "categoryid": {
+                "class": "core_external\\external_value",
+                "desc": "Target category for a suspected collision; 0 otherwise",
+                "required": 0,
+                "default": 0,
+                "allownull": true,
+                "type": "int"
+            },
+            "candidates": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Nearby candidates in the target category; empty without suspicion",
+                "required": 0,
+                "default": [],
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "questionid": {
+                            "class": "core_external\\external_value",
+                            "desc": "questionid of the candidate's latest version",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Candidate question name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "idnumber": {
+                            "class": "core_external\\external_value",
+                            "desc": "Candidate idnumber",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            },
+            "questiontext_old": {
+                "class": "core_external\\external_value",
+                "desc": "Existing candidate question text, when available",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "raw"
+            },
+            "questiontext_new": {
+                "class": "core_external\\external_value",
+                "desc": "Question text to write or move, when available",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

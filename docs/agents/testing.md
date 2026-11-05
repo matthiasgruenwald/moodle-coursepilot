@@ -188,3 +188,78 @@ npm run hooks:install   # git config core.hooksPath scripts/githooks
 `connection` kapselt Code-Tausch, Token-Rotation, Prüfung, Widerruf und die gemeinsame Zugriffsregel für MCP und Werkbank-Tickets. PHPUnit nutzt ihre öffentliche Schnittstelle mit der echten Testdatenbank; die Exchange-Race prüft zwei überlappende `exchange_code()`-Aufrufe. Discovery verbleibt in `oauth_lib`. Clientregistrierung, Client-Nachschlagen und exakte Redirect-Prüfung liegen in `client_registry`; `oauth_lib` delegiert seine bisherigen öffentlichen Einstiege. Registertests verwenden `cimd_fetch_port` mit einem speicherinternen Testadapter ohne Netz. `cimd_http_fetcher` erhält die bestehenden TLS-/Streaming-Regressionstests; sie schützen Moodle-Hostpolicy, CA-Vertrauen, Größenlimit und Deadline.
 
 `connection_event_test` prüft native Moodle-Ereignisse für Freigabe, Einzel-/Massenwiderruf und nachgewiesenes Refresh-Replay mit `redirectEvents()`. Normale Rotation, zurückgewiesene Zugriffe und fehlgeschlagene Code-Tausche erzeugen keine Ereignisse. Die bestehenden Prozess-Fixtures prüfen auch überlappenden Massenwiderruf und Rotation in beiden Reihenfolgen; ihre Named-Lock-Barriere erfordert MariaDB/MySQL.
+
+## Kontextablage und Ausstandsnotiz
+
+`context_area::write()` und `append()` lösen den aktuellen Ablageort auf und rufen die
+öffentlichen Port-Einstiege `write_to()` und `append_to()` auf. Die Kontext-Schutzregeln liegen in `context_files`; `storage_write` hält Vorab-Lesen,
+Schreibbedingung und Ausfallübersetzung gemeinsam für Kontext und Material zusammen.
+`material_area::write()` und `write_to()` nutzen denselben Ablauf. compose/crop erhalten
+ihre Provenienz über das typisierte `source`-Argument des Ablage-Ports.
+Der XML-Export nutzt denselben Schreiber mit einer eigenen Bereichspolitik, die
+seine bisher permissiven Datei- und Ordnernamen erhält; Traversal bleibt gesperrt. Tests
+ersetzen ausschließlich `storage_port` beziehungsweise den WebDAV-Transport; das Speichern
+der Ausstandsnotiz läuft gegen die echte Moodle-Testdatenbank. `storage_failure` trägt eine
+neutrale Fehlerklasse und interne Diagnostik. Adapter legen keine Ausstandsnotiz an; die
+Fachseite übersetzt Ausfälle einmal und erhält die bisherigen Werkzeugfehlercodes.
+
+## Ablageort-Anker und Datei-Grundfunktionen
+
+`storage_anchor` löst Ortszeiger und Pfade auf und wählt den Ablage-Port. Datei-I/O,
+Quota und sichere Ersetzung liegen in `private_files_storage_port`; bestehende
+Kontext-/Material-Fassaden delegieren dorthin. Die Ortswahl liest Kandidatenordner
+und legt Ordnerketten über `webdav_storage_port` an. Sie behält Bestätigung,
+Verlauf, Altdatenprüfung und ihre bisherigen Fehlercodes.
+
+Die Port-Vertragstests sowie `location_selection_test` prüfen das Verhalten gegen
+die echte Moodle-Testdatenbank; nur der externe WebDAV-Transport wird ersetzt.
+Die bisherigen Kontext-, Material- und Ausstandsnotiztests bleiben erhalten und decken die verlagerten
+Datei-Grundfunktionen ausdrücklich per `CoversClass` ab.
+
+`file_storage.stub` korrigiert für PHPStan den als `int` dokumentierten
+Verzeichnispfad von Moodles `get_directory_files()` zu `string`. Der Stub
+unterdrückt keine Befunde; die bisherige Ausnahme im Anker entfällt.
+
+## Atomare Quiz-Einstellungen
+
+`catalog/quiz_write` übernimmt für `create_quiz` und `update_quiz_settings` die
+Modusauflösung, Zielprüfung und komplette native Schreibfolge in einer Moodle-Transaktion.
+Die Höchstbewertung wird vor dem Modulupdate skaliert, damit ausdrücklich gesetzte
+Feedbackgrenzen bereits für die neue Bewertung gelten. Quiz-Kombinationsprüfung und
+Formübersetzung bleiben im Katalog (`quiz_write_bridge`, `write_target`).
+Die öffentlichen Werkzeugtests prüfen einen späten Core-Hook-Fehler nach Bewertung und
+Einstellungen sowie die native Ablehnung nach dem Anlegen einer Kurssektion. Beides
+muss den vorherigen Datenbankstand erhalten; die Werkzeugverträge bleiben unverändert.
+
+## Abschlussbedingungen im Modulkatalog
+
+`catalog/completion_settings` besitzt die einzige Abschluss-Felddefinition sowie Lesen,
+Validierung und die native Schreibfolge. `set_completion` validiert nur die externen
+Parameter und delegiert. Blocklisten, Restore-Feldwahl und gemeinsame Abschlusswerte in
+Lesern und Verlaufssnapshots werden aus dieser Definition abgeleitet.
+
+Die öffentlichen Tests `set_completion_test` und `quiz_completion_test` prüfen weiterhin
+Werkzeugantworten und beide Bestätigungen. `completionminattempts` gilt nur für Quiz;
+0 schaltet die Bedingung aus, positive Werte dürfen das konfigurierte Versuchslimit nicht
+überschreiten. Der notwendige native Form-Schalter wird abgeleitet; ein unveränderter Wert
+setzt keinen Abschluss zurück. Die Regeln folgen ADR 0016 und Spec 0015 §8; die bestehende
+Restore-Abfolge bleibt bis zum eigenen Folgeticket erhalten.
+
+## Wiederherstellen über den Änderungsverlauf
+
+`history/version_restore::restore()` besitzt das Fortschreiben früherer Stände. Es nutzt
+`catalog/module_settings::write()`, dessen Material-Felddefinition und Pseudofeld-Entwürfe
+sowie `completion_settings::write()`. Die externen Werkzeuge validieren ihre veröffentlichten
+Parameter und delegieren. Beide Fachoperationen prüfen Kontext und Berechtigungen selbst.
+
+Die bisherige Reihenfolge bleibt bestehen: Einstellungen, Dateien, Abschlussbedingungen.
+Eine fehlende Abschlussbestätigung liefert weiterhin den bestehenden Warnhinweis nach den
+anderen Teiländerungen. Quiz stellt weiterhin ausschließlich die Fragenanordnung wieder her;
+Dateilücken und Lernendensperren behalten ihre bisherigen Regeln. Dies ist die Umsetzung
+von ADR 0016/0030 und #700, keine neue Atomaritäts- oder Produktentscheidung.
+Die vorhandenen Werkzeugtests bleiben erhalten und decken die neuen Eigentümer zusätzlich
+mit `CoversClass` ab; öffentliche Fachmodultests prüfen dieselben Schreib-/Restore-Ergebnisse.
+
+Die übernommenen Meldungen liegen wortgleich in englischen Moodle-Sprachstrings.
+Die öffentlichen Fachmodultests sichern auch den exakten bisherigen Meldungswortlaut;
+Parameter- und Rückgabeschemata bleiben unverändert.

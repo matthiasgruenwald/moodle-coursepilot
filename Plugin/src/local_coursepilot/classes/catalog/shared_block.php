@@ -34,19 +34,6 @@ namespace local_coursepilot\catalog;
  */
 final class shared_block {
     /**
-     * Always blocked fields (Spec 0015 §2.2, category 3): every module
-     * recomputes these; a patch must not set them.
-     *
-     * The seven completion* columns (Spec 0015 §8, tickets #382/#392) belong
-     * to course_modules like visible/groupmode, but are blocked. Without
-     * completionunlocked, Moodle silently discards them; with it, Moodle deletes
-     * learner completion data. completionunlocked is itself blocked: only the
-     * dedicated set_completion endpoint (ticket #392) may set it in the named
-     * two-step operation, never a patch through update_module_settings/create_module.
-     *
-     * @var string[]
-     */
-    /**
      * Read vocabulary: names returned by read tools that are not writable,
      * with the field the teacher should set instead (#404).
      *
@@ -84,27 +71,6 @@ final class shared_block {
     }
 
     /**
-     * Completion fields writable exclusively through
-     * {@see \local_coursepilot\external\set_completion}: the seven generic
-     * course_modules columns, completionunlocked and the module-specific fields
-     * from set_completion::MODULE_SPECIFIC_FIELDS. Already blocked; the dedicated
-     * message names the supported path (ticket #461: during acceptance a model
-     * failed five times because "blocked" gave no direction).
-     *
-     * @var string[]
-     */
-    public const COMPLETION_FIELDS_VIA_SET_COMPLETION = [
-        'completion',
-        'completionview',
-        'completionexpected',
-        'completiongradeitemnumber',
-        'completionusegrade',
-        'completionpassgrade',
-        'completionunlocked',
-        'completionsubmit',
-    ];
-
-    /**
      * Throws for a completion field, pointing to set_completion
      * instead of returning only a blocked-field message.
      *
@@ -113,7 +79,7 @@ final class shared_block {
      * @throws \moodle_exception completionfieldviasetcompletion
      */
     public static function assert_not_completion_field(string $fieldname): void {
-        if (!in_array($fieldname, self::COMPLETION_FIELDS_VIA_SET_COMPLETION, true)) {
+        if (!in_array($fieldname, completion_settings::blocked_fields(), true)) {
             return;
         }
         throw new \moodle_exception('completionfieldviasetcompletion', 'local_coursepilot', '', [
@@ -122,20 +88,13 @@ final class shared_block {
     }
 
     /**
-     * Blocklist.
+     * Reserved fields, including completion rules owned by the catalog operation.
+     *
+     * @return string[]
      */
-    public const BLOCKLIST = [
-        'timemodified',
-        'timecreated',
-        'course',
-        'completion',
-        'completionview',
-        'completionexpected',
-        'completiongradeitemnumber',
-        'completionusegrade',
-        'completionpassgrade',
-        'completionunlocked',
-    ];
+    public static function blocked_fields(): array {
+        return array_merge(['timemodified', 'timecreated', 'course'], completion_settings::blocked_fields());
+    }
 
     /**
      * Category 1 of the shared block: real course_modules columns.

@@ -89,7 +89,7 @@ interface module_catalog {
 
     /**
      * Category 3: module-specific blocklist, in addition to the cross-module
-     * {@see shared_block::BLOCKLIST} added by describe_module_fields.
+     * {@see shared_block::blocked_fields} added by describe_module_fields.
      *
      * @return string[] Field names.
      */

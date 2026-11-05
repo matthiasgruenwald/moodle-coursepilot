@@ -1,0 +1,187 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "sourcepath",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "targetpath",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "x0",
+                "type": "float",
+                "default": "(none)"
+            },
+            {
+                "name": "y0",
+                "type": "float",
+                "default": "(none)"
+            },
+            {
+                "name": "x1",
+                "type": "float",
+                "default": "(none)"
+            },
+            {
+                "name": "y1",
+                "type": "float",
+                "default": "(none)"
+            },
+            {
+                "name": "expectedcontenthash",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "location",
+                "type": "string",
+                "default": "store"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "sourcepath": {
+                "class": "core_external\\external_value",
+                "desc": "Source material image path, relative to the material folder",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "path"
+            },
+            "targetpath": {
+                "class": "core_external\\external_value",
+                "desc": "Target crop path, relative to the material folder, e.g. \"crop.png\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "path"
+            },
+            "x0": {
+                "class": "core_external\\external_value",
+                "desc": "Left crop edge, relative 0-1",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "float"
+            },
+            "y0": {
+                "class": "core_external\\external_value",
+                "desc": "Top crop edge, relative 0-1",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "float"
+            },
+            "x1": {
+                "class": "core_external\\external_value",
+                "desc": "Right crop edge, relative 0-1",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "float"
+            },
+            "y1": {
+                "class": "core_external\\external_value",
+                "desc": "Bottom crop edge, relative 0-1",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "float"
+            },
+            "expected_contenthash": {
+                "class": "core_external\\external_value",
+                "desc": "Optional: target contenthash from the last listing; a mismatch aborts the operation",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "alphanumext"
+            },
+            "location": {
+                "class": "core_external\\external_value",
+                "desc": "\"store\" (default, the teacher's grown material store, read-only) or \"workbench\" (Coursepilot's own staging area)",
+                "required": 0,
+                "default": "store",
+                "allownull": true,
+                "type": "alpha"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "path": {
+                "class": "core_external\\external_value",
+                "desc": "Resolved crop target path, relative to the material folder",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "source": {
+                "class": "core_external\\external_value",
+                "desc": "Location and fingerprint of the source file: \"<location>:<path> (<size> byte, changed <timestamp>)\" - the material store carries no contenthash, this fingerprint replaces it here",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "created": {
+                "class": "core_external\\external_value",
+                "desc": "true if the crop was newly created",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "width": {
+                "class": "core_external\\external_value",
+                "desc": "Crop width in pixels, computed from the original",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "height": {
+                "class": "core_external\\external_value",
+                "desc": "Crop height in pixels, computed from the original",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "size": {
+                "class": "core_external\\external_value",
+                "desc": "Crop size in bytes",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Localized teacher-facing change message, including a quota warning when applicable",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

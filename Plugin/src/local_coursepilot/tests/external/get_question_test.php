@@ -49,6 +49,10 @@ final class get_question_test extends \advanced_testcase {
         $this->assertSame('multichoice', $result['qtype']);
         $this->assertNotEmpty($result['answers']);
         $this->assertGreaterThanOrEqual(0, $result['correctindex']);
+
+        $byid = get_question::execute((int) $category->id, '', (int) $question->id);
+        $this->assertSame($result['questionid'], $byid['questionid']);
+        $this->assertSame((int) $category->id, $byid['categoryid']);
     }
 
     /**
@@ -93,6 +97,36 @@ final class get_question_test extends \advanced_testcase {
         $this->expectException(\moodle_exception::class);
 
         get_question::execute((int) $category->id, $question->name);
+    }
+
+    /**
+     * Without name or question id the call is refused.
+     */
+    public function test_requires_name_or_question_id(): void {
+        $this->resetAfterTest();
+        [, $category] = $this->create_course_with_question_category();
+        $this->setAdminUser();
+
+        $this->expectException(\invalid_parameter_exception::class);
+        get_question::execute((int) $category->id);
+    }
+
+    /**
+     * Unknown names and unknown question ids both end in "not found".
+     */
+    public function test_unknown_question_is_not_found(): void {
+        $this->resetAfterTest();
+        [, $category] = $this->create_course_with_question_category();
+        $this->setAdminUser();
+
+        foreach ([['Gibt es nicht', 0], ['', 999999]] as [$name, $id]) {
+            try {
+                get_question::execute((int) $category->id, $name, $id);
+                $this->fail('Expected notfound');
+            } catch (\moodle_exception $e) {
+                $this->assertSame('notfound', $e->errorcode);
+            }
+        }
     }
 
     /**

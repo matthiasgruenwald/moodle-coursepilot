@@ -22,6 +22,8 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\material_files;
 use local_coursepilot\question_suspect_gate;
+use local_coursepilot\question_import;
+use local_coursepilot\question_xml;
 use moodle_exception;
 
 defined('MOODLE_INTERNAL') || die();
@@ -29,35 +31,11 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Read-modify-write for a multiple-choice question (Spec 0017 §7.1, ticket
- * #419): "fields_json" is a PATCH, not a full record (same vocabulary as
- * {@see update_module_settings}/{@see update_quiz_settings}) - fields that
- * are not sent must NOT get lost.
- *
- * Unlike a simple text-based XML template (like
- * {@see create_mc_question::build_xml()}, which deliberately sets fixed
- * values for penalty/shuffleanswers/answernumbering/combined feedback for a
- * NEW question), this endpoint reads the question via
- * {@see export_questions_xml::resolve_native_question()} as a NATIVE
- * object - exactly the form {@see \qformat_xml::writequestion()} also uses
- * for the real export. Only the properties named in the patch are
- * overwritten (name, questiontext, generalfeedback, defaultmark,
- * options->single, options->answers); everything else (penalty, hidden,
- * shuffleanswers, answernumbering, combined feedback, tags, hints, ...) stays
- * untouched because it is never touched - no reconstruction or guessing
- * risk. The FULL record is then written back through the same XML core as
- * {@see import_questions_xml} (including round-trip check and rollback).
- *
- * idnumber backfill (exactly ONE question, no bulk run): if the question
- * found carries no idnumber yet - e.g. from foreign content -, one is
- * generated exactly for THIS bank entry on the first write and written
- * directly to question_bank_entries BEFORE the XML is built. Only this way
- * does import_questions_xml recognise the written XML as a new version of
- * the SAME entry (match via idnumber in the category, ADR 0015) instead of
- * as a new entry. Backfill + write run in a shared transaction (same
- * pattern as import_questions_xml itself) - if the round trip fails, the
- * freshly assigned idnumber is rolled back as well (see the comment at
- * $transaction below).
+ * Patch selected native multiple-choice fields without reconstructing untouched values.
+ * Creation retains its fixed template; updates serialize the complete native object
+ * through question_xml and write through question_import's round-trip transaction.
+ * A missing idnumber is backfilled only for this bank entry in the same transaction,
+ * so a failed write also rolls back the new identity (ADR 0015).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -183,7 +161,7 @@ final class update_mc_question extends external_api {
      * @return array{0: \stdClass, 1: \stdClass, 2: \context}
      */
     private static function resolve_and_authorise(int $questionid): array {
-        [$question, $category, $context] = export_questions_xml::resolve_native_question($questionid);
+        [$question, $category, $context] = question_xml::resolve_native_question($questionid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
         // Same capability as for a new version in import_questions_xml/
@@ -237,7 +215,7 @@ final class update_mc_question extends external_api {
 
     /**
      * Writes the new question version in a transaction, with optional
-     * idnumber backfill (issue #523: extracted from execute()).
+     * idnumber backfill.
      * @param \stdClass $question
      * @param \stdClass $category
      * @param \context $context
@@ -256,20 +234,20 @@ final class update_mc_question extends external_api {
     ): array {
         global $DB;
 
-        // No try/catch+rollback of our own here: import_questions_xml::execute()
+        // No try/catch+rollback of our own here: question_import::import()
         // already rolls back its OWN (nested) transaction itself on a
         // round-trip failure and rethrows the exception - a second rollback()
         // call on this (by then already ended) transaction would itself throw
         // a dml_transaction_exception. If THIS transaction is left without
         // allow_commit() (because the exception is passed through unhandled),
         // Moodle rolls it back automatically (pattern documented in
-        // import_questions_xml) - including the backfill just assigned.
+        // question_import) - including the backfill just assigned.
         $transaction = $DB->start_delegated_transaction();
         $backfilled = false;
 
         $idnumber = trim((string) ($entry->idnumber ?? ''));
         if ($idnumber === '') {
-            // Backfill ONLY for this one bank entry (ticket #419) -
+            // Backfill ONLY for this one bank entry -
             // no bulk run over the category/question bank.
             $idnumber = self::generate_idnumber();
             $DB->set_field('question_bank_entries', 'idnumber', $idnumber, ['id' => $entry->id]);
@@ -277,11 +255,10 @@ final class update_mc_question extends external_api {
         }
         $question->idnumber = $idnumber;
 
-        [$xml, $missingfiles] = export_questions_xml::question_to_xml($question, $category, $context);
+        [$xml, $missingfiles] = question_xml::question_to_xml($question, $category, $context);
         $wrapped = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<quiz>\n" . $xml . "\n</quiz>\n";
 
-        $imported = import_questions_xml::execute($categoryid, $wrapped, $confirmed);
-        $imported = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $imported);
+        $imported = question_import::import($categoryid, $wrapped, $confirmed);
 
         $transaction->allow_commit();
 
@@ -373,25 +350,17 @@ final class update_mc_question extends external_api {
 
     /**
      * Overwrites only the properties named in the patch on the NATIVE
-     * question object (see {@see export_questions_xml::resolve_native_question()})
-     * - everything else stays exactly preserved (core test of this ticket)
+     * question object (see {@see question_xml::resolve_native_question()})
+     * - everything else stays exactly preserved
      * because it is never touched. Afterwards validates the (patched or
      * unchanged) answers/selection mode state with the same rules as a new
-     * creation ({@see create_mc_question::validate_answers()}).
+     * creation ({@see question_xml::validate_answers()}).
      * @param \stdClass $question Is modified in place.
      * @param mixed[] $patch
      * @return void
      */
     private static function apply_patch(\stdClass $question, array $patch): void {
-        if (array_key_exists('name', $patch)) {
-            $question->name = (string) $patch['name'];
-        }
-        if (array_key_exists('questiontext', $patch)) {
-            $question->questiontext = (string) $patch['questiontext'];
-        }
-        if (array_key_exists('generalfeedback', $patch)) {
-            $question->generalfeedback = (string) $patch['generalfeedback'];
-        }
+        self::apply_text_fields($question, $patch);
         if (array_key_exists('defaultmark', $patch)) {
             $question->defaultmark = (float) $patch['defaultmark'];
         }
@@ -406,6 +375,37 @@ final class update_mc_question extends external_api {
             $question->options->answers = self::build_answer_objects($patch['answers']);
         }
 
+        self::validate_patched_answers($question, $patch);
+    }
+
+    /**
+     * Overwrites the plain text properties named in the patch.
+     *
+     * @param \stdClass $question Is modified in place.
+     * @param mixed[] $patch
+     * @return void
+     * @throws \invalid_parameter_exception a text value is an array
+     */
+    private static function apply_text_fields(\stdClass $question, array $patch): void {
+        foreach (['name', 'questiontext', 'generalfeedback'] as $field) {
+            if (!array_key_exists($field, $patch)) {
+                continue;
+            }
+            if (is_array($patch[$field])) {
+                throw new \invalid_parameter_exception('"' . $field . '" must be a scalar text value or null.');
+            }
+            $question->{$field} = (string) $patch[$field];
+        }
+    }
+
+    /**
+     * Validate answer rules only when the patch changes answers or selection mode.
+     *
+     * @param \stdClass $question
+     * @param mixed[] $patch
+     * @return void
+     */
+    private static function validate_patched_answers(\stdClass $question, array $patch): void {
         // Validate only if answers/selectionmode ACTUALLY appear in the patch:
         // a foreign question found whose answers do not meet Coursepilot's
         // stricter creation rules (validate_answers) may still be patched in
@@ -419,7 +419,7 @@ final class update_mc_question extends external_api {
                 'feedback' => $a->feedback,
             ], array_values((array) $question->options->answers));
             $selectionmode = empty($question->options->single) ? 'multiple' : 'single';
-            create_mc_question::validate_answers($answersforvalidation, $selectionmode);
+            question_xml::validate_answers($answersforvalidation, $selectionmode);
         }
     }
 
@@ -559,7 +559,7 @@ final class update_mc_question extends external_api {
      * AFTER writing, because question/questiontext and
      * question/answerfeedback are addressed by Moodle convention via the
      * question/answer id, which does not exist before
-     * import_questions_xml::execute(). The caller has already sent the text
+     * question_import::import(). The caller has already sent the text
      * (with "@@PLUGINFILE@@/<filename>" plus alt text) in the
      * questiontext/feedback patch - file_save_draft_area_files() only
      * resolves the placeholder against the real pluginfile URL, exactly the

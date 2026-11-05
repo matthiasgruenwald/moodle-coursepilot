@@ -33,6 +33,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(write_target::class)]
 #[CoversClass(create_module::class)]
 #[CoversClass(update_module_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\module_settings::class)]
 final class catalog_file_write_test extends \advanced_testcase {
     /** @var \stdClass */
     private \stdClass $course;

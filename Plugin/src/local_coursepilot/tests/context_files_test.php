@@ -25,7 +25,11 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(context_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class context_files_test extends \advanced_testcase {
+    use \local_coursepilot\tests\caught_throwable;
+
     public function test_resolve_directory_defaults_to_root(): void {
         $this->resetAfterTest();
         $this->assertSame('/coursepilot/', context_files::resolve_directory(''));
@@ -48,6 +52,23 @@ final class context_files_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->expectException(\moodle_exception::class);
         context_files::resolve_directory('./faecher');
+    }
+
+    public function test_resolve_writable_file_splits_directory_and_markdown_filename(): void {
+        $this->resetAfterTest();
+        [$directory, $filename] = context_files::resolve_writable_file('plan/woche1.md');
+        $this->assertSame('/coursepilot/plan/', $directory);
+        $this->assertSame('woche1.md', $filename);
+    }
+
+    public function test_resolve_writable_file_rejects_non_markdown_files(): void {
+        $this->resetAfterTest();
+        try {
+            context_files::resolve_writable_file('plan/woche1.exe');
+            $this->fail('Only markdown files may be written to the context area.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilenotmarkdown', $e->errorcode);
+        }
     }
 
     public function test_resolve_file_splits_directory_and_filename(): void {
@@ -247,8 +268,11 @@ final class context_files_test extends \advanced_testcase {
         ], '# Neu');
 
         ob_start();
-        $copied = context_files::migrate_legacy_files();
-        $log = ob_get_clean();
+        try {
+            $copied = $this->succeeded(fn() => context_files::migrate_legacy_files());
+        } finally {
+            $log = ob_get_clean();
+        }
 
         $this->assertSame(0, $copied);
         $this->assertStringContainsString('vorlagen.md', $log);
@@ -259,6 +283,43 @@ final class context_files_test extends \advanced_testcase {
             context_files::ITEMID,
             '/coursepilot/',
             'vorlagen.md'
+        )->get_content());
+    }
+
+    /**
+     * Skip collisions without overwriting, also for a name that sorts before the array key (Spec 0016 §3.1).
+     */
+    public function test_migrate_legacy_files_skips_collisions_of_a_file_sorting_before_the_word_filename(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $contextid = context_files::own_context()->id;
+        $this->create_legacy_file($contextid, '/coursepilot/', 'alpha.md', '# Alt');
+        get_file_storage()->create_file_from_string([
+            'contextid' => $contextid,
+            'component' => context_files::COMPONENT,
+            'filearea' => context_files::FILEAREA,
+            'itemid' => context_files::ITEMID,
+            'filepath' => '/coursepilot/',
+            'filename' => 'alpha.md',
+        ], '# Neu');
+
+        ob_start();
+        try {
+            $copied = $this->succeeded(fn() => context_files::migrate_legacy_files());
+        } finally {
+            $log = ob_get_clean();
+        }
+
+        $this->assertSame(0, $copied);
+        $this->assertStringContainsString('alpha.md', $log);
+        $this->assertSame('# Neu', get_file_storage()->get_file(
+            $contextid,
+            context_files::COMPONENT,
+            context_files::FILEAREA,
+            context_files::ITEMID,
+            '/coursepilot/',
+            'alpha.md'
         )->get_content());
     }
 

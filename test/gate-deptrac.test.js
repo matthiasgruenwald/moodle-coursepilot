@@ -62,9 +62,9 @@ test('evaluate flags stale and ticketless baseline entries', () => {
   assert.ok(found.every(deptrac.isBlocking));
 });
 
-test('the committed baseline names a ticket for every entry', () => {
+test('the committed baseline is empty after deepening and names tickets for any entry', () => {
   const entries = deptrac.parseBaseline(fs.readFileSync(path.join(ROOT, 'scripts/gate/deptrac/deptrac-baseline.yaml'), 'utf8'));
-  assert.ok(entries.length > 0);
+  assert.deepEqual(entries, []);
   entries.forEach(e => assert.match(e.ticket || '', /^#\d+$/, `${e.from} -> ${e.to}`));
 });
 

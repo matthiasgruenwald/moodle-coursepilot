@@ -1,0 +1,165 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "fieldsjson",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "location",
+                "type": "string",
+                "default": "store"
+            },
+            {
+                "name": "confirmlearnerlocks",
+                "type": "array",
+                "default": []
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "fields_json": {
+                "class": "core_external\\external_value",
+                "desc": "JSON object field name => new value - only the fields to change (patch, not a full state)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "location": {
+                "class": "core_external\\external_value",
+                "desc": "\"store\" (default, the teacher's grown material store, read-only) or \"workbench\" (Coursepilot's own staging area)",
+                "required": 0,
+                "default": "store",
+                "allownull": true,
+                "type": "alpha"
+            },
+            "confirm_learner_locks": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Learner locks this call sets on purpose. A learner lock is a setting after which a learner needs an action by the teacher to continue or resubmit. A call that would set an unconfirmed lock is rejected with each lock and its reason, and nothing is written. Name a lock here only when the teacher explicitly asked for it; otherwise leave the field out or choose an open value.",
+                "required": 0,
+                "default": [],
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Lock id as named in a rejection: a field name, or \"teacher_grade:<cmid>\"",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing change message",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "changes": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "One entry per field that actually changed",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "field": {
+                            "class": "core_external\\external_value",
+                            "desc": "Field name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "before_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded value before the write",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "after_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded value after the write",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        }
+                    }
+                }
+            },
+            "side_effects": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Triggered side effects from catalog category 5, empty when none were triggered",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Teacher-facing side-effect note",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            }
+        }
+    }
+}

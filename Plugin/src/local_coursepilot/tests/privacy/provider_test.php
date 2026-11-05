@@ -386,4 +386,55 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->assertSame('local_coursepilot', $event->component);
         $sink->close();
     }
+
+    /**
+     * The system context lists every user holding OAuth codes, tokens, grants or tickets.
+     */
+    public function test_get_users_in_context_lists_oauth_users_in_system_context(): void {
+        $this->resetAfterTest();
+        $holder = $this->getDataGenerator()->create_user();
+        $bystander = $this->getDataGenerator()->create_user();
+        $this->issue_token($holder->id);
+
+        $userlist = new \core_privacy\local\request\userlist(\context_system::instance(), 'local_coursepilot');
+        provider::get_users_in_context($userlist);
+
+        $this->assertContains((int) $holder->id, array_map('intval', $userlist->get_userids()));
+        $this->assertNotContains((int) $bystander->id, array_map('intval', $userlist->get_userids()));
+    }
+
+    /**
+     * Deleting all data in the system context empties the OAuth stores for every user.
+     */
+    public function test_delete_data_for_all_users_in_system_context_removes_oauth_stores(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $first = $this->getDataGenerator()->create_user();
+        $second = $this->getDataGenerator()->create_user();
+        $this->issue_token($first->id);
+        $this->issue_token($second->id);
+
+        provider::delete_data_for_all_users_in_context(\context_system::instance());
+
+        $this->assertSame(0, $DB->count_records('local_coursepilot_oauth_token'));
+        $this->assertSame(0, $DB->count_records('local_coursepilot_oauth_grant'));
+    }
+
+    /**
+     * Contexts the plugin stores nothing in are left alone.
+     */
+    public function test_delete_data_for_all_users_ignores_foreign_contexts(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->issue_token($user->id);
+        $course = $this->getDataGenerator()->create_course();
+
+        provider::delete_data_for_all_users_in_context(\context_course::instance($course->id));
+        provider::delete_data_for_users(
+            new approved_userlist(\context_course::instance($course->id), 'local_coursepilot', [$user->id])
+        );
+
+        $this->assertTrue($DB->record_exists('local_coursepilot_oauth_token', ['userid' => $user->id]));
+    }
 }

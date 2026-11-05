@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\external;
 
+use core_external\external_api;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
@@ -32,6 +33,9 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(compose_material_file::class)]
 #[CoversClass(\local_coursepilot\material_composition::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class compose_material_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -117,6 +121,8 @@ final class compose_material_file_test extends \advanced_testcase {
             'source_header_text' => 'ML S. 36',
         ]], 'vertical', 'composed.png');
 
+        $result = external_api::clean_returnvalue(compose_material_file::execute_returns(), $result);
+
         $this->assertSame('composed.png', $result['path']);
         $this->assertTrue($result['created']);
         $this->assertSame(250, $result['width']);
@@ -124,6 +130,21 @@ final class compose_material_file_test extends \advanced_testcase {
         $stored = material_area::read_for_location('workbench', $result['path']);
         $this->assertSame($stored['contenthash'], $result['contenthash']);
         $this->assertStringStartsWith('workbench:page.png', $result['sources'][0]);
+        $file = get_file_storage()->get_file(
+            material_files::own_context()->id,
+            material_files::COMPONENT,
+            material_files::FILEAREA,
+            material_files::ITEMID,
+            '/coursepilot-material/',
+            'composed.png'
+        );
+        $this->assertSame(
+            serialize((object) ['original' => implode('; ', $result['sources'])]),
+            $file->get_source(),
+            'Provenance is stored as a serialized stdClass, not an array.'
+        );
+        $provenance = unserialize_object($file->get_source());
+        $this->assertSame(implode('; ', $result['sources']), $provenance->original);
         $image = $this->result_image('composed.png');
         $blue = 0;
         for ($y = 0; $y < 48; $y++) {

@@ -17,28 +17,15 @@
 namespace local_coursepilot;
 
 /**
- * Location-neutral material operations (list, upload, preview, delete;
- * issue #539, Spec 0021). {@see \local_coursepilot\external\list_material_files}
- * and sibling tools no longer strip internal etag fields or reproduce write/delete
- * sequencing. This facade owns those decisions, as {@see context_area} does
- * for context (issue #538).
+ * Location-neutral material operations for the store and workbench.
+ * Reads follow the selected store; writes target the Moodle workbench.
  *
- * Material write tools target the workbench exclusively
- * ({@see material_files::workbench_area()}), always Moodle Private Files.
- * Writes/deletes use {@see storage_port} through {@see private_files_storage_port},
- * the same adapter used by context_area for Private Files.
+ * All writes use storage_write to retain the authorised preflight state and
+ * record storage outages. Image provenance travels through the port's typed
+ * source argument. Generated exports retain their permissive name policy.
  *
- * {@see \local_coursepilot\external\crop_material_file} deliberately writes
- * outside this facade: crop needs Moodle's source metadata for provenance,
- * which has no WebDAV equivalent in the neutral contract. It therefore keeps
- * {@see material_files::write()} (unchanged since before #539) without location
- * branching; the workbench is always Moodle.
- *
- * List/read for material store and workbench use
- * {@see material_files::list_entries_for_location()}/
- * {@see material_files::read_content_for_location()} through
- * {@see storage_anchor::port()} (issue #645), selecting the same per-location
- * adapter as context. {@see list()}/{@see read_for_location()} are thin facades.
+ * List/read use the material domain's context-area isolation and the anchor's
+ * selected adapter; tools never reproduce those storage decisions.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -89,40 +76,80 @@ final class material_area {
     }
 
     /**
-     * Writes a workbench file through the anchor (issue #539), used by
-     * {@see \local_coursepilot\external\upload_material_file}. Path, extension,
-     * quota and temporary-file sequencing belong to the
-     * {@see private_files_storage_port} adapter. Crop targets still use
-     * {@see material_files::write()} because
-     * {@see \local_coursepilot\external\crop_material_file} needs Moodle's source
-     * metadata; see class documentation.
+     * Writes a workbench file using the common conditional persistence operation.
+     * Path, extension, quota and temporary-file sequencing belong to the adapter.
      *
      * @param string $path
      * @param string $content Complete new content.
-     * @param string $expectedcontenthash '' means unconditional overwrite/create.
+     * @param string $expectedcontenthash Explicit checksum; otherwise uses the preflight state.
+     * @param string $source Optional serialised provenance for image tools.
      * @return array{path: string, created: bool, size: int, oldsize: int, warning: ?string}
      * @throws \moodle_exception materialfilechanged (checksum conflict),
      *         materialfiledisallowedtype, invalidmaterialpath, materialquotaexceeded
      */
-    public static function write(string $path, string $content, string $expectedcontenthash = ''): array {
+    public static function write(
+        string $path,
+        string $content,
+        string $expectedcontenthash = '',
+        string $source = ''
+    ): array {
         $area = material_files::workbench_area();
-        $port = self::port();
+        $location = storage_anchor::effective_location($area);
+        return self::write_to(storage_anchor::port_at($location), $location, $path, $content, $expectedcontenthash, $source);
+    }
 
-        $existing = $port->read($area, $path);
+    /**
+     * Writes generated exports through the same condition without the upload name policy.
+     *
+     * @param string $path Relative workbench export path.
+     * @param string $content Complete generated content.
+     * @return array{path: string, created: bool, size: int, oldsize: int, warning: ?string}
+     */
+    public static function write_export(string $path, string $content): array {
+        $area = material_files::export_area();
+        $location = storage_anchor::effective_location($area);
+        return self::write_to(storage_anchor::port_at($location), $location, $path, $content, area: $area);
+    }
+
+    /**
+     * Writes through a selected workbench port with the shared preflight condition.
+     *
+     * @param storage_port $port Selected adapter.
+     * @param pointer_location $location Workbench location.
+     * @param string $path Relative material path.
+     * @param string $content Complete replacement content.
+     * @param string $expectedcontenthash Explicit client checksum if supplied.
+     * @param string $source Serialised provenance for image tools.
+     * @param storage_area|null $area Workbench upload or generated-export policy.
+     * @return array{path: string, created: bool, size: int, oldsize: int, warning: ?string}
+     */
+    public static function write_to(
+        storage_port $port,
+        pointer_location $location,
+        string $path,
+        string $content,
+        string $expectedcontenthash = '',
+        string $source = '',
+        ?storage_area $area = null
+    ): array {
+        $area = $area ?? material_files::workbench_area();
+        storage_anchor::writable_segments($area, $path);
+        private_files_storage_port::require_manage_own_files();
+        $writer = new storage_write($port, $area, $location, $path);
+        $existing = $writer->existing();
         $oldsize = $existing['size'] ?? 0;
-
+        $warning = material_files::quota_warning(strlen($content) - $oldsize);
         try {
-            $written = $port->write($area, $path, $content, $expectedcontenthash !== '' ? $expectedcontenthash : null);
+            $written = $writer->write($content, $expectedcontenthash, source: $source);
         } catch (storage_conflict_exception $e) {
             throw new \moodle_exception('materialfilechanged', 'local_coursepilot', '', $path);
         }
-
         return [
             'path' => $written['path'],
             'created' => $written['created'],
             'size' => $written['size'],
             'oldsize' => $oldsize,
-            'warning' => material_files::quota_warning($written['size'] - $oldsize),
+            'warning' => $warning,
         ];
     }
 

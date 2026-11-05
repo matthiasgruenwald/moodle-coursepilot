@@ -1,0 +1,109 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "courseid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID containing the quiz",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the quiz, not a question bank or another activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "contextid": {
+                "class": "core_external\\external_value",
+                "desc": "Validated quiz activity context ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "defaultcategoryid": {
+                "class": "core_external\\external_value",
+                "desc": "Native default category ID; use for questions or as parent for subcategories",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "categories": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "id": {
+                            "class": "core_external\\external_value",
+                            "desc": "Category ID",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Category name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "parent": {
+                            "class": "core_external\\external_value",
+                            "desc": "Parent category ID (0 for the top category)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,71 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "name",
+                "type": "string",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "name": {
+                "class": "core_external\\external_value",
+                "desc": "Skill identifier from coursepilot_list_skills, not a path",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "content": {
+                "class": "core_external\\external_value",
+                "desc": "Markdown content",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "referenced_parts": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Name of a corpus part referenced in the content",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            },
+            "corpus_version": {
+                "class": "core_external\\external_value",
+                "desc": "Plugin release and version of the delivered corpus",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            }
+        }
+    }
+}

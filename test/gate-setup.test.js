@@ -35,6 +35,7 @@ if (args[0] === 'run') {
     fs.mkdirSync(host + '/vendor/moodlehq/moodle-plugin-ci', { recursive: true });
     write(host + '/vendor/bin/phpunit');
     write(host + '/vendor/bin/phpstan');
+    write(host + '/vendor/bin/infection');
   } else if (args.includes('npm')) {
     fs.mkdirSync(host + '/node_modules/.bin', { recursive: true });
     write(host + '/lib/node_modules/vnu-jar/build/dist/vnu.jar');
@@ -47,7 +48,7 @@ if (args[0] === 'run') {
 `);
     fs.chmodSync(path.join(dir, 'bin/docker'), 0o755);
     const result = spawnSync('bash', ['scripts/gate/setup-container.sh'], {
-      cwd: repo, encoding: 'utf8', timeout: 30000,
+      cwd: repo, encoding: 'utf8', timeout: 120000,
       env: { ...process.env, GATE_DIR: dir, PATH: `${dir}/bin:${process.env.PATH}` },
     });
     assert.equal(result.status, 0, result.stdout + result.stderr);

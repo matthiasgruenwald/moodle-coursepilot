@@ -48,6 +48,17 @@ final class pointer_reader {
     }
 
     /**
+     * Translates a storage-port outage using the established public error vocabulary.
+     *
+     * @param storage_failure $e Adapter-neutral outage.
+     * @param string $stringkey Caller-specific message key.
+     * @return \moodle_exception
+     */
+    public static function storage_exception(storage_failure $e, string $stringkey = 'webdavexternalerror'): \moodle_exception {
+        return self::webdav_exception(new webdav_error($e->errorclass), $stringkey);
+    }
+
+    /**
      * Translate a {@see webdav_error} into a teacher-facing message containing
      * only the error class and location selection page, without host, account,
      * password, HTTP status or response body (Spec #486 Testing Decisions).

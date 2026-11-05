@@ -105,7 +105,7 @@ final class move_module extends external_api {
         $targetcmids = $modinfo->sections[$params['sectionnum']] ?? [];
         // Exclude this cmid when moving within its current section. Counting it as
         // a "before itself" target would shift positions after the current one by one.
-        $targetcmids = array_values(array_filter($targetcmids, static fn (int $id): bool => $id !== $cm->id));
+        $targetcmids = array_values(array_filter($targetcmids, static fn (int $id): bool => $id !== (int) $cm->id));
 
         $position = $params['position'];
         $targetcmid = null;

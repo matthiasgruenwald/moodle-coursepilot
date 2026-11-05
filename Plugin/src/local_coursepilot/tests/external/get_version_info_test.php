@@ -29,7 +29,10 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_version_info::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\plugin_meta::class)]
 final class get_version_info_test extends \advanced_testcase {
+    use \local_coursepilot\tests\caught_throwable;
+
     /**
      * Return nonempty Moodle release/version/branch and plugin version/release
      * from version.php, without placeholders.
@@ -81,5 +84,107 @@ final class get_version_info_test extends \advanced_testcase {
 
         $this->assertStringContainsString($CFG->release, $result['message']);
         $this->assertStringContainsString((string) $result['plugin_version'], $result['message']);
+    }
+
+    /**
+     * A stored plugin version that lags behind version.php is flagged, so a deployment
+     * without upgrade.php stays visible to support.
+     */
+    public function test_warns_when_the_installed_version_lags_behind_the_code(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        set_config('version', 2020010100, 'local_coursepilot');
+
+        $result = external_api::clean_returnvalue(get_version_info::execute_returns(), get_version_info::execute());
+
+        $this->assertSame(2020010100, $result['plugin_version_db']);
+        $this->assertStringContainsString(
+            get_string('versioninfoupgradewarning', 'local_coursepilot', 2020010100),
+            $result['message']
+        );
+    }
+
+    /**
+     * The tool takes no arguments.
+     */
+    public function test_declares_no_parameters(): void {
+        $this->assertSame([], get_version_info::execute_parameters()->keys);
+    }
+
+    /**
+     * The untouched response: exact keys, values, types and the summary sentence when the database is up to date.
+     */
+    public function test_raw_response_is_exact_when_the_installation_is_current(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $plugin = \local_coursepilot\plugin_meta::current();
+        set_config('version', $plugin->version, 'local_coursepilot');
+
+        $result = get_version_info::execute();
+
+        $this->assertSame([
+            'moodle_release' => $CFG->release,
+            'moodle_version' => (string) $CFG->version,
+            'moodle_branch' => $CFG->branch,
+            'plugin_version' => $plugin->version,
+            'plugin_release' => $plugin->release,
+            'plugin_version_db' => $plugin->version,
+            'date' => date('Y-m-d'),
+            'message' => 'Moodle ' . $CFG->release . ' (branch ' . $CFG->branch . '), Coursepilot plugin '
+                . $plugin->release . ' (version ' . $plugin->version . ').',
+        ], $result);
+    }
+
+    /**
+     * Without a registered plugin version the database version is reported as 0 and no upgrade warning appears.
+     */
+    public function test_unregistered_plugin_reports_zero_without_a_warning(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        unset_config('version', 'local_coursepilot');
+
+        $result = get_version_info::execute();
+
+        $this->assertSame(0, $result['plugin_version_db']);
+        $this->assertStringNotContainsString('upgrade.php', $result['message']);
+    }
+
+    /**
+     * A lagging database version appends the upgrade warning after one blank, as its own sentence.
+     */
+    public function test_upgrade_warning_follows_the_summary_after_one_blank(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $plugin = \local_coursepilot\plugin_meta::current();
+        set_config('version', 2020010100, 'local_coursepilot');
+
+        $result = get_version_info::execute();
+
+        $this->assertSame(
+            'Moodle ' . $CFG->release . ' (branch ' . $CFG->branch . '), Coursepilot plugin ' . $plugin->release
+                . ' (version ' . $plugin->version . '). Warning: The database records version 2020010100'
+                . ' - upgrade.php was not run after the last deployment.',
+            $result['message']
+        );
+    }
+
+    /**
+     * A web service restricted to a course never reaches the site-wide version information.
+     */
+    public function test_respects_the_external_context_restriction(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $course = $this->getDataGenerator()->create_course();
+
+        external_api::set_context_restriction(\context_course::instance($course->id));
+        try {
+            $e = $this->caught(fn() => get_version_info::execute());
+        } finally {
+            external_api::set_context_restriction(\context_system::instance());
+        }
+
+        $this->assertInstanceOf(\core_external\restricted_context_exception::class, $e);
     }
 }

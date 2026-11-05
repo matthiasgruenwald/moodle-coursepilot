@@ -149,7 +149,7 @@ class describe_module_fields extends external_api {
             $pseudofields = array_merge(shared_block::pseudofields(), $catalogclass::pseudofields());
             $module['pseudo_fields'] = array_map($withlock, $pseudofields);
             $module['blocked_fields'] = array_values(array_unique(
-                array_merge(shared_block::BLOCKLIST, $catalogclass::blocklist())
+                array_merge(shared_block::blocked_fields(), $catalogclass::blocklist())
             ));
             $module['combination_rules'] = $catalogclass::combination_rules();
             $module['side_effects'] = array_merge(shared_block::side_effects(), $catalogclass::side_effects());

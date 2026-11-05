@@ -1,0 +1,128 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the quiz (mod_quiz), usually returned by clone_activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the inspected quiz",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "questions": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "One result per quiz slot, ordered by slot",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "slot": {
+                            "class": "core_external\\external_value",
+                            "desc": "Slot number in the quiz",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "questionbankentryid": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question identity (bank entry) referenced by the slot",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "questionid": {
+                            "class": "core_external\\external_value",
+                            "desc": "ID of the latest question version",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "idnumber": {
+                            "class": "core_external\\external_value",
+                            "desc": "Bank entry idnumber, empty if none is assigned",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "status": {
+                            "class": "core_external\\external_value",
+                            "desc": "\"own_copy\" (own copy) or \"shared_reference\" (shared reference)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "alphanumext"
+                        },
+                        "source_course_id": {
+                            "class": "core_external\\external_value",
+                            "desc": "Course ID the reference still points to (0 when status = \"own_copy\")",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        }
+                    }
+                }
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Localized teacher-facing summary of own copies and shared references",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

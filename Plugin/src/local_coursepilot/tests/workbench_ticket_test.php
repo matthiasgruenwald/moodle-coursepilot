@@ -492,4 +492,172 @@ final class workbench_ticket_test extends \advanced_testcase {
         }
         $fs->create_file_from_string($filerecord, $content);
     }
+
+    public function test_the_issued_link_is_exact_and_the_secret_is_64_hex_digits(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
+        $this->store('blatt.pdf', 'hallo welt');
+
+        $link = workbench_ticket::issue('blatt.pdf');
+
+        $secret = $this->secret_from_url($link['url']);
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $secret);
+        $this->assertSame($CFG->wwwroot . '/local/coursepilot/workbench/download.php?ticket=' . $secret, $link['url']);
+        $row = $DB->get_record(workbench_ticket::TABLE, ['tickethash' => hash('sha256', $secret)], '*', MUST_EXIST);
+        $this->assertEquals($user->id, $row->userid);
+        $this->assertSame('blatt.pdf', $row->path);
+        $this->assertSame(sha1('hallo welt'), $row->contenthash);
+    }
+
+    public function test_issuing_removes_expired_tickets_only(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
+        $this->store('blatt.pdf', 'hallo welt');
+        $row = fn(string $name, int $expires) => $DB->insert_record(workbench_ticket::TABLE, (object) [
+            'userid' => $user->id, 'path' => $name, 'contenthash' => sha1($name), 'tickethash' => hash('sha256', $name),
+            'expires' => $expires, 'timecreated' => time() - 5000,
+        ]);
+        $expired = $row('expired.txt', time() - 10);
+        $valid = $row('valid.txt', time() + 600);
+
+        workbench_ticket::issue('blatt.pdf');
+
+        $this->assertFalse($DB->record_exists(workbench_ticket::TABLE, ['id' => $expired]));
+        $this->assertTrue($DB->record_exists(workbench_ticket::TABLE, ['id' => $valid]));
+    }
+
+    public function test_a_redeemed_ticket_leaves_no_row_behind_and_the_delivery_has_exact_types(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
+        $this->store('blatt.pdf', 'hallo welt');
+        $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
+
+        $delivery = workbench_ticket::redeem($secret);
+
+        $this->assertSame(0, $DB->count_records(workbench_ticket::TABLE));
+        $this->assertSame((int) $user->id, $delivery['userid']);
+        $this->assertSame('blatt.pdf', $delivery['path']);
+        $this->assertSame('blatt.pdf', $delivery['filename']);
+        $this->assertSame(strlen('hallo welt'), $delivery['size']);
+        $this->assertSame('hallo welt', $delivery['content']);
+    }
+
+    public function test_a_file_without_a_mimetype_is_delivered_as_a_generic_binary(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
+        $this->store('blatt.pdf', 'hallo welt');
+        $DB->set_field('files', 'mimetype', '', ['filename' => 'blatt.pdf']);
+        $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
+
+        $this->assertSame('application/octet-stream', workbench_ticket::redeem($secret)['mimetype']);
+    }
+
+    public function test_a_ticket_is_still_valid_in_the_second_it_expires(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
+        $this->store('blatt.pdf', 'hallo welt');
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
+            $now = time();
+            $DB->set_field(workbench_ticket::TABLE, 'expires', $now, ['tickethash' => hash('sha256', $secret)]);
+            try {
+                workbench_ticket::redeem($secret);
+                $this->addToAssertionCount(1);
+                return;
+            } catch (\moodle_exception $e) {
+                // Only a second boundary between setting and redeeming may legitimately expire it.
+                $this->assertNotSame($now, time(), 'The ticket expired within its last valid second.');
+            }
+        }
+        $this->fail('The second boundary was crossed in every attempt.');
+    }
+
+    public function test_a_rival_that_holds_the_token_a_fixed_claim_would_use_does_not_hand_it_to_us(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
+        $this->store('blatt.pdf', 'inhalt');
+        $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
+        $hash = hash('sha256', $secret);
+        // A claim token without a random part would be predictable, and a rival's row could be mistaken for our own.
+        $DB->set_field(workbench_ticket::TABLE, 'tickethash', hash('sha256', $hash . '|'), ['tickethash' => $hash]);
+
+        $e = null;
+        try {
+            workbench_ticket::redeem($secret);
+        } catch (workbench_ticket_redemption_failed $caught) {
+            $e = $caught;
+        }
+
+        $this->assertInstanceOf(workbench_ticket_redemption_failed::class, $e);
+        $this->assertSame('workbenchticketinvalid', $e->errorcode);
+    }
+
+    public function test_the_request_identity_is_restored_when_the_ticket_path_is_refused(): void {
+        global $DB, $USER;
+        $this->resetAfterTest();
+        $owner = $this->getDataGenerator()->create_user();
+        $this->setUser($owner);
+        $this->issue_connection((int) $owner->id);
+        $this->store('blatt.pdf', 'inhalt');
+        $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
+        $DB->set_field(workbench_ticket::TABLE, 'path', '../escape.pdf', ['tickethash' => hash('sha256', $secret)]);
+        $this->setUser($owner);
+        $requestuser = $USER;
+
+        $e = null;
+        try {
+            workbench_ticket::redeem($secret);
+        } catch (\Throwable $caught) {
+            $e = $caught;
+        }
+
+        $this->assertNotNull($e);
+        $this->assertSame($requestuser, $USER);
+    }
+
+    public function test_a_ticket_whose_file_has_disappeared_reports_the_changed_content(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->issue_connection((int) $user->id);
+        $this->store('blatt.pdf', 'inhalt');
+        $secret = $this->secret_from_url(workbench_ticket::issue('blatt.pdf')['url']);
+        get_file_storage()->get_file(
+            material_files::own_context()->id,
+            material_files::COMPONENT,
+            material_files::FILEAREA,
+            material_files::ITEMID,
+            '/coursepilot-material/',
+            'blatt.pdf'
+        )->delete();
+
+        $e = null;
+        try {
+            workbench_ticket::redeem($secret);
+        } catch (\Throwable $caught) {
+            $e = $caught;
+        }
+
+        $this->assertInstanceOf(workbench_ticket_redemption_failed::class, $e);
+        $this->assertSame('workbenchticketcontentchanged', $e->errorcode);
+    }
 }

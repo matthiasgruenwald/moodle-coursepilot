@@ -122,4 +122,84 @@ final class connection_storage_location_test extends \advanced_testcase {
         $this->assertStringNotContainsString('Geheim', $description['targets']['context_area']);
         $this->assertStringContainsString($this->fixtureserver, $description['targets']['context_area']);
     }
+
+    public function test_marks_an_instance_owned_by_another_user(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $instanceid = $this->create_webdav_instance($other);
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
+
+        $description = connection_storage_location::describe((int) $user->id);
+
+        $this->assertContains($this->defect_marker('storagelocationdefectforeigninstance'), $description['markers']);
+    }
+
+    public function test_marks_an_instance_that_does_not_use_https(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $instanceid = $this->create_webdav_instance($user, ['webdav_type' => 0]);
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
+
+        $description = connection_storage_location::describe((int) $user->id);
+
+        $this->assertContains($this->defect_marker('storagelocationdefecthttp'), $description['markers']);
+    }
+
+    public function test_marks_an_unreadable_pointer_target_as_invalid(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_user::instance($user->id)->id,
+            'component' => 'user',
+            'filearea' => 'private',
+            'itemid' => 0,
+            'filepath' => '/coursepilot/',
+            'filename' => '.coursepilot-location.json',
+        ], json_encode(['context_area' => ['location' => 'unbekannt']]));
+
+        $description = connection_storage_location::describe((int) $user->id);
+
+        $this->assertContains($this->defect_marker('storagelocationdefectinvalid'), $description['markers']);
+        $this->assertStringContainsString(
+            get_string('storagelocationdefectinvalid', 'local_coursepilot'),
+            $description['targets']['context_area']
+        );
+    }
+
+    public function test_shows_the_moodle_target_by_name(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'context_area', $instanceid, 'Kontext');
+
+        $description = connection_storage_location::describe((int) $user->id);
+
+        $this->assertStringContainsString(
+            get_string('storagelocationmoodle', 'local_coursepilot'),
+            $description['targets']['material_store']
+        );
+    }
+
+    /**
+     * The marker line for one defect label string.
+     *
+     * @param string $labelstring
+     * @return string
+     */
+    private function defect_marker(string $labelstring): string {
+        return get_string('storagelocationmarkerdefect', 'local_coursepilot', get_string($labelstring, 'local_coursepilot'));
+    }
+
+    public function test_marks_an_unapproved_host_on_the_material_target_too(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $instanceid = $this->create_webdav_instance($user);
+        $this->write_v2_pointer($user, 'material_store', $instanceid, 'Material');
+
+        $description = connection_storage_location::describe((int) $user->id);
+
+        $this->assertContains(get_string('storagelocationmarkernotallowed', 'local_coursepilot'), $description['markers']);
+        $this->assertStringContainsString($this->fixtureserver, $description['targets']['material_store']);
+    }
 }

@@ -1,0 +1,56 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "identifier",
+                "type": "string",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "identifier": {
+                "class": "core_external\\external_value",
+                "desc": "Identifier of the pending entry, from coursepilot_list_skills",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "alphanumext"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "identifier": {
+                "class": "core_external\\external_value",
+                "desc": "Dismissed identifier",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "alphanumext"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing confirmation",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

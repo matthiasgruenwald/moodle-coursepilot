@@ -32,7 +32,11 @@ require_once($CFG->dirroot . '/local/coursepilot/db/upgradelib.php');
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-#[\PHPUnit\Framework\Attributes\CoversNothing]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_repair_oauth_schema_drift')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_hash_oauth_tokens')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_migrate_history_sources')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_migrate_anchor_files')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_translate_pending_entries')]
 final class upgradelib_test extends \advanced_testcase {
     /** @var string[] Tables affected by schema drift. */
     private const TABLES = [

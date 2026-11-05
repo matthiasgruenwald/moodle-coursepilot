@@ -189,7 +189,7 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Crop, write the target and build the response (#523: extracted from execute()).
+     * Crop the original, conditionally write the target and build the response.
      *
      * @param mixed[] $params Validated execute() parameters.
      * @param mixed[] $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
@@ -211,14 +211,14 @@ class crop_material_file extends external_api {
     ): array {
         [$content, $width, $height] = self::load_and_crop($params, $sourcestored, $sourcerelative, $targetextension);
         $newsize = strlen($content);
-        $oldsize = $existing !== null ? $existing['size'] : 0;
-
-        // Moodle expects an empty string or serialized object in source (see
-        // unserialize_object() in moodlelib.php). A raw path causes unserialize()
-        // warnings on later core file-manager/draft access (#431 follow-up).
-        $warning = material_files::write($targetdir, $targetfilename, $content, $oldsize, [
-            'source' => serialize((object) ['original' => $sourcerelative]),
-        ]);
+        // Preserve the target state authorised before the expensive image operation.
+        $written = material_area::write(
+            $params['targetpath'],
+            $content,
+            $existing['contenthash'] ?? \local_coursepilot\storage_port::MISSING_CHECKSUM,
+            serialize((object) ['original' => $sourcerelative])
+        );
+        $warning = $written['warning'];
 
         return self::build_crop_response(
             $params,

@@ -241,32 +241,21 @@ final class clone_activity extends external_api {
      * @return mixed[]|null null if the node or entire tree became empty.
      */
     private static function strip_dangling_completion(array $node, ?array $sourcenode, array &$removed): ?array {
-        if (!isset($node['c']) || !is_array($node['c'])) {
+        $children = $node['c'] ?? null;
+        if (!is_array($children)) {
             return $node;
         }
 
         $newc = [];
         $newshowc = [];
-        foreach ($node['c'] as $i => $child) {
-            $sourcechild = (is_array($sourcenode['c'] ?? null) && isset($sourcenode['c'][$i]) && is_array($sourcenode['c'][$i]))
-                ? $sourcenode['c'][$i]
-                : null;
-
-            if (is_array($child) && isset($child['op'])) {
-                $cleanedchild = self::strip_dangling_completion($child, $sourcechild, $removed);
-                if ($cleanedchild === null) {
+        foreach ($children as $i => $child) {
+            if (is_array($child)) {
+                $sourcechild = $sourcenode['c'][$i] ?? null;
+                $child = self::strip_child($child, is_array($sourcechild) ? $sourcechild : null, $removed);
+                if ($child === null) {
                     continue;
                 }
-                $newc[] = $cleanedchild;
-                $newshowc[] = $node['showc'][$i] ?? true;
-                continue;
             }
-
-            if (is_array($child) && \local_coursepilot\cm_references::is_dangling_completion($child)) {
-                $removed[] = self::describe_removed_condition($sourcechild);
-                continue;
-            }
-
             $newc[] = $child;
             $newshowc[] = $node['showc'][$i] ?? true;
         }
@@ -278,6 +267,26 @@ final class clone_activity extends external_api {
         $node['c'] = $newc;
         $node['showc'] = $newshowc;
         return $node;
+    }
+
+    /**
+     * One child of a condition group: nested groups are cleaned recursively, a dangling completion
+     * condition is dropped and described, everything else is kept.
+     *
+     * @param mixed[] $child
+     * @param mixed[]|null $sourcechild The same child before cloning, used for the message.
+     * @param mixed[] $removed By reference: message for each removed condition.
+     * @return mixed[]|null The child to keep, null if it was removed.
+     */
+    private static function strip_child(array $child, ?array $sourcechild, array &$removed): ?array {
+        if (isset($child['op'])) {
+            return self::strip_dangling_completion($child, $sourcechild, $removed);
+        }
+        if (\local_coursepilot\cm_references::is_dangling_completion($child)) {
+            $removed[] = self::describe_removed_condition($sourcechild);
+            return null;
+        }
+        return $child;
     }
 
     /**

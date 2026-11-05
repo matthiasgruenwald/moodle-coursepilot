@@ -60,4 +60,12 @@ final class webdav_user_instances_check_test extends \advanced_testcase {
 
         $this->assertSame(result::OK, $result->get_status());
     }
+
+    public function test_identifies_itself_for_the_status_report(): void {
+        $this->resetAfterTest();
+        $check = new webdav_user_instances_check();
+
+        $this->assertSame('webdav_user_instances', $check->get_id());
+        $this->assertSame(get_string('webdavcheck2name', 'local_coursepilot'), $check->get_name());
+    }
 }

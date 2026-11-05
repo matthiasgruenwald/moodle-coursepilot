@@ -1,0 +1,130 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "courseid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "sectionnum",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "fieldsjson",
+                "type": "string",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "sectionnum": {
+                "class": "core_external\\external_value",
+                "desc": "Section number (0-based)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "fields_json": {
+                "class": "core_external\\external_value",
+                "desc": "JSON object with \"name\" (string), \"summary\" (string) and/or \"visible\" (0|1) - only the named fields change",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "id": {
+                "class": "core_external\\external_value",
+                "desc": "Section DB ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "sectionnum": {
+                "class": "core_external\\external_value",
+                "desc": "Section number (0-based)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing change message",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "changes": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "One entry per field that actually changed",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "field": {
+                            "class": "core_external\\external_value",
+                            "desc": "Field name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "before_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded value before the write",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "after_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded value after the write",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

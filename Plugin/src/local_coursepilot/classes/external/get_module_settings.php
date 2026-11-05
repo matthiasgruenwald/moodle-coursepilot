@@ -16,30 +16,16 @@
 
 namespace local_coursepilot\external;
 
-use context_module;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_coursepilot\catalog\learner_locks;
 use local_coursepilot\catalog\module_state;
-use local_coursepilot\catalog\registry;
 
 /**
- * Full activity state (Spec 0015 §3.2, Ticket #384), exposed as field JSON
- * without a plugin-specific intermediate representation that would need
- * maintenance after every Moodle update.
- *
- * Avoid get_moduleinfo_data(): it calls can_update_moduleinfo(), requiring
- * manageactivities. This read endpoint needs only local/coursepilot:use.
- * Reproduce its field assembly with read permissions.
- *
- * ponytail: omit introeditor (creates a draft file area; raw intro/introformat
- * already exist), advancedgradingmethod_* form helpers, and derived gradebook
- * outcome/gradepass/gradecat fields. Add them selectively if a round trip
- * requires them. For quiz, module_state reads unformatted gradepass/grademax
- * from the primary grade item (#580).
+ * External adapter for the catalog's complete activity settings and learner
+ * locks, without a plugin-specific intermediate field representation.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -66,20 +52,7 @@ class get_module_settings extends external_api {
     public static function execute(int $cmid): array {
         $params = self::validate_parameters(self::execute_parameters(), ['cmid' => $cmid]);
 
-        $cm = get_coursemodule_from_id('', $params['cmid'], 0, false, MUST_EXIST);
-        $context = context_module::instance($cm->id);
-        self::validate_context($context);
-        require_capability('local/coursepilot:use', $context);
-
-        $data = module_state::effective_settings($cm);
-        $catalogclass = registry::for((string) $cm->modname);
-
-        return [
-            'cmid' => (int) $cm->id,
-            'modname' => (string) $cm->modname,
-            'settings_json' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'learner_locks' => $catalogclass === null ? [] : learner_locks::existing($catalogclass, $data),
-        ];
+        return module_state::read_settings($params['cmid']);
     }
 
     /**

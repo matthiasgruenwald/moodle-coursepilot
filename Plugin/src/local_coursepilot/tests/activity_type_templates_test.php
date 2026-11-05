@@ -28,6 +28,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(location_selection::class)]
 #[CoversClass(context_area::class)]
 #[CoversClass(private_files_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\personal_data::class)]
 final class activity_type_templates_test extends \advanced_testcase {
     use \local_coursepilot\tests\webdav\webdav_instance_fixture;
 

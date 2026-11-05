@@ -36,7 +36,7 @@ final class catalog_fields {
      */
     public static function validate(string $catalogclass, array $values, bool $patch = false): void {
         $modname = $catalogclass::modname();
-        $blocklist = array_unique(array_merge(shared_block::BLOCKLIST, $catalogclass::blocklist()));
+        $blocklist = array_unique(array_merge(shared_block::blocked_fields(), $catalogclass::blocklist()));
         $fields = array_merge(shared_block::fields(), $catalogclass::fields(), $catalogclass::pseudofields());
         $byname = [];
         foreach ($fields as $field) {
@@ -45,14 +45,7 @@ final class catalog_fields {
 
         foreach ($values as $fieldname => $value) {
             field::assert_name($fieldname);
-            if (in_array($fieldname, $blocklist, true)) {
-                shared_block::assert_not_completion_field($fieldname);
-                throw new moodle_exception('blockedfield', 'local_coursepilot', '', ['field' => $fieldname, 'modname' => $modname]);
-            }
-            if ($patch && in_array($fieldname, $catalogclass::write_options()['patch_blocked_fields'] ?? [], true)) {
-                throw new moodle_exception('folderfilespatchunsupported', 'local_coursepilot');
-            }
-            shared_block::assert_not_read_only_vocabulary($fieldname, $modname);
+            self::assert_writable($catalogclass, $fieldname, $blocklist, $patch);
             $lookup = array_key_exists($fieldname, $byname) ? $fieldname : self::template_name($fieldname);
             if (!isset($byname[$lookup])) {
                 throw new moodle_exception('unknownfield', 'local_coursepilot', '', ['field' => $fieldname, 'modname' => $modname]);
@@ -63,6 +56,27 @@ final class catalog_fields {
                 ]);
             }
         }
+    }
+
+    /**
+     * Route reserved and read-only vocabulary before looking up ordinary fields.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param string $fieldname
+     * @param string[] $blocklist
+     * @param bool $patch
+     * @return void
+     */
+    private static function assert_writable(string $catalogclass, string $fieldname, array $blocklist, bool $patch): void {
+        $modname = $catalogclass::modname();
+        if (in_array($fieldname, $blocklist, true)) {
+            shared_block::assert_not_completion_field($fieldname);
+            throw new moodle_exception('blockedfield', 'local_coursepilot', '', ['field' => $fieldname, 'modname' => $modname]);
+        }
+        if ($patch && in_array($fieldname, $catalogclass::write_options()['patch_blocked_fields'] ?? [], true)) {
+            throw new moodle_exception('folderfilespatchunsupported', 'local_coursepilot');
+        }
+        shared_block::assert_not_read_only_vocabulary($fieldname, $modname);
     }
 
     /**

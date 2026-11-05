@@ -24,6 +24,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\module_catalog;
 use local_coursepilot\catalog\learner_locks;
+use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\write_target;
 use local_coursepilot\material_files;
@@ -184,15 +185,13 @@ final class create_module extends external_api {
     }
 
     /**
-     * Return current state after creation as an associative array, reusing
-     * get_module_settings rather than duplicating it, like
-     * {@see update_module_settings::read_settings()}.
+     * Current catalog state after creation, including persisted intro files.
      *
      * @param int $cmid
      * @return mixed[]
      */
     private static function read_settings(int $cmid): array {
-        $result = get_module_settings::execute($cmid);
+        $result = module_state::read_settings($cmid);
         $settings = json_decode($result['settings_json'], true);
         $fieldname = registry::for($result['modname'])::write_options()['intro_image_field'] ?? null;
         if ($fieldname !== null) {

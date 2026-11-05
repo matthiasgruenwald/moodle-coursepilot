@@ -1,0 +1,156 @@
+{
+    "fields": [
+        {
+            "name": "visible",
+            "type": "PARAM_BOOL",
+            "meaning": "Visible in the course (1) or hidden from learners (0).",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "lib/db/install.xml:333 (course_modules.visible)"
+            },
+            "learner_lock": "null"
+        },
+        {
+            "name": "visibleoncoursepage",
+            "type": "PARAM_BOOL",
+            "meaning": "Stealth: at 0 the activity is accessible (when linked or used as a prerequisite ), but is absent from the course page list.",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "lib/db/install.xml:334 (course_modules.visibleoncoursepage)"
+            },
+            "learner_lock": "null"
+        },
+        {
+            "name": "groupmode",
+            "type": "PARAM_INT",
+            "meaning": "Group mode: no groups, separate groups or visible groups.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1,2]",
+                "source_callable": null,
+                "source": "lib/grouplib.php:29,34,39 (NOGROUPS/SEPARATEGROUPS/VISIBLEGROUPS); column lib/db/install.xml:336"
+            },
+            "learner_lock": "null"
+        },
+        {
+            "name": "groupingid",
+            "type": "PARAM_INT",
+            "meaning": "Grouping assigned to the activity (0 = none). IDs only, not names.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "lib/db/install.xml:337 (course_modules.groupingid)"
+            },
+            "learner_lock": "null"
+        },
+        {
+            "name": "idnumber",
+            "type": "PARAM_RAW",
+            "meaning": "Freely assigned activity identifier, e.g. for grade calculations.",
+            "required": false,
+            "default_json": "\"\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "lib/db/install.xml:329 (course_modules.idnumber)"
+            },
+            "learner_lock": "null"
+        },
+        {
+            "name": "sectionnum",
+            "type": "PARAM_INT",
+            "meaning": "Section number (0-based) assigned to the activity.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "course/modlib.php:799 (Form field \"section\", relative section number, not the course_sections ID)"
+            },
+            "learner_lock": "null"
+        },
+        {
+            "name": "intro",
+            "type": "PARAM_RAW",
+            "meaning": "The text content of the text card (HTML). Moodle derives the display name from it.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/label/db/install.xml (label.intro, NOTNULL)"
+            },
+            "learner_lock": "null"
+        },
+        {
+            "name": "introformat",
+            "type": "PARAM_INT",
+            "meaning": "Text format of the intro (HTML/Moodle auto-format/plain text/Markdown).",
+            "required": false,
+            "default_json": "\"1\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "format_text_menu()",
+                "source": "lib/weblib.php:464 (format_text_menu()); Spalte mod/label/db/install.xml (label.introformat)"
+            },
+            "learner_lock": "null"
+        }
+    ],
+    "pseudo_fields": [
+        {
+            "name": "coursepagevisibility",
+            "type": "string",
+            "meaning": "READ ONLY. State derived from visible/visibleoncoursepage and used by read tools. Values: \"shown\" (normally listed on the course page) or \"stealth\" (available but not listed). To write, use \"visibleoncoursepage\" 1 or 0 instead.",
+            "required": false,
+            "default_json": "\"shown\"",
+            "value_range": {
+                "values_json": "[\"shown\",\"stealth\"]",
+                "source_callable": null,
+                "source": "Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot vocabulary, no separate Moodle column; affects visibleoncoursepage)"
+            },
+            "learner_lock": "null"
+        },
+        {
+            "name": "availability_status",
+            "type": "string",
+            "meaning": "READ ONLY. State derived from visible/visibleoncoursepage and used by read tools. Includes a third value: \"hidden\" (visible=0), otherwise \"stealth\" as in coursepagevisibility or \"shown\". To write, use \"visible\" and \"visibleoncoursepage\" instead.",
+            "required": false,
+            "default_json": "\"shown\"",
+            "value_range": {
+                "values_json": "[\"shown\",\"stealth\",\"hidden\"]",
+                "source_callable": null,
+                "source": "Plugin/src/local_coursepilot/classes/catalog/shared_block.php::derive_visibility() (Coursepilot vocabulary, no separate Moodle column; combines visible and visibleoncoursepage)"
+            },
+            "learner_lock": "null"
+        }
+    ],
+    "blocked_fields": [
+        "timemodified",
+        "timecreated",
+        "course",
+        "completion",
+        "completionview",
+        "completionusegrade",
+        "completionpassgrade",
+        "completionexpected",
+        "completiongradeitemnumber",
+        "completionunlocked",
+        "completionsubmit",
+        "completionattemptsexhausted",
+        "completionminattempts",
+        "name"
+    ],
+    "side_effects": [
+        "Stealth requires allowstealth on the instance; when disabled, the write fails with a clear message instead of silently doing nothing (Spec 0015 §7).",
+        "A hidden section hides its activities regardless of their own visible value (Spec 0015 §6)."
+    ]
+}

@@ -24,6 +24,7 @@ use local_coursepilot\previous_location;
 use local_coursepilot\context_area;
 use local_coursepilot\context_files;
 use local_coursepilot\personal_data;
+use local_coursepilot\pointer_location;
 use local_coursepilot\storage_anchor;
 
 /**
@@ -86,20 +87,7 @@ class read_context_file extends external_api {
 
         $path = storage_anchor::normalise_client_path(context_files::area(), $params['path']);
         $previous = $params['previous_location'] ? previous_location::require_open_location() : null;
-        $file = $previous ? context_area::read_previous_location($path, $previous) : context_area::read($path);
-        // Read old names only when the canonical file is absent. Do not catch
-        // access/storage errors or cross the selected current/previous location.
-        $legacyname = [
-            'templates.md' => 'vorlagen.md',
-            'notepad.md' => 'merkzettel.md',
-            'CONTEXT-people.md' => 'CONTEXT.personen.md',
-        ][basename($path)] ?? null;
-        if ($file === null && $legacyname !== null) {
-            $legacypath = (dirname($path) === '.' ? '' : dirname($path) . '/') . $legacyname;
-            $file = $previous
-                ? context_area::read_previous_location($legacypath, $previous)
-                : context_area::read($legacypath);
-        }
+        $file = self::load($path, $previous);
         if ($file === null) {
             throw new \moodle_exception('contextfilenotfound', 'local_coursepilot', '', $params['path']);
         }
@@ -119,6 +107,30 @@ class read_context_file extends external_api {
             'contenthash' => $file['contenthash'],
             'timemodified' => $file['timemodified'],
         ];
+    }
+
+    /**
+     * Reads the canonical file; old names are read only when it is absent. Access and storage
+     * errors are not caught and the selected current/previous location is never crossed.
+     *
+     * @param string $path Normalised path.
+     * @param pointer_location|null $previous Previous location, null for the current one.
+     * @return mixed[]|null File data, null when neither the canonical nor the legacy file exists.
+     */
+    private static function load(string $path, ?pointer_location $previous): ?array {
+        $read = static fn(string $p): ?array => $previous
+            ? context_area::read_previous_location($p, $previous)
+            : context_area::read($p);
+        $file = $read($path);
+        $legacyname = [
+            'templates.md' => 'vorlagen.md',
+            'notepad.md' => 'merkzettel.md',
+            'CONTEXT-people.md' => 'CONTEXT.personen.md',
+        ][basename($path)] ?? null;
+        if ($file === null && $legacyname !== null) {
+            $file = $read((dirname($path) === '.' ? '' : dirname($path) . '/') . $legacyname);
+        }
+        return $file;
     }
 
     /**

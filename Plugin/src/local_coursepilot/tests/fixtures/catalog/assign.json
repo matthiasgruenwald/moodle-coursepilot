@@ -1,0 +1,737 @@
+{
+    "modname": "assign",
+    "fields": [
+        {
+            "name": "name",
+            "type": "PARAM_TEXT",
+            "meaning": "Display name of the assignment.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:50-57 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)"
+            }
+        },
+        {
+            "name": "intro",
+            "type": "PARAM_RAW",
+            "meaning": "Description text (intro) of the assignment.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/db/install.xml (assign.intro, NOTNULL without DB default)"
+            }
+        },
+        {
+            "name": "introformat",
+            "type": "PARAM_INT",
+            "meaning": "Text format of the intro.",
+            "required": false,
+            "default_json": "\"1\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "format_text_menu()",
+                "source": "lib/weblib.php:464 (format_text_menu()); column mod/assign/db/install.xml (assign.introformat)"
+            }
+        },
+        {
+            "name": "activity",
+            "type": "PARAM_RAW",
+            "meaning": "Additional activity text (separate editor block below the intro), e.g. for work assignments. Empty = no additional text.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:62-66 (Editor \"activityeditor\"); column mod/assign/db/install.xml (assign.activity, NOTNULL=false)"
+            }
+        },
+        {
+            "name": "activityformat",
+            "type": "PARAM_INT",
+            "meaning": "Text format of the activity text.",
+            "required": false,
+            "default_json": "\"1\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "format_text_menu()",
+                "source": "lib/weblib.php:464 (format_text_menu()); column mod/assign/db/install.xml (assign.activityformat)"
+            }
+        },
+        {
+            "name": "alwaysshowdescription",
+            "type": "PARAM_BOOL",
+            "meaning": "Show the intro before \"allowsubmissionsfromdate\" instead of only after it.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:123-126 (checkbox); column mod/assign/db/install.xml (assign.alwaysshowdescription)"
+            }
+        },
+        {
+            "name": "submissiondrafts",
+            "type": "PARAM_BOOL",
+            "meaning": "Submissions count as drafts until the learner explicitly submits.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:132-137 (selectyesno); column mod/assign/db/install.xml (assign.submissiondrafts)"
+            }
+        },
+        {
+            "name": "requiresubmissionstatement",
+            "type": "PARAM_BOOL",
+            "meaning": "Learners must accept an authorship statement before submitting.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:139-144 (selectyesno); column mod/assign/db/install.xml (assign.requiresubmissionstatement)"
+            }
+        },
+        {
+            "name": "maxattempts",
+            "type": "PARAM_INT",
+            "meaning": "Maximum number of submission attempts. -1 = unlimited.",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:146-149 (Select 1-30 plus ASSIGN_UNLIMITED_ATTEMPTS); mod/assign/locallib.php:61 (ASSIGN_UNLIMITED_ATTEMPTS = -1); column mod/assign/db/install.xml (assign.maxattempts, DEFAULT=1)"
+            }
+        },
+        {
+            "name": "attemptreopenmethod",
+            "type": "PARAM_ALPHA",
+            "meaning": "How a new attempt is opened after the first one: manually, automatically (after each grading) or until pass. Only visible if \"maxattempts\" != 1.",
+            "required": false,
+            "default_json": "\"untilpass\"",
+            "value_range": {
+                "values_json": "[\"manual\",\"automatic\",\"untilpass\"]",
+                "source_callable": null,
+                "source": "mod/assign/locallib.php:55-58 (ASSIGN_ATTEMPT_REOPEN_METHOD_MANUAL/AUTOMATIC/UNTILPASS); mod/assign/mod_form.php:151-170 (choicedropdown); column mod/assign/db/install.xml (assign.attemptreopenmethod, DEFAULT=untilpass)"
+            }
+        },
+        {
+            "name": "duedate",
+            "type": "PARAM_INT",
+            "meaning": "Unix timestamp: due date, informational only (not a lock time, that is \"cutoffdate\"). Creates a calendar event (see side effects).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:102-105 (date_time_selector, optional); column mod/assign/db/install.xml (assign.duedate)"
+            }
+        },
+        {
+            "name": "cutoffdate",
+            "type": "PARAM_INT",
+            "meaning": "Unix timestamp: from here on Moodle accepts no more submissions, not even late ones. 0 = no cut-off.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:107-109 (date_time_selector, optional); column mod/assign/db/install.xml (assign.cutoffdate)"
+            }
+        },
+        {
+            "name": "allowsubmissionsfromdate",
+            "type": "PARAM_INT",
+            "meaning": "Unix timestamp: submissions are only accepted from here on. 0 = immediately.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:81-84 (date_time_selector, optional); column mod/assign/db/install.xml (assign.allowsubmissionsfromdate)"
+            }
+        },
+        {
+            "name": "gradingduedate",
+            "type": "PARAM_INT",
+            "meaning": "Unix timestamp: expected grading date, informational only. Creates a calendar event (see side effects).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:111-113 (date_time_selector, optional); column mod/assign/db/install.xml (assign.gradingduedate)"
+            }
+        },
+        {
+            "name": "timelimit",
+            "type": "PARAM_INT",
+            "meaning": "Working time in seconds from the start of an attempt, provided the admin has enabled time limits ($CFG->assign->enabletimelimit). 0 = no time limit.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:115-121 (duration, optional, only with the admin setting enabled); column mod/assign/db/install.xml (assign.timelimit)"
+            }
+        },
+        {
+            "name": "grade",
+            "type": "PARAM_INT",
+            "meaning": "Grade type: positive = maximum points, negative = ID of a custom scale, 0 = no grading.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "course/moodleform_mod.php (standard_grading_coursemodule_elements(), modgrade element); mod/assign/mod_form.php:225 (call); column mod/assign/db/install.xml (assign.grade)"
+            }
+        },
+        {
+            "name": "gradepenalty",
+            "type": "PARAM_BOOL",
+            "meaning": "Enable late penalties. Only visible if the penalty feature is active server-wide (core_grades\\penalty_manager::is_penalty_enabled_for_module()).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:253-272 (selectyesno, conditionally visible); column mod/assign/db/install.xml (assign.gradepenalty)"
+            }
+        },
+        {
+            "name": "sendnotifications",
+            "type": "PARAM_BOOL",
+            "meaning": "Notify teachers by email about new submissions. Side effect: see side effects.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:212-214 (selectyesno); column mod/assign/db/install.xml (assign.sendnotifications)"
+            }
+        },
+        {
+            "name": "sendlatenotifications",
+            "type": "PARAM_BOOL",
+            "meaning": "Also notify about late submissions. Only effective with \"sendnotifications\"=0 - with 1 all notifications are on anyway.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:216-219 (selectyesno, disabledIf sendnotifications eq 1); column mod/assign/db/install.xml (assign.sendlatenotifications)"
+            }
+        },
+        {
+            "name": "sendstudentnotifications",
+            "type": "PARAM_BOOL",
+            "meaning": "Default for the \"Notify learners\" checkbox when grading.",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:221-223 (selectyesno); column mod/assign/db/install.xml (assign.sendstudentnotifications, DEFAULT=1)"
+            }
+        },
+        {
+            "name": "teamsubmission",
+            "type": "PARAM_BOOL",
+            "meaning": "Learners submit in groups instead of individually.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:174-179 (selectyesno); column mod/assign/db/install.xml (assign.teamsubmission)"
+            }
+        },
+        {
+            "name": "requireallteammemberssubmit",
+            "type": "PARAM_BOOL",
+            "meaning": "A group submission only counts as submitted once all members have agreed. Only visible with \"teamsubmission\"=1.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:189-193 (selectyesno, hideIf teamsubmission eq 0); column mod/assign/db/install.xml (assign.requireallteammemberssubmit)"
+            }
+        },
+        {
+            "name": "teamsubmissiongroupingid",
+            "type": "PARAM_INT",
+            "meaning": "Grouping whose groups are used for group submissions (0 = all groups of the course). WARNING: only grouping IDs of the same course are valid - the form lists only those, but Moodle does not re-check this itself on write.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:195-205 (groups_get_all_groupings($assignment->get_course()->id)); column mod/assign/db/install.xml (assign.teamsubmissiongroupingid)"
+            }
+        },
+        {
+            "name": "preventsubmissionnotingroup",
+            "type": "PARAM_BOOL",
+            "meaning": "Refuse submission if the learner is in no group. Only visible with \"teamsubmission\"=1.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:181-187 (selectyesno, hideIf teamsubmission eq 0); column mod/assign/db/install.xml (assign.preventsubmissionnotingroup)"
+            }
+        },
+        {
+            "name": "blindmarking",
+            "type": "PARAM_BOOL",
+            "meaning": "Anonymous grading: hide learners' names from the teacher until they are revealed.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:226-231 (selectyesno); column mod/assign/db/install.xml (assign.blindmarking)"
+            }
+        },
+        {
+            "name": "hidegrader",
+            "type": "PARAM_BOOL",
+            "meaning": "Reverse anonymity: hide the grader's name from the learners.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:233-235 (selectyesno); column mod/assign/db/install.xml (assign.hidegrader)"
+            }
+        },
+        {
+            "name": "markingworkflow",
+            "type": "PARAM_BOOL",
+            "meaning": "Use a multi-stage grading workflow (in marking/ready for review/released, ...).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:237-239 (selectyesno); column mod/assign/db/install.xml (assign.markingworkflow)"
+            }
+        },
+        {
+            "name": "markingallocation",
+            "type": "PARAM_BOOL",
+            "meaning": "Allocate graders per submission. Only visible with \"markingworkflow\"=1; forced to 0 on save if \"markingworkflow\"=0.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:241-244 (selectyesno, hideIf markingworkflow eq 0); mod/assign/locallib.php:791-794/1587-1590 (enforcement); column mod/assign/db/install.xml (assign.markingallocation)"
+            }
+        },
+        {
+            "name": "markinganonymous",
+            "type": "PARAM_BOOL",
+            "meaning": "Graders do not see who is allocated to whom when allocating. Only visible with \"markingworkflow\"=1 and \"blindmarking\"=1; forced to 0 on save if one of the two conditions is missing.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:246-250 (selectyesno, hideIf markingworkflow/blindmarking eq 0); mod/assign/locallib.php:795-802/1591-1595 (enforcement); column mod/assign/db/install.xml (assign.markinganonymous)"
+            }
+        },
+        {
+            "name": "submissionattachments",
+            "type": "PARAM_BOOL",
+            "meaning": "Add the list of attached files to the submission summary on the grading page.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:73-74 (advcheckbox); column mod/assign/db/install.xml (assign.submissionattachments)"
+            }
+        }
+    ],
+    "write_options": {
+        "editor_content": {
+            "activityeditor": [
+                "activity",
+                "activityformat"
+            ]
+        },
+        "material_reference_fields": {
+            "introattachments": {
+                "component": "mod_assign",
+                "filearea": "introattachment"
+            }
+        },
+        "intro_image_field": "introimages",
+        "admin_default_fields": {
+            "assignsubmission_file_enabled": "assignsubmission_file",
+            "assignsubmission_onlinetext_enabled": "assignsubmission_onlinetext",
+            "assignfeedback_comments_enabled": "assignfeedback_comments",
+            "assignfeedback_editpdf_enabled": "assignfeedback_editpdf",
+            "assignfeedback_file_enabled": "assignfeedback_file",
+            "assignfeedback_offline_enabled": "assignfeedback_offline"
+        },
+        "date_order_rules": [
+            {
+                "reference": "allowsubmissionsfromdate",
+                "field": "duedate",
+                "mode": "must_be_after"
+            },
+            {
+                "reference": "duedate",
+                "field": "cutoffdate",
+                "mode": "not_before"
+            },
+            {
+                "reference": "allowsubmissionsfromdate",
+                "field": "cutoffdate",
+                "mode": "not_before"
+            },
+            {
+                "reference": "allowsubmissionsfromdate",
+                "field": "gradingduedate",
+                "mode": "must_be_after"
+            }
+        ]
+    },
+    "common_field_names": [
+        "name",
+        "intro",
+        "duedate",
+        "cutoffdate",
+        "allowsubmissionsfromdate",
+        "grade",
+        "teamsubmission",
+        "submissiondrafts",
+        "maxattempts",
+        "attemptreopenmethod",
+        "blindmarking",
+        "sendnotifications"
+    ],
+    "pseudofields": [
+        {
+            "name": "activityeditor",
+            "type": "array{text: string, format: int, itemid: int}",
+            "meaning": "Editor array for the additional activity text. The flat contract uses \"activity\" and \"activityformat\"; this field serves the native form path.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/mod_form.php:62-66 (Editor \"activityeditor\")"
+            }
+        },
+        {
+            "name": "introimages",
+            "type": "string[] (material folder paths, image extensions only)",
+            "meaning": "Subject images that are embedded IN the description text (Spec 0018 §4.2/§5, issue #433 - closes the path from #430/#431: view preview, choose crop, embed here). Each path must already exist as a material file and carry an extension from the narrower embedding whitelist (png/jpg/jpeg/gif/svg/webp) - any other extension (e.g. pdf) fails with a clear message. The patch carries the reference itself: the \"intro\" text must contain an image element whose source begins with \"@@PLUGINFILE@@/\" plus the file name (Moodle's draft placeholder prefix), with an alt text that the AI writes itself (glossary: alt text as AI quality routine). Without an accompanying \"intro\" patch the file is only available in the file area, but unlinked.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "course/modlib.php:675-680 (update_moduleinfo(): file_save_draft_area_files() from $moduleinfo->introeditor resolves @@PLUGINFILE@@ against the draft file area)"
+            }
+        },
+        {
+            "name": "introattachments",
+            "type": "string[] (material folder paths)",
+            "meaning": "Additional files of the assignment (\"Additional files\"/introattachments field) - list of paths relative to the material folder (Spec 0018 §4.2/§7: the block from Spec 0015 §4.3 is gone for assign). Each path is resolved server-side to an existing material file and taken over unchanged; already existing attachments are kept. Not a chat attachment directly - the file must first be in the material folder via upload_material_file.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/locallib.php:1648-1650 (save_intro_draft_files(), isset guard); mod/assign/locallib.php:82 (ASSIGN_INTROATTACHMENT_FILEAREA=\"introattachment\")"
+            }
+        },
+        {
+            "name": "assignsubmission_file_enabled",
+            "type": "PARAM_BOOL",
+            "meaning": "Enable the submission type \"File\". Not a DB field: if it is missing, Moodle silently disables this submission type (see class doc). With NO active submission type \"nosubmissions\"=1 is set - the assignment then accepts no submissions at all. The form default is admin-configurable (site administration), hence no fixed default here.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/locallib.php:1359-1373 (update_plugin_instance(), \"{subtype}_{type}_enabled\"); mod/assign/locallib.php:1713-1716 (default from get_config('assignsubmission_file', 'default')); mod/assign/submission/file/settings.php:28 (admin setting \"default\")"
+            }
+        },
+        {
+            "name": "assignsubmission_file_maxfiles",
+            "type": "PARAM_INT",
+            "meaning": "Maximum number of files per submission. Only effective with \"assignsubmission_file_enabled\"=1.",
+            "required": false,
+            "default_json": "20",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/submission/file/locallib.php:88 (Select), :129 (save_settings())"
+            }
+        },
+        {
+            "name": "assignsubmission_file_maxsizebytes",
+            "type": "PARAM_INT",
+            "meaning": "Maximum file size per file in bytes. The selectable values are a subset depending on course and server limit, not a fixed list. Only effective with \"assignsubmission_file_enabled\"=1.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "get_max_upload_sizes()",
+                "source": "lib/moodlelib.php:6453 (get_max_upload_sizes()); mod/assign/submission/file/locallib.php:106 (Select), :130 (save_settings())"
+            }
+        },
+        {
+            "name": "assignsubmission_file_filetypes",
+            "type": "PARAM_RAW",
+            "meaning": "Allowed file extensions/types, comma-separated (empty = all). Only effective with \"assignsubmission_file_enabled\"=1.",
+            "required": false,
+            "default_json": "\"\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/submission/file/locallib.php:116 (filetypes element), :132-134 (save_settings())"
+            }
+        },
+        {
+            "name": "assignsubmission_onlinetext_enabled",
+            "type": "PARAM_BOOL",
+            "meaning": "Enable the submission type \"Online text\". Not a DB field, same risk as \"assignsubmission_file_enabled\" (see class doc). The form default is admin-configurable, hence no fixed default here.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/locallib.php:1359-1373 (update_plugin_instance()); mod/assign/locallib.php:1713-1716 (default from get_config('assignsubmission_onlinetext', 'default')); mod/assign/submission/onlinetext/settings.php:26 (admin setting \"default\")"
+            }
+        },
+        {
+            "name": "assignsubmission_onlinetext_wordlimit",
+            "type": "PARAM_INT",
+            "meaning": "Maximum word count of the online text. Only effective if additionally \"assignsubmission_onlinetext_wordlimit_enabled\"=1 is set.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/assign/submission/onlinetext/locallib.php:97 (text field in the word-limit group)"
+            }
+        },
+        {
+            "name": "assignsubmission_onlinetext_wordlimit_enabled",
+            "type": "PARAM_BOOL",
+            "meaning": "Apply the word limit to the online text at all. Without this field \"assignsubmission_onlinetext_wordlimit\" has no effect (combination rule).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/submission/onlinetext/locallib.php:98-99 (checkbox in the word-limit group)"
+            }
+        },
+        {
+            "name": "assignsubmission_comments_enabled",
+            "type": "PARAM_BOOL",
+            "meaning": "Enable the submission type \"Comments\" (discussion about the submission). Not a DB field, same risk as \"assignsubmission_file_enabled\" (see class doc). Unlike the other submission plugins, this one has no admin setting of its own - the form value follows solely whether the plugin is active server-wide.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/locallib.php:1359-1373 (update_plugin_instance()); mod/assign/submission/comments/locallib.php:187-188 (is_configurable() === false, no settings.php)"
+            }
+        },
+        {
+            "name": "assignfeedback_comments_enabled",
+            "type": "PARAM_BOOL",
+            "meaning": "Enable the feedback type \"Feedback comments\". Not a DB field; its absence disables only this feedback type, not the submission itself. The form default is admin-configurable, hence no fixed default here.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/locallib.php:1359-1373 (update_plugin_instance()); mod/assign/locallib.php:1713-1716 (default from get_config('assignfeedback_comments', 'default')); mod/assign/feedback/comments/settings.php:26 (admin setting \"default\")"
+            }
+        },
+        {
+            "name": "assignfeedback_comments_commentinline",
+            "type": "PARAM_BOOL",
+            "meaning": "Insert the feedback comment directly into the submission instead of showing it alongside. Only effective with \"assignfeedback_comments_enabled\"=1.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/feedback/comments/locallib.php:246-263 (get_settings()/save_settings())"
+            }
+        },
+        {
+            "name": "assignfeedback_editpdf_enabled",
+            "type": "PARAM_BOOL",
+            "meaning": "Enable the feedback type \"Annotate PDF\". Not a DB field, same pattern as \"assignfeedback_comments_enabled\" - form default admin-configurable.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/locallib.php:1359-1373 (update_plugin_instance()); mod/assign/locallib.php:1713-1716 (default from get_config('assignfeedback_editpdf', 'default')); mod/assign/feedback/editpdf/settings.php:29 (admin setting \"default\")"
+            }
+        },
+        {
+            "name": "assignfeedback_file_enabled",
+            "type": "PARAM_BOOL",
+            "meaning": "Enable the feedback type \"Feedback files\" (returning files to the learners). Not a DB field, same pattern as \"assignfeedback_comments_enabled\" - form default admin-configurable.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/locallib.php:1359-1373 (update_plugin_instance()); mod/assign/locallib.php:1713-1716 (default from get_config('assignfeedback_file', 'default')); mod/assign/feedback/file/settings.php:26 (admin setting \"default\")"
+            }
+        },
+        {
+            "name": "assignfeedback_offline_enabled",
+            "type": "PARAM_BOOL",
+            "meaning": "Enable the feedback type \"Offline grading worksheet\" (export/import as a table). Not a DB field, same pattern as \"assignfeedback_comments_enabled\" - form default admin-configurable.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/assign/locallib.php:1359-1373 (update_plugin_instance()); mod/assign/locallib.php:1713-1716 (default from get_config('assignfeedback_offline', 'default')); mod/assign/feedback/offline/settings.php:26 (admin setting \"default\")"
+            }
+        }
+    ],
+    "blocklist": [
+        "nosubmissions",
+        "revealidentities",
+        "completionsubmit"
+    ],
+    "combination_rules": [
+        "\"duedate\" must be after \"allowsubmissionsfromdate\" if both are set (mod/assign/mod_form.php: validation()).",
+        "\"cutoffdate\" must not be before \"duedate\" if both are set (validation()).",
+        "\"cutoffdate\" must not be before \"allowsubmissionsfromdate\" if both are set (validation()).",
+        "\"gradingduedate\" must be after \"allowsubmissionsfromdate\" if both are set (validation()).",
+        "\"gradingduedate\" must be after \"duedate\" if both are set (validation()).",
+        "\"attemptreopenmethod\"=\"untilpass\" cannot be combined with \"blindmarking\"=1 as soon as more than one attempt is allowed (\"maxattempts\" > 1 or unlimited) (validation())."
+    ],
+    "side_effects": [
+        "\"sendnotifications\"=1 sends an email to all teachers of the assignment on every new submission from then on (mod/assign/locallib.php: email_graders()).",
+        "\"duedate\"/\"gradingduedate\" each create or update a calendar event (mod/assign/locallib.php: update_calendar()); \"cutoffdate\"/\"allowsubmissionsfromdate\" do not."
+    ],
+    "bundles": {
+        "standard": {
+            "submissiondrafts": 0,
+            "requiresubmissionstatement": 0,
+            "teamsubmission": 0,
+            "blindmarking": 0,
+            "markingworkflow": 0,
+            "sendnotifications": 1,
+            "assignsubmission_file_enabled": 1,
+            "assignsubmission_onlinetext_enabled": 0,
+            "assignfeedback_comments_enabled": 1
+        },
+        "exercise": {
+            "grade": 0,
+            "submissiondrafts": 0,
+            "requiresubmissionstatement": 0,
+            "sendnotifications": 0,
+            "maxattempts": -1,
+            "attemptreopenmethod": "untilpass",
+            "assignsubmission_onlinetext_enabled": 1,
+            "assignsubmission_file_enabled": 0,
+            "assignfeedback_comments_enabled": 1
+        }
+    },
+    "write_route": null,
+    "checked_constants": [
+        "ASSIGN_SUBMISSION_STATUS_NEW",
+        "ASSIGN_SUBMISSION_STATUS_REOPENED",
+        "ASSIGN_SUBMISSION_STATUS_DRAFT",
+        "ASSIGN_SUBMISSION_STATUS_SUBMITTED",
+        "ASSIGN_FILTER_NONE",
+        "ASSIGN_FILTER_SUBMITTED",
+        "ASSIGN_FILTER_NOT_SUBMITTED",
+        "ASSIGN_FILTER_SINGLE_USER",
+        "ASSIGN_FILTER_REQUIRE_GRADING",
+        "ASSIGN_FILTER_GRADED",
+        "ASSIGN_FILTER_GRANTED_EXTENSION",
+        "ASSIGN_FILTER_DRAFT",
+        "ASSIGN_ATTEMPT_REOPEN_METHOD_MANUAL",
+        "ASSIGN_ATTEMPT_REOPEN_METHOD_AUTOMATIC",
+        "ASSIGN_ATTEMPT_REOPEN_METHOD_UNTILPASS",
+        "ASSIGN_UNLIMITED_ATTEMPTS",
+        "ASSIGN_GRADE_NOT_SET",
+        "ASSIGN_GRADING_STATUS_GRADED",
+        "ASSIGN_GRADING_STATUS_NOT_GRADED",
+        "ASSIGN_MARKING_WORKFLOW_STATE_NOTMARKED",
+        "ASSIGN_MARKING_WORKFLOW_STATE_INMARKING",
+        "ASSIGN_MARKING_WORKFLOW_STATE_READYFORREVIEW",
+        "ASSIGN_MARKING_WORKFLOW_STATE_INREVIEW",
+        "ASSIGN_MARKING_WORKFLOW_STATE_READYFORRELEASE",
+        "ASSIGN_MARKING_WORKFLOW_STATE_RELEASED",
+        "ASSIGN_MAX_EVENT_LENGTH",
+        "ASSIGN_INTROATTACHMENT_FILEAREA",
+        "ASSIGN_ACTIVITYATTACHMENT_FILEAREA",
+        "ASSIGN_EVENT_TYPE_DUE",
+        "ASSIGN_EVENT_TYPE_GRADINGDUE",
+        "ASSIGN_EVENT_TYPE_OPEN",
+        "ASSIGN_EVENT_TYPE_CLOSE",
+        "ASSIGN_EVENT_TYPE_EXTENSION"
+    ],
+    "learner_locks": {
+        "submissiondrafts": {
+            "op": "equals",
+            "value": 1,
+            "reason": "Learners must press \"Submit\"; the submission is then locked until the teacher reverts it to draft."
+        },
+        "attemptreopenmethod": {
+            "op": "equals",
+            "value": "manual",
+            "reason": "A new attempt only opens when the teacher reopens it by hand."
+        },
+        "cutoffdate": {
+            "op": "nonzero",
+            "reason": "After the cut-off date no submission is possible unless the teacher grants an extension."
+        },
+        "timelimit": {
+            "op": "nonzero",
+            "reason": "When the time limit runs out the learner cannot continue unless the teacher grants an extension."
+        },
+        "requireallteammemberssubmit": {
+            "op": "equals",
+            "value": 1,
+            "reason": "A group submission only counts once every member has submitted; one missing member blocks the group."
+        },
+        "preventsubmissionnotingroup": {
+            "op": "equals",
+            "value": 1,
+            "reason": "Learners outside a group cannot submit until the teacher adds them to one."
+        },
+        "markingworkflow": {
+            "op": "equals",
+            "value": 1,
+            "reason": "Grades and feedback stay hidden from learners until the teacher releases them."
+        },
+        "blindmarking": {
+            "op": "equals",
+            "value": 1,
+            "reason": "Grades and feedback stay hidden from learners until the teacher reveals identities."
+        }
+    },
+    "reviewed_up_to_major": 500,
+    "grade_origin": "teacher"
+}

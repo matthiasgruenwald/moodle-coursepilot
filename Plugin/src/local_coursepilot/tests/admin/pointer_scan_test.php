@@ -82,6 +82,13 @@ final class pointer_scan_test extends \advanced_testcase {
         $external = $this->getDataGenerator()->create_user();
         $instanceid = $this->create_webdav_instance($external);
         $this->write_v2_pointer($external, 'context_area', $instanceid, 'Kontext');
+        $secondexternal = $this->getDataGenerator()->create_user();
+        $this->write_v2_pointer(
+            $secondexternal,
+            'context_area',
+            $this->create_webdav_instance($secondexternal),
+            'Kontext'
+        );
         $inmoodle = $this->getDataGenerator()->create_user();
         get_file_storage()->create_file_from_string([
             'contextid' => \context_user::instance($inmoodle->id)->id,
@@ -97,7 +104,8 @@ final class pointer_scan_test extends \advanced_testcase {
 
         $userids = pointer_scan::userids_with_external_target();
 
-        $this->assertSame([(int) $external->id], $userids);
+        $this->assertEqualsCanonicalizing([(int) $external->id, (int) $secondexternal->id], $userids);
+        $this->assertCount(2, $userids);
     }
 
     public function test_target_state_is_offen_without_pointer(): void {

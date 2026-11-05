@@ -241,4 +241,14 @@ final class oauth_registration_budget_test extends \advanced_testcase {
         $this->assertSame([201, 429], $this->race_on_site_budget(['192.0.2.1'], ['192.0.2.2']));
         $this->assertSame(1, $this->clients());
     }
+
+    public function test_active_reports_only_sources_with_an_unexpired_counter(): void {
+        $this->resetAfterTest();
+
+        $this->assertFalse(oauth_budget::active('cimdfail', 'https://client.example/meta'));
+        $this->assertSame(0, oauth_budget::consume('cimdfail', 'https://client.example/meta', 10, 10, 600));
+        $this->assertTrue(oauth_budget::active('cimdfail', 'https://client.example/meta'));
+        $this->assertFalse(oauth_budget::active('cimdfail', 'https://other.example/meta'));
+        $this->assertFalse(oauth_budget::active('register', 'https://client.example/meta'));
+    }
 }

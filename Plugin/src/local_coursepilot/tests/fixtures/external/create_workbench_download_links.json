@@ -1,0 +1,111 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "paths",
+                "type": "array",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "paths": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "File path relative to the workbench root, e.g. \"worksheet.pdf\"",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "path"
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "links": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "path": {
+                            "class": "core_external\\external_value",
+                            "desc": "File path relative to the workbench root",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Filename",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "size": {
+                            "class": "core_external\\external_value",
+                            "desc": "File size in bytes",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "sha1": {
+                            "class": "core_external\\external_value",
+                            "desc": "File SHA-1 checksum (Moodle contenthash)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "alphanumext"
+                        },
+                        "url": {
+                            "class": "core_external\\external_value",
+                            "desc": "One-time download link, valid for 15 minutes",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "url"
+                        }
+                    }
+                }
+            },
+            "path": {
+                "class": "core_external\\external_value",
+                "desc": "All affected paths, comma-separated for access logging",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            }
+        }
+    }
+}

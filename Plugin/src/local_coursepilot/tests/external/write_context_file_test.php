@@ -39,6 +39,10 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_writer::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
 final class write_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -891,7 +895,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -918,6 +922,7 @@ final class write_context_file_test extends \advanced_testcase {
 
         $ausstaende = \local_coursepilot\pending_write_notice::list_grouped();
         $this->assertSame('overwrite', $ausstaende[0]['entries'][0]['operation']);
+        $this->assertSame(0, $ausstaende[0]['entries'][0]['course_id']);
     }
 
     /**
@@ -1030,7 +1035,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -1092,7 +1097,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -1154,7 +1159,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -1615,7 +1620,7 @@ final class write_context_file_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -1785,5 +1790,25 @@ final class write_context_file_test extends \advanced_testcase {
             'filepath' => $filepath,
             'filename' => $filename,
         ], $content);
+    }
+
+    public function test_the_context_restriction_of_the_web_service_is_checked_before_anything_is_written(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $course = $this->getDataGenerator()->create_course();
+
+        \core_external\external_api::set_context_restriction(\context_course::instance($course->id));
+        try {
+            $thrown = null;
+            try {
+                write_context_file::execute('plan.md', 'content');
+            } catch (\Throwable $caught) {
+                $thrown = $caught;
+            }
+        } finally {
+            \core_external\external_api::set_context_restriction(\context_system::instance());
+        }
+
+        $this->assertInstanceOf(\core_external\restricted_context_exception::class, $thrown);
     }
 }

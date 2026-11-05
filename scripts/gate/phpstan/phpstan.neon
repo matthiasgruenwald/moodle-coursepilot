@@ -10,6 +10,8 @@ parameters:
     excludePaths:
         - /var/www/html/public/local/coursepilot/amd
         - /var/www/html/public/local/coursepilot/skills
+    scanFiles:
+        - /var/www/html/public/question/format.php
     scanDirectories:
         - /var/www/html/public/lib
         - /var/www/html/public/mod
@@ -21,6 +23,9 @@ parameters:
         - /var/www/html/vendor/phpunit
     bootstrapFiles:
         - /var/www/phpstan-config/bootstrap.php
+    stubFiles:
+        - /var/www/phpstan-config/file_storage.stub
+        - /var/www/phpstan-config/qformat_xml.stub
     tmpDir: /tmp/phpstan
     # Entfaellt, sobald die Baseline schrumpft und die Ratsche (Folgeticket) veraltete Eintraege meldet.
     reportUnmatchedIgnoredErrors: false

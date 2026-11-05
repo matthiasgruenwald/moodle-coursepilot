@@ -174,14 +174,14 @@ final class pending_write_notice {
         );
 
         $oldsize = $existing ? $existing->get_filesize() : 0;
-        $remaining = storage_anchor::remaining_quota();
+        $remaining = private_files_storage_port::remaining_quota();
         if ($remaining !== null && (strlen($content) - $oldsize) > $remaining) {
             throw new \moodle_exception('pendingnotequotaexceeded', 'local_coursepilot');
         }
 
-        storage_anchor::replace(
+        private_files_storage_port::replace(
             $existing ?: null,
-            storage_anchor::filerecord($contextid, $directory, storage_anchor::PENDING_FILENAME),
+            private_files_storage_port::filerecord($contextid, $directory, storage_anchor::PENDING_FILENAME),
             $content
         );
     }

@@ -120,4 +120,23 @@ final class authorize_page_test extends \advanced_testcase {
             unset($_POST['sesskey']);
         }
     }
+
+    public function test_consent_text_states_the_personal_data_setting(): void {
+        $this->resetAfterTest();
+        $page = fn(): array => authorize_page::page_data(
+            'Claude Desktop',
+            ['client_id' => 'abc', 'redirect_uri' => 'https://example.test/cb'],
+            'thestate',
+            new \moodle_url('/local/coursepilot/oauth/authorize.php'),
+            new \moodle_url('/local/coursepilot/location_selection.php')
+        );
+
+        set_config('allowpersonaldata', 0, 'local_coursepilot');
+        $off = $page()['consenttext'];
+        set_config('allowpersonaldata', 1, 'local_coursepilot');
+        $on = $page()['consenttext'];
+
+        $this->assertStringContainsString(get_string('consentpersonaldataoff', 'local_coursepilot'), $off);
+        $this->assertStringContainsString(get_string('consentpersonaldataon', 'local_coursepilot'), $on);
+    }
 }

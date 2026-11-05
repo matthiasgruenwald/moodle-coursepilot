@@ -191,4 +191,73 @@ final class clone_activity_test extends \advanced_testcase {
         $this->assertSame(version_writer::SOURCE_CLONED, $versions[0]->source);
         $this->assertSame((int) $page->cmid, (int) $versions[0]->sourcecmid);
     }
+
+    /**
+     * A blank title is rejected before anything is copied.
+     */
+    public function test_blank_title_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        $this->expectException(\invalid_parameter_exception::class);
+        clone_activity::execute((int) $page->cmid, '   ');
+    }
+
+    /**
+     * Every broken prerequisite is named with its completion state; unaffected conditions survive.
+     */
+    public function test_several_broken_prerequisites_are_named_and_other_conditions_are_kept(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$sourcecourse, $teacher] = $this->course_with_editing_teacher();
+        $targetcourse = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($teacher->id, $targetcourse->id, 'editingteacher');
+        $dependent = $this->getDataGenerator()->create_module('page', ['course' => $sourcecourse->id]);
+        $conditions = [['type' => 'date', 'direction' => 'from', 'timestamp' => 1767225600]];
+        foreach (['pass' => 'Bestehen', 'fail' => 'Scheitern', 'incomplete' => 'Offen'] as $status => $name) {
+            $prerequisite = $this->getDataGenerator()->create_module('page', ['course' => $sourcecourse->id, 'name' => $name]);
+            $conditions[] = ['type' => 'completion', 'activity_cmid' => (int) $prerequisite->cmid, 'status' => $status];
+        }
+        set_restriction::execute((int) $dependent->cmid, json_encode($conditions));
+
+        $result = clone_activity::execute((int) $dependent->cmid, 'Klon', (int) $targetcourse->id);
+
+        $this->assertStringContainsString('3 kaputte Voraussetzungen entfernt', $result['message']);
+        $this->assertStringContainsString('"Bestehen" (bestanden)', $result['message']);
+        $this->assertStringContainsString('"Scheitern" (not passed)', $result['message']);
+        $this->assertStringContainsString('"Offen" (not completed)', $result['message']);
+        $tree = json_decode($DB->get_field('course_modules', 'availability', ['id' => $result['cmid']]), true);
+        $this->assertCount(1, $tree['c']);
+        $this->assertSame('date', $tree['c'][0]['type']);
+    }
+
+    /**
+     * A nested group emptied by the cleanup disappears instead of leaving an empty wrapper.
+     */
+    public function test_group_emptied_by_cleanup_is_dropped_from_a_nested_restriction(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$sourcecourse, $teacher] = $this->course_with_editing_teacher();
+        $targetcourse = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($teacher->id, $targetcourse->id, 'editingteacher');
+        $prerequisite = $this->getDataGenerator()->create_module('page', ['course' => $sourcecourse->id]);
+        $dependent = $this->getDataGenerator()->create_module('page', ['course' => $sourcecourse->id]);
+        $DB->set_field('course_modules', 'availability', json_encode([
+            'op' => '&',
+            'c' => [
+                ['op' => '|', 'c' => [['type' => 'completion', 'cm' => (int) $prerequisite->cmid, 'e' => 1]], 'show' => true],
+                ['type' => 'date', 'd' => '>=', 't' => 1767225600],
+            ],
+            'showc' => [true, true],
+        ]), ['id' => $dependent->cmid]);
+        rebuild_course_cache($sourcecourse->id, true);
+
+        $result = clone_activity::execute((int) $dependent->cmid, 'Klon', (int) $targetcourse->id);
+
+        $this->assertStringContainsString('1 kaputte Voraussetzung entfernt', $result['message']);
+        $tree = json_decode($DB->get_field('course_modules', 'availability', ['id' => $result['cmid']]), true);
+        $this->assertSame([true], $tree['showc']);
+        $this->assertSame('date', $tree['c'][0]['type']);
+    }
 }

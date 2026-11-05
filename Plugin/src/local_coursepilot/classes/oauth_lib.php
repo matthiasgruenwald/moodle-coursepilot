@@ -239,25 +239,12 @@ final class oauth_lib {
      * @return array{error: string, error_description: string}|array{client: \stdClass}
      */
     public static function validate_authorize_request(array $params): array {
-        $responsetype = $params['response_type'] ?? '';
-        $clientid = (string) ($params['client_id'] ?? '');
-        $redirecturi = (string) ($params['redirect_uri'] ?? '');
-        $codechallenge = (string) ($params['code_challenge'] ?? '');
-        $codechallengemethod = (string) ($params['code_challenge_method'] ?? '');
-
-        if ($responsetype !== 'code' || $clientid === '' || $redirecturi === '' || $codechallenge === '') {
-            return [
-                'error' => 'invalid_request',
-                'error_description' => 'response_type=code, client_id, redirect_uri and code_challenge are required.',
-            ];
+        $problem = self::authorize_shape_error($params);
+        if ($problem !== null) {
+            return $problem;
         }
-        if ($codechallengemethod !== 'S256') {
-            // OAuth 2.1 requires PKCE for every client and permits only S256.
-            return [
-                'error' => 'invalid_request',
-                'error_description' => 'PKCE is required; only code_challenge_method=S256 is accepted.',
-            ];
-        }
+        $clientid = (string) $params['client_id'];
+        $redirecturi = (string) $params['redirect_uri'];
 
         $retryafter = 0;
         $client = self::get_client($clientid, $retryafter);
@@ -274,6 +261,34 @@ final class oauth_lib {
         }
 
         return ['client' => $client];
+    }
+
+    /**
+     * Required authorize parameters and PKCE method.
+     *
+     * @param mixed[] $params Authorize request parameters.
+     * @return array{error: string, error_description: string}|null Error response, null when well-formed.
+     */
+    private static function authorize_shape_error(array $params): ?array {
+        if (
+            ($params['response_type'] ?? '') !== 'code'
+            || (string) ($params['client_id'] ?? '') === ''
+            || (string) ($params['redirect_uri'] ?? '') === ''
+            || (string) ($params['code_challenge'] ?? '') === ''
+        ) {
+            return [
+                'error' => 'invalid_request',
+                'error_description' => 'response_type=code, client_id, redirect_uri and code_challenge are required.',
+            ];
+        }
+        if ((string) ($params['code_challenge_method'] ?? '') !== 'S256') {
+            // OAuth 2.1 requires PKCE for every client and permits only S256.
+            return [
+                'error' => 'invalid_request',
+                'error_description' => 'PKCE is required; only code_challenge_method=S256 is accepted.',
+            ];
+        }
+        return null;
     }
 
     /**

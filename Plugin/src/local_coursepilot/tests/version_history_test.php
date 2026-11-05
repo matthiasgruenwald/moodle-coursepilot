@@ -30,6 +30,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(version_history::class)]
+#[CoversClass(version_writer::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\history\version_source::class)]
 final class version_history_test extends \advanced_testcase {
     /**
      * Create a course, page and editing teacher. Creation already fires
@@ -88,6 +90,21 @@ final class version_history_test extends \advanced_testcase {
         [$insql, $inparams] = $DB->get_in_or_equal($versionids);
         $DB->delete_records_select('local_coursepilot_cm_version_file', "versionid $insql", $inparams);
         $DB->delete_records('local_coursepilot_cm_version', ['cmid' => $cmid]);
+    }
+
+    /**
+     * Native history snapshots retain the activity identity as an integer across edits.
+     */
+    public function test_native_snapshot_keeps_its_integer_activity_identity(): void {
+        $this->resetAfterTest();
+        [$course, $cm] = $this->create_page();
+        $before = version_history::state_at((int) $cm->id, 1);
+        $this->assertSame((int) $cm->instance, $before['instance']);
+        $this->assertSame('Erste Fassung', $before['name']);
+        $this->update_page($course, $cm, 'Later title');
+        $after = version_history::state_at((int) $cm->id, 2);
+        $this->assertSame((int) $cm->instance, $after['instance']);
+        $this->assertSame('Later title', $after['name']);
     }
 
     /**
@@ -166,6 +183,29 @@ final class version_history_test extends \advanced_testcase {
 
         $this->assertStringContainsString(fullname($teacher), $einzeiler);
         $this->assertStringContainsString('name', $einzeiler);
+    }
+
+    /**
+     * Beyond four changed fields the summary names four and counts the rest.
+     */
+    public function test_einzeiler_counts_fields_beyond_the_first_four(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        require_once($CFG->dirroot . '/course/modlib.php');
+        [$course, $cm] = $this->create_page();
+
+        [, , , $moduleinfo] = \get_moduleinfo_data($cm, $course);
+        $moduleinfo->name = 'Neu';
+        $moduleinfo->intro = '<p>Neue Einleitung</p>';
+        $moduleinfo->page = ['text' => '<p>Neuer Inhalt</p>', 'format' => FORMAT_HTML, 'itemid' => 0];
+        $moduleinfo->printintro = 1;
+        $moduleinfo->printlastmodified = 0;
+        $moduleinfo->visible = 0;
+        \update_moduleinfo($cm, $moduleinfo, $course, null);
+
+        $einzeiler = version_history::list_versions($cm->id)['versions'][1]['summary_line'];
+
+        $this->assertMatchesRegularExpression('/ and \d+ more fields/', $einzeiler);
     }
 
     /**

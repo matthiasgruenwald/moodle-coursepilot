@@ -156,4 +156,17 @@ final class get_quiz_cleanup_plan_test extends \advanced_testcase {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
     }
+
+    public function test_the_plan_names_the_requested_quiz_and_not_another_one(): void {
+        $this->resetAfterTest();
+        [$course] = $this->create_course_with_quiz();
+        $second = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'name' => 'Zweites Quiz']);
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+
+        $result = get_quiz_cleanup_plan::execute((int) $second->cmid, []);
+
+        $this->assertSame('Zweites Quiz', $result['quizname']);
+    }
 }

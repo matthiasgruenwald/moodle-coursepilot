@@ -18,6 +18,7 @@ namespace local_coursepilot\external;
 
 use core_external\external_api;
 use local_coursepilot\activity_backup;
+use local_coursepilot\activity_file_supplement;
 use local_coursepilot\material_files;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -297,5 +298,76 @@ final class activity_file_supplement_test extends \advanced_testcase {
         ] + $extra);
         unset($_POST['sesskey']);
         return $response;
+    }
+
+    public function test_only_declared_activity_types_accept_file_supplements(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $context = \context_course::instance($course->id);
+        $entry = ['path' => 'bild.png', 'filearea' => 'gallery_images', 'caption' => ''];
+
+        $this->assertTrue(\local_coursepilot\activity_file_supplement::supports('lightboxgallery'));
+        $this->assertFalse(\local_coursepilot\activity_file_supplement::supports('page'));
+        \local_coursepilot\activity_file_supplement::validate('page', $context, []);
+        try {
+            \local_coursepilot\activity_file_supplement::validate('page', $context, [$entry]);
+            $this->fail('Page has no file supplement.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('activityfilesunsupported', $e->errorcode);
+        }
+    }
+
+    public function test_files_need_the_right_to_manage_own_files_before_anything_is_restored(): void {
+        global $DB;
+        [$course, $xml] = $this->gallery_fixture();
+        $this->material_image('image.png');
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($GLOBALS['USER']->id)->id,
+            true
+        );
+        accesslib_clear_all_caches_for_unit_testing();
+        $sink = $this->redirectEvents();
+
+        $response = $this->call_response($course->id, $xml, [['path' => 'image.png', 'filearea' => 'gallery_images']]);
+
+        $this->assertTrue($response['error']);
+        $this->assertSame('nopermissions', $response['exception']->errorcode);
+        $this->assertSame([], array_map(static fn($event) => $event::class, $sink->get_events()));
+    }
+
+    public function test_applying_files_commits_and_leaves_no_draft_behind(): void {
+        global $DB, $USER;
+        $this->preventResetByRollback();
+        [$course] = $this->gallery_fixture();
+        $this->material_image('image.png');
+        $gallery = $this->getDataGenerator()->create_module('lightboxgallery', ['course' => $course->id]);
+        $cm = get_coursemodule_from_id('lightboxgallery', $gallery->cmid, $course->id, false, MUST_EXIST);
+        $drafts = static fn(): int => $DB->count_records('files', [
+            'contextid' => \context_user::instance($USER->id)->id, 'component' => 'user', 'filearea' => 'draft',
+        ]);
+        $before = $drafts();
+
+        activity_file_supplement::apply($cm, [['path' => 'image.png', 'filearea' => 'gallery_images', 'caption' => 'Bild']]);
+
+        $this->assertFalse($DB->is_transaction_started());
+        $this->assertSame($before, $drafts());
+        $this->assertSame(
+            ['image.png'],
+            array_values(array_map(
+                static fn($file) => $file->get_filename(),
+                get_file_storage()->get_area_files(
+                    \context_module::instance($cm->id)->id,
+                    'mod_lightboxgallery',
+                    'gallery_images',
+                    0,
+                    'filename',
+                    false
+                )
+            ))
+        );
     }
 }

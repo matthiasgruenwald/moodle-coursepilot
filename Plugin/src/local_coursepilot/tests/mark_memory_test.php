@@ -124,4 +124,54 @@ final class mark_memory_test extends \advanced_testcase {
         $this->setUser($userb);
         $this->assertNull(mark_memory::lookup('lerngruppe.md', 42, 100, 'etag-1'));
     }
+
+    /**
+     * Without a logged-in user nothing is remembered or returned.
+     */
+    public function test_nothing_is_remembered_without_a_user(): void {
+        $this->resetAfterTest();
+        $this->setUser(0);
+
+        mark_memory::remember('lerngruppe.md', 42, 100, 'etag-1', true);
+
+        $this->assertNull(mark_memory::lookup('lerngruppe.md', 42, 100, 'etag-1'));
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->assertNull(mark_memory::lookup('lerngruppe.md', 42, 100, 'etag-1'));
+    }
+
+    /**
+     * Two users remembering the same path keep one entry each; the second never takes over the first one's row.
+     */
+    public function test_a_second_user_remembering_the_same_path_leaves_the_first_entry_alone(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $usera = $this->getDataGenerator()->create_user();
+        $userb = $this->getDataGenerator()->create_user();
+
+        $this->setUser($usera);
+        mark_memory::remember('lerngruppe.md', 42, 100, 'etag-1', true);
+        $this->setUser($userb);
+        mark_memory::remember('lerngruppe.md', 42, 100, 'etag-1', false);
+
+        $this->assertSame(2, $DB->count_records('local_coursepilot_context_mark'));
+        $this->assertFalse(mark_memory::lookup('lerngruppe.md', 42, 100, 'etag-1'));
+        $this->setUser($usera);
+        $this->assertTrue(mark_memory::lookup('lerngruppe.md', 42, 100, 'etag-1'));
+    }
+
+    /**
+     * The bit is persisted as 1 or 0 exactly (column ismarked, 1 = marked).
+     */
+    public function test_the_marked_bit_is_stored_as_one_or_zero(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        mark_memory::remember('marked.md', 1, 1, null, true);
+        mark_memory::remember('plain.md', 1, 1, null, false);
+
+        $stored = $DB->get_records_menu('local_coursepilot_context_mark', null, '', 'path, ismarked');
+        $this->assertEquals(['marked.md' => 1, 'plain.md' => 0], $stored);
+        $this->assertSame('1', (string) $stored['marked.md']);
+    }
 }

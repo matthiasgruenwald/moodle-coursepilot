@@ -27,6 +27,7 @@ use local_coursepilot\admin\personaldatahosts_setting;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(personal_data_hosts::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(personaldatahosts_setting::class)]
 final class personal_data_hosts_test extends \advanced_testcase {
     /**
      * An empty list approves no external hosts.
@@ -148,5 +149,57 @@ final class personal_data_hosts_test extends \advanced_testcase {
         $setting = new personaldatahosts_setting('local_coursepilot/personaldatahosts', 'x', 'y', '', PARAM_RAW);
 
         $this->assertTrue($setting->validate('cloud.example.test'));
+    }
+
+    /**
+     * A blank host is never approved, even when entries exist.
+     */
+    public function test_blank_host_is_not_allowed(): void {
+        $this->resetAfterTest();
+        set_config('personaldatahosts', "example.test", 'local_coursepilot');
+
+        $this->assertFalse(personal_data_hosts::allowed('  '));
+    }
+
+    /**
+     * An external location on an unapproved host is rejected with the path in the message.
+     */
+    public function test_unapproved_external_location_is_rejected(): void {
+        $this->resetAfterTest();
+        set_config('personaldatahosts', "example.test", 'local_coursepilot');
+        $location = pointer_location::external(1, 'a/b.md', ['server' => 'cloud.other.test']);
+
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('contextfilehostnotallowed', 'local_coursepilot', 'a/b.md'));
+        personal_data_hosts::require_allowed_location($location, 'a/b.md');
+    }
+
+    /**
+     * Approved external hosts, Private Files and a missing location pass.
+     */
+    public function test_approved_or_private_locations_pass(): void {
+        $this->resetAfterTest();
+        set_config('personaldatahosts', "example.test", 'local_coursepilot');
+
+        $approved = pointer_location::external(1, 'a.md', ['server' => 'cloud.example.test']);
+        personal_data_hosts::require_allowed_location($approved, 'a.md');
+        personal_data_hosts::require_allowed_location(pointer_location::moodle('/a'), 'a.md');
+        personal_data_hosts::require_allowed_location(null, 'a.md');
+        $this->assertTrue(personal_data_hosts::allowed('cloud.example.test'));
+    }
+
+    /**
+     * An absent value is valid and is not passed on as null to the entry check.
+     */
+    public function test_admin_setting_accepts_an_absent_value(): void {
+        $this->resetAfterTest();
+        $setting = new personaldatahosts_setting('local_coursepilot/personaldatahosts', 'x', 'y', '', PARAM_RAW);
+
+        try {
+            $result = $setting->validate(null);
+        } catch (\TypeError $e) {
+            $this->fail('An absent value must not reach the entry check as null: ' . $e->getMessage());
+        }
+        $this->assertTrue($result);
     }
 }

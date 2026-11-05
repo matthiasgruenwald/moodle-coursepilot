@@ -1,0 +1,144 @@
+{
+    "modname": "folder",
+    "fields": [
+        {
+            "name": "name",
+            "type": "PARAM_TEXT",
+            "meaning": "Display name of the folder.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/folder/mod_form.php:38-41 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)"
+            }
+        },
+        {
+            "name": "intro",
+            "type": "PARAM_RAW",
+            "meaning": "Description text (intro).",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/folder/db/install.xml (folder.intro, NOTNULL=false)"
+            }
+        },
+        {
+            "name": "introformat",
+            "type": "PARAM_INT",
+            "meaning": "Text format of the intro.",
+            "required": false,
+            "default_json": "\"1\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "format_text_menu()",
+                "source": "lib/weblib.php:464 (format_text_menu()); column mod/folder/db/install.xml (folder.introformat)"
+            }
+        },
+        {
+            "name": "display",
+            "type": "PARAM_INT",
+            "meaning": "Display: own page (0) or embedded on the course page (1, \"inline\").",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/folder/lib.php:29,31 (FOLDER_DISPLAY_PAGE/FOLDER_DISPLAY_INLINE); Spalte mod/folder/db/install.xml (folder.display)"
+            }
+        },
+        {
+            "name": "showexpanded",
+            "type": "PARAM_BOOL",
+            "meaning": "Show subfolders expanded (1) or collapsed (0) when opening.",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/folder/db/install.xml (folder.showexpanded); Default get_config('folder', 'showexpanded')"
+            }
+        },
+        {
+            "name": "showdownloadfolder",
+            "type": "PARAM_BOOL",
+            "meaning": "Show the \"Download everything as ZIP\" button.",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/folder/db/install.xml (folder.showdownloadfolder)"
+            }
+        },
+        {
+            "name": "forcedownload",
+            "type": "PARAM_BOOL",
+            "meaning": "Download individual files on click instead of opening them in the browser.",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/folder/db/install.xml (folder.forcedownload)"
+            }
+        }
+    ],
+    "write_options": {
+        "material_reference_fields": {
+            "files": {
+                "component": "mod_folder",
+                "filearea": "content"
+            }
+        },
+        "patch_blocked_fields": [
+            "files"
+        ],
+        "missing_form_values": {
+            "files": 0
+        }
+    },
+    "common_field_names": [
+        "name",
+        "intro",
+        "introformat",
+        "display",
+        "showexpanded",
+        "showdownloadfolder",
+        "forcedownload"
+    ],
+    "pseudofields": [
+        {
+            "name": "files",
+            "type": "List of material folder paths (JSON array)",
+            "meaning": "The files to place in the folder - each entry a path in the material folder (Spec 0018 §4.2, e.g. [\"worksheet.pdf\"]) or an object {\"path\": \"...\", \"target_folder\": \"subfolder\"} for a target directory inside the folder. Multiple entries per call possible. An EMPTY folder is valid - unlike resource, a missing file does not block creation. Usable ONLY on create (create_module) - a later patch via update_module_settings deliberately fails (folderfilespatchunsupported) instead of silently having no effect: to add more files, create another folder.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/folder/lib.php (folder_add_instance(): $data->files as draft itemid; folder_update_instance() instead reads file_get_submitted_draft_itemid() from $_REQUEST); local_coursepilot\\material_files::resolve_into_draft()"
+            }
+        }
+    ],
+    "blocklist": [
+        "revision"
+    ],
+    "combination_rules": [
+        "display=1 (inline) is incompatible with automatic completion tracking on view (completion=automatic + completionview) - Moodle rejects this in the form (mod/folder/mod_form.php: validation())."
+    ],
+    "side_effects": [
+        "folder can also be created without \"files\" - an empty folder is valid, unlike resource without a main file (Spec 0015 §4.3)."
+    ],
+    "bundles": [],
+    "write_route": null,
+    "checked_constants": [
+        "FOLDER_DISPLAY_PAGE",
+        "FOLDER_DISPLAY_INLINE"
+    ],
+    "learner_locks": [],
+    "reviewed_up_to_major": 500,
+    "grade_origin": "none"
+}

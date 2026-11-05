@@ -17,6 +17,7 @@
 namespace local_coursepilot\external;
 
 use core_external\external_api;
+use local_coursepilot\tests\caught_throwable;
 use local_coursepilot\context_files;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use local_coursepilot\webdav\webdav_instance;
@@ -35,8 +36,29 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(list_context_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_reader::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_area::class)]
 final class list_context_files_test extends \advanced_testcase {
+    use caught_throwable;
     use webdav_instance_fixture;
+
+    public function test_a_web_service_context_restriction_prevents_listing_own_files(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', 'Private plan');
+        external_api::set_context_restriction(\context_user::instance($other->id));
+        try {
+            $e = $this->caught(fn() => list_context_files::execute());
+        } finally {
+            external_api::set_context_restriction(\context_system::instance());
+        }
+
+        $this->assertInstanceOf(\core_external\restricted_context_exception::class, $e);
+    }
 
     protected function tearDown(): void {
         \core\di::reset_container();
@@ -408,6 +430,27 @@ final class list_context_files_test extends \advanced_testcase {
         $result = external_api::clean_returnvalue(list_context_files::execute_returns(), $result);
 
         $this->assertSame([], $result['entries']);
+    }
+
+    /**
+     * An external storage that rejects the account is reported as a named
+     * error with the translated error class, never as an empty listing.
+     */
+    public function test_listing_rejected_by_external_storage_is_a_named_error(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->deny_auth();
+
+        try {
+            list_context_files::execute();
+            $this->fail('A rejected account must not look like an empty folder.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('webdavexternalerror', $e->errorcode);
+            $this->assertStringContainsString(
+                \local_coursepilot\webdav\webdav_error::label(\local_coursepilot\webdav\webdav_error::AUTH_REJECTED),
+                $e->getMessage()
+            );
+        }
     }
 
     /**

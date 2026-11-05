@@ -27,7 +27,7 @@ namespace local_coursepilot;
 /**
  * Bounded, resumable native migration of synthetic legacy pairs and tickets.
  */
-#[\PHPUnit\Framework\Attributes\CoversNothing]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_migrate_oauth_connections')]
 final class oauth_connection_upgrade_test extends \advanced_testcase {
     public function test_interrupted_backfill_resumes_without_guessing_historical_families(): void {
         global $DB, $CFG;

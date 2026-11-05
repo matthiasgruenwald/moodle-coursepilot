@@ -47,7 +47,8 @@ jobs:
   quality:
     name: Full quality gate (Moodle 5.1, MariaDB, PHP 8.4)
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    # The measured PR mutation run already took 165 minutes before slow mutants were included.
+    timeout-minutes: 360
     env:
       GATE_MOODLE_REF: origin/MOODLE_501_STABLE
       # PR: actual target branch. Push: compare the state before the push.
@@ -85,6 +86,14 @@ jobs:
           set -o pipefail
           git clone --branch MOODLE_501_STABLE https://github.com/moodle/moodle.git "$GATE_MOODLE_REPO"
           bash scripts/gate/setup-container.sh 2>&1 | tee "$GATE_DIR/reports/setup.log"
+
+      - name: Echte Infection-Fehlerpfade im isolierten Gate prüfen
+        run: |
+          set +e
+          node scripts/gate/mutation-proof.js 2>&1 | tee "$GATE_DIR/reports/mutation-proof.log"
+          result=${PIPESTATUS[0]}
+          echo "$result" > "$GATE_DIR/reports/mutation-proof.exit"
+          exit "$result"
 
       - name: Verbindliches volles Gate
         run: |

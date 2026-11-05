@@ -27,7 +27,127 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(create_quiz::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz_write::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz_write_bridge::class)]
+#[CoversClass(\local_coursepilot\catalog\write_target::class)]
 final class create_quiz_test extends \advanced_testcase {
+    /**
+     * Editing permission does not authorize quiz creation when Coursepilot access is prohibited.
+     */
+    public function test_creation_requires_coursepilot_access(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $context = \context_course::instance($course->id);
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        assign_capability('local/coursepilot:use', CAP_PROHIBIT, $roleid, $context->id, true);
+        try {
+            create_quiz::execute($course->id, 0, json_encode($this->minimal_fields_without_mode()));
+            $this->fail('Coursepilot access must be checked before creating the quiz.');
+        } catch (\required_capability_exception $error) {
+            $this->assertSame(get_capability_string('local/coursepilot:use'), $error->a);
+        }
+        $this->assertSame(0, $DB->count_records('quiz', ['course' => $course->id]));
+    }
+
+    /**
+     * Creation reports every explicit field and only the calendar effects actually requested.
+     *
+     * @param mixed[] $timing
+     * @param bool $calendar
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('calendar_creation_inputs')]
+    public function test_creation_report_keeps_values_and_calendar_effects(array $timing, bool $calendar): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $patch = array_merge($this->minimal_fields_without_mode(), [
+            'name' => 'Übung / quiz', 'intro' => '<p>Üben / lernen</p>',
+        ], $timing);
+        $result = $this->create($course->id, 0, $patch, grade: 0, confirmlearnerlocks: ['timeclose']);
+        $expected = [];
+        $descriptions = [];
+        foreach ($patch + ['grade' => 0] as $field => $value) {
+            $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $expected[] = ['field' => $field, 'value_json' => $json];
+            $descriptions[] = '"' . $field . '" = ' . $json;
+        }
+        $quiz = $this->raw_quiz($result['cmid']);
+        $this->assertSame($calendar, $DB->record_exists('event', ['modulename' => 'quiz', 'instance' => $quiz->id]));
+        $effects = $calendar ? ['The calendar entry for the quiz was created.'] : [];
+        $this->assertSame($expected, $result['created_fields']);
+        $this->assertSame($effects, $result['side_effects']);
+        $this->assertSame(
+            'Quiz created: ' . implode(', ', $descriptions) . '.' . ($calendar ? ' ' . $effects[0] : ''),
+            $result['message']
+        );
+        $this->assertEquals(0, $this->raw_quiz($result['cmid'])->grade);
+    }
+
+    /**
+     * Absent, explicitly disabled and individually enabled calendar fields.
+     *
+     * @return array<string, array{mixed[], bool}>
+     */
+    public static function calendar_creation_inputs(): array {
+        return [
+            'absent' => [[], false],
+            'disabled' => [['timeopen' => 0, 'timeclose' => 0], false],
+            'opening only' => [['timeopen' => 2000000000], true],
+            'closing only' => [['timeclose' => 2000003600], true],
+            'earliest opening' => [['timeopen' => 1], true],
+            'earliest closing' => [['timeclose' => 1], true],
+        ];
+    }
+
+    /**
+     * A calendar event of another module type with the same instance id is no quiz calendar entry.
+     */
+    public function test_foreign_module_event_is_not_reported_as_quiz_calendar_entry(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $first = $this->create($course->id, 0, $this->minimal_fields_without_mode(), grade: 0);
+        $nextid = (int) $this->raw_quiz($first['cmid'])->id + 1;
+        $DB->insert_record('event', (object) [
+            'name' => 'Foreign', 'description' => '', 'format' => 1, 'courseid' => $course->id, 'groupid' => 0,
+            'userid' => 0, 'modulename' => 'assign', 'instance' => $nextid, 'type' => 1, 'eventtype' => 'due',
+            'timestart' => 2000000000, 'timeduration' => 0, 'visible' => 1, 'timemodified' => time(),
+        ]);
+
+        $second = $this->create($course->id, 0, $this->minimal_fields_without_mode(), grade: 0);
+
+        $this->assertSame($nextid, (int) $this->raw_quiz($second['cmid'])->id);
+        $this->assertSame([], $second['side_effects']);
+    }
+
+    /**
+     * Native module rejection also rolls back a section created during preparation.
+     */
+    public function test_native_creation_rejection_leaves_no_section_or_quiz(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        [$course] = $this->course_with_editing_teacher();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        assign_capability('mod/quiz:addinstance', CAP_PROHIBIT, $roleid, \context_course::instance($course->id)->id, true);
+        $sections = $DB->get_records('course_sections', ['course' => $course->id], 'id');
+        $modules = $DB->get_records('course_modules', ['course' => $course->id], 'id');
+        $versions = $DB->count_records('local_coursepilot_cm_version');
+        try {
+            $this->create($course->id, 7, $this->minimal_fields_without_mode());
+            $this->fail('The native module restriction must reject creation.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('moduledisable', $e->errorcode);
+        }
+        $this->assertEquals($sections, $DB->get_records('course_sections', ['course' => $course->id], 'id'));
+        $this->assertEquals($modules, $DB->get_records('course_modules', ['course' => $course->id], 'id'));
+        $this->assertFalse($DB->record_exists('quiz', ['course' => $course->id]));
+        $this->assertSame($versions, $DB->count_records('local_coursepilot_cm_version'));
+        $this->assertFalse($DB->is_transaction_started());
+    }
+
     /**
      * Provides course with editing teacher.
      *
@@ -125,6 +245,25 @@ final class create_quiz_test extends \advanced_testcase {
             }
             $this->assertStringContainsString('created', $result['message']);
         }
+    }
+
+    /**
+     * An unknown mode names the valid modes and creates nothing.
+     */
+    public function test_unknown_mode_names_the_valid_modes_and_creates_nothing(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        try {
+            $this->create($course->id, 0, $this->minimal_fields(), 'no-such-mode');
+            $this->fail('Expected moodle_exception was not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('unknownmode', $e->errorcode);
+            $this->assertStringContainsString('Unknown mode "no-such-mode". Allowed: ', $e->getMessage());
+            $this->assertStringContainsString('mini-check, progress-check, final-test', $e->getMessage());
+        }
+        $this->assertSame(0, $DB->count_records('quiz', ['course' => $course->id]));
     }
 
     /**
@@ -292,7 +431,9 @@ final class create_quiz_test extends \advanced_testcase {
         $source = file_get_contents(__DIR__ . '/../../classes/external/create_quiz.php');
         $this->assertStringNotContainsString('$DB->update_record', $source);
         $this->assertStringNotContainsString("insert_record('quiz'", $source);
-        $this->assertStringContainsString('add_moduleinfo(', $source);
+        $catalog = file_get_contents(__DIR__ . '/../../classes/catalog/quiz_write.php');
+        $this->assertStringContainsString('add_moduleinfo(', $catalog);
+        $this->assertStringContainsString('quiz_write::create(', $source);
     }
 
     /**
@@ -333,5 +474,13 @@ final class create_quiz_test extends \advanced_testcase {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
             $this->assertStringContainsString('attempts', $e->getMessage());
         }
+    }
+
+    public function test_unparseable_field_json_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $this->expectExceptionMessage(get_string('invalidpatchjson', 'local_coursepilot'));
+        create_quiz::execute($course->id, 0, 'kein json');
     }
 }

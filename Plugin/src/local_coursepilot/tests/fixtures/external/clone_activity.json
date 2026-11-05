@@ -1,0 +1,103 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "title",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "targetcourseid",
+                "type": "int",
+                "default": 0
+            },
+            {
+                "name": "visible",
+                "type": "bool",
+                "default": true
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the activity to clone",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "title": {
+                "class": "core_external\\external_value",
+                "desc": "Title of the cloned activity, explicitly set without an automatic copy suffix",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "targetcourseid": {
+                "class": "core_external\\external_value",
+                "desc": "Target course ID; omitted or equal to the source course means a clone in the same course",
+                "required": 0,
+                "default": 0,
+                "allownull": true,
+                "type": "int"
+            },
+            "visible": {
+                "class": "core_external\\external_value",
+                "desc": "Visibility of the cloned activity, always explicitly set",
+                "required": 0,
+                "default": true,
+                "allownull": true,
+                "type": "bool"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the new cloned activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course containing the clone",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing message describing any removed dangling prerequisites",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

@@ -108,4 +108,17 @@ final class move_module_test extends \advanced_testcase {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
     }
+
+    public function test_unknown_target_section_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'section' => 0]);
+
+        try {
+            $this->move((int) $page->cmid, 99);
+            $this->fail('A missing target section must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('sectionnotfound', $e->errorcode);
+        }
+    }
 }

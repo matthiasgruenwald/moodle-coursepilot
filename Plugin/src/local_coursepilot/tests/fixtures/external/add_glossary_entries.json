@@ -1,0 +1,280 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "entries",
+                "type": "array",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Glossary course module ID, fresh or existing",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "entries": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Teacher-authored entries; each entry succeeds or fails independently",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "concept": {
+                            "class": "core_external\\external_value",
+                            "desc": "Concept",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "definition": {
+                            "class": "core_external\\external_value",
+                            "desc": "Definition; use @@PLUGINFILE@@/filename for embedded files",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "definitionformat": {
+                            "class": "core_external\\external_value",
+                            "desc": "Moodle text format: 0 Moodle, 1 HTML, 2 plain, 4 Markdown",
+                            "required": 0,
+                            "default": "1",
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "aliases": {
+                            "class": "core_external\\external_multiple_structure",
+                            "desc": "Keywords or aliases, one per item",
+                            "required": 0,
+                            "default": [],
+                            "allownull": false,
+                            "content": {
+                                "class": "core_external\\external_value",
+                                "desc": "Keywords or aliases, one per item",
+                                "required": 1,
+                                "default": null,
+                                "allownull": true,
+                                "type": "text"
+                            }
+                        },
+                        "categories": {
+                            "class": "core_external\\external_multiple_structure",
+                            "desc": "Category names; missing categories require mod/glossary:managecategories",
+                            "required": 0,
+                            "default": [],
+                            "allownull": false,
+                            "content": {
+                                "class": "core_external\\external_value",
+                                "desc": "Category names; missing categories require mod/glossary:managecategories",
+                                "required": 1,
+                                "default": null,
+                                "allownull": true,
+                                "type": "text"
+                            }
+                        },
+                        "usedynalink": {
+                            "class": "core_external\\external_value",
+                            "desc": "Automatic linking, only if enabled for the glossary; otherwise Moodle defaults apply",
+                            "required": 2,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        },
+                        "casesensitive": {
+                            "class": "core_external\\external_value",
+                            "desc": "Case-sensitive linking",
+                            "required": 2,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        },
+                        "fullmatch": {
+                            "class": "core_external\\external_value",
+                            "desc": "Link whole words only",
+                            "required": 2,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        },
+                        "approved": {
+                            "class": "core_external\\external_value",
+                            "desc": "Explicit approval state requires mod/glossary:approve; omit for Moodle default approval",
+                            "required": 2,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        },
+                        "tags": {
+                            "class": "core_external\\external_multiple_structure",
+                            "desc": "Entry tags, when glossary entry tagging is enabled",
+                            "required": 0,
+                            "default": [],
+                            "allownull": false,
+                            "content": {
+                                "class": "core_external\\external_value",
+                                "desc": "Entry tags, when glossary entry tagging is enabled",
+                                "required": 1,
+                                "default": null,
+                                "allownull": true,
+                                "type": "text"
+                            }
+                        },
+                        "attachment_files": {
+                            "class": "core_external\\external_multiple_structure",
+                            "desc": "Attachments copied from the teacher material area",
+                            "required": 0,
+                            "default": [],
+                            "allownull": false,
+                            "content": {
+                                "class": "core_external\\external_value",
+                                "desc": "Relative material path; file contents never enter the response",
+                                "required": 1,
+                                "default": null,
+                                "allownull": true,
+                                "type": "raw"
+                            }
+                        },
+                        "definition_files": {
+                            "class": "core_external\\external_multiple_structure",
+                            "desc": "Embedded definition files copied from the teacher material area",
+                            "required": 0,
+                            "default": [],
+                            "allownull": false,
+                            "content": {
+                                "class": "core_external\\external_value",
+                                "desc": "Relative material path; file contents never enter the response",
+                                "required": 1,
+                                "default": null,
+                                "allownull": true,
+                                "type": "raw"
+                            }
+                        },
+                        "location": {
+                            "class": "core_external\\external_value",
+                            "desc": "\"store\" (default, the teacher's grown material store, read-only) or \"workbench\" (Coursepilot's own staging area)",
+                            "required": 0,
+                            "default": "store",
+                            "allownull": true,
+                            "type": "alpha"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Glossary course module ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "entries": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "index": {
+                            "class": "core_external\\external_value",
+                            "desc": "Zero-based input index",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "success": {
+                            "class": "core_external\\external_value",
+                            "desc": "Whether this entry was created",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        },
+                        "entryid": {
+                            "class": "core_external\\external_value",
+                            "desc": "New entry ID; 0 on failure",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "approved": {
+                            "class": "core_external\\external_value",
+                            "desc": "Actual approval state; false on failure",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        },
+                        "errorcode": {
+                            "class": "core_external\\external_value",
+                            "desc": "Moodle error code; empty on success",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "alphanumext"
+                        },
+                        "message": {
+                            "class": "core_external\\external_value",
+                            "desc": "Error reason; empty on success",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        }
+                    }
+                }
+            },
+            "gap_notice": {
+                "class": "core_external\\external_value",
+                "desc": "History limitations: glossary entries are not versioned or restorable",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

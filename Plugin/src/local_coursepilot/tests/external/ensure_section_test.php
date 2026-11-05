@@ -134,4 +134,16 @@ final class ensure_section_test extends \advanced_testcase {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
     }
+
+    public function test_negative_section_number_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        try {
+            $this->ensure($course->id, -1);
+            $this->fail('A negative section number must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidsectionnum', $e->errorcode);
+        }
+    }
 }

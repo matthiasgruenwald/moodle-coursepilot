@@ -1,0 +1,393 @@
+{
+    "modname": "forum",
+    "fields": [
+        {
+            "name": "name",
+            "type": "PARAM_TEXT",
+            "meaning": "Display name of the forum.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:42-46 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)"
+            }
+        },
+        {
+            "name": "intro",
+            "type": "PARAM_RAW",
+            "meaning": "Description text (intro) of the forum.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/db/install.xml (forum.intro, NOTNULL without DB default)"
+            }
+        },
+        {
+            "name": "introformat",
+            "type": "PARAM_INT",
+            "meaning": "Text format of the intro.",
+            "required": false,
+            "default_json": "\"1\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "format_text_menu()",
+                "source": "lib/weblib.php:464 (format_text_menu()); column mod/forum/db/install.xml (forum.introformat)"
+            }
+        },
+        {
+            "name": "type",
+            "type": "PARAM_ALPHA",
+            "meaning": "Forum type. \"news\" and \"social\" cannot be chosen through this catalog - they only exist on automatically created course/site forums.",
+            "required": false,
+            "default_json": "\"general\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "forum_get_forum_types()",
+                "source": "mod/forum/lib.php:5330-5336 (forum_get_forum_types()); mod/forum/mod_form.php:53-57"
+            }
+        },
+        {
+            "name": "duedate",
+            "type": "PARAM_INT",
+            "meaning": "Unix timestamp: due date, informational only (not a cut-off for posts). Creates a calendar entry (see side effects).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:61-63 (date_time_selector, optional); column mod/forum/db/install.xml (forum.duedate)"
+            }
+        },
+        {
+            "name": "cutoffdate",
+            "type": "PARAM_INT",
+            "meaning": "Unix timestamp: from here on Moodle accepts no more forum posts. 0 = no cut-off.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:65-67 (date_time_selector, optional); column mod/forum/db/install.xml (forum.cutoffdate)"
+            }
+        },
+        {
+            "name": "assessed",
+            "type": "PARAM_INT",
+            "meaning": "Aggregation type for ratings (e.g. average, sum, no rating).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "rating_manager::get_aggregate_types()",
+                "source": "rating/lib.php (class rating_manager, method get_aggregate_types()); course/moodleform_mod.php:686,719 (add_rating_settings()); column mod/forum/db/install.xml (forum.assessed)"
+            }
+        },
+        {
+            "name": "scale",
+            "type": "PARAM_INT",
+            "meaning": "Rating scale: positive = maximum points, negative = ID of a custom scale. Only effective when assessed != 0.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "course/moodleform_mod.php:743-746 (add_rating_settings(), modgrade element; scale value = grademax/scaleid); column mod/forum/db/install.xml (forum.scale)"
+            }
+        },
+        {
+            "name": "grade_forum",
+            "type": "PARAM_INT",
+            "meaning": "Overall grade of the forum (independent of the post rating via \"assessed\"): positive = maximum points, negative = ID of a custom scale, 0 = no grading.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:211,225-274 (add_forum_grade_settings(), modgrade element); column mod/forum/db/install.xml (forum.grade_forum)"
+            }
+        },
+        {
+            "name": "grade_forum_notify",
+            "type": "PARAM_BOOL",
+            "meaning": "Notify learners about new grades by default.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:305-307 (selectyesno); column mod/forum/db/install.xml (forum.grade_forum_notify)"
+            }
+        },
+        {
+            "name": "maxbytes",
+            "type": "PARAM_INT",
+            "meaning": "Maximum file size per attachment in bytes. The selectable values are a subset depending on course and server limits, not a fixed list.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "get_max_upload_sizes()",
+                "source": "lib/moodlelib.php:6453 (get_max_upload_sizes()); mod/forum/mod_form.php:72-76; column mod/forum/db/install.xml (forum.maxbytes)"
+            }
+        },
+        {
+            "name": "maxattachments",
+            "type": "PARAM_INT",
+            "meaning": "Maximum number of attachments per post.",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:94-96; column mod/forum/db/install.xml (forum.maxattachments)"
+            }
+        },
+        {
+            "name": "displaywordcount",
+            "type": "PARAM_BOOL",
+            "meaning": "Show word count per post.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:98-100 (selectyesno); column mod/forum/db/install.xml (forum.displaywordcount)"
+            }
+        },
+        {
+            "name": "forcesubscribe",
+            "type": "PARAM_INT",
+            "meaning": "Subscription mode. Value 2 (auto-subscription) immediately subscribes all potential course participants on creation or switching - see side effects.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "forum_get_subscriptionmode_options()",
+                "source": "mod/forum/lib.php:39-42 (FORUM_CHOOSESUBSCRIBE/FORCESUBSCRIBE/INITIALSUBSCRIBE/DISALLOWSUBSCRIBE), :4870-4876 (forum_get_subscriptionmode_options()); mod/forum/mod_form.php:105-106"
+            }
+        },
+        {
+            "name": "trackingtype",
+            "type": "PARAM_INT",
+            "meaning": "Read tracking: off, optional (learners decide) or forced.",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "[0,1,2]",
+                "source_callable": null,
+                "source": "mod/forum/lib.php:47-58 (FORUM_TRACKING_OFF/OPTIONAL/FORCED); mod/forum/mod_form.php:118-127"
+            }
+        },
+        {
+            "name": "rsstype",
+            "type": "PARAM_INT",
+            "meaning": "RSS feed content: off, discussions or posts. Only selectable if RSS is enabled server-wide.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:131-139"
+            }
+        },
+        {
+            "name": "rssarticles",
+            "type": "PARAM_INT",
+            "meaning": "Number of entries in the RSS feed. Only effective when rsstype != 0.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:156-160 (hideIf rsstype eq 0)"
+            }
+        },
+        {
+            "name": "warnafter",
+            "type": "PARAM_INT",
+            "meaning": "Show a warning from this number of posts within the block period. 0 = off. Only effective when blockperiod != 0.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:201-206 (hideIf blockperiod eq 0); column mod/forum/db/install.xml (forum.warnafter)"
+            }
+        },
+        {
+            "name": "blockafter",
+            "type": "PARAM_INT",
+            "meaning": "Block further posts from this number of posts within the block period. 0 = off. Only effective when blockperiod != 0.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:194-199 (hideIf blockperiod eq 0); column mod/forum/db/install.xml (forum.blockafter)"
+            }
+        },
+        {
+            "name": "blockperiod",
+            "type": "PARAM_INT",
+            "meaning": "Period in seconds over which warnafter/blockafter are counted. 0 = blocking disabled.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:181-192"
+            }
+        },
+        {
+            "name": "completiondiscussions",
+            "type": "PARAM_INT",
+            "meaning": "Number of started discussions from which the activity counts as completed. 0 = no condition.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:405-420; column mod/forum/db/install.xml (forum.completiondiscussions)"
+            }
+        },
+        {
+            "name": "completionreplies",
+            "type": "PARAM_INT",
+            "meaning": "Number of replies from which the activity counts as completed. 0 = no condition.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:405-425; column mod/forum/db/install.xml (forum.completionreplies)"
+            }
+        },
+        {
+            "name": "completionposts",
+            "type": "PARAM_INT",
+            "meaning": "Number of posts (discussions + replies combined) from which the activity counts as completed. 0 = no condition.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:405-435; column mod/forum/db/install.xml (forum.completionposts)"
+            }
+        },
+        {
+            "name": "lockdiscussionafter",
+            "type": "PARAM_INT",
+            "meaning": "Period in seconds after which a discussion without a new reply is locked automatically. 0 = off. Not effective for type=single.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php:164-178 (disabledIf type eq single); column mod/forum/db/install.xml (forum.lockdiscussionafter)"
+            }
+        },
+        {
+            "name": "showimmediately",
+            "type": "PARAM_BOOL",
+            "meaning": "In a Q&A forum, show other answers immediately after posting instead of waiting for the editing period.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/forum/mod_form.php (showimmediately)"
+            }
+        }
+    ],
+    "write_options": {
+        "date_order_rules": [
+            {
+                "reference": "duedate",
+                "field": "cutoffdate",
+                "mode": "not_before"
+            }
+        ],
+        "side_effect_triggers": {
+            "forcesubscribe": {
+                "2": "All course participants have been subscribed to this forum."
+            }
+        }
+    },
+    "common_field_names": [
+        "name",
+        "intro",
+        "introformat",
+        "type",
+        "duedate",
+        "cutoffdate",
+        "assessed",
+        "scale",
+        "grade_forum",
+        "grade_forum_notify",
+        "maxbytes",
+        "maxattachments",
+        "displaywordcount",
+        "forcesubscribe",
+        "trackingtype",
+        "rsstype",
+        "rssarticles",
+        "warnafter",
+        "blockafter",
+        "blockperiod",
+        "completiondiscussions",
+        "completionreplies",
+        "completionposts",
+        "lockdiscussionafter",
+        "showimmediately"
+    ],
+    "pseudofields": [
+        {
+            "name": "ratingtime",
+            "type": "PARAM_BOOL",
+            "meaning": "Checkbox: restrict the rating period. Only when set does Moodle take over \"assesstimestart\"/\"assesstimefinish\" - otherwise forum_update_instance() resets both to 0. Not a DB field.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "course/moodleform_mod.php:751-760 (add_rating_settings()); mod/forum/lib.php:178-181 (forum_update_instance(): `if (empty($forum->ratingtime) or empty($forum->assessed))`)"
+            }
+        }
+    ],
+    "blocklist": [
+        "assesstimestart",
+        "assesstimefinish"
+    ],
+    "combination_rules": [
+        "\"cutoffdate\" must not be before \"duedate\" (mod/forum/mod_form.php: validation()).",
+        "\"type\"=\"single\" cannot be combined with \"groupmode\"=SEPARATEGROUPS (mod/forum/mod_form.php: validation()); \"groupmode\" is in the shared block."
+    ],
+    "side_effects": [
+        "\"forcesubscribe\"=2 (auto-subscription) immediately subscribes all potential course participants on creation or when switching to this value - from then on they receive emails about every new post (mod/forum/lib.php: forum_instance_created(), forum_update_instance()).",
+        "\"duedate\" creates or updates a calendar entry (mod/forum/locallib.php: forum_update_calendar()); \"cutoffdate\" does not."
+    ],
+    "bundles": [],
+    "write_route": null,
+    "checked_constants": [
+        "FORUM_INITIALSUBSCRIBE"
+    ],
+    "learner_locks": {
+        "cutoffdate": {
+            "op": "nonzero",
+            "reason": "After the cut-off date learners can no longer post unless the teacher moves the date."
+        },
+        "lockdiscussionafter": {
+            "op": "nonzero",
+            "reason": "Inactive discussions get locked; only the teacher can unlock them."
+        },
+        "blockafter": {
+            "op": "nonzero",
+            "reason": "Learners are blocked from posting once they reach the post threshold in the period."
+        }
+    },
+    "reviewed_up_to_major": 500,
+    "grade_origin": "teacher"
+}

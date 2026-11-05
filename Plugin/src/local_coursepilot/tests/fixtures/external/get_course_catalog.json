@@ -1,0 +1,475 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "courseid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "sectionnum",
+                "type": "int",
+                "default": -1
+            },
+            {
+                "name": "modname",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "detail",
+                "type": "string",
+                "default": "compact"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "sectionnum": {
+                "class": "core_external\\external_value",
+                "desc": "Section number (0-based, -1 = all sections)",
+                "required": 0,
+                "default": -1,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Optional module type filter: page, label, assign, quiz, url",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "text"
+            },
+            "detail": {
+                "class": "core_external\\external_value",
+                "desc": "compact or full content detail",
+                "required": 0,
+                "default": "compact",
+                "allownull": true,
+                "type": "alpha"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "source": {
+                "class": "core_external\\external_value",
+                "desc": "Source marker, always \"aus Moodle gelesen\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "filters": {
+                "class": "core_external\\external_single_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "keys": {
+                    "sectionnum": {
+                        "class": "core_external\\external_value",
+                        "desc": "Applied section filter",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "int"
+                    },
+                    "modname": {
+                        "class": "core_external\\external_value",
+                        "desc": "Applied module type filter",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "text"
+                    },
+                    "detail": {
+                        "class": "core_external\\external_value",
+                        "desc": "Applied detail mode",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "text"
+                    }
+                }
+            },
+            "sections": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Course sections",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "id": {
+                            "class": "core_external\\external_value",
+                            "desc": "Section DB ID",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "sectionnum": {
+                            "class": "core_external\\external_value",
+                            "desc": "Section number",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Section name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "summary": {
+                            "class": "core_external\\external_single_structure",
+                            "desc": "",
+                            "required": 1,
+                            "default": null,
+                            "allownull": false,
+                            "keys": {
+                                "html": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "Full HTML content when detail=full, otherwise empty",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "raw"
+                                },
+                                "preview": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "Compact teacher-readable content preview",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "text"
+                                },
+                                "truncated": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "True when compact mode omitted full HTML",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "bool"
+                                }
+                            }
+                        },
+                        "visible": {
+                            "class": "core_external\\external_value",
+                            "desc": "Visible flag",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "availability": {
+                            "class": "core_external\\external_value",
+                            "desc": "Moodle availability JSON, if set",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "modules": {
+                            "class": "core_external\\external_multiple_structure",
+                            "desc": "Course modules in this section",
+                            "required": 1,
+                            "default": null,
+                            "allownull": false,
+                            "content": {
+                                "class": "core_external\\external_single_structure",
+                                "desc": "",
+                                "required": 1,
+                                "default": null,
+                                "allownull": false,
+                                "keys": {
+                                    "cmid": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Course module ID",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "int"
+                                    },
+                                    "modname": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Module type",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "text"
+                                    },
+                                    "name": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Module display name",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "text"
+                                    },
+                                    "visible": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Visible flag",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "int"
+                                    },
+                                    "visibleoncoursepage": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Stealth: 1 = shown on course page, 0 = stealth",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "int"
+                                    },
+                                    "coursepagevisibility": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "shown | stealth",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "text"
+                                    },
+                                    "availability_status": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "shown | stealth | hidden",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "text"
+                                    },
+                                    "groupmode": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Group mode: 0 = none, 1 = separate, 2 = visible",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "int"
+                                    },
+                                    "completion": {
+                                        "class": "core_external\\external_single_structure",
+                                        "desc": "",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": false,
+                                        "keys": {
+                                            "completion": {
+                                                "class": "core_external\\external_value",
+                                                "desc": "Completion mode",
+                                                "required": 1,
+                                                "default": null,
+                                                "allownull": true,
+                                                "type": "int"
+                                            },
+                                            "completionview": {
+                                                "class": "core_external\\external_value",
+                                                "desc": "Require view completion flag",
+                                                "required": 1,
+                                                "default": null,
+                                                "allownull": true,
+                                                "type": "int"
+                                            },
+                                            "completionpassgrade": {
+                                                "class": "core_external\\external_value",
+                                                "desc": "Require pass grade completion flag",
+                                                "required": 1,
+                                                "default": null,
+                                                "allownull": true,
+                                                "type": "int"
+                                            }
+                                        }
+                                    },
+                                    "availability": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Moodle availability JSON, if set",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "raw"
+                                    },
+                                    "content": {
+                                        "class": "core_external\\external_single_structure",
+                                        "desc": "",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": false,
+                                        "keys": {
+                                            "html": {
+                                                "class": "core_external\\external_value",
+                                                "desc": "Full HTML content when detail=full, otherwise empty",
+                                                "required": 1,
+                                                "default": null,
+                                                "allownull": true,
+                                                "type": "raw"
+                                            },
+                                            "preview": {
+                                                "class": "core_external\\external_value",
+                                                "desc": "Compact teacher-readable content preview",
+                                                "required": 1,
+                                                "default": null,
+                                                "allownull": true,
+                                                "type": "text"
+                                            },
+                                            "truncated": {
+                                                "class": "core_external\\external_value",
+                                                "desc": "True when compact mode omitted full HTML",
+                                                "required": 1,
+                                                "default": null,
+                                                "allownull": true,
+                                                "type": "bool"
+                                            }
+                                        }
+                                    },
+                                    "settings": {
+                                        "class": "core_external\\external_multiple_structure",
+                                        "desc": "Module settings as name/value pairs",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": false,
+                                        "content": {
+                                            "class": "core_external\\external_single_structure",
+                                            "desc": "",
+                                            "required": 1,
+                                            "default": null,
+                                            "allownull": false,
+                                            "keys": {
+                                                "name": {
+                                                    "class": "core_external\\external_value",
+                                                    "desc": "Setting name",
+                                                    "required": 1,
+                                                    "default": null,
+                                                    "allownull": true,
+                                                    "type": "text"
+                                                },
+                                                "value": {
+                                                    "class": "core_external\\external_value",
+                                                    "desc": "Setting value",
+                                                    "required": 1,
+                                                    "default": null,
+                                                    "allownull": true,
+                                                    "type": "raw"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "quizslots": {
+                                        "class": "core_external\\external_multiple_structure",
+                                        "desc": "Quiz/test question structure",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": false,
+                                        "content": {
+                                            "class": "core_external\\external_single_structure",
+                                            "desc": "",
+                                            "required": 1,
+                                            "default": null,
+                                            "allownull": false,
+                                            "keys": {
+                                                "slot": {
+                                                    "class": "core_external\\external_value",
+                                                    "desc": "Quiz slot number",
+                                                    "required": 1,
+                                                    "default": null,
+                                                    "allownull": true,
+                                                    "type": "int"
+                                                },
+                                                "categoryid": {
+                                                    "class": "core_external\\external_value",
+                                                    "desc": "Question category ID for moodle_get_question",
+                                                    "required": 1,
+                                                    "default": null,
+                                                    "allownull": true,
+                                                    "type": "int"
+                                                },
+                                                "questionbankentryid": {
+                                                    "class": "core_external\\external_value",
+                                                    "desc": "Question bank entry ID",
+                                                    "required": 1,
+                                                    "default": null,
+                                                    "allownull": true,
+                                                    "type": "int"
+                                                },
+                                                "questionid": {
+                                                    "class": "core_external\\external_value",
+                                                    "desc": "Latest question ID",
+                                                    "required": 1,
+                                                    "default": null,
+                                                    "allownull": true,
+                                                    "type": "int"
+                                                },
+                                                "version": {
+                                                    "class": "core_external\\external_value",
+                                                    "desc": "Latest question version",
+                                                    "required": 1,
+                                                    "default": null,
+                                                    "allownull": true,
+                                                    "type": "int"
+                                                },
+                                                "questionname": {
+                                                    "class": "core_external\\external_value",
+                                                    "desc": "Question name",
+                                                    "required": 1,
+                                                    "default": null,
+                                                    "allownull": true,
+                                                    "type": "text"
+                                                },
+                                                "qtype": {
+                                                    "class": "core_external\\external_value",
+                                                    "desc": "Question type",
+                                                    "required": 1,
+                                                    "default": null,
+                                                    "allownull": true,
+                                                    "type": "text"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

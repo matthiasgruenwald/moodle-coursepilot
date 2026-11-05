@@ -46,9 +46,11 @@ final class field_test extends \advanced_testcase {
 
         $adapters = [
             'classes/external/create_module.php' => 'write_target::create_activity(',
-            'classes/external/update_module_settings.php' => 'write_target::update_activity(',
-            'classes/external/create_quiz.php' => 'write_target::create(',
-            'classes/external/update_quiz_settings.php' => 'write_target::update(',
+            'classes/external/update_module_settings.php' => 'module_settings::write(',
+            'classes/catalog/module_settings.php' => 'write_target::update_activity(',
+            'classes/external/create_quiz.php' => 'quiz_write::create(',
+            'classes/external/update_quiz_settings.php' => 'quiz_write::update(',
+            'classes/catalog/quiz_write.php' => 'write_target::update(',
             'classes/catalog/quiz_write_bridge.php' => null,
         ];
         foreach ($adapters as $file => $entry) {
@@ -88,5 +90,17 @@ final class field_test extends \advanced_testcase {
         }
 
         $this->assertCount(1, array_unique($messages));
+    }
+
+    /**
+     * Defaults and value lists are delivered as readable JSON: neither umlauts nor slashes are escaped.
+     */
+    public function test_json_fields_keep_unicode_and_slashes_unescaped(): void {
+        $field = new field('name', PARAM_TEXT, 'Bedeutung', false, 'Größe/Ä', ['a/b', 'ü'], null, 'lib.php:1');
+
+        $array = $field->to_array();
+
+        $this->assertSame('"Größe/Ä"', $array['default_json']);
+        $this->assertSame('["a/b","ü"]', $array['value_range']['values_json']);
     }
 }

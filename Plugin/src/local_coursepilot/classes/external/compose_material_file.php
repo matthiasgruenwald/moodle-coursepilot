@@ -93,7 +93,7 @@ class compose_material_file extends external_api {
         if (!in_array($params['arrangement'], ['vertical', 'horizontal'], true)) {
             throw new \moodle_exception('materialcompositioninvalidarrangement', 'local_coursepilot');
         }
-        [$directory, $filename] = material_files::resolve_writable_file($params['targetpath']);
+        [, $filename] = material_files::resolve_writable_file($params['targetpath']);
         if (strtolower(pathinfo($filename, PATHINFO_EXTENSION)) !== 'png') {
             throw new \moodle_exception(
                 'materialcompositionoutputunsupported',
@@ -104,18 +104,20 @@ class compose_material_file extends external_api {
         }
         [$inputs, $sources] = self::read_sources($params['parts']);
         [$content, $width, $height] = material_composition::render($inputs, $params['arrangement']);
-        $existing = material_files::read_content($directory, $filename);
-        $warning = material_files::write($directory, $filename, $content, $existing['size'] ?? 0, [
-            'source' => serialize((object) ['original' => implode('; ', $sources)]),
-        ]);
-        $path = material_files::relative_file($directory, $filename);
+        $written = material_area::write(
+            $params['targetpath'],
+            $content,
+            source: serialize((object) ['original' => implode('; ', $sources)])
+        );
+        $warning = $written['warning'];
+        $path = $written['path'];
         $message = get_string(
             'materialcompositionwritten',
             'local_coursepilot',
             (object) ['path' => $path, 'width' => $width, 'height' => $height]
         );
         return [
-            'path' => $path, 'sources' => $sources, 'created' => $existing === null,
+            'path' => $path, 'sources' => $sources, 'created' => $written['created'],
             'width' => $width, 'height' => $height, 'size' => strlen($content),
             'contenthash' => sha1($content), 'message' => $message . ($warning === null ? '' : ' ' . $warning),
         ];

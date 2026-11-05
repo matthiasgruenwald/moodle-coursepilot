@@ -44,6 +44,18 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(\local_coursepilot\catalog\field::class)]
 final class drift_check_test extends \advanced_testcase {
     /**
+     * A real column omitted by the catalog remains visible as an upgrade/release violation.
+     */
+    public function test_unreleased_existing_column_is_not_silently_known(): void {
+        $this->resetAfterTest();
+        $violations = drift_check::check_catalog('label', drift_check_test_catalog_without_intro::class);
+        $this->assertStringContainsString(
+            'new in the table, unknown to the catalog: intro',
+            implode(' ', $violations)
+        );
+    }
+
+    /**
      * All nine registered types satisfy the same contracts already tested
      * individually, here through the runtime entry point.
      */
@@ -579,5 +591,28 @@ final class drift_check_test_fake_catalog_with_bad_read_field extends drift_chec
      */
     public static function write_options(): array {
         return ['read_fields' => ['am_katalog_vorbei_gelesen']];
+    }
+}
+
+/**
+ * Valid catalog input that deliberately has not released the native intro column.
+ */
+final class drift_check_test_catalog_without_intro extends drift_check_test_fake_catalog_with_bad_constant {
+    /**
+     * Release the format column while leaving the intro content unclassified.
+     *
+     * @return field[]
+     */
+    public static function fields(): array {
+        return [new field('introformat', 'PARAM_INT', 'Format', false, 0, null, null, 'test')];
+    }
+
+    /**
+     * This scenario has no constant drift.
+     *
+     * @return string[]
+     */
+    public static function checked_constants(): array {
+        return [];
     }
 }
