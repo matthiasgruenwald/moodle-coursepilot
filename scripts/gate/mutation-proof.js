@@ -34,7 +34,8 @@ final class mutation_gate_fixture_test extends \\basic_testcase {
 
 function run(name) {
   const r = command('node', [path.join(root, 'scripts/gate/gate.js'), 'mutation'], {
-    GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_FAILURE_LOG: path.join(evidence, 'failures.log'),
+    // The proof's single fixture file must not be split away by a CI matrix part.
+    GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_MUTATION_PART: '', GATE_FAILURE_LOG: path.join(evidence, 'failures.log'),
   });
   fs.writeFileSync(path.join(evidence, `${name}.log`), r.stdout + r.stderr);
   fs.writeFileSync(path.join(evidence, `${name}.exit`), `${r.status}\n`);
