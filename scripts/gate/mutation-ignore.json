@@ -7693,5 +7693,325 @@
     "sourceHashes": {
       "Plugin/src/local_coursepilot/classes/instance_check.php": "f3c031157b81fb02b33009508dcbab5e891effcb6e9c9b7cf6e70346752b5e39"
     }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 114,
+    "mutator": "UnwrapArrayIntersectKey",
+    "hash": "7a7fc4a1fec8071cf3447e1e28f967ffaae8a3b5af56dd0fabc2fd0a5dcdbb3a",
+    "reason": "locked_fields() is consumed only by changed_fields(), which skips every field missing from $patch. validate_patch() has already limited $patch to allowed_fields($modname), a subset of FIELDS, so intersecting FIELDS with allowed_fields() removes no field that changed_fields() could report."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 137,
+    "mutator": "FalseValue",
+    "hash": "f356805909e01d41e8f20e786e4858a7ba8a9b29ca4c0f37c9802ac1cf36e9b4",
+    "reason": "The 4th parameter of get_coursemodule_from_id() is $sectionnum; true only adds the \"sectionnum\" column to the returned object. Neither write() nor get_moduleinfo_data()/update_moduleinfo() (course/modlib.php) read $cm->sectionnum."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 146,
+    "mutator": "CastString",
+    "hash": "f30d9923c773fe7d3f1fd8d78abf44baadbbfe9a1c5c95f7a16a088bba3d1e91",
+    "reason": "$cm->modname is the string column course_modules/modules.name returned by get_coursemodule_from_id(); casting a string to string is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 155,
+    "mutator": "CastInt",
+    "hash": "0b9c9481c91f089f51cfad74558073b93dfa18e05452f31b838f8f708e6d149e",
+    "reason": "get_course() selects the course by id; the numeric string $cm->course and its integer value select the same row and return the same record. The file has no strict_types declaration, so PHP coerces scalar arguments and return values exactly like the cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 171,
+    "mutator": "CastInt",
+    "hash": "228ed589a9e7fd279a31f57ccbcc4e47d955f6a42ccab207df171923b6027946",
+    "reason": "$cmid is declared int in write(); casting an int to int is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 172,
+    "mutator": "CastString",
+    "hash": "c392df8218a0c9129418d5ca9901b3a3ae968c488e8010bfb525f425e27e1bdf",
+    "reason": "$cm->modname is already a string (see line 146); the cast is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 180,
+    "mutator": "CastInt",
+    "hash": "463848998aa07071580db868d9fb5b19b4471266f5c5e05556df742673e6d7fb",
+    "reason": "grade_completion_locks() declares int $instanceid and the file has no strict_types, so the numeric string $cm->instance is coerced to the same int the cast produces."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 197,
+    "mutator": "CastInt",
+    "hash": "a25ace42f6ab17f08e50b914cb8d8f19513270f5d23da6bd4d11d5574e9baef0",
+    "reason": "$cmid is declared int in write(); casting an int to int is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 198,
+    "mutator": "CastString",
+    "hash": "1a6adafd3c4e95e5d8e1b9fdadc7a8eabeb065d0d275a3e3804102d67e303ead",
+    "reason": "$cm->modname is already a string (see line 146); the cast is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 225,
+    "mutator": "DecrementInteger",
+    "hash": "690366eb5e2bb15e9cfe449d29917fc6e066a1d71326ef2d76f10cca057e2a96",
+    "reason": "read() (module_state::read_settings) returns every completion field of the activity, so the \"?? default\" branch is never taken: the fields asked for here are completion, completionusegrade and completionpassgrade, all present in $before.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 225,
+    "mutator": "IncrementInteger",
+    "hash": "02affbe330e53cb33ecaccf23c530bbaf119ae077b358f1ba31d0e1d642659c3",
+    "reason": "read() (module_state::read_settings) returns every completion field of the activity, so the \"?? default\" branch is never taken: the fields asked for here are completion, completionusegrade and completionpassgrade, all present in $before.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 225,
+    "mutator": "CastInt",
+    "hash": "69e21274c173c4198a0277a9fcf31b9ebe8839f76ac2de9083c4bde1726d8551",
+    "reason": "The closure declares \": int\" and the file has no strict_types, so the returned numeric string is coerced to the same int the cast produces."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 241,
+    "mutator": "UnwrapArrayValues",
+    "hash": "2eeee9ed9b15ca0a288b4ad53e5ef439083da52135f8bd3610d021655ab4647a",
+    "reason": "array_filter() only removes entries; array_map() keeps the keys, so the result differs from the list only by its keys. Its sole consumer learner_locks::assert_confirmed() applies array_values(), array_column() and implode(), none of which depend on the keys."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 257,
+    "mutator": "CastInt",
+    "hash": "5185e6d7123733850df4f5fb468a0974b1684996960e1b7ea0eca62602a9ded1",
+    "reason": "$DB->count_records() returns an int; casting an int to int is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 319,
+    "mutator": "DecrementInteger",
+    "hash": "40b40bd33d440cee828a181b0218b24d1a1c8fa7e09dd06b4693246e831ddd5c",
+    "reason": "The default only matters if it exceeds $limit, and $limit > 0 is required. A default of -1 never exceeds a positive limit, so the guard result is unchanged. completionminattempts is writable for quiz only, so without it in the patch the default 0 stands for \"not set\"."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 319,
+    "mutator": "IncrementInteger",
+    "hash": "199d3e10a37dcc4be88dfc9253f3b603c49063b675ec98c32cc7b7ff6a1de3d8",
+    "reason": "The default only matters if it exceeds $limit, and $limit > 0 is required, so $limit >= 1. A default of 1 never exceeds a limit of at least 1 (\"1 > 1\" is false), so the guard result is unchanged."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 320,
+    "mutator": "DecrementInteger",
+    "hash": "a34a6e1c7fa340972accade74ccbb752d196f8e1068bcf8e699b055d4af9be67",
+    "reason": "read() (module_state::read_settings) returns every completion field of the activity, so the \"?? default\" branch is never taken: for quiz the key \"attempts\" is present; for other types the patch cannot contain completionminattempts, so $minimum is 0 and \"0 > $limit\" is false for any limit, including -1.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 320,
+    "mutator": "IncrementInteger",
+    "hash": "1b748907b134f05ac68f632012945c146d61986d93cb2579d726b97ae16f028f",
+    "reason": "read() (module_state::read_settings) returns every completion field of the activity, so the \"?? default\" branch is never taken: for quiz the key \"attempts\" is present; for other types the patch cannot contain completionminattempts, so $minimum is 0 and \"0 > 1\" is false.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 320,
+    "mutator": "CastInt",
+    "hash": "d1816a567aa466e9f39e70390bf1ef0c3bc9cb64c0b3f5e1a7ac2b8a702dcd29",
+    "reason": "$limit is used only in \"$limit > 0\" and \"$minimum > $limit\"; PHP compares the numeric string from the decoded settings exactly like the int."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 378,
+    "mutator": "DecrementInteger",
+    "hash": "9cf976d7887b5bfc33b5156a99f2c1f0726afa397e043a025fcc639fa50493d2",
+    "reason": "read() (module_state::read_settings) returns every completion field of the activity, so the \"?? default\" branch is never taken: every name passed to changed_fields() (the locked fields of the activity type and completionexpected) is a key of $before.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 378,
+    "mutator": "IncrementInteger",
+    "hash": "248a3950f9a62d59ecc35370f314aa22eb2cd4e2a015483ac8a8708e6735bf07",
+    "reason": "read() (module_state::read_settings) returns every completion field of the activity, so the \"?? default\" branch is never taken: every name passed to changed_fields() (the locked fields of the activity type and completionexpected) is a key of $before.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 378,
+    "mutator": "CastInt",
+    "hash": "2b1e575544aa8a487500df006a5276f6e8674344b340c75e43f9381439f232be",
+    "reason": "Every patch value reaching changed_fields() has passed validate_value(), which requires is_int(); the cast is the identity. The $before side is cast the same way."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 411,
+    "mutator": "CastInt",
+    "hash": "fd6be32aa1b1398a72ebe839f657310d420978f0c0e93b708b61a4ba672eca18",
+    "reason": "The values only feed the module info written through update_moduleinfo() and the comparisons \"? 0 : null\" and \"> 0\". A patch value is already an int (validate_value), a stored value is a numeric string whose truthiness and numeric comparison equal the int, and the database write stores the same number."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 411,
+    "mutator": "DecrementInteger",
+    "hash": "dbece28f263c2fd0b79ea3969cef6da79b22446ec77b4c4133f94cf7b6d21d5b",
+    "reason": "read() (module_state::read_settings) returns every completion field of the activity, so the \"?? default\" branch is never taken: every allowed field of the activity type is a key of $before.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 411,
+    "mutator": "IncrementInteger",
+    "hash": "f7a918e3a850a19e1adbebad708cd2783ff2bbe935e74aa4d23fdd228f254df9",
+    "reason": "read() (module_state::read_settings) returns every completion field of the activity, so the \"?? default\" branch is never taken: every allowed field of the activity type is a key of $before.",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/module_state.php": "734ab373351918d01ce3af5c74d6ceea191aa1282900927d2fc423d343f6afd0",
+      "Plugin/src/local_coursepilot/classes/catalog/quiz.php": "f6e5e08d1992d49ed810f9ef36a2da83198ac24c81881d2738ec2eccdcb60538"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 411,
+    "mutator": "CastInt",
+    "hash": "460a32761642162b61688ff67082bbc53be786c7ed0e84305092264a014e9d9f",
+    "reason": "The values only feed the module info written through update_moduleinfo() and the comparisons \"? 0 : null\" and \"> 0\". A patch value is already an int (validate_value), a stored value is a numeric string whose truthiness and numeric comparison equal the int, and the database write stores the same number."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 417,
+    "mutator": "Ternary",
+    "hash": "f878785f99490f7ec7e7bc6f3781837ba6b0da8b5ca18e2d43dd3acc0b063239",
+    "reason": "update_moduleinfo() (course/modlib.php) normalises the value before storing it. Mutant with a grade requirement: null is assigned, but modlib treats an unset (null) completiongradeitemnumber together with a truthy completionusegrade as \"use the first grade item\" and sets 0 (modlib.php lines 498-502). Mutant without a grade requirement: 0 is assigned, but the later update branch stores null whenever completionusegrade is empty (lines 660-664). Stored result is therefore identical to the original in both cases (checked on course_modules.completiongradeitemnumber in completion_settings_674_contract_test, where the mutant survives)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 420,
+    "mutator": "GreaterThan",
+    "hash": "51a3eb68c7bc6423244524e496d52623f5f1837ab1b936179825fb897ae440aa",
+    "reason": "completionminattemptsenabled only controls whether core keeps the attempts count; for a count of 0 the stored completionminattempts is 0 either way, so the stored state is unchanged."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 424,
+    "mutator": "IncrementInteger",
+    "hash": "d1a9331cb2c237ea2386784811a6ec498480a5619d91aae512b03b3f738e10fc",
+    "reason": "course/modlib.php only tests !empty($moduleinfo->completionunlocked); 1 and 2 are both truthy and the value is never stored."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 439,
+    "mutator": "UnwrapArrayUnique",
+    "hash": "f1809155e8c90733c88ea31fb53e55356a34c70af0af942788e8a7cb6e3f51cd",
+    "reason": "$fields is array_merge(locked changes, completionexpected change); completionexpected is not a locked field, so the list never contains a duplicate and array_unique() removes nothing."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 445,
+    "mutator": "BitwiseOr",
+    "hash": "9f0557d1939c2d2ed8c193681f04136f2edbdb1d4137d93989110265714af21d",
+    "reason": "json_encode() receives only int-like completion values (or null); no unicode character or slash can occur, so the flags do not change the output."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/completion_settings.php",
+    "line": 446,
+    "mutator": "BitwiseOr",
+    "hash": "d78fc533715a2a17f05ac5688feaac93de165e56aeaf7576f66ae3563727aaad",
+    "reason": "json_encode() receives only int-like completion values (or null); no unicode character or slash can occur, so the flags do not change the output."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_settings.php",
+    "line": 66,
+    "mutator": "FalseValue",
+    "hash": "bcfd997931fd2fb3bb22ccf5883ed0d2af4022fa2cafcf1b99ae006b4613cdca",
+    "reason": "The 4th parameter of get_coursemodule_from_id() is $sectionnum; true only adds the \"sectionnum\" column, which write_pseudofield_draft() and the modlib functions it calls do not read."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_settings.php",
+    "line": 67,
+    "mutator": "CastInt",
+    "hash": "887ad47a34ba4384b804dd640649d4d4c5d8a7cda6a5dae4a9bb4f3bb0b059ad",
+    "reason": "get_course() selects the course by id; the numeric string $cm->course and its integer value select the same row and return the same record."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_settings.php",
+    "line": 76,
+    "mutator": "ArrayItemRemoval",
+    "hash": "4b6f9f1de55da572870b4801281c9f94f95fc8cd62e86d364716124adca64966",
+    "reason": "$fieldname is one of the file pseudofields restored from history (introattachments, files). Without it in the patch, pseudofield_carry_forward::apply() only skips steps keyed on the patch (editor content, choice options, assign plugin config ignore this field) or sets a placeholder/default for it (files = 0); the next statement assigns $moduleinfo->{$fieldname} = $draftitemid, which overwrites that value before update_moduleinfo().",
+    "sourceHashes": {
+      "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php": "2ff627d8711c9232732923edb7c0893666d6bfc595f2b53321ee619011991ef7"
+    }
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_settings.php",
+    "line": 108,
+    "mutator": "FalseValue",
+    "hash": "ea6427f81661f759ea6f82cb88d8fd2e4acd2c33925681e57c1ec3e64fe5fe0b",
+    "reason": "The 4th parameter of get_coursemodule_from_id() is $sectionnum; true only adds the \"sectionnum\" column, which write() and the catalog write target do not read."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_settings.php",
+    "line": 111,
+    "mutator": "CastString",
+    "hash": "2e488a4ec35efd2870a12006ed3fb8901d47fda9ad3d1c7da48405e8b14de960",
+    "reason": "$cm->modname is the string column returned by get_coursemodule_from_id(); casting a string to string is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_settings.php",
+    "line": 128,
+    "mutator": "CastInt",
+    "hash": "719df1e6a3c54b606932f65f42e8341d92ffe7425cd070bfeaa9edd9f7abdbc0",
+    "reason": "get_course() selects the course by id; the numeric string $cm->course and its integer value select the same row and return the same record."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_settings.php",
+    "line": 139,
+    "mutator": "CastInt",
+    "hash": "5f0c6cd4d69391cfd2ae24e38c1dfa1f30226dec5ad27f99b020f9ee1225f4d4",
+    "reason": "$cmid is declared int in write(); casting an int to int is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_settings.php",
+    "line": 280,
+    "mutator": "CastObject",
+    "hash": "4303d68ce22aeda05b06e7307f36427c35b4e9f3085f99599ca0b7cdeedf8663",
+    "reason": "Moodle core_string_manager_standard::get_string() converts an object or an associative array argument to an array before replacing {$a->name}; passing the array directly yields the same string (lib/classes/string_manager_standard.php, same argument as the reviewed question_import entry)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_settings.php",
+    "line": 306,
+    "mutator": "CastObject",
+    "hash": "0edb05777baa30141dbaded67835eef809556e582e38133d8d893af919af98ba",
+    "reason": "Moodle core_string_manager_standard::get_string() converts an object or an associative array argument to an array before replacing {$a->name}; passing the array directly yields the same string."
   }
 ]

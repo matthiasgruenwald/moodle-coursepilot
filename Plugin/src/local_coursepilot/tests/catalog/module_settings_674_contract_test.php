@@ -94,12 +94,12 @@ final class module_settings_674_contract_test extends \advanced_testcase {
     }
 
     /**
-     * Refuses a teacher who lacks either capability before the patch is looked at.
+     * Refuses a teacher who lacks either capability before the patch is parsed.
      *
      * @param string $capability
      */
     #[DataProvider('required_capabilities')]
-    public function test_each_required_capability_is_enforced_before_the_patch_is_checked(string $capability): void {
+    public function test_each_required_capability_is_enforced_before_the_patch_is_parsed(string $capability): void {
         global $DB;
         $this->resetAfterTest();
         $cmid = $this->activity('page', $this->course_with_teacher());
@@ -108,7 +108,8 @@ final class module_settings_674_contract_test extends \advanced_testcase {
         accesslib_clear_all_caches_for_unit_testing();
 
         try {
-            module_settings::write($cmid, '{"bogus":1}');
+            // Invalid JSON proves the capability is checked before the patch is parsed.
+            module_settings::write($cmid, 'not json');
             $this->fail('The missing capability must stop the write.');
         } catch (\required_capability_exception $e) {
             $this->assertSame(get_capability_string($capability), $e->a);
@@ -194,6 +195,18 @@ final class module_settings_674_contract_test extends \advanced_testcase {
                 ),
             $result['message']
         );
+    }
+
+    /**
+     * Written pseudofield values appear in the message as readable JSON.
+     */
+    public function test_the_message_shows_pseudofield_values_without_escaping_unicode_or_slashes(): void {
+        $this->resetAfterTest();
+        $cmid = $this->activity('page', $this->course_with_teacher());
+
+        $result = module_settings::write($cmid, json_encode(['page' => 'ä/b'], JSON_UNESCAPED_UNICODE));
+
+        $this->assertStringContainsString('"page" = {"text":"ä/b"', $result['message']);
     }
 
     /**
