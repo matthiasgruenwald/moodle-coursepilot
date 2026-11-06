@@ -12,6 +12,7 @@ parameters:
         - /var/www/html/public/local/coursepilot/skills
     scanFiles:
         - /var/www/html/public/question/format.php
+        - /var/www/html/public/completion/criteria/completion_criteria.php
     scanDirectories:
         - /var/www/html/public/lib
         - /var/www/html/public/mod

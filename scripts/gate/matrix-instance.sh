@@ -8,6 +8,8 @@
 #   bash scripts/gate/matrix-instance.sh purge <name>    # alles entfernen
 # Instance GATE_DIR: ${GATE_DIR:-/opt/kurspilot-gate}-m-<name>; containers kurspilot-gate-m-<name>-*.
 set -euo pipefail
+# Git hooks export GIT_DIR and friends; they would override `git -C` and aim worktree/fetch at the pushed repo.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_PREFIX
 ACTION="${1:?up|stop|purge}"; NAME="${2:?profile name}"
 MAIN="${GATE_DIR:-/opt/kurspilot-gate}"
 REPO_MOODLE="${GATE_MOODLE_REPO:-/opt/moodle}"
