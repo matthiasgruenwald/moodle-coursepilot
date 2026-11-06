@@ -257,11 +257,18 @@ final class write_target_contract_test extends \advanced_testcase {
         $DB->insert_record('grade_items', $item);
 
         $DB->set_field('grade_items', 'itemname', 'tampered', ['itemmodule' => 'assign', 'iteminstance' => $activity->id]);
+        $before = $DB->get_records('grade_items', ['itemmodule' => 'assign', 'iteminstance' => $activity->id], 'id');
 
         $e = $this->caught(fn() => $this->call('ensure_assign_grade_item', 'assign', (int) $activity->cmid));
 
         $this->assertInstanceOf(\moodle_exception::class, $e);
         $this->assertSame('assignmentgradeitemfailed', $e->errorcode);
+        $this->assertEquals(
+            $before,
+            $DB->get_records('grade_items', ['itemmodule' => 'assign', 'iteminstance' => $activity->id], 'id'),
+            'A refused repair must not touch the duplicated grade items.'
+        );
+        $this->assertDebuggingNotCalled();
         $this->assertSame(
             ['tampered', 'tampered'],
             array_values(

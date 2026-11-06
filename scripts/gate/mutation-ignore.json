@@ -8013,5 +8013,19 @@
     "mutator": "CastObject",
     "hash": "0edb05777baa30141dbaded67835eef809556e582e38133d8d893af919af98ba",
     "reason": "Moodle core_string_manager_standard::get_string() converts an object or an associative array argument to an array before replacing {$a->name}; passing the array directly yields the same string."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/module_state.php",
+    "line": 122,
+    "mutator": "CastString",
+    "hash": "33d2c8f4993c8d73744a46f7aba3e6d792a3f654652a6de2b95b2b789d8add5b",
+    "reason": "Äquivalent: $record stammt aus get_record() auf die Spalte 'name' (varchar NOT NULL). Moodle-DML liefert Textspalten immer als PHP-String, daher ist (string) ein No-Op; kein Testfall kann den Unterschied beobachten."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/catalog/pseudofield_carry_forward.php",
+    "line": 256,
+    "mutator": "CastString",
+    "hash": "0ba512dbc36ccd6a1a2b4bdd33c596f629af405a740e2da1eda5ffc644eade81",
+    "reason": "Äquivalent für null/int/float/bool/string: ?? filtert null; file_prepare_draft_area() reicht $text untypisiert an file_rewrite_pluginfile_urls() (str_replace) weiter, und str_replace liefert für diese Typen dieselbe Stringform wie (string) (im Container geprüft: 5, 1.0, 2.5, true, false, 'x' identisch). Array-Werte sind kein gültiger Vertragsfall; das Original löst dort eine Array-to-string-Warnung aus."
   }
 ]

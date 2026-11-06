@@ -45,6 +45,7 @@ final class learner_locks_contract_test extends \basic_testcase {
             'equal text' => [$equals, 'locked', true],
             'other text' => [$equals, 'open', false],
             'text compared as text' => [['op' => 'equals', 'value' => 'a'], 'A', false],
+            'empty text equals a null condition value' => [['op' => 'equals', 'value' => null], '', true],
             'true equals 1' => [$number, true, true],
             'false does not equal 1' => [$number, false, false],
             'numeric string equals number' => [$number, '1.0', true],
@@ -76,6 +77,24 @@ final class learner_locks_contract_test extends \basic_testcase {
     #[DataProvider('matching')]
     public function test_matches(array $condition, mixed $value, bool $expected): void {
         $this->assertSame($expected, learner_locks::matches($condition, $value));
+    }
+
+    /**
+     * An object value is compared by its text form.
+     */
+    public function test_a_stringable_value_compares_as_its_text(): void {
+        $value = new class {
+            /**
+             * Text form of the stand-in value.
+             *
+             * @return string
+             */
+            public function __toString(): string {
+                return 'locked';
+            }
+        };
+
+        $this->assertTrue(learner_locks::matches(['op' => 'equals', 'value' => 'locked'], $value));
     }
 
     public function test_the_confirm_parameter_describes_the_lock_rule(): void {
