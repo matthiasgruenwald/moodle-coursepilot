@@ -185,6 +185,10 @@ final class quiz_write_bridge_contract_test extends \advanced_testcase {
             $this->violation(fn() => $this->check(['a', 'b'], [0]))
         );
         $this->assertSame(
+            '"feedbackboundaries" must be between 0 and the maximum grade (10).',
+            $this->violation(fn() => $this->check(['a', 'b'], [null]))
+        );
+        $this->assertSame(
             '"feedbackboundaries" must be sorted descending.',
             $this->violation(fn() => $this->check(['a', 'b', 'c'], [5, 5]))
         );
