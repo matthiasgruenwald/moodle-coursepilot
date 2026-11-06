@@ -202,7 +202,7 @@ function runSection(section, ignores, baseline, environment, sourceHashes, asser
   const tmp = `${section.name}-tmp`;
   fs.mkdirSync(dir, { recursive: true });
   const config = {
-    source: { directories: [PLUGIN_IN_CONTAINER], excludes: ['tests', ...baseline.excluded.map(e => e.path)] },
+    source: { directories: [PLUGIN_IN_CONTAINER], excludes: mutation.infectionExcludePatterns(['tests/', ...baseline.excluded.map(e => e.path)]) },
     phpUnit: { configDir: PLUGIN_IN_CONTAINER, customPath: '/var/www/html/vendor/bin/phpunit' },
     timeout: 1800,
     bootstrap: '/var/www/reports/infection-bootstrap.php',

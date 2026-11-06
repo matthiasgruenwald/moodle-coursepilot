@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { infectionExcludePatterns } = require('../scripts/gate/mutation');
 
 const ROOT = path.resolve(__dirname, '..');
 const FILE = 'Plugin/src/local_coursepilot/classes/a.php';
@@ -38,6 +39,18 @@ function fixture() {
   });
   return { repo, write, run, report, escaped };
 }
+
+test('Infection excludes only the exact root file or declared directory', () => {
+  const patterns = infectionExcludePatterns(['settings.php', 'history.php', 'db/']);
+  const excluded = file => patterns.some(pattern => new RegExp(pattern.slice(1, -1)).test(file));
+  assert.equal(excluded('settings.php'), true);
+  assert.equal(excluded('classes/catalog/module_settings.php'), false);
+  assert.equal(excluded('classes/settings.php'), false);
+  assert.equal(excluded('history.php'), true);
+  assert.equal(excluded('classes/history/version_history.php'), false);
+  assert.equal(excluded('db/services.php'), true);
+  assert.equal(excluded('classes/db/services.php'), false);
+});
 
 test('Gate CLI blocks an escaped mutant on a changed line', () => {
   const f = fixture();
