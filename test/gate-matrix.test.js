@@ -70,3 +70,8 @@ test('gate matrix: a changed test runs on the profile instance, the instance is 
     } finally { f.done(); }
   }
 });
+
+test('matrix instance: clears the git hook environment so git -C reaches the Moodle repo', () => {
+  const script = fs.readFileSync(path.join(ROOT, 'scripts/gate/matrix-instance.sh'), 'utf8');
+  assert.match(script, /^unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE/m);
+});
