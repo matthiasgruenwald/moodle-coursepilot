@@ -8027,5 +8027,782 @@
     "mutator": "CastString",
     "hash": "0ba512dbc36ccd6a1a2b4bdd33c596f629af405a740e2da1eda5ffc644eade81",
     "reason": "Äquivalent für null/int/float/bool/string: ?? filtert null; file_prepare_draft_area() reicht $text untypisiert an file_rewrite_pluginfile_urls() (str_replace) weiter, und str_replace liefert für diese Typen dieselbe Stringform wie (string) (im Container geprüft: 5, 1.0, 2.5, true, false, 'x' identisch). Array-Werte sind kein gültiger Vertragsfall; das Original löst dort eine Array-to-string-Warnung aus."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection.php",
+    "line": 43,
+    "mutator": "FalseValue",
+    "hash": "95f2b8fb07e00d9624b0e4e443475f4114dadb38b1aac206da842583a4f8f733",
+    "reason": "out(false) vs out(true) on a moodle_url with no query parameters; moodle_url::raw_out (public/lib/classes/url.php) only uses &amp; between query parameters, so a URL without any or with a single parameter (line 43) renders identically. Line 43 builds /local/coursepilot/location_selection.php without parameters."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection.php",
+    "line": 70,
+    "mutator": "FalseValue",
+    "hash": "b26a7299c04e411f0f3bd315eb2ec3b696135996d47bae2c841e93edb0c68ec9",
+    "reason": "out(false) vs out(true) on a moodle_url with no query parameters; moodle_url::raw_out (public/lib/classes/url.php) only uses &amp; between query parameters, so a URL without any or with a single parameter (line 70) renders identically. Line 70 builds /local/coursepilot/location_selection_browse.php without parameters."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection.php",
+    "line": 73,
+    "mutator": "FalseValue",
+    "hash": "078fedc82f2b84dea65408c77ce55fe23c842ce6f8172958933d6bfc9a2594b7",
+    "reason": "out(false) vs out(true) on a moodle_url with a single query parameter; moodle_url::raw_out (public/lib/classes/url.php) only uses &amp; between query parameters, so a URL without any or with a single parameter (line 73) renders identically. Line 73 passes only contextid to /repository/manage_instances.php."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection.php",
+    "line": 153,
+    "mutator": "FalseValue",
+    "hash": "381bc1df0615f558ca619f2cb1ae444439c4b7012cee990652e1d06322a0d7fb",
+    "reason": "out(false) vs out(true) on a moodle_url with a single query parameter; moodle_url::raw_out (public/lib/classes/url.php) only uses &amp; between query parameters, so a URL without any or with a single parameter (line 153) renders identically. Line 153 passes only section to /admin/settings.php."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection.php",
+    "line": 63,
+    "mutator": "CastInt",
+    "hash": "7681be96e81f1c45756b5d0986451662343c55a5b62aed5df185ccd8fa5fbb2f",
+    "reason": "(int) on $user->id before a call to a method with an int parameter (selection::page_state/setup_state/missing_steps_text(int $userid), classes/location_selection.php). The file has no declare(strict_types=1), so the value is coerced to int by the call anyway; ids are always numeric, so removing the cast yields the identical argument and identical behavior (line 63)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection.php",
+    "line": 144,
+    "mutator": "CastInt",
+    "hash": "5ae25d4d02487e25a4d7840fac50d2315cf4e32d833bcec2e19a5363cf4bb937",
+    "reason": "(int) on $user->id before a call to a method with an int parameter (selection::page_state/setup_state/missing_steps_text(int $userid), classes/location_selection.php). The file has no declare(strict_types=1), so the value is coerced to int by the call anyway; ids are always numeric, so removing the cast yields the identical argument and identical behavior (line 144)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection.php",
+    "line": 152,
+    "mutator": "CastInt",
+    "hash": "5bcd5da34b71bf18aa5f2fe1fe2734e70aefba2f8fb3206b32dbd08db28db252",
+    "reason": "(int) on $user->id before a call to a method with an int parameter (selection::page_state/setup_state/missing_steps_text(int $userid), classes/location_selection.php). The file has no declare(strict_types=1), so the value is coerced to int by the call anyway; ids are always numeric, so removing the cast yields the identical argument and identical behavior (line 152)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection.php",
+    "line": 207,
+    "mutator": "IncrementInteger",
+    "hash": "0193a1e5816da3b298b61f007ab6fd4f12d94329c0add12dafc427331ec580f6",
+    "reason": "Missing history date defaults to 0 vs 1 before userdate(). Format strftimedaydatetime (lang/en/langconfig.php) is \"%A, %d %B %Y, %I:%M %p\" with minutes only; timestamps 0 and 1 fall into the same minute in every timezone identifier of PHP (sweep of DateTimeZone::listIdentifiers(ALL_WITH_BC) found no difference), so the output is identical (line 207)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 172,
+    "mutator": "CastInt",
+    "hash": "f807cb6cf7ccd2aaa5d3cb018cbea4844da2868928823ab09cc8efd6fd8194b9",
+    "reason": "(int) on $r->id before webdav_instance::has_supported_auth(int $instanceid) (classes/webdav/webdav_instance.php:203). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; $r->id is the numeric id string of a repository_instances row, so the coerced argument is identical."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 175,
+    "mutator": "CastString",
+    "hash": "23cca6daa7f2951f0ba8fbb39e19e2825f059c1918994954bda1ebdfaabc8000",
+    "reason": "(string) on $r->name taken from repository_instances.name (a NOT NULL char column); the DB layer already returns a string, so the cast is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 208,
+    "mutator": "CastString",
+    "hash": "9cbcf4ac6f52a5f43322fa1a53901de5a4e32a9fb69332e1755f015edadd97ce",
+    "reason": "(string) of get_config(...) ?: ''. get_config returns string|false and the ?: '' branch already maps false/empty to ''; the value is a string before trim(), so the cast is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 237,
+    "mutator": "UnwrapArrayValues",
+    "hash": "53f9a7e0810fc5730ac3d852ad874f4c6518235f2ff4d02956798fc00493f19a",
+    "reason": "array_values() before usort($folders, ...) on the next line: usort() discards the keys and assigns new consecutive ones (PHP manual), so the result is identical."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 246,
+    "mutator": "UnwrapArrayValues",
+    "hash": "2997bef36fe85f7c9434bb5ef3243e669a9f63b5fd404436aa22a239a73c8be1",
+    "reason": "array_values() before usort($names, 'strnatcasecmp') on the next line: usort() discards the keys and assigns new consecutive ones (PHP manual), so the result is identical."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 296,
+    "mutator": "CastString",
+    "hash": "1bd3a8ac5374c455df2a24dbf8f4fa1a35d40a6836bdd5644cb225ff56720aeb",
+    "reason": "(string) on $entry['name'] before preg_match(): entries come from webdav_client::propfind() whose names are strings; preg_match(string $subject) would coerce scalars identically (no strict_types). Only a non-scalar name could differ, which the client never produces."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 351,
+    "mutator": "CastString",
+    "hash": "8bd93ee81b2f680dc59930a063d8fb3af73a033dd76408284af154d6b1c1c08d",
+    "reason": "(string) on the pointer fingerprint server before personal_data_hosts::allowed(string $host) (classes/personal_data_hosts.php:39). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; the stored server is a scalar string or missing (?? '')."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 415,
+    "mutator": "FalseValue",
+    "hash": "eca9e93e053dfc808b74b29492287556572df201b06d5825346fca87a0320a9a",
+    "reason": "Not an equivalence: differs only if a shipped activity-types/*.md template file is missing from the plugin directory (then false would be written as an empty string). The three templates ship with the plugin and the result is unused; no seam to simulate a missing file."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 436,
+    "mutator": "ArrayItemRemoval",
+    "hash": "8fdcf46c1f5d8c6cb0f8969fece29e28c52a8737a59c602a15c0c8b5ccae4af0",
+    "reason": "'?? []' instead of '?? [type=>moodle]': build_target() reads $selection['type'] ?? pointer_location::MOODLE, so an empty selection and a moodle selection take the same branch and return the same default-root target."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 468,
+    "mutator": "CastInt",
+    "hash": "92b808ee2a30f521bbfbae9cedee42f617102b34bfb377da6a6186b22aa57d96",
+    "reason": "Cast on an argument of ensure_directory(int $instanceid, string $path). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; the values come from build_target(): instanceid is already int, path is the implode() string."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 468,
+    "mutator": "CastString",
+    "hash": "8730c0cea312e0f987bc9349f8a1c6061a3f29b3ea013fbc2920acf7e46da19f",
+    "reason": "Cast on an argument of ensure_directory(int $instanceid, string $path). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; the values come from build_target(): instanceid is already int, path is the implode() string."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 539,
+    "mutator": "CastString",
+    "hash": "3187deb857622f24c1da43d341bf33edea51a652cdd644a93e850f236f8ba12e",
+    "reason": "Moodle branch of old_location_has_entries(): the old Moodle path comes from current_pointer_value(), which already trims it (trim at the Moodle branch, or storage_anchor::default_root() which trims), and is a string. The directory only reaches private_files_storage_port, which re-normalises with rtrim($path, '/') . '/' (classes/private_files_storage_port.php:221), so trim/cast/trailing slash are not observable."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 539,
+    "mutator": "UnwrapTrim",
+    "hash": "46d05230d21c1878b427a9f54f10f6392b4830f2dc39db8b04c3a86bb56f31e9",
+    "reason": "Moodle branch of old_location_has_entries(): the old Moodle path comes from current_pointer_value(), which already trims it (trim at the Moodle branch, or storage_anchor::default_root() which trims), and is a string. The directory only reaches private_files_storage_port, which re-normalises with rtrim($path, '/') . '/' (classes/private_files_storage_port.php:221), so trim/cast/trailing slash are not observable."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 539,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "56bcf9409b77fcad5844927db2bc90de6333fdbcfd96ab3e9d87cfa134a66781",
+    "reason": "Moodle branch of old_location_has_entries(): the old Moodle path comes from current_pointer_value(), which already trims it (trim at the Moodle branch, or storage_anchor::default_root() which trims), and is a string. The directory only reaches private_files_storage_port, which re-normalises with rtrim($path, '/') . '/' (classes/private_files_storage_port.php:221), so trim/cast/trailing slash are not observable."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 544,
+    "mutator": "CastString",
+    "hash": "2adac236b01554340c0b0cfef09270ffc6e09bdc86867127dc81ce11fae50d9e",
+    "reason": "(string) on $old['path'] before validate_segments(string $path). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; the external old path is the relativepath string of pointer_location."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 545,
+    "mutator": "CastInt",
+    "hash": "262982b463972c7dfa159435d72241f200f74c111638ac4f1b0e4472fca3d88b",
+    "reason": "(int) on $old['instanceid'] before fetch_raw_entries(int ...). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; the value comes from current_pointer_value() where it is already an int."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 592,
+    "mutator": "CastString",
+    "hash": "3afef9ee1ed8a87dce2e3ba91352d53febd7c173bb2df8660e819bd8b1998ca5",
+    "reason": "(string) on pointer_location::$path (public readonly ?string) for a Moodle location, where it is always set; the property is already a string, so trim() receives the same value."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 596,
+    "mutator": "CastInt",
+    "hash": "ba69b497b4fd82321444da862b8b9b876702d747852d50f17d72bfc1031d0ced",
+    "reason": "(int) on pointer_location::$instanceid, a public readonly ?int property that is always set for external locations; the value is already an int."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 597,
+    "mutator": "CastString",
+    "hash": "61d2e4c252a5cfdc927a68343330af970995a9cef4fe7ce16ae544a27b7a7795",
+    "reason": "(string) on pointer_location::$relativepath, a public readonly ?string that external() always sets from a string parameter; already a string."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 618,
+    "mutator": "DecrementInteger",
+    "hash": "8607492975891120e9d4e57dfc5c4ed0d71fa3554c823e6da22fd24075d4f663",
+    "reason": "Default -1 instead of 0 for a missing instanceid: both values are cast to int and rejected by the following '$instanceid <= 0' check with the same locationselectionselectioninvalid exception."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 625,
+    "mutator": "CastString",
+    "hash": "88bfb39aca4b1297793b7b9b13e8c4ce8b3507dd135f920cb1de6ccd18c5a373",
+    "reason": "Form path is read with PARAM_RAW_TRIMMED, so it is always a string; the (string) cast differs only for array input, which is outside the contract."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 688,
+    "mutator": "CastString",
+    "hash": "f9d36e1bd3b79d9b0f5730d189310bdfb0369b1101c6911205dee46cf63d8ed9",
+    "reason": "(string) on $wanted[$target]['path'] which build_target() produced with implode(); already a string."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 689,
+    "mutator": "CastInt",
+    "hash": "01ecc3db84512166b6b245082057391a05f326d3f63eb901dcb6489364bdd1c4",
+    "reason": "(int) on $wanted[$target]['instanceid'] before fetch_raw_entries(int ...). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; build_target() already stores an int."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 702,
+    "mutator": "CastString",
+    "hash": "5620a75b03683dbb43c3e81240233b6a64ff108d18157247b70d1e8324d3c128",
+    "reason": "Moodle branch of to_pointer_location(): the result is only used for comparison_key() in assert_no_overlap(). pointer_location::normalised_path() (classes/pointer_location.php) trims '/' from the path and re-adds exactly one leading and trailing slash, so cast, trim and every slash concatenation variant yield the same key; the path is already trimmed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 702,
+    "mutator": "UnwrapTrim",
+    "hash": "9cd492a70459760733812152b0f8619575c8b7041416cfd65f9761f87389cd5f",
+    "reason": "Moodle branch of to_pointer_location(): the result is only used for comparison_key() in assert_no_overlap(). pointer_location::normalised_path() (classes/pointer_location.php) trims '/' from the path and re-adds exactly one leading and trailing slash, so cast, trim and every slash concatenation variant yield the same key; the path is already trimmed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 702,
+    "mutator": "Concat",
+    "hash": "e046fb70c1ae06eab2d33c6042ef6f1c82d9acbad7073f9ffeb90820780ff981",
+    "reason": "Moodle branch of to_pointer_location(): the result is only used for comparison_key() in assert_no_overlap(). pointer_location::normalised_path() (classes/pointer_location.php) trims '/' from the path and re-adds exactly one leading and trailing slash, so cast, trim and every slash concatenation variant yield the same key; the path is already trimmed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 702,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "e240741ebdf6d1031d07b8e5ebad30e4799da9f61daa44ec36797e62fda9e4e8",
+    "reason": "Moodle branch of to_pointer_location(): the result is only used for comparison_key() in assert_no_overlap(). pointer_location::normalised_path() (classes/pointer_location.php) trims '/' from the path and re-adds exactly one leading and trailing slash, so cast, trim and every slash concatenation variant yield the same key; the path is already trimmed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 702,
+    "mutator": "Concat",
+    "hash": "98b32015f8fd50d4dceb33f1007e4a20fe3ca0ad319e1c0437ad904e03d22b36",
+    "reason": "Moodle branch of to_pointer_location(): the result is only used for comparison_key() in assert_no_overlap(). pointer_location::normalised_path() (classes/pointer_location.php) trims '/' from the path and re-adds exactly one leading and trailing slash, so cast, trim and every slash concatenation variant yield the same key; the path is already trimmed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 702,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "cb5c3664b08bbc1f247fa8e37cbfe764e2819add8775024d50df8d2e4f88a45c",
+    "reason": "Moodle branch of to_pointer_location(): the result is only used for comparison_key() in assert_no_overlap(). pointer_location::normalised_path() (classes/pointer_location.php) trims '/' from the path and re-adds exactly one leading and trailing slash, so cast, trim and every slash concatenation variant yield the same key; the path is already trimmed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 705,
+    "mutator": "CastInt",
+    "hash": "c45d5747b7cd04227700419bac780de389b54d31de62eb83cbe63d680aec95b2",
+    "reason": "(int) on $value['instanceid'] before pointer_location::external(int ...). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; build_target() already stores an int."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 706,
+    "mutator": "CastString",
+    "hash": "e098f46bf3fca6f7b8974d0c23a37223f91620eb56d91837ee073b779c1b72bf",
+    "reason": "(string) on $value['path'] before pointer_location::external(..., string $relativepath, ...). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; build_target() already stores the implode() string."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 707,
+    "mutator": "CastArray",
+    "hash": "d0e0a4924845494894cbcb3e15815c1e1790e9fe121cc2f19ed07f5212488fa9",
+    "reason": "(array) on a fingerprint that build_target() always builds as an array (fingerprint_of() + iserv) and that pointer_location::external(array $fingerprint) requires as array; casting an array is the identity."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 743,
+    "mutator": "CastInt",
+    "hash": "dec9e9c2d48bc222103cdf561f41fa6b4bdf89aae16d4e67553a8b39a75f4e03",
+    "reason": "(int) on instanceid values in same_place(): both sides are already ints (build_target() stores int, current_pointer_value() casts from a readonly ?int), so the strict === comparison sees the same operands."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 743,
+    "mutator": "CastInt",
+    "hash": "71ffc087ed0634107f5bb7b827e77553003cb5871468a3d100fcf73b5cab190a",
+    "reason": "(int) on instanceid values in same_place(): both sides are already ints (build_target() stores int, current_pointer_value() casts from a readonly ?int), so the strict === comparison sees the same operands."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 756,
+    "mutator": "CastInt",
+    "hash": "c6ee0756f91ef24b7f43e50ac534543fff5cf5c32645f7d3d912c75f46e86007",
+    "reason": "Cast on arguments of describe_external(int $instanceid, string $path). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; instanceid is an int or numeric id from stored/selected targets and path is a string."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 756,
+    "mutator": "CastString",
+    "hash": "19f93b649668c0d5e2a4ea2ecc5c8a29bce9dea9c971abd8a3c7864a244baf1a",
+    "reason": "Cast on arguments of describe_external(int $instanceid, string $path). The file has no declare(strict_types=1), so scalar arguments are coerced to the declared parameter type by the call itself; instanceid is an int or numeric id from stored/selected targets and path is a string."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/location_selection.php",
+    "line": 777,
+    "mutator": "CastObject",
+    "hash": "bd3d793824405dc60902ce2f861b4cd78900888462249250254c252713c67cdc",
+    "reason": "(object) on the get_string $a parameter: core_string_manager_standard::get_string() converts arrays and objects (non-Stringable) with (array)$a and replaces {$a->key} identically (public/lib/classes/string_manager_standard.php, around line 366), so array and object render the same text."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection_page.php",
+    "line": 150,
+    "mutator": "DecrementInteger",
+    "hash": "4879f358c77e086039d6cde4736f1e3b98eb0d5d6f0b1fc43cd4ef5e5564ed80",
+    "reason": "Default -1 instead of 0 for a missing <target>_instanceid: location_selection::build_target() casts to int and rejects every value <= 0 with the same locationselectionselectioninvalid exception (classes/location_selection.php, '$instanceid <= 0'); for moodle type the instanceid is never read. A missing field behaves identically."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/output/location_selection_page.php",
+    "line": 152,
+    "mutator": "CastBool",
+    "hash": "43a4bb58326d0f742f7582bdb268340ac09f50283ff0faab999e41fc9cc5b580",
+    "reason": "(bool) removed around optional_param(..., PARAM_BOOL): clean_param(PARAM_BOOL) returns the strings '0' or '1' (public/lib/moodlelib.php); the only consumer, location_selection::assert_folder_handover_confirmed(), tests !empty($selection[$target]['confirmed'] ?? false), and empty('0') is true while '1' is truthy, exactly like false/true."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_quiz_settings.php",
+    "line": 94,
+    "mutator": "FalseValue",
+    "hash": "5c989a663042be12eb7da0c6372d9a1c223eb1cee27ebaaf81320674b513c561",
+    "reason": "get_coursemodule_from_id(..., $sectionnum) only adds the extra property sectionnum (cw.section AS sectionnum, public/lib/datalib.php) to the returned cm. update_quiz_settings::execute() passes the cm to quiz_write::update(), which reads only id, instance and course (classes/catalog/quiz_write.php), and to update_moduleinfo(), whose update_record('course_modules', $cm) skips properties that are not table columns (pgsql/mysqli/mariadb update_record: !isset($columns[$field]) -> continue). Moodle's quiz code that reads cm->sectionnum (mod/quiz/lib.php recent activity) is not on this path."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_backup.php",
+    "line": 85,
+    "mutator": "CastInt",
+    "hash": "5b3611d2035c4adc0bee309d1b508e5ab90e4723bab045757c89e9e05fa5333c",
+    "reason": "$USER->id reaches backup_controller untyped; the controller only stores it ($this->userid), checks it with backup_check::check_user() ($DB->get_record('user', ['id' => $userid])), concatenates it into ids/checksums and writes it to the integer column backup_controllers.userid. No consumer compares it strictly or type-checks it (backup/controller/backup_controller.class.php, backup/util/checks/backup_check.class.php, backup/util/dbops/backup_controller_dbops.class.php), and the finished controller row is wiped (controller blob empty), so the PHP type cannot be read back. A numeric string and an int behave identically."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_backup.php",
+    "line": 282,
+    "mutator": "CastInt",
+    "hash": "fa3af03682e5998922f8d49156446005df380fb495fbd7e8184ec8bcb93392e8",
+    "reason": "$USER->id reaches restore_controller untyped (restore/controller/restore_controller.class.php: stored in $this->userid, restore_check::check_user() does an id lookup). Consumers are get_userid() in restore_stepslib (has_capability($cap, $ctx, $userid): loose comparisons and array keys, DB writes to integer columns) and the course_restored event (restore_plan::execute(), only for backup::TYPE_1COURSE, never for this TYPE_1ACTIVITY restore). None distinguishes '5' from 5, and the controller row's blob is wiped after the run."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/context_area.php",
+    "line": 333,
+    "mutator": "Throw_",
+    "hash": "ba1d25b7038b791ab8c96a67a62ba085361624254d1a83727aaf8d319baab9f8",
+    "reason": "Without the rethrow, control falls through to throw pointer_writer::record_location_failure($e, ...). That method returns the unchanged $e for every errorcode outside LOCATION_FAILURE_CODES (classes/pointer_writer.php, first check), so the same exception object is thrown. storage_anchor::effective_location() can only throw pointerincomplete, pointerunreachable, pointerunreadable, materialstoreincontext (classes/context_pointer.php, storage_anchor::raw_pointer) or webdaviservfilesonly; the webdav*/contextrootmissing codes in LOCATION_FAILURE_CODES are raised in webdav_storage_port only. Unlike write() (line 218), append() has no personal-data check between catch and throw, so the outcome is identical. The twin at line 218 is killed by context_area_674_final_contract_test."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/pending_write_notice.php",
+    "line": 196,
+    "mutator": "DoWhile",
+    "hash": "17ea0bafb85d1b6c3026e00a989f8fc99e14224738fdc5267d9dee88109cc42f",
+    "reason": "Not an equivalence: while(false) differs only on a random_string(8) collision (retry branch). No injection seam; probability below 1e-10. Accepted as unobservable without a production change."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/remote_access.php",
+    "line": 43,
+    "mutator": "CastInt",
+    "hash": "1dbd60f6d32752b479ab7c383be241dc6c76fcba1a9ac308d818c7b7a59a34e3",
+    "reason": "$USER->id (numeric string) versus int flows into has_capability($cap, $ctx, $userid) (public/lib/accesslib.php: only loose '== 0', is_siteadmin()/in_array and array-key use), a '!$userid' truthiness test and a named SQL parameter. Numeric strings and ints behave identically in all of them, and is_granted() returns a bool, so the type of the local variable cannot be observed."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+    "line": 136,
+    "mutator": "CastInt",
+    "hash": "534d9999e4705a91e29c6e0a486eb7163feabda6194a90feb6f55a8bf999d84b",
+    "reason": "The temporary $USER object only feeds material_files::resolve_file() -> storage_anchor::own_context() -> \\context_user::instance($USER->id) and the Private Files lookups, none of which is strict about the id type; the plugin itself uses $USER->id uncast in the same places (storage_anchor.php:79, activity_file_trash.php:131). $ticket->userid comes from the DB as a numeric string, which behaves like the int. The returned userid is cast separately (line 143)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/check/personal_data_hosts_check.php",
+    "line": 59,
+    "mutator": "ArrayItemRemoval",
+    "hash": "7dcb4c1067485f07dae9bcbfc1ab8ab3333c26e33761e4263d9865ee63e333f0",
+    "reason": "Equivalent on Moodle 5.1 only: core\\check\\result::__construct takes three arguments and drops the action link. The existing test test_info_result_links_to_the_plugin_settings branches on method_exists(get_action_link) and kills this mutant on Moodle 5.2+."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_section.php",
+    "line": 116,
+    "mutator": "CastInt",
+    "hash": "4822cbf0968edd08130d2d568025228b25b0b12a1f1e321fd21adb13b828cb94",
+    "reason": "$patch['visible'] is already an int when this line is reached: validate_patch() (line 105, before any write) accepts the field only if in_array($value, [0, 1], true) and throws sectioninvalidvisible otherwise. (int) of an int 0/1 is a no-op, so the strict === 0 comparison gives the same result with and without the cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/gd_support.php",
+    "line": 49,
+    "mutator": "LogicalAnd",
+    "hash": "f763744ce929981c8e78086ea8d6f203101149771eb7efb0881e2c39f80cf49e",
+    "reason": "Not a strict equivalence: extension_loaded(gd) and function_exists(imagecreatefromstring) differ only if disable_functions removes imagecreatefromstring. Unobservable in the gate environment."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 43,
+    "mutator": "UnwrapArrayValues",
+    "hash": "e4a8c83d5f866d91e5c32b133bf4262828924928dbee07c0d76fdb406b25c80e",
+    "reason": "Equivalent: \\$records is only consumed by foreach in list_versions(); the rows array is rebuilt with [] appends, so the key layout of \\$records does not reach the output."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 42,
+    "mutator": "FalseValue",
+    "hash": "9659de3e04290ce7f61a4e2397b8c3ee01b19e8463672daec979c24f64e78b4b",
+    "reason": "Equivalent: 4th arg of get_coursemodule_from_id is \\$sectionnum; true only adds a LEFT JOIN sectionnum column. Code reads only \\$cm->modname; row set and values unchanged."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 54,
+    "mutator": "CastString",
+    "hash": "9434fd0e7f9dbec35c9ff0a2715ffca774f16de29baa1150c9351a541bc11d2d",
+    "reason": "Equivalent: modname is md.name (varchar), always a PHP string from the DB layer; the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 71,
+    "mutator": "FalseValue",
+    "hash": "2ab7144c2e6f73ca88b6d93cda5efaae11261ea40b9683f43f9e641689febcaa",
+    "reason": "Equivalent: same as L42 (sectionnum LEFT JOIN adds one column; only \\$cm->modname is read)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 77,
+    "mutator": "CastString",
+    "hash": "5ec1b1765d69edc0317d8484bd0102afaa17605f48defdff7b0113505bdeda68",
+    "reason": "Equivalent: modname is md.name (varchar), always a PHP string from the DB layer; the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 81,
+    "mutator": "CastInt",
+    "hash": "3e478aa6cf7d7f4bece65b1bfc17bcb37987d0b24d59c7bd7ae87b806c7771b8",
+    "reason": "Equivalent: \\$fromstate->id / \\$tostate->id are DB integer ids (Moodle returns native ints); the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 81,
+    "mutator": "CastInt",
+    "hash": "ab93d2a6811a84bfea13ab10ee2ec44185e8d688e2c6d0bb5320c214c73da844",
+    "reason": "Equivalent: \\$fromstate->id / \\$tostate->id are DB integer ids (Moodle returns native ints); the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 117,
+    "mutator": "FalseValue",
+    "hash": "6a3f720d6bf605758e5881e042383d1b056e8b38b8ab61264e56f5895e864ced",
+    "reason": "Equivalent: same as L42 (sectionnum LEFT JOIN adds one column; only \\$cm->modname is read)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 118,
+    "mutator": "CastInt",
+    "hash": "f62b789ff31d2a335212aff016b723b0455e75b82685a1fd2bf0c905a0de98d9",
+    "reason": "Equivalent: \\$record->id is a DB integer id (Moodle returns native ints); the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 118,
+    "mutator": "CastString",
+    "hash": "fef36672b5b0329e60388d8e32bb9a9a487b7f892238e60f8685d3df65525533",
+    "reason": "Equivalent: modname is md.name (varchar), always a PHP string from the DB layer; the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 194,
+    "mutator": "CastInt",
+    "hash": "fc8c8c67524464eeb2c92735a545e31e20b4c3a3c00496f27fdbd81c3ef2109f",
+    "reason": "Equivalent: \\$cmid comes from array_keys() of a cmid query (DB integers); the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 251,
+    "mutator": "CastInt",
+    "hash": "75184c19e3f561307499f477476fbfe30690875fceba4d13e0d08ac47686596d",
+    "reason": "Equivalent: version and userid are DB integer columns (Moodle returns native ints); the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 272,
+    "mutator": "CastObject",
+    "hash": "2be8357bb8efe4aa3e7018043a735b1ef809180a4d521b39e1595bbe08142181",
+    "reason": "Equivalent: get_string() normalises array \\$a to object form (string_manager_standard L366), output identical."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 276,
+    "mutator": "CastObject",
+    "hash": "b0fc9e4b72079980f13bd6bb1638c1f6cdd73b1e039ad9e3017228f02b809e43",
+    "reason": "Equivalent: get_string() normalises array \\$a to object form (string_manager_standard L366), output identical."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 304,
+    "mutator": "CastInt",
+    "hash": "b37716cdd57da62943f74ed5cea2a8a2ef1e68223e13f6d2ae808fb3333df763",
+    "reason": "Equivalent: \\$before->id / \\$after->id are DB integer ids (Moodle returns native ints); the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 304,
+    "mutator": "CastInt",
+    "hash": "d4abcc6cb05741957aefc2feb2ca8b8a454c47712530c4601a33adcfaac9b931",
+    "reason": "Equivalent: \\$before->id / \\$after->id are DB integer ids (Moodle returns native ints); the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 420,
+    "mutator": "FalseValue",
+    "hash": "5277259b27515eaa27ee1764ee4485da31c0181337f35eb28e323099dec51f6a",
+    "reason": "Equivalent: same as L42 (sectionnum LEFT JOIN adds one column; only \\$cm->modname is read)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 422,
+    "mutator": "CastString",
+    "hash": "a720bf8d00861f6dbb330a119fd6793b021a2e1f5137d95e1f0899afff5d28ec",
+    "reason": "Equivalent: modname is md.name (varchar), always a PHP string from the DB layer; the cast is a no-op."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 267,
+    "mutator": "FalseValue",
+    "hash": "ae325c84055cd2b4236c7c21ad98e016edecc09d2e9a3d06d9cd654eae4e2705",
+    "reason": "Equivalent: fixhour only affects %I (12h hour), the format '%Y-%m-%d %H:%M' contains only %H, so fixhour=true/false yields identical output."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+    "line": 363,
+    "mutator": "CastString",
+    "hash": "0e8ce9d46aeb222895ec5a03ef5cde1da8277b1b4b04429cf4619014d3cc8675",
+    "reason": "Equivalent for all values Moodle stores: availability fields are text columns from moduleinfo_json, so values are strings; int/bool/float coerce identically under non-strict sanitize(string). Differs only for array values, which Moodle never writes; pinning that undefined input would not add contract value."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/retention.php",
+    "line": 190,
+    "mutator": "CastInt",
+    "hash": "58c25b9fd07487773b08ab1875deaa024edc5921caaa0c5bb310f32ba99eefc9",
+    "reason": "Equivalent for stored values: the cursor is only written by this code as an integer. Unset config gives false, which Moodle binds as int 0 (moodle_database: is_bool -> (int)); digit strings compare identically in the id > ? SQL predicate on all supported DBs."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/history/version_writer.php",
+    "line": 335,
+    "mutator": "MethodCallRemoval",
+    "hash": "b7f535430ab544ff0d99e429ddc449b3e576eecd81f6f70dca936f0d22205af7",
+    "reason": "Accepted: the removed UPDATE 'SET id = id' only takes a row lock for READ COMMITTED concurrency with retention cleanup. Its effect is observable only with two concurrent transactions, which the single-connection PHPUnit setup cannot reproduce."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy_surface.php",
+    "line": 144,
+    "mutator": "UnwrapArrayValues",
+    "hash": "d90951c6912de167572dcdfe2303cc96c31e839e53fdfbff9b3df05815a73435",
+    "reason": "Equivalent: check() only reads array values of $allowed (array_diff compares values, foreach yields values). The mutant keeps the tool names as string keys of $allowed; array_merge keeps string keys without collision (no other string-keyed operand), so the value sequence fed to array_unique and to the violation loop is identical. Keys never reach the returned violations."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy_surface.php",
+    "line": 164,
+    "mutator": "UnwrapArrayKeys",
+    "hash": "dc7738dde54ad0c6d3bd129f6e0421075d4d8afe42ab4a0bd440bf21163c2aec",
+    "reason": "Equivalent under the allowlist invariant of test_own_surface_carries_no_forbidden_token: the mutant drops the tool names (array_keys of allowed_tools) from $checknames. Tool names are asserted free of every FORBIDDEN_TOKENS entry by that test, so omitting them cannot change the violations. Not killable without changing the constant allowlist."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy_surface.php",
+    "line": 164,
+    "mutator": "UnwrapArrayMerge",
+    "hash": "e664ef0ad958517d81b2515bd76178ec8735391d6e3aa8cbecdf267c8462e647",
+    "reason": "Equivalent under the allowlist invariant of test_own_surface_carries_no_forbidden_token: the mutant checks only $registered and drops the allowlist names (keys and values of allowed_tools). Those are asserted free of FORBIDDEN_TOKENS, so they never produce a forbidden_token violation; the registered names keep their order and the first-occurrence dedup."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 318,
+    "mutator": "FalseValue",
+    "hash": "bf7960b390e760ceb12c08a26bf31b82bfa34ce3b1b7a4defeaf42829c674670",
+    "reason": "Equivalent: the mutant only sets get_coursemodule_from_id's $sectionnum flag, which adds a LEFT JOIN on course_sections and a sectionnum column. The ->modname value and the MUST_EXIST behaviour are unchanged."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 318,
+    "mutator": "CastString",
+    "hash": "a2ba943f638e583c844252bc8cd18a47c3c2ef7a369e2302f17e2b1cea44e509",
+    "reason": "Equivalent: modname is a NOT NULL string column (MUST_EXIST guarantees a record), so the (string) cast is an identity on the value; the consumer takes string in non-strict mode."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 329,
+    "mutator": "CastInt",
+    "hash": "d38017f1d37857177ff6e1ddb2f4703a6d26b5ce34d407d082a266a202c18a78",
+    "reason": "Equivalent: $record->id is a DB integer; allowed_files(int $versionid) is called in non-strict mode (no strict_types in the file), so PHP coerces the unmodified value to int exactly as the cast did."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 434,
+    "mutator": "CastInt",
+    "hash": "951df5bd96e58abb8b790a024603d9c5613373ac2dc4b6cdd8bd71157bc7a020",
+    "reason": "Equivalent: retention::purge_cm(int $cmid) is called in non-strict mode; $context->instanceid (DB integer) is coerced to int exactly as the explicit cast did."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 481,
+    "mutator": "CastInt",
+    "hash": "08ae5e55894dcf6483a29a22a441d5f6d50404a42111c326891730f7dd3aa284",
+    "reason": "Equivalent: retention::purge_cm_for_users(int $cmid, array $userids) receives the same integer through non-strict coercion; the cast removal changes no value or type that reaches the callee."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 514,
+    "mutator": "CastInt",
+    "hash": "5152d71e1f140c2f2b860f41e3457f968badcd2b11c813758f45098ca8bc55b3",
+    "reason": "Equivalent: retention::purge_cm_for_users(int $cmid, array $userids) receives the same integer through non-strict coercion; the cast removal changes no value or type that reaches the callee."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/privacy/provider.php",
+    "line": 462,
+    "mutator": "InstanceOf_",
+    "hash": "2e43a58bcfa5cf620c8aa4cd7b215f6883ced4680dd2ec5b4dcc52f918c5b5d3",
+    "reason": "Equivalent: delete_context_files() is only called with a context_user (guards at L429, L478, L509 in provider.php). The instanceof check at L462 is therefore always true in every reachable call; replacing it with true changes no behaviour."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_file_trash.php",
+    "line": 68,
+    "mutator": "ArrayItemRemoval",
+    "hash": "d09f857bcb1e33d5398a532483836206aa8390ee005b38d7344e27a8c7a19348",
+    "reason": "Moodle filestorage create_file_from_storedfile übernimmt fehlendes contextid aus der Quelldatei (newrecord), identisch zur Angabe"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_file_trash.php",
+    "line": 69,
+    "mutator": "ArrayItem",
+    "hash": "4592447919f82ac47a4591f54a4723dc11a40410a64add396d85969d473233c8",
+    "reason": "Positionaler bool-Schlüssel 0 in filerecord; Ergebnis identisch (Insert ignoriert Property 0, Mutant überlebt alle Tests ohne DB-Fehler), Felder weiterhin gesetzt"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_file_trash.php",
+    "line": 74,
+    "mutator": "ArrayItem",
+    "hash": "70600115c342581bd4095810bba5a66ceea40fbc76cf6bf14323b368c9b2c570",
+    "reason": "Wie 45924479: filename wird als bool-Schlüssel 0 gesetzt, Dateiname via Quelle identisch; Insert ignoriert Property 0, keine Beobachtungsänderung"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_file_trash.php",
+    "line": 97,
+    "mutator": "DecrementInteger",
+    "hash": "e3a2695d892abfdb3dfa14db3cd4d01ce620d78d920e075ecbbb81b68a0ca7ef",
+    "reason": "Moodle normalise_limit_from_num: offset -1 wird zu 0 normalisiert, identisches Ergebnis"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_file_trash.php",
+    "line": 98,
+    "mutator": "DecrementInteger",
+    "hash": "548975e40784a536b8c08f3cfaa0da3c9fc5fe4294fd7aea6a1e2dcff06d480f",
+    "reason": "limitnum 0 = unbegrenzt; reset() liefert bei eindeutiger timecreated-Ordnung denselben neuesten Datensatz wie LIMIT 1 (Vorbehalt: Tie-Reihenfolge, auch im Original undefiniert)"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/activity_file_trash.php",
+    "line": 98,
+    "mutator": "IncrementInteger",
+    "hash": "c1d2ce23e4655d7daa6ea0a09c119fab04d6648e95fb556ff8ff2587e6a328b0",
+    "reason": "limitnum 2 liefert denselben ersten (neuesten) Datensatz wie LIMIT 1 bei eindeutiger timecreated-Ordnung (Vorbehalt Tie-Reihenfolge wie Original)"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 107,
+    "mutator": "MethodCallRemoval",
+    "hash": "be531bbff55dfb1b498d184737bf135374393a9d59fcaf2592f84c5cfd7eb4f9",
+    "reason": "environment-only: mod_lightboxgallery not installed in gate; not an equivalence. activity_file_supplement::apply() is a no-op for every type except lightboxgallery (empty entries return at once, validate() rejects entries for other types), and registry::kind() excludes lightboxgallery without the plugin, so create() cannot run for it in the gate. Killed where the plugin exists by xml_activity_creator_674_final_contract_test::test_create_attaches_declared_files_to_a_lightboxgallery (skips without the plugin) and activity_file_supplement_test."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 188,
+    "mutator": "CastInt",
+    "hash": "2767a73de296d854186b0681d9ca42197e3beaa344150cacb5e33d598007e76f",
+    "reason": "Only the count of $previous-walk results is used (hidden_predecessors, via walk() and array_filter on $cms[$cmid]). A numeric-string value such as \"7\" is used as array key (coerced to int 7) and as lookup key into $cms and $links, so int and numeric-string values behave identically; successor_cmid comes from $next, not $previous. No observable difference."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/connection.php",
+    "line": 488,
+    "mutator": "ArrayItemRemoval",
+    "hash": "05cda158f4027458e7de99c614ef34a9c010c959b3bee89eb4866373a6eea8bc",
+    "reason": "The mutant sets revoked=1 on all token rows instead of only revoked=0 rows. The column only ever holds 0 or 1 (every writer in classes/ sets 0 or 1, install.xml default 0), so rows with revoked=1 are rewritten to the same value and no other column is touched; $count was read from revoked=0 rows beforehand. No observable difference."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/export_default_activity.php",
+    "line": 124,
+    "mutator": "IfNegation",
+    "hash": "57282d27c4945181ffc0918909c312a6185d32648a97f5c04ee34a8bd7cffa79",
+    "reason": "The block only removes the form element named visible before exportValues(). Without the removal exportValues() adds visible/visibleoncoursepage keys, but lines 136-137 overwrite both unconditionally before the object is used, and the form object is local and discarded. Verified: the exported XML of every developed type available in the gate (book, glossary, wiki, data, workshop, lti, subsection) is identical with and without the removal (ignoring encrypted random values). Every moodleform_mod has the element, so the negated branch (removeElement on a missing element) is not reached."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/export_default_activity.php",
+    "line": 125,
+    "mutator": "MethodCallRemoval",
+    "hash": "4dbf3e2e8d3a580283326139356a8dfb3917075231dd64fdbcb0d32e0051b33e",
+    "reason": "Same as line 124: removeElement(visible) only keeps visible/visibleoncoursepage out of exportValues(); both keys are overwritten at lines 136-137 and the form is discarded. Exported XML verified identical for book, glossary, wiki, data, workshop, lti and subsection."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/export_default_activity.php",
+    "line": 131,
+    "mutator": "UnwrapArrayMerge",
+    "hash": "0f35a272ee630b9578b2f93cc566ba5888bb0bc962690eac65e60f4ec9bce613",
+    "reason": "Equivalent. Keys that exist only in prepare_new_moduleinfo_data() $data and are not exported by the unsubmitted form, measured over every installed mod type of the gate (assign, book, choice, data, feedback, folder, forum, glossary, h5pactivity, imscp, label, lesson, lti, page, quiz, resource, scorm, subsection, url, wiki, workshop; bigbluebuttonbn is disabled for courses and qbank cannot be created in section 1, so neither is exportable): visible (overwritten at L136), id (empty, never read by add_moduleinfo), groupmode, groupingid, completion, downloadcontent (add_moduleinfo defaults them to exactly the same values when unset: course/modlib.php L58-59, L479-489, L519-521; the value in $data is 0/0/0/1), _advancedgradingdata (form rendering aid, not read by add_moduleinfo) and lti subreviewurl/subreviewparams (empty, not read by lti_add_instance). The exported XML is therefore identical with and without the merge; the key-set difference itself is not exported by execute()."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/export_default_activity.php",
+    "line": 135,
+    "mutator": "AssignCoalesce",
+    "hash": "439dd8eda057aa17fb9c30b80c1f8247e53a6d4006763e3749bd7a447b9eeaa8",
+    "reason": "cmidnumber is a plain text element without default and prepare_new_moduleinfo_data() never sets it for a new activity (course/modlib.php sets cmidnumber only in get_moduleinfo_data() for existing cms, line 849), so the exported value is always null or empty; ??= and = then both end with an empty string. A non-empty default cannot be produced through the Moodle API."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 259,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "b664b871d8933b56743878446db66b8953c72d58893bcb0f67116b51e579e7e5",
+    "reason": "Dropping the closing quiz tag leaves a document without its final end tag. core xml_parser::parse() (lib/classes/xml_parser.php line 174) calls xml_parse() without the is_final flag, so expat never reports the unclosed root element; the parsed structure (xml[quiz][#][question]) is identical, and question_import only parses this string. Verified by the surviving update tests; no input can make the difference visible."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/update_mc_question.php",
+    "line": 368,
+    "mutator": "CastString",
+    "hash": "091af365749011de91747cacd1c9a9754aa7bd14660db57a8c96282033ca34c2",
+    "reason": "selectionmode is decoded from JSON (string, int, float, bool, null, list). For every value other than the strings single/multiple the strict in_array() fails both with and without the cast (a list becomes the text Array with an Array-to-string warning, never equal to a valid mode), and the same exception results. Verified for list, true and 1 values: identical result."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/webdav/webdav_client.php",
+    "line": 438,
+    "mutator": "FalseValue",
+    "hash": "65d6388b91252c8179d3a73b28c16eaabfb638ef54ddce37b64c4b8dbf668104",
+    "reason": "finfo::buffer() returns false only on an internal libmagic failure, which cannot be induced from a non-empty string with the default magic database (empty content returns before). With the mutant, a false result would be passed to mimeinfo_from_type(); that path is unreachable from a test (WEAK: defensive branch, not observable in the gate)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 266,
+    "mutator": "DecrementInteger",
+    "hash": "215041c0ea4ee6011b2ec64b933e3bdde23f49d87fa2aee2fb85884eeff388c0",
+    "reason": "environment-only: mod_lightboxgallery not installed in gate; not an equivalence. The <timemodified> rule for lightboxgallery in assert_valid() is only reachable through create()/preview_supersede() after registry::require_developed(), which refuses lightboxgallery without the plugin (registry::kind(), L96-L111). Killed where the plugin exists by xml_activity_creator_contract_test::test_a_lightboxgallery_xml_without_timemodified_is_refused_with_the_export_hint and xml_activity_creator_674_final_contract_test::test_lightboxgallery_xml_with_timemodified_passes_the_xml_check (both skip without the plugin)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 266,
+    "mutator": "Identical",
+    "hash": "6e7799b4dfc05d91f1a4844f47f4b26c372fcc6f328077f9f768df41bdb05d30",
+    "reason": "environment-only: mod_lightboxgallery not installed in gate; not an equivalence. The <timemodified> rule for lightboxgallery in assert_valid() is only reachable through create()/preview_supersede() after registry::require_developed(), which refuses lightboxgallery without the plugin (registry::kind(), L96-L111). Killed where the plugin exists by xml_activity_creator_contract_test::test_a_lightboxgallery_xml_without_timemodified_is_refused_with_the_export_hint and xml_activity_creator_674_final_contract_test::test_lightboxgallery_xml_with_timemodified_passes_the_xml_check (both skip without the plugin)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 268,
+    "mutator": "Concat",
+    "hash": "63702328c2be2d673bc21e017fe60709b1cdb82bfbf6ed92d633ec05b9ecc9b8",
+    "reason": "environment-only: mod_lightboxgallery not installed in gate; not an equivalence. The exception message of the lightboxgallery <timemodified> rule is only reachable through create()/preview_supersede() after registry::require_developed(), which refuses lightboxgallery without the plugin (registry::kind()). Killed where the plugin exists by xml_activity_creator_contract_test::test_a_lightboxgallery_xml_without_timemodified_is_refused_with_the_export_hint (skips without the plugin)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 268,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "0c8fcdb933b75bc9a7016f2f119a5c2fa733f0afc7b71403e28d61d04b09ddea",
+    "reason": "environment-only: mod_lightboxgallery not installed in gate; not an equivalence. The exception message of the lightboxgallery <timemodified> rule is only reachable through create()/preview_supersede() after registry::require_developed(), which refuses lightboxgallery without the plugin (registry::kind()). Killed where the plugin exists by xml_activity_creator_contract_test::test_a_lightboxgallery_xml_without_timemodified_is_refused_with_the_export_hint (skips without the plugin)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 268,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "3a09b86a99d743ff2351cd9b2b9d8681d7fb893d06393b8f646a3ce9e91dfc26",
+    "reason": "environment-only: mod_lightboxgallery not installed in gate; not an equivalence. The exception message of the lightboxgallery <timemodified> rule is only reachable through create()/preview_supersede() after registry::require_developed(), which refuses lightboxgallery without the plugin (registry::kind()). Killed where the plugin exists by xml_activity_creator_contract_test::test_a_lightboxgallery_xml_without_timemodified_is_refused_with_the_export_hint (skips without the plugin)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/xml_activity_creator.php",
+    "line": 268,
+    "mutator": "Throw_",
+    "hash": "54cc6a929633b0ca4b6d6ea3f90c4c6eeff1592f8c3f113a9b7ff9510852b8ba",
+    "reason": "environment-only: mod_lightboxgallery not installed in gate; not an equivalence. The exception message of the lightboxgallery <timemodified> rule is only reachable through create()/preview_supersede() after registry::require_developed(), which refuses lightboxgallery without the plugin (registry::kind()). Killed where the plugin exists by xml_activity_creator_contract_test::test_a_lightboxgallery_xml_without_timemodified_is_refused_with_the_export_hint (skips without the plugin)."
   }
 ]

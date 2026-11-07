@@ -110,6 +110,25 @@ final class location_selection_page_test extends \advanced_testcase {
         }
     }
 
+    public function test_ready_page_passes_the_editor_configuration_to_the_amd_module(): void {
+        global $USER, $PAGE;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $this->create_webdav_instance($USER);
+        $PAGE = new \moodle_page();
+        $this->assertSame(
+            \local_coursepilot\location_selection::STATE_READY,
+            \local_coursepilot\location_selection::setup_state((int) $USER->id)['state']
+        );
+
+        location_selection_page::response(false, false);
+
+        $end = $PAGE->requires->get_end_code();
+        $this->assertStringContainsString('local_coursepilot/location_selection', $end);
+        $this->assertStringContainsString('"timeoutms":' . \local_coursepilot\location_selection::BROWSE_TIMEOUT_MS, $end);
+        $this->assertStringContainsString('"browseurl"', $end);
+    }
+
     /**
      * Registers a real client and produces a valid consent request.
      *
