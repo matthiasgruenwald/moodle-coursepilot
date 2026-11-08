@@ -8,3 +8,4 @@ Diese Regel gehört in jeden Agentenbrief (Implementierer und Reviewer).
 - **Gate vor Meldung:** Ein Implementierer meldet erst, wenn `npm run gate -- fast` im Worktree Exit 0 liefert.
 - **Worktree:** Den Worktree legt der Auftraggeber selbst an; der Agent läuft ohne `isolation: worktree` im fertigen Verzeichnis (der Harness sperrt sonst `git`).
 - **Standards:** Jeder Agent liest `CODING_STANDARDS.md`, bevor er Code, Tests oder Ignore-Einträge schreibt oder reviewt.
+- **Reihenfolge:** Erst `npm run gate -- fast` grün, dann `verify`, dann committen; nach jeder weiteren Änderung `verify` wiederholen.
