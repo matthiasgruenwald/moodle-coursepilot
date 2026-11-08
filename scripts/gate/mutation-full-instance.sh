@@ -22,7 +22,10 @@ case "$ACTION" in
     # The plugin mount comes from the checkout, never from the shared main mount (foreign gate runs rsync into that one).
     [[ -d "$DIR/plugin" ]] || { rm -rf "$DIR/plugin.partial"; rsync -a "$HERE/../../Plugin/src/local_coursepilot/" "$DIR/plugin.partial/" && mv "$DIR/plugin.partial" "$DIR/plugin"; }
     for d in ci dev phpstan deptrac node java; do ln -sfn "$MAIN/$d" "$DIR/$d"; done
-    [[ -d "$DIR/reports/infection-coverage" ]] || cp -a "$MAIN/reports/infection-coverage" "$DIR/reports/"
+    # cp -a keeps mtimes, so a newer shared junit.xml (re-run gate full) replaces the stale copy.
+    if [[ ! -f "$DIR/reports/infection-coverage/junit.xml" || "$MAIN/reports/infection-coverage/junit.xml" -nt "$DIR/reports/infection-coverage/junit.xml" ]]; then
+      rm -rf "$DIR/reports/infection-coverage"; cp -a "$MAIN/reports/infection-coverage" "$DIR/reports/"
+    fi
     cp "$MAIN/reports/infection-bootstrap.php" "$DIR/reports/"
     [[ ! -f "$MAIN/reports/infection-environment.json" ]] || cp "$MAIN/reports/infection-environment.json" "$DIR/reports/"
     set -a; source "$DIR/.env"; set +a

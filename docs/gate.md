@@ -226,6 +226,10 @@ festgehaltenen Quellstand (`plugin-digest.txt`) entsprechen, sonst bricht der La
 Mount `/opt/kurspilot-gate/plugin` nicht für lange Läufe verwenden: andere `gate`-Läufe synchronisieren
 mit `rsync --delete` hinein. Eine Instanz-ID gehört genau einem Prozess: der Start räumt eigene Locks ohne Done-Marker weg. `FULL_MUTATION_DIR` verlegt das Arbeitsverzeichnis (Standard `/var/lib/afk-pipeline/673`). `... down <id>` entfernt nur den eigenen Stack.
 
+`run` bricht ab, wenn `reports/infection-coverage/junit.xml` älter ist als die neueste Datei in `Plugin/src/local_coursepilot/` (Hinweis: `npm run gate -- full`). `FULL_MUTATION_ALLOW_STALE=1` überschreibt die Prüfung bewusst.
+
+`verify <classes/datei.php> [phpunit-filter-regex]` mutiert genau eine Produktionsdatei (Vorlage: Fokuslauf aus #674). Standardfilter sind alle Plugin-Tests, Timeout 120 s. Ignores aus `mutation-ignore.json` gelten, Exit 1 bei offenen Überlebenden, sonst 0. Gleiche Frischeprüfung wie `run`. Die Datei schreibt in den gemeinsamen Mount `GATE_DIR` (Standard `/opt/kurspilot-gate`); für parallele Arbeit `GATE_DIR`/`GATE_CONTAINER` der Instanz setzen.
+
 `report <datum>` schreibt `docs/checks/673-mutationsvolllauf-<datum>-ueberlebende.md` (Überlebende je Datei)
 und `-prune.md` (Tests ohne getöteten Mutanten, Vertragstests ausgenommen). Tests werden nie gelöscht;
 der Prune-Bericht ist eine Liste für eine menschliche Entscheidung. MSI ist nur ein Trendwert ohne Schwelle.

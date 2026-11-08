@@ -2,7 +2,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, summarize, pruneCandidates, testKey } = require('../scripts/gate/mutation-full');
+const { treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale, verify } = require('../scripts/gate/mutation-full');
 
 test('sections: one per directory, large directories chunked, root files together', () => {
   const files = ['lib.php', 'db/a.php', 'classes/x.php', 'classes/catalog/a.php',
@@ -74,4 +74,33 @@ test('tree digest: content and paths count, caches and generated phpunit.xml do 
 test('coveredBy: real log format ends the filter with slash and quote, the last test keeps its name', () => {
   const log = "$ '/phpunit' '--configuration' 'c.xml' '--filter' '/foo_test\\:\\:test_a|bar_test\\:\\:test_last/' '--stop-on-failure'\n";
   assert.deepEqual(coveredTestsFromLog(log), ['bar_test::test_last', 'foo_test::test_a']);
+});
+
+test('coverage freshness: stale only when the junit report predates the newest source file', () => {
+  assert.equal(coverageIsStale(1000, 2000), true);
+  assert.equal(coverageIsStale(2000, 1000), false);
+  assert.equal(coverageIsStale(2000, 2000), false);
+});
+
+test('coverage freshness: newestMtime finds the newest file below the root, recursively', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'freshness-'));
+  try {
+    fs.mkdirSync(path.join(root, 'tests', 'sub'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'a.php'), '');
+    fs.writeFileSync(path.join(root, 'tests', 'sub', 'b_test.php'), '');
+    fs.utimesSync(path.join(root, 'a.php'), 1000, 1000);
+    fs.utimesSync(path.join(root, 'tests', 'sub', 'b_test.php'), 5000, 5000);
+    assert.equal(newestMtime(root), 5000 * 1000);
+    assert.equal(coverageIsStale(newestMtime(root) - 1, newestMtime(root)), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('verify: refuses anything that is not a production file before touching the host', async () => {
+  await assert.rejects(verify('tests/foo_test.php'), /unknown production file/);
+  await assert.rejects(verify('classes/does_not_exist.php'), /unknown production file/);
 });
