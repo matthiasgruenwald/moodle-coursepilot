@@ -8804,5 +8804,61 @@
     "mutator": "Throw_",
     "hash": "54cc6a929633b0ca4b6d6ea3f90c4c6eeff1592f8c3f113a9b7ff9510852b8ba",
     "reason": "environment-only: mod_lightboxgallery not installed in gate; not an equivalence. The exception message of the lightboxgallery <timemodified> rule is only reachable through create()/preview_supersede() after registry::require_developed(), which refuses lightboxgallery without the plugin (registry::kind()). Killed where the plugin exists by xml_activity_creator_contract_test::test_a_lightboxgallery_xml_without_timemodified_is_refused_with_the_export_hint (skips without the plugin)."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/connection.php",
+    "line": 241,
+    "mutator": "CastObject",
+    "hash": "c09d830b4674e59c9cfa977945dc103f998b0b03d78b7d0a9b298c74eb2a8c6d",
+    "reason": "moodle_database::insert_record() converts its argument with (array)$dataobject in every driver (mysqli_native_moodle_database.php:1474, pgsql :1177, sqlsrv :1138), so passing the array literal instead of (object) inserts the same row and returns the same id."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/connection.php",
+    "line": 241,
+    "mutator": "CastInt",
+    "hash": "c94a33e7f397f20f6ba680899094ab76e64e36ac46cd5c2cb16306f0de041fd0",
+    "reason": "insert_record() with returnid=true returns an int id in every driver (mysqli_native_moodle_database.php, pgsql, sqlsrv), so the (int) cast on the reassigned $connectionid changes nothing; it is equivalent only because of that driver contract, and the value only feeds the stored row and the event objectid."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/connection.php",
+    "line": 393,
+    "mutator": "CastInt",
+    "hash": "1c2716065ab32f6623e2ce0683422ce973e6686feac709298fada43cc9eea24e",
+    "reason": "Removing the (int) cast of the connection id passed to grant_active(int $id, int $userid): connection.php declares no strict_types, so a numeric string from the database is coerced to int by the typed target parameter, giving the identical int and the identical record_exists() query."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/connection.php",
+    "line": 393,
+    "mutator": "CastInt",
+    "hash": "dc827b80b2484b855e8086f0705647b1e7c49f3600928d7d87feb85fbd78b49d",
+    "reason": "Removing the (int) cast of the user id passed to grant_active(int $id, int $userid): connection.php declares no strict_types, so a numeric string from the database is coerced to int by the typed target parameter, giving the identical int and the identical record_exists() query."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/connection.php",
+    "line": 397,
+    "mutator": "CastInt",
+    "hash": "4b7603a4942d4197ff4fae63461e60d97c8c9f55d323e1c2252e1a35e410e1f0",
+    "reason": "Removing the (int) cast on the assignment to the typed property private static ?int $currentconnectionid: connection.php declares no strict_types, so a numeric string from the database is coerced to int by the typed target property, so current_connection_id() returns the identical int."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/connection.php",
+    "line": 398,
+    "mutator": "CastInt",
+    "hash": "65c648dcdc8c649395cf9f576e38b2ba1ae7d0db63e3d0f3bd662e4a46a3af9b",
+    "reason": "Removing the (int) cast on the returned user id of authenticate_access_token(): connection.php declares no strict_types, so a numeric string from the database is coerced to int by the typed target return type ?int, so every caller receives the identical int."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/connection.php",
+    "line": 408,
+    "mutator": "CastString",
+    "hash": "3ca0ae28e8325d07e99f6a97a2ab9d24084593eaea85656c557994223c8f03ad",
+    "reason": "get_config() with a plugin and a name returns either a string ((string)$forced[$name], moodlelib.php:1060, or a config_plugins database value) or false when unset (moodlelib.php:1078). (string) false is \"\", and both false and \"\" differ from \"0\", so the strict comparison gives the same result with and without the cast."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/connection.php",
+    "line": 615,
+    "mutator": "ArrayItemRemoval",
+    "hash": "9ddd9e50ebe37ca2526afa2f2bea8bd34eac940ad4055e8fae52e618de96b8fc",
+    "reason": "Probabilistic equivalence: dropping the id condition of the lock check. $marker is 32 fresh random bytes written by the preceding UPDATE only to the row with this id (and revoked = 0); another row can carry the marker only on a 256-bit collision, so statehash + revoked = 0 selects the same single row (or none) as with the id. Not a logical proof; statehash and revoked mutants of this check are killed separately."
   }
 ]
