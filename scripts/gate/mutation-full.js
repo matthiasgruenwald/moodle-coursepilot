@@ -5,6 +5,7 @@
  *   node scripts/gate/mutation-full.js plan             list sections
  *   node scripts/gate/mutation-full.js run [section]    run open sections serially (done markers and foreign locks are skipped)
  *   node scripts/gate/mutation-full.js report <date>    write the survivor and prune reports to docs/checks/
+ *   node scripts/gate/mutation-full.js verify <classes/file.php> [phpunit-filter-regex]  focused run on one file (exit 1 on open survivors)
  *
  * Reuses the gate's Infection setup (same excludes, timeout, bootstrap) and its fresh coverage
  * (`reports/infection-coverage`), but mutates whole files instead of a Git diff. One instance,
@@ -337,12 +338,59 @@ function report(date) {
   console.log(JSON.stringify({ total, seconds, prune: { A: prune.neverCovers.length, B: prune.coversNoKill.length, exempt: prune.exempt.length }, sections: infos.length }));
 }
 
-module.exports = { treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, compact, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale };
+/**
+ * Focused run on one production file (`verify <classes/x.php> [filter]`): same Infection setup as `run`,
+ * default test filter = all plugin tests. Exit 1 when a survivor is neither ignored nor fine, 0 otherwise.
+ */
+async function verify(file, filter) {
+  if (!file || !fs.existsSync(path.join(REPO, PLUGIN_REL, file)) || file.startsWith('tests/')) throw new Error(`verify: unknown production file ${file}`);
+  assertCoverageFresh();
+  await waitForHost();
+  const sync = spawnSync('bash', [path.join(REPO, 'scripts/gate/sync-plugin.sh')], { encoding: 'utf8', env: { ...process.env, GATE_DIR, GATE_REPO: REPO } });
+  if (sync.status) throw new Error(`verify: sync-plugin.sh exit ${sync.status}: ${sync.stderr}`);
+  ensurePhpunitConfig();
+  const baseline = JSON.parse(read(path.join(REPO, 'scripts/gate/baseline.json')));
+  const name = `verify-${file.replace(/[^a-z0-9]/gi, '_')}`;
+  const dir = path.join(GATE_DIR, 'reports', 'verify');
+  fs.mkdirSync(dir, { recursive: true });
+  const config = {
+    source: { directories: [PLUGIN_IN_CONTAINER], excludes: mutation.infectionExcludePatterns(['tests/', ...baseline.excluded.map(e => e.path)]) },
+    phpUnit: { configDir: PLUGIN_IN_CONTAINER, customPath: '/var/www/html/vendor/bin/phpunit' },
+    timeout: 120,
+    bootstrap: '/var/www/reports/infection-bootstrap.php',
+    logs: { json: `/var/www/reports/verify/${name}.json` },
+    tmpDir: `/var/www/reports/verify/${name}-tmp`,
+    mutators: { '@default': true },
+  };
+  fs.writeFileSync(path.join(dir, `${name}-config.json`), JSON.stringify(config, null, 2));
+  fs.rmSync(path.join(dir, `${name}.json`), { force: true });
+  const args = [`--configuration=/var/www/reports/verify/${name}-config.json`, '--threads=1', '--only-covering-test-cases', '--no-progress',
+    `--filter=${file}`, '--initial-tests-php-options=-d memory_limit=-1 -d pcov.enabled=1 -d pcov.directory=' + PLUGIN_IN_CONTAINER];
+  if (filter) args.push(`--test-framework-options=--filter=${filter}`);
+  spawnSync('docker', ['exec', '-w', PLUGIN_IN_CONTAINER, CONTAINER, 'php', '-d', 'memory_limit=-1', '/opt/dev-tools/vendor/bin/infection', ...args],
+    { stdio: ['ignore', 'ignore', 'inherit'] });
+  const out = path.join(dir, `${name}.json`);
+  if (!fs.existsSync(out)) throw new Error(`verify: no Infection report at ${out}`);
+  const report = JSON.parse(read(out));
+  const ignored = new Set(JSON.parse(read(path.join(REPO, 'scripts/gate/mutation-ignore.json')))
+    .map(e => JSON.stringify([e.file, e.line, e.mutator, e.hash])));
+  const open = [];
+  for (const g of ['escaped', 'errored', 'syntaxErrors', 'uncovered']) for (const x of report[g]) {
+    const id = mutation.identity(x.mutator);
+    if (!ignored.has(JSON.stringify([id.file, id.line, id.mutator, id.hash]))) open.push(`${g} ${id.line} ${id.mutator}`);
+  }
+  console.log(`total=${report.stats.totalMutantsCount} killed=${report.stats.killedCount} escaped=${report.stats.escapedCount} uncovered=${report.stats.notCoveredCount} open=${open.length}`);
+  if (open.length) console.log(open.join('\n'));
+  return open.length;
+}
+
+module.exports = { treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, compact, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale, verify };
 
 if (require.main === module) {
   const [cmd, arg] = process.argv.slice(2);
   if (cmd === 'plan') planSections(productionFiles()).forEach(s => console.log(`${s.name}\t${s.files.length}`));
   else if (cmd === 'run') run(arg).catch(e => { console.error(e.message); process.exit(1); });
   else if (cmd === 'report' && arg) report(arg);
-  else { console.error('usage: mutation-full.js plan | run [section] | report <date>'); process.exit(2); }
+  else if (cmd === 'verify' && arg) verify(arg, process.argv[4]).then(open => process.exit(open ? 1 : 0), e => { console.error(e.message); process.exit(2); });
+  else { console.error('usage: mutation-full.js plan | run [section] | report <date> | verify <classes/file.php> [phpunit-filter-regex]'); process.exit(2); }
 }

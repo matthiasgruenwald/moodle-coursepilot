@@ -2,7 +2,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale } = require('../scripts/gate/mutation-full');
+const { treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale, verify } = require('../scripts/gate/mutation-full');
 
 test('sections: one per directory, large directories chunked, root files together', () => {
   const files = ['lib.php', 'db/a.php', 'classes/x.php', 'classes/catalog/a.php',
@@ -98,4 +98,9 @@ test('coverage freshness: newestMtime finds the newest file below the root, recu
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('verify: refuses anything that is not a production file before touching the host', async () => {
+  await assert.rejects(verify('tests/foo_test.php'), /unknown production file/);
+  await assert.rejects(verify('classes/does_not_exist.php'), /unknown production file/);
 });
