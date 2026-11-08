@@ -8817,7 +8817,7 @@
     "line": 241,
     "mutator": "CastInt",
     "hash": "c94a33e7f397f20f6ba680899094ab76e64e36ac46cd5c2cb16306f0de041fd0",
-    "reason": "insert_record() with returnid=true already returns an int id, and the target $connectionid is the ?int parameter of issue_token_pair(), which coerces any numeric value to int under weak typing; the (int) cast changes nothing observable."
+    "reason": "insert_record() with returnid=true returns an int id in every driver (mysqli_native_moodle_database.php, pgsql, sqlsrv), so the (int) cast on the reassigned $connectionid changes nothing; it is equivalent only because of that driver contract, and the value only feeds the stored row and the event objectid."
   },
   {
     "file": "Plugin/src/local_coursepilot/classes/connection.php",
@@ -8859,6 +8859,6 @@
     "line": 615,
     "mutator": "ArrayItemRemoval",
     "hash": "9ddd9e50ebe37ca2526afa2f2bea8bd34eac940ad4055e8fae52e618de96b8fc",
-    "reason": "Dropping the id condition of the lock check: $marker is 32 fresh random bytes written by the preceding UPDATE only to the row with this id (and revoked = 0). A row other than $id can carry the marker only on a 256-bit collision, so statehash + revoked = 0 selects the same single row (or none) as with the id."
+    "reason": "Probabilistic equivalence: dropping the id condition of the lock check. $marker is 32 fresh random bytes written by the preceding UPDATE only to the row with this id (and revoked = 0); another row can carry the marker only on a 256-bit collision, so statehash + revoked = 0 selects the same single row (or none) as with the id. Not a logical proof; statehash and revoked mutants of this check are killed separately."
   }
 ]

@@ -95,6 +95,8 @@ final class oauth_tokens_674_last24_contract_test extends \advanced_testcase {
 
     /**
      * The grant lock marker is 64 hexadecimal characters.
+     *
+     * Reflection: lock_connection() is private and its marker is overwritten by the caller flow, so only a direct call observes it.
      */
     public function test_lock_marker_is_full_length(): void {
         global $DB;
@@ -162,6 +164,8 @@ final class oauth_tokens_674_last24_contract_test extends \advanced_testcase {
 
     /**
      * The download ticket claim marker is the SHA-256 of the ticket hash, a bar and 20 random characters.
+     *
+     * Reflection: claim() deletes the row at once, so only the recorded set_field_select argument shows the marker.
      */
     public function test_ticket_claim_marker_derivation(): void {
         global $DB;
