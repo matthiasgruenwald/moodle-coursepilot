@@ -101,6 +101,25 @@ auch die Laufzeit (`mcp.php`) und die Anzeige (`/local/coursepilot/surface.php`)
 Dieselbe Suite läuft zusätzlich in GitHub Actions, siehe
 [`docs/ci-native-server-mcp.md`](../ci-native-server-mcp.md).
 
+## Lange Läufe (>5 min)
+
+Läufe, die länger als die Harness-Befehlszeit dauern (Volllauf, `gate full`, Mutations-Volllauf, Shards),
+laufen als **systemd-Transienteneinheit**, nicht als Hintergrundtask der Shell. Getrackte Bash-Hintergrundtasks
+und `Monitor` sterben mit Exit 144, sobald der Harness den Turn beendet; systemd-run löst den Prozess davon.
+
+```bash
+systemd-run --unit=kurspilot-<name> --collect --working-directory=/opt/moodle-coursepilot \
+  -E HOME=/root -E PATH="$PATH" \
+  bash -c 'bash scripts/gate/<skript>.sh > /var/tmp/<name>.out 2>&1; echo $? > /var/tmp/<name>.exit'
+```
+
+- Für `git push` zusätzlich `-E GH_TOKEN="$(gh auth token)"`, sonst fehlen die Credentials in der Einheit.
+- Ausgabe und Exit-Code immer in Dateien schreiben (`<name>.out`, `<name>.exit`); die `.exit`-Datei ist das Ende.
+- Status: `systemctl is-active kurspilot-<name>`; Log: `journalctl -u kurspilot-<name>`.
+- Watchdog für hängende PHPUnit-Mutantenprozesse (Infection erzeugt sie mit `pcov`): Log-Datei im
+  Arbeitsverzeichnis prüfen; ist sie länger als 30 min nicht gewachsen, Infection-/`php`-Kindprozesse
+  beenden (`pkill -f 'infection'`) und den Lauf neu starten. Abgeschlossene Abschnitte bleiben erhalten.
+
 ## E2E-Tests (Playwright) gegen die Spike-Instanz
 
 Playwright-Specs liegen in `test/e2e/`, Config: `playwright.config.js`. Es gibt

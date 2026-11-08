@@ -64,6 +64,8 @@ npm run gate -- fast|full      # Qualitäts-Gate (Messung), siehe docs/gate.md
 
 PHPUnit läuft nur im Spike-Container, siehe `docs/agents/testing.md`; in CI zusätzlich über `.github/workflows/native-ci.yml`.
 
+Lange Läufe (>5 min) als systemd-Einheit starten: siehe `docs/agents/testing.md` („Lange Läufe“).
+
 ### Plugin-Deploy auf die Spike-Instanz (Server-MCP, `local_coursepilot`)
 
 ```bash
