@@ -104,3 +104,14 @@ test('verify: refuses anything that is not a production file before touching the
   await assert.rejects(verify('tests/foo_test.php'), /unknown production file/);
   await assert.rejects(verify('classes/does_not_exist.php'), /unknown production file/);
 });
+
+test('main instance: run and verify warn about the lock rule without FULL_MUTATION_INSTANCE, other cases stay quiet', () => {
+  const { mainInstanceWarning } = require('../scripts/gate/mutation-full');
+  const main = { GATE_DIR: '/opt/kurspilot-gate' };
+  assert.match(mainInstanceWarning('run', main), /^warn: Haupt-Instanz \/opt\/kurspilot-gate.*\.lock/);
+  assert.match(mainInstanceWarning('verify', {}), /^warn: Haupt-Instanz/);
+  assert.equal(mainInstanceWarning('run', { ...main, FULL_MUTATION_INSTANCE: 's1' }), '');
+  assert.equal(mainInstanceWarning('run', { GATE_DIR: '/opt/kurspilot-gate-s1' }), '');
+  assert.equal(mainInstanceWarning('plan', main), '');
+  assert.equal(mainInstanceWarning('report', main), '');
+});

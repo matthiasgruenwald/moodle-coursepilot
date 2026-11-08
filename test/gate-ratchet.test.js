@@ -644,6 +644,23 @@ test('pre-push: mehrere Refs, auch Loeschen plus Neuanlage, laufen ueber ein Gat
   assert.match(mixed.out, /stub matrix/);
 });
 
+test('pre-push: reine docs/- und .md-Pushes laufen ohne Gate, Code-Aenderungen nicht', () => {
+  const repo = pushRepo(1);
+  git(repo, 'push', '--no-verify', 'origin', 'HEAD:refs/heads/work');
+  write(repo, 'docs/notiz.md', 'text');
+  write(repo, 'README.md', 'text');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '--no-verify', '-qm', 'docs');
+  const docs = push(repo, 'HEAD:refs/heads/work');
+  assert.equal(docs.status, 0, docs.out);
+  assert.doesNotMatch(docs.out, /stub (matrix|full)/);
+  write(repo, 'a.txt', 'geaendert');
+  git(repo, 'commit', '-qam', 'code', '--no-verify');
+  const code = push(repo, 'HEAD:refs/heads/work');
+  assert.notEqual(code.status, 0);
+  assert.match(code.out, /stub matrix/);
+});
+
 test('pre-push: gepushter Stand muss der geprueften sein (Ref nicht HEAD, geaenderter Arbeitsbaum)', () => {
   const repo = pushRepo(0);
   git(repo, 'branch', 'other');

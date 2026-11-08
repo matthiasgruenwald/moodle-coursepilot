@@ -7,3 +7,5 @@ Diese Regel gehört in jeden Agentenbrief (Implementierer und Reviewer).
 - **Eskalation:** Hat Haiku nach einem Durchlauf weniger als die Hälfte der Aufgabe erledigt oder stockt zweimal ohne Fortschritt, geht die Restarbeit an einen neuen Sonnet-Agenten. Haiku wird nicht fortgesetzt.
 - **Gate vor Meldung:** Ein Implementierer meldet erst, wenn `npm run gate -- fast` im Worktree Exit 0 liefert.
 - **Worktree:** Den Worktree legt der Auftraggeber selbst an; der Agent läuft ohne `isolation: worktree` im fertigen Verzeichnis (der Harness sperrt sonst `git`).
+- **Standards:** Jeder Agent liest `CODING_STANDARDS.md`, bevor er Code, Tests oder Ignore-Einträge schreibt oder reviewt.
+- **Reihenfolge:** Erst `npm run gate -- fast` grün, dann `verify`, dann committen; nach jeder weiteren Änderung `verify` wiederholen.

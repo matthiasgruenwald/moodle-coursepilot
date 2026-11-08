@@ -384,10 +384,21 @@ async function verify(file, filter) {
   return open.length;
 }
 
-module.exports = { treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, compact, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale, verify };
+module.exports = { mainInstanceWarning, treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, compact, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale, verify };
+
+/** Warning for run/verify on the shared main instance; empty when another instance is named or the command is read-only. */
+function mainInstanceWarning(cmd, env = process.env) {
+  if (cmd !== 'run' && cmd !== 'verify') return '';
+  if (env.FULL_MUTATION_INSTANCE || (env.GATE_DIR || '/opt/kurspilot-gate') !== '/opt/kurspilot-gate') return '';
+  return 'warn: Haupt-Instanz /opt/kurspilot-gate ohne FULL_MUTATION_INSTANCE. Lock-Regel: Sperren liegen in '
+    + '<FULL_MUTATION_DIR>/sections/<abschnitt>.lock mit dem Instanznamen als Inhalt; fremde Sperren nie löschen. '
+    + 'Parallel nur mit eigener Instanz: FULL_MUTATION_INSTANCE=<id> GATE_DIR=/opt/kurspilot-gate-<id>.\n';
+}
 
 if (require.main === module) {
   const [cmd, arg] = process.argv.slice(2);
+  const warning = mainInstanceWarning(cmd);
+  if (warning) process.stderr.write(warning);
   if (cmd === 'plan') planSections(productionFiles()).forEach(s => console.log(`${s.name}\t${s.files.length}`));
   else if (cmd === 'run') run(arg).catch(e => { console.error(e.message); process.exit(1); });
   else if (cmd === 'report' && arg) report(arg);

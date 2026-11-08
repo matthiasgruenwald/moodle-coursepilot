@@ -120,6 +120,12 @@ systemd-run --unit=kurspilot-<name> --collect --working-directory=/opt/moodle-co
   Arbeitsverzeichnis prüfen; ist sie länger als 30 min nicht gewachsen, Infection-/`php`-Kindprozesse
   beenden (`pkill -f 'infection'`) und den Lauf neu starten. Abgeschlossene Abschnitte bleiben erhalten.
 
+Mutations-Arbeit (überlebende Mutanten töten): [`mutation-brief.md`](mutation-brief.md).
+
+**Reihenfolge bei Mutations-Arbeit:** Erst `npm run gate -- fast` grün, dann `verify`, dann committen; nach jeder weiteren Änderung `verify` wiederholen (Details: [`mutation-brief.md`](mutation-brief.md)).
+
+**Gate-Lock:** Mutations-Volllauf nur auf der Haupt-Instanz `/opt/kurspilot-gate` ohne `FULL_MUTATION_INSTANCE`, wenn kein anderer Lauf aktiv ist. Parallel läuft jeder Lauf auf eigener Instanz (`mutation-full-instance.sh up <id>`, `FULL_MUTATION_INSTANCE=<id>`). Sperren liegen als `<abschnitt>.lock` mit Instanznamen im Ausgabeordner; fremde Sperren nie löschen. `run` und `verify` warnen auf stderr, wenn sie ohne eigene Instanz laufen.
+
 ## E2E-Tests (Playwright) gegen die Spike-Instanz
 
 Playwright-Specs liegen in `test/e2e/`, Config: `playwright.config.js`. Es gibt

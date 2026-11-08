@@ -444,7 +444,7 @@ endet mit Exitcode 2, damit der Agent sie als Rückmeldung bekommt und weiterarb
 stiller `php -l`-Hook entfällt, `fast` enthält die Syntaxprüfung über moodle-cs und PHPStan.
 Das Gate prüft den Arbeitsbaum. Damit das Geprüfte der gepushte Stand ist, blockiert `pre-push`,
 wenn ein gepushter Branch nicht `HEAD` ist oder versionierte Dateien geändert sind (committen oder
-stashen). Löschen und Tags laufen ohne Gate. Der Edit-Hook ignoriert eine nicht lesbare
+stashen). Löschen und Tags laufen ohne Gate, ebenso Pushes, die gegen den Remote-Stand nur `docs/`-Dateien oder `*.md` ändern. Der Edit-Hook ignoriert eine nicht lesbare
 Hook-Eingabe (kein Edit-Ereignis) und meldet jeden Werkzeugfehler (`gate-error`) wie einen Befund
 auf stderr mit Exitcode 2.
 Hooks lassen sich mit `git commit --no-verify` übergehen; verbindlich bleibt CI.
