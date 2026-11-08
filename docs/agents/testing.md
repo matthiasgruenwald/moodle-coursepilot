@@ -120,6 +120,8 @@ systemd-run --unit=kurspilot-<name> --collect --working-directory=/opt/moodle-co
   Arbeitsverzeichnis prüfen; ist sie länger als 30 min nicht gewachsen, Infection-/`php`-Kindprozesse
   beenden (`pkill -f 'infection'`) und den Lauf neu starten. Abgeschlossene Abschnitte bleiben erhalten.
 
+Mutations-Arbeit (überlebende Mutanten töten): [`mutation-brief.md`](mutation-brief.md).
+
 ## E2E-Tests (Playwright) gegen die Spike-Instanz
 
 Playwright-Specs liegen in `test/e2e/`, Config: `playwright.config.js`. Es gibt
