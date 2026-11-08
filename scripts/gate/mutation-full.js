@@ -238,7 +238,33 @@ function runSection(section, ignores, baseline, environment, sourceHashes, asser
   console.log(`${stamp()} done ${JSON.stringify(info)}`);
 }
 
+/** Newest mtime (ms) of any file below `root`; 0 when empty. */
+function newestMtime(root) {
+  return fs.readdirSync(root, { recursive: true, withFileTypes: true })
+    .filter(e => e.isFile())
+    .reduce((max, e) => Math.max(max, fs.statSync(path.join(e.parentPath, e.name)).mtimeMs), 0);
+}
+
+/** True when the coverage report is older than the newest plugin source or test file. */
+function coverageIsStale(junitMtimeMs, newestSourceMs) {
+  return junitMtimeMs < newestSourceMs;
+}
+
+/** Refuse to mutate against coverage that predates the current sources (override: FULL_MUTATION_ALLOW_STALE=1). */
+function assertCoverageFresh() {
+  const junit = path.join(GATE_DIR, 'reports', 'infection-coverage', 'junit.xml');
+  const junitMtime = fs.existsSync(junit) ? fs.statSync(junit).mtimeMs : 0;
+  if (!coverageIsStale(junitMtime, newestMtime(path.join(REPO, PLUGIN_REL)))) return;
+  const message = `coverage ${junit} is older than the plugin sources; run \`npm run gate -- full\` first`;
+  if (process.env.FULL_MUTATION_ALLOW_STALE === '1') {
+    console.warn(`warning: ${message} (FULL_MUTATION_ALLOW_STALE=1)`);
+    return;
+  }
+  throw new Error(message);
+}
+
 async function run(only) {
+  assertCoverageFresh();
   const baseline = JSON.parse(read(path.join(REPO, 'scripts/gate/baseline.json')));
   const ignores = mutation.parseIgnores(read(path.join(REPO, 'scripts/gate/mutation-ignore.json')));
   const environment = mutation.parseEnvironment(read(path.join(GATE_DIR, 'reports', 'infection-environment.json')));
@@ -311,7 +337,7 @@ function report(date) {
   console.log(JSON.stringify({ total, seconds, prune: { A: prune.neverCovers.length, B: prune.coversNoKill.length, exempt: prune.exempt.length }, sections: infos.length }));
 }
 
-module.exports = { treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, compact, summarize, pruneCandidates, testKey };
+module.exports = { treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, compact, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale };
 
 if (require.main === module) {
   const [cmd, arg] = process.argv.slice(2);
