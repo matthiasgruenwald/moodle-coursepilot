@@ -167,3 +167,25 @@ arbeiten, bis er grün ist. `/code-review` liest auf der Standards-Achse eine ku
 - Churn reicht nur bis zur Anlage von `local_coursepilot` am 27.07.2026 zurück (Umbenennung).
 - Die Laufzeit des Mutations-Volllaufs ist geschätzt (rund 8–15 Tausend Mutanten, 1–2 Tage
   seriell, 6–12 Stunden auf vier Instanzen); der Pilotlauf ersetzt die Schätzung.
+
+## Abschluss
+
+**Status: umgesetzt.** Stand 08.11.2026, `origin/dev` d8b68c9. Das Gate (ADR 0029/0030) läuft lokal und in CI als Pflichtcheck; der einmalige Mutations-Volllauf ist ausgewertet. Details und Abschlussreview gegen die User Stories: [Mutations-Volllauf 2026-11-08](../checks/673-mutationsvolllauf-2026-11-08.md).
+
+| Wert | Baseline (05.10.2026) | Abschluss |
+|---|---|---|
+| Line-Coverage (strikt, `baseline.json`) | 82,3 % | 86,3 % (11.990 / 13.900; Nenner nach Ausschlüssen, nicht 1:1 vergleichbar) |
+| Mutation Score Indicator | nicht gemessen | 92,27 % (11.987 von 12.991, Lauf vom 8.11.; Trendwert ohne Schwelle) |
+| Offene Mutations-Überlebende | nicht gemessen | 0 (24 in PR #744 getötet oder ignoriert, nicht neu gemessen); 874 mit begründetem Ignore |
+| Schichtregel-Rückkanten | 3 | 0 (deptrac-Baseline leer) |
+
+Gemessen wurde, soweit nicht anders vermerkt, am 08.11.2026; die Coverage-Zeile stammt aus `scripts/gate/baseline.json`.
+
+**Offen als Folgearbeit:**
+
+- Issue zu `update_module_settings` auf `page`: löscht eingebettete Dateien.
+- Issue zu `discard_failed` in `export_default_activity` / `add_moduleinfo`.
+- Abstimmung der gemeinsamen Coding Standards (security-checks Issue #2).
+- 95-%-Zielbild (US 13): 86,3 % erreicht, ungedeckter Rest je Stelle noch nicht berichtet.
+- Arbeitsliste aus dem Volllauf: 76 ungedeckte Mutanten (42 davon Lightbox, Umgebung), 150 „getötet“ nur durch eine PHPUnit-Warnung, 25 Prozessabbrüche in `connection.php`.
+- Korrektur in `docs/gate.md`: MSI im Trend-Artefakt.
