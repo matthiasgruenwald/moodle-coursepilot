@@ -1,0 +1,44 @@
+[
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 123,
+    "mutator": "Throw_",
+    "hash": "92ea3175afbe80507cca05f7ef143ff850891409f888435d025941d77f5cd4df",
+    "reason": "get_question.php:123: Not an equivalence for the string itself, but the branch is unreachable: $latest is read for an entry id that entry_id_from_questionid() or entry_id_from_name() found only through an existing question_versions row, so the no-version query cannot come back empty without a concurrent deletion between the two statements; no test can reach it deterministically."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "Concat",
+    "hash": "c14dac67818379e9570cae0fec85313319fc7a0add7b0dadaaa448255c81f632",
+    "reason": "get_question.php:128: Not an equivalence for the string itself, but the branch is unreachable: $latest is read for an entry id that entry_id_from_questionid() or entry_id_from_name() found only through an existing question_versions row, so the no-version query cannot come back empty without a concurrent deletion between the two statements; no test can reach it deterministically."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "Concat",
+    "hash": "2a042b39467e9cb1a045c9b7427cf71fa3e857ad5a787d47ebe19c5c85a0e3d3",
+    "reason": "get_question.php:128: Not an equivalence for the string itself, but the branch is unreachable: $latest is read for an entry id that entry_id_from_questionid() or entry_id_from_name() found only through an existing question_versions row, so the no-version query cannot come back empty without a concurrent deletion between the two statements; no test can reach it deterministically."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "a4d67c28a28eaab1cc280a0beda564cac1a63a9d59ca2c99b0c0614552bfbefd",
+    "reason": "get_question.php:128: Not an equivalence for the string itself, but the branch is unreachable: $latest is read for an entry id that entry_id_from_questionid() or entry_id_from_name() found only through an existing question_versions row, so the no-version query cannot come back empty without a concurrent deletion between the two statements; no test can reach it deterministically."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "e36faae75cdd81dcb8bf6d79430eb5b46e6753f0d5c1b9eb0eed3f27f3b30231",
+    "reason": "get_question.php:128: Not an equivalence for the string itself, but the branch is unreachable: $latest is read for an entry id that entry_id_from_questionid() or entry_id_from_name() found only through an existing question_versions row, so the no-version query cannot come back empty without a concurrent deletion between the two statements; no test can reach it deterministically."
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/get_question.php",
+    "line": 128,
+    "mutator": "ConcatOperandRemoval",
+    "hash": "4a1594094300052275413f26c31c57c147040ffb6cb49518d3ae53e9285fb36d",
+    "reason": "get_question.php:128: Not an equivalence for the string itself, but the branch is unreachable: $latest is read for an entry id that entry_id_from_questionid() or entry_id_from_name() found only through an existing question_versions row, so the no-version query cannot come back empty without a concurrent deletion between the two statements; no test can reach it deterministically."
+  }
+]
