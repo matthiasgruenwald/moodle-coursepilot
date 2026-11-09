@@ -84,6 +84,7 @@ final class question_import_673_contract_test extends \advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $category = $generator->create_question_category();
         $context = \context::instance_by_id($category->contextid);
+        // Reflection: reparse() only gets an empty result from hand-made XML, the public import cannot produce one.
         $reparse = new \ReflectionMethod(question_import::class, 'reparse');
         // The core reader warns about the missing question element before it returns nothing.
         set_error_handler(static fn(): bool => true, E_WARNING);
