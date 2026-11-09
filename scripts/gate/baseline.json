@@ -1,8 +1,8 @@
 {
   "armedAt": "67c2026a1593a9832fd8efb545d8243906d525ca",
   "coverage": {
-    "covered": 11990,
-    "statements": 13900
+    "covered": 13912,
+    "statements": 14037
   },
   "excluded": [
     {

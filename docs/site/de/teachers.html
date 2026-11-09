@@ -88,27 +88,27 @@
     <p class="note warning">Ob ChatGPT Coursepilot auch <strong>schreiben</strong> lässt oder nur lesen, legt OpenAI je nach Tarif und Oberfläche fest und hat es schon geändert. Klappt das Lesen, aber nicht das Anlegen im Kurs, prüf auch die Werkzeugfreigabe und die Fehlermeldung: Moodle-Rechte oder ein Pluginfehler können ebenfalls die Ursache sein. Claude ist eine Alternative.</p>
     <ol class="steps">
       <li>Öffne in ChatGPT <em>Plugins</em>. Falls die Funktion in deinem Konto fehlt, prüf mit der Workspace-Verwaltung die Freigabe für eigene MCP-Verbindungen.</li>
-      <li>Wähle das Plus-Symbol und <em>Benutzerdefinierten MCP-Server erstellen</em> (<em>Create custom MCP server</em>).</li>
+      <li>Wähle <em>Hinzufügen</em> und <em>Benutzerdefinierten MCP-Server erstellen</em> (<em>Create custom MCP server</em>).</li>
       <li>Trag als Name <code>Coursepilot</code>, deine Anschlussadresse und als Anmeldung <em>OAuth</em> ein. Bestätige den Risikohinweis und wähle <em>Als Plugin erstellen</em> (<em>Create as a plugin</em>).</li>
       <li>Die Moodle-Seite „Coursepilot verbinden“ öffnet sich: Melde dich an und wähle <em>Verbindung erlauben</em>.</li>
       <li>Installiere das angelegte Plugin. Öffne einen neuen Chat, tippe <code>@</code> und wähle Coursepilot aus. Die Menübezeichnungen können je nach Oberfläche abweichen.</li>
     </ol>
-    <p>Prüf bei einer Schreibaktion die angezeigten Werkzeugargumente und gib die Aktion ausdrücklich frei. Ob dein Plus-Konto Coursepilot tatsächlich schreiben lässt, muss mit einem Test im eigenen Kurs bestätigt werden.</p>
+    <p>Prüf bei einer Schreibaktion die angezeigten Werkzeugargumente und gib die Aktion ausdrücklich frei. Am 06.10.2026 wurde das Anlegen und Rücklesen einer Moodle-Seite mit ChatGPT Plus in der iOS-App erfolgreich geprüft. Prüfe die Schreibfunktion auch in deinem eigenen Kurs; Kontofreigaben und Oberflächen können sich unterscheiden.</p>
     <figure class="screenshot">
-      <div class="placeholder">Screenshot folgt</div>
+      <img src="../assets/img/codex-2.png" alt="Weboberfläche: Plugins mit Hinzufügen und Benutzerdefinierten MCP-Server erstellen" loading="lazy">
       <figcaption>ChatGPT: Plugins öffnen und einen eigenen MCP-Server anlegen.</figcaption>
     </figure>
     <figure class="screenshot">
-      <div class="placeholder">Screenshot folgt</div>
-      <figcaption>ChatGPT: eigenen Connector mit Anschlussadresse und OAuth anlegen.</figcaption>
+      <img src="../assets/img/codex-3.png" class="narrow" alt="Weboberfläche: MCP-Server mit Name, Server-URL, OAuth und Als Plugin erstellen" loading="lazy">
+      <figcaption>ChatGPT: eigenen Connector mit Anschlussadresse und OAuth anlegen. Verwende deine eigene Moodle-Adresse.</figcaption>
     </figure>
 
     <h2 id="codex">Coursepilot in Codex einbinden</h2>
-    <p>Die Bilder zeigen die Einrichtung in der ChatGPT-Desktop-App im Codex-Modus; Kommandozeile und Editor-Erweiterung teilen dieselbe Einstellung (<code>~/.codex/config.toml</code>).</p>
+    <p>Die Bilder wurden auf der Webseite im Codex-Modus aufgenommen. Die Plugin-Dialoge sind auch im ChatGPT-Abschnitt abgebildet. Verwende deine eigene Moodle-Anschlussadresse statt der Beispielinstanz im Bild. Für Codex-Kommandozeile und Editor-Erweiterung gilt dieselbe Konfiguration (<code>~/.codex/config.toml</code>).</p>
     <ol class="steps">
       <li>Wechsle oben links von <em>ChatGPT</em> zu <em>Codex</em> und öffne <em>Plugins</em>.
         <figure class="screenshot">
-          <img src="../assets/img/codex-1.png" class="narrow" alt="ChatGPT-Desktop-App mit Auswahl Codex und dem Eintrag Plugins" loading="lazy">
+          <img src="../assets/img/codex-1.png" class="narrow" alt="Weboberfläche mit Auswahl Codex und dem Eintrag Plugins" loading="lazy">
           <figcaption>Codex: oben links „Codex“ wählen, dann „Plugins“.</figcaption>
         </figure>
       </li>
@@ -131,7 +131,7 @@
         </figure>
       </li>
     </ol>
-    <p><strong>Kommandozeile</strong> statt App:</p>
+    <p><strong>Kommandozeile</strong>:</p>
     <div class="prompt"><pre><code>codex mcp add coursepilot --url https://&lt;moodle-adresse&gt;/local/coursepilot/mcp.php
 codex mcp login coursepilot</code></pre></div>
     <p>Der zweite Befehl öffnet den Browser mit der Moodle-Seite „Coursepilot verbinden“.</p>

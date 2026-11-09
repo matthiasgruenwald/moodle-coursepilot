@@ -113,6 +113,30 @@ final class oauth_tokens_674_last24_contract_test extends \advanced_testcase {
     }
 
     /**
+     * The grant lock is bound to the grant id: a foreign active grant carrying the same marker does not lend it.
+     *
+     * The marker is fixed with the existing random_bytes() override; the revoked grant is the rotation target.
+     */
+    public function test_grant_lock_is_bound_to_its_grant_id(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $tokens = $this->exchange((int) $user->id);
+        $grantid = (int) $DB->get_field('local_coursepilot_oauth_token', 'connectionid', ['userid' => $user->id], MUST_EXIST);
+        $marker = str_repeat("\xab", 32);
+        $DB->insert_record('local_coursepilot_oauth_grant', (object) [
+            'userid' => (int) $user->id, 'clientid' => 'other', 'revoked' => 0,
+            'statehash' => bin2hex($marker), 'timecreated' => time(),
+        ]);
+        $DB->set_field('local_coursepilot_oauth_grant', 'revoked', 1, ['id' => $grantid]);
+
+        native_override::$bytes[32] = $marker;
+        $rotated = connection::rotate_refresh_token($tokens['refresh_token'], 'client');
+
+        $this->assertNull($rotated);
+    }
+
+    /**
      * A revoked access token is refused while its grant is still active.
      */
     public function test_revoked_access_token_is_refused_with_an_active_grant(): void {

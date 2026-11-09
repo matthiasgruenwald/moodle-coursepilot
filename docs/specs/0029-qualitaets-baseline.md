@@ -170,22 +170,30 @@ arbeiten, bis er grün ist. `/code-review` liest auf der Standards-Achse eine ku
 
 ## Abschluss
 
-**Status: umgesetzt.** Stand 08.11.2026, `origin/dev` d8b68c9. Das Gate (ADR 0029/0030) läuft lokal und in CI als Pflichtcheck; der einmalige Mutations-Volllauf ist ausgewertet. Details und Abschlussreview gegen die User Stories: [Mutations-Volllauf 2026-11-08](../checks/673-mutationsvolllauf-2026-11-08.md).
+**Technisch abgenommen am 09.11.2026.** Das frische Full-Gate besteht mit
+3303 Tests / 164291 Assertions und 99,11 % strikter Coverage (13912/14037).
+Die Coverage-Ratsche ist auf diese gemessenen Zähler angehoben; Ausschlüsse und
+`armedAt` bleiben unverändert. Die letzten 24 Mutanten sind mit 22 echten
+Assertion-Kills und zwei begründeten Cast-Ignores abgeschlossen. Der testbare
+probabilistische Ignore für `connection.php:615` ist durch einen öffentlichen
+Token-Rotationstest ersetzt.
 
-| Wert | Baseline (05.10.2026) | Abschluss |
-|---|---|---|
-| Line-Coverage (strikt, `baseline.json`) | 82,3 % | 86,3 % (11.990 / 13.900; Nenner nach Ausschlüssen, nicht 1:1 vergleichbar) |
-| Mutation Score Indicator | nicht gemessen | 92,27 % (11.987 von 12.991, Lauf vom 8.11.; Trendwert ohne Schwelle) |
-| Offene Mutations-Überlebende | nicht gemessen | 0 (24 in PR #744 getötet oder ignoriert, nicht neu gemessen); 874 mit begründetem Ignore |
-| Schichtregel-Rückkanten | 3 | 0 (deptrac-Baseline leer) |
+Kanonischer [Abnahmebericht mit Vorher/Nachher-Tabelle und Story-Abgleich](../release/spec-0029-abnahme-2026-11-09.md).
+Details: [Mutationsnachweis #674](../checks/674-abschluss-2026-11-09.md),
+[Full-Gate und Baseline #752](../checks/752-coverage-baseline-2026-11-09.md),
+[HITL-Entscheidung #675](../checks/675-prune-entscheidung-2026-11-09.md),
+[Abschlussreviews](../checks/spec-0029-abschlussreview-2026-11-09.md).
 
-Gemessen wurde, soweit nicht anders vermerkt, am 08.11.2026; die Coverage-Zeile stammt aus `scripts/gate/baseline.json`.
+Der MSI von 92,27 % bleibt der historische Volllaufwert vom 08.11.; er ist kein
+neu gemessener Gesamtwert nach den Einzelverifies. Die Architekturprüfung mit
+Matthias ist in #658 belegt; A5 enthält die Prozessregel vor dem nächsten Feature.
 
-**Offen als Folgearbeit:**
+**Begründet offene Folgearbeit:** #753 (vollständige Kill-Matrix nach #752,
+Vertragstests ausgenommen, weiteres Pruning nur nach genauer neuer Freigabe),
+#714 (temporäre Typisierungsschulden), #715 (separate Main-Release-Abnahme).
+#746/#747 sind eigenständige bekannte Produktfehler. 42 Lightbox-Mutanten bleiben
+eine dokumentierte Grenze der Umgebung ohne optionales Plugin. Keine weitere
+Testlöschung und kein Release/Deployment sind mit diesem Abschluss freigegeben.
 
-- Issue zu `update_module_settings` auf `page`: löscht eingebettete Dateien.
-- Issue zu `discard_failed` in `export_default_activity` / `add_moduleinfo`.
-- Abstimmung der gemeinsamen Coding Standards (security-checks Issue #2).
-- Arbeitsliste aus dem Volllauf: abgearbeitet, siehe [Nachtrag 9.11.](../checks/673-nachtrag-2026-11-09.md); offen bleiben nur die 42 Lightbox-Mutanten (Umgebung, `mod_lightboxgallery` fehlt im Gate-Container).
-- 95-%-Zielbild (US 13): laut Clover erreicht (98,96 %), aber `scripts/gate/baseline.json` ist veraltet (86,3 %); Baseline nach frischem `gate full` anheben, siehe [US-Review](../checks/673-us-review-2026-11-09.md) und Folge-Issue.
-- US 22/26/37 nur teilweise belegt (PHPStan-Baseline 220 Einträge, #714; keine Hotspot-Automatik), siehe US-Review.
+CI und Integration werden im Abschluss-PR und #676 dokumentiert; die offenen
+Abschluss-Tickets werden nach erfolgreicher Integration geschlossen.

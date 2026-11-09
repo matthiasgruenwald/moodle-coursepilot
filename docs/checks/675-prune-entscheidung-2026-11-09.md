@@ -31,7 +31,9 @@ Die Initialisierung, Aufrufe und Assertions ihrer Körper sind unverändert.
 Historische Prune-Berichte behalten die damals gemessenen Methodennamen.
 
 Lokale Vergleichsbelege: `/tmp/spec0029-675-proof/` mit den vier ursprünglichen
-Methoden und `comparison.json`. SHA-256 der Körper nach Entfernen von
+Methoden und `comparison.json`; dauerhaft zusätzlich unter
+`tmp/spec0029-final-evidence/675-proof/` im Hauptcheckout gesichert.
+SHA-256 der Körper nach Entfernen von
 Zeilenkommentaren und Whitespace:
 
 - `list_skills_test.php`: `b110e39d64fa52cb04e300bbe8b528f0f7aac43d6a2f5b5cc577e9eb788ddcdf`
@@ -51,5 +53,17 @@ beim Spec-Abschluss begründet offen.
 Der vollständige Körpervergleich ist bestanden. `npm run gate -- fast` besteht
 mit Exit 0: 211 Node-Verträge, die beiden betroffenen PHPUnit-Testklassen mit
 76 Tests und 280 Assertions, keine statischen Befunde oder Ratschenverletzungen.
-PHPUnit meldet dabei 12 Deprecations; der Lauf ist grün. Das unabhängige
-Abschlussreview wird vor dem Schließen von #675 ergänzt.
+PHPUnit meldet dabei 12 Deprecations; der Lauf ist grün. Der reguläre
+Pre-Commit-Hook besteht ebenfalls; Commit der Bereinigung: `408f748`.
+
+Zwei unabhängige Sonnet-Medium-Reviews des festen Diffs `f621600...408f748`
+bestätigen den vollständigen Körpervergleich, die erhaltenen Assertions und die
+Grenzen der Freigabe. Standards: keine Verstöße oder blockierenden Befunde.
+Spec: keine blockierenden Befunde oder zusätzliche Testlöschung. Die Reviewer
+haben nur gelesen und keinen eigenen Gate-Lauf behauptet.
+
+Optionale Hinweise betrafen lokale Vergleichsartefakte und alte Rückverweise.
+Der Vergleich bleibt über den Git-Vorgänger, die genannten Methodennamen und
+die dokumentierten Körper-Hashes reproduzierbar. Die entfernte Ticketnummer im
+Docblock entspricht N2; die Herkunft bleibt über diesen Bericht und den Commit
+nachvollziehbar. Integration nach `dev` steht noch aus.
