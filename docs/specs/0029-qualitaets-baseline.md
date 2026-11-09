@@ -186,6 +186,6 @@ Gemessen wurde, soweit nicht anders vermerkt, am 08.11.2026; die Coverage-Zeile 
 - Issue zu `update_module_settings` auf `page`: löscht eingebettete Dateien.
 - Issue zu `discard_failed` in `export_default_activity` / `add_moduleinfo`.
 - Abstimmung der gemeinsamen Coding Standards (security-checks Issue #2).
-- 95-%-Zielbild (US 13): 86,3 % erreicht, ungedeckter Rest je Stelle noch nicht berichtet.
-- Arbeitsliste aus dem Volllauf: 76 ungedeckte Mutanten (42 davon Lightbox, Umgebung), 150 „getötet“ nur durch eine PHPUnit-Warnung, 25 Prozessabbrüche in `connection.php`.
-- Korrektur in `docs/gate.md`: MSI im Trend-Artefakt.
+- Arbeitsliste aus dem Volllauf: abgearbeitet, siehe [Nachtrag 9.11.](../checks/673-nachtrag-2026-11-09.md); offen bleiben nur die 42 Lightbox-Mutanten (Umgebung, `mod_lightboxgallery` fehlt im Gate-Container).
+- 95-%-Zielbild (US 13): laut Clover erreicht (98,96 %), aber `scripts/gate/baseline.json` ist veraltet (86,3 %); Baseline nach frischem `gate full` anheben, siehe [US-Review](../checks/673-us-review-2026-11-09.md) und Folge-Issue.
+- US 22/26/37 nur teilweise belegt (PHPStan-Baseline 220 Einträge, #714; keine Hotspot-Automatik), siehe US-Review.
