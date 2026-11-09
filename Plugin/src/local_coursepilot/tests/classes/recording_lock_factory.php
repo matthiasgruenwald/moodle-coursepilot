@@ -28,6 +28,9 @@ final class recording_lock_factory implements \core\lock\lock_factory {
     /** @var array<int, array{type: string, resource: string, timeout: int}> Requests in order. */
     public static array $requests = [];
 
+    /** @var bool Whether every lock request is refused, as when another session holds the lock. */
+    public static bool $refuse = false;
+
     /** @var string Namespace of this factory instance. */
     private string $type;
 
@@ -73,10 +76,13 @@ final class recording_lock_factory implements \core\lock\lock_factory {
      * @param string $resource Name of the locked resource.
      * @param int $timeout Seconds to wait.
      * @param int $maxlifetime Seconds before the lock may be released by others.
-     * @return \core\lock\lock
+     * @return \core\lock\lock|false False when lock refusal is switched on.
      */
     public function get_lock($resource, $timeout, $maxlifetime = 86400) {
         self::$requests[] = ['type' => $this->type, 'resource' => (string) $resource, 'timeout' => (int) $timeout];
+        if (self::$refuse) {
+            return false;
+        }
         return new \core\lock\lock($resource, $this);
     }
 
@@ -95,5 +101,6 @@ final class recording_lock_factory implements \core\lock\lock_factory {
      */
     public static function reset(): void {
         self::$requests = [];
+        self::$refuse = false;
     }
 }
