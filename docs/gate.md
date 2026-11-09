@@ -515,8 +515,9 @@ isolierten Moodle-5.1-/MariaDB-/PHP-8.4-Gate aus. Der Job `quality` gehört zusa
 alle vier Jobs ist grün; fehlend, übersprungen, abgebrochen und fehlgeschlagen bleiben rot.
 
 `gate-trend-MOODLE_501_STABLE-<SHA>` enthält `gate-report.json` mit Gesamt-Coverage und
-`summary.methodsCrapOver8` sowie den Datei-/Methodenmesswerten. MSI kommt erst mit der
-Mutationsphase. Auch bei roten Läufen wird das vorhandene Berichtsverzeichnis hochgeladen:
+`summary.methodsCrapOver8` sowie den Datei-/Methodenmesswerten. Es enthält keinen MSI; der MSI stammt aus dem
+einmaligen Mutations-Volllauf (`docs/checks/673-mutationsvolllauf-2026-11-08.md`).
+Auch bei roten Läufen wird das vorhandene Berichtsverzeichnis hochgeladen:
 Clover, `gate-static.json`, Git-Kontext, Setup-/full-Log und Exitdatei. Bei einem frühen
 Setup-/Testfehler können Messwerte fehlen; die vorhandenen Logs sind dann der Fehlernachweis,
 keine ersatzweise erfolgreiche Messung. Der Upload ist selbst verpflichtend.
