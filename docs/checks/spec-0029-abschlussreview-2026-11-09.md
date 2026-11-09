@@ -59,5 +59,6 @@ tötet den exakten Mutanten `9ddd9e50`, `connection.php` hat `open=0`, Exit 0.
 Der #752-Bericht enthält Full-Gate, Baseline und dauerhafte Rohbelegpfade.
 Vollständige Hashes und die 24 Identitäten sind in
 `evidence/spec-0029-2026-11-09.json` versioniert. Die dokumentierten
-Dokumentationskorrekturen ändern keine Test- oder Produktionskörper. CI,
-Integration und Worktree-Entfernung bleiben Schritte des Abschlussauftrags.
+Dokumentationskorrekturen ändern keine Test- oder Produktionskörper. Die lokale Integration nach `dev` und die gesicherte Entfernung aller
+32 Nebenworktrees sind abgeschlossen. CI und GitHub-Integration bleiben Schritte
+des Abschlussauftrags.
