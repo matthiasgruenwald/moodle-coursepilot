@@ -636,10 +636,10 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Replay to a still-missing target needs no check value; creation is
-     * already protected by If-None-Match: *.
+     * Retrying a pending write creates a missing target without a check value
+     * and dismisses the pending entry; If-None-Match: * protects creation.
      */
-    public function test_ausstand_retry_creates_missing_file_without_checkvalue(): void {
+    public function test_pending_retry_creates_missing_file_without_checkvalue_and_dismisses_entry(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
         $fake->seed_folder('/Coursepilot/Kontext');
@@ -1351,36 +1351,6 @@ final class write_context_file_test extends \advanced_testcase {
         } finally {
             $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
         }
-    }
-
-    /**
-     * A successful write with pending_entry=<id> marks the entry complete
-     * within the same request (ADR 0023 §3).
-     */
-    public function test_ausstand_parameter_dismisses_entry_on_successful_retry(): void {
-        $this->resetAfterTest();
-        [$user, $fake] = $this->set_up_external_context();
-        $fake->seed_folder('/Coursepilot/Kontext');
-        $fake->fill_storage();
-
-        try {
-            $this->write('plan.md', '# Plan');
-            $this->fail('Full storage should have been rejected.');
-        } catch (\moodle_exception $e) {
-            $this->assertSame('pendingwritefailed', $e->errorcode);
-        }
-        $kennung = \local_coursepilot\pending_write_notice::list_grouped()[0]['entries'][0]['identifier'];
-
-        // Replace the full-storage fake to simulate storage responding again.
-        $fake2 = new \local_coursepilot\tests\webdav\fake_webdav_transport();
-        $fake2->seed_folder('/Coursepilot/Kontext');
-        \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $fake2);
-
-        $result = write_context_file::execute('plan.md', '# Plan', '', $kennung);
-        $result = external_api::clean_returnvalue(write_context_file::execute_returns(), $result);
-
-        $this->assertTrue($result['created']);
-        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
     }
 
     /**

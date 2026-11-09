@@ -1,0 +1,366 @@
+{
+  "measuredBaseHead": "408f748d06e35cd50f0b7219704aa3010b7d6eb0",
+  "workingTreeChanges": "new additive grant-id test, one removed ignore, raised coverage counters",
+  "files": {
+    "Plugin/src/local_coursepilot/classes/connection.php": "71b39b173b36eb12b00a560b4254cbf88f4a6efc9e9f13838dc082e8240d14f0",
+    "Plugin/src/local_coursepilot/classes/history/version_history.php": "6cf89459485fd4eac4badfbd0ba549d4cd006c40a7f9545a87640eccaf906126",
+    "Plugin/src/local_coursepilot/classes/workbench_ticket.php": "e2e8da062de776aa519dab69e93010613fc1445e86e817fc13f26ad5010476a5",
+    "Plugin/src/local_coursepilot/tests/oauth_tokens_674_last24_contract_test.php": "a78ce2a9ef7adada4203a8862127ba376b31791c8f9d40bce41319f99fe20c79",
+    "scripts/gate/baseline.json": "5ef6996fd986b56335d727d7a59bea480c40e1aa57ba9948b1074bc2931d0677",
+    "scripts/gate/mutation-ignore.json": "6993b5ced10dda9a16e7f55e29d32325cff7c359baee46432f679689c83d76d4"
+  },
+  "cloverSha256": "bdc3091dd535319aba66713c829238baab68302fd5966f878c5ed82038f852b0",
+  "full": {
+    "exit": 0,
+    "phpunitTests": 3303,
+    "assertions": 164291,
+    "skips": 20,
+    "deprecations": 12,
+    "covered": 13912,
+    "statements": 14037
+  },
+  "mutants": [
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 193,
+      "mutator": "GreaterThanOrEqualTo",
+      "hash": "4838f1ffc0b1b36c382860d09aaf330c2a30fd65fe8c21a8b3a7ab4ce333fa96",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_refresh_token_rotates_at_its_expiry_second",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 205,
+      "mutator": "Concat",
+      "hash": "e54d9c66f1f66249e8b96082ad58fee09b621d1b6b8816d5226c531b218e13c6",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_code_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 205,
+      "mutator": "Concat",
+      "hash": "93c5ee003c7dc3e8ac60f627512efb960b2a8a1518d16889564ef0ee22bc58cc",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_code_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 205,
+      "mutator": "ConcatOperandRemoval",
+      "hash": "39fd32cdec51eff709615192a5836399e1c3c33a30bda32e87de9c93b44e4ada",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_code_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 205,
+      "mutator": "ConcatOperandRemoval",
+      "hash": "5ab53363e14f7d30a7853e3c4dc31b2e37e1d9f8d083dce37ecb7ff7dd5aeeb1",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_code_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 205,
+      "mutator": "ConcatOperandRemoval",
+      "hash": "89452a02ae60d7cb9421bb4a75c1c4c1070c6d9d0e7a99f116f842d2b0c7c269",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_code_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 205,
+      "mutator": "DecrementInteger",
+      "hash": "16e377a532c05164543825726990566de29642b39955554e2e16d43fb9122e64",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_code_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 205,
+      "mutator": "IncrementInteger",
+      "hash": "ee411af87d49e0d855d6e7a710bbe56cdb98d2221c197fbd54571f846f5a8e00",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_code_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 241,
+      "mutator": "CastObject",
+      "hash": "c09d830b4674e59c9cfa977945dc103f998b0b03d78b7d0a9b298c74eb2a8c6d",
+      "status": "escaped",
+      "phase": "phase2",
+      "assertionFailure": false,
+      "killer": null,
+      "ignored": true
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 241,
+      "mutator": "CastInt",
+      "hash": "c94a33e7f397f20f6ba680899094ab76e64e36ac46cd5c2cb16306f0de041fd0",
+      "status": "escaped",
+      "phase": "phase2",
+      "assertionFailure": false,
+      "killer": null,
+      "ignored": true
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 243,
+      "mutator": "DecrementInteger",
+      "hash": "29945fe93ae3be8ee67c089b9a31fb71b611d77934f458cfed596ec2f253426e",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_new_grant_has_a_full_length_state_hash",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 243,
+      "mutator": "ArrayItem",
+      "hash": "177b0a2b86c8ad5bc4cca0893e6981f50f733dec9fa9400a7c904bc5186d0048",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_new_grant_has_a_full_length_state_hash",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 392,
+      "mutator": "CastInt",
+      "hash": "e1d9365aa59a4af2ede491c59b8235bb76c587a071bfc0f02f6e8facd7d94a2c",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_revoked_access_token_is_refused_with_an_active_grant",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 392,
+      "mutator": "IncrementInteger",
+      "hash": "d7daa377ac37fd6d7a4fc22d5028c847cfbc0c4300b56941db14c61527833776",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_revoked_access_token_is_refused_with_an_active_grant",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 609,
+      "mutator": "DecrementInteger",
+      "hash": "72c78c71f86136efe2442b5f9b2da3d13818d2472a08b094c1d37a2dcaf33688",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_lock_marker_is_full_length",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/connection.php",
+      "line": 615,
+      "mutator": "ArrayItemRemoval",
+      "hash": "9ddd9e50ebe37ca2526afa2f2bea8bd34eac940ad4055e8fae52e618de96b8fc",
+      "status": "killed",
+      "phase": "phase2",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_grant_lock_is_bound_to_its_grant_id",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+      "line": 250,
+      "mutator": "CastInt",
+      "hash": "6c83430f4659656a30729fba59107920ff750aa21f39d21994669fcaa1aaf764",
+      "status": "killed",
+      "phase": "phase1",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_version_metadata_has_integer_author_and_time",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/history/version_history.php",
+      "line": 252,
+      "mutator": "CastInt",
+      "hash": "9a6413a6013ae1d70809e7b663a0787264a8cf1a1f2746646b02080346b8941c",
+      "status": "killed",
+      "phase": "phase1",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_version_metadata_has_integer_author_and_time",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+      "line": 225,
+      "mutator": "Concat",
+      "hash": "07848c12bbace6ce5125f31aced94f5f776caa88e1f2b056d320d5de85e01c3d",
+      "status": "killed",
+      "phase": "phase1",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_ticket_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+      "line": 225,
+      "mutator": "Concat",
+      "hash": "7678b66eb7213fe51c4623c7cc2450822bca9b0d9b21de522d3e475f00bf1c65",
+      "status": "killed",
+      "phase": "phase1",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_ticket_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+      "line": 225,
+      "mutator": "ConcatOperandRemoval",
+      "hash": "ff1b44f98f4260a6ef035563f17a0cc6268f12b3cfc0f6f894fea48cc50e8a34",
+      "status": "killed",
+      "phase": "phase1",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_ticket_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+      "line": 225,
+      "mutator": "ConcatOperandRemoval",
+      "hash": "4fe9159d9276f03bd53457d6b7a7e0992d87122e7ccbabec9eeacca0f8a13321",
+      "status": "killed",
+      "phase": "phase1",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_ticket_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+      "line": 225,
+      "mutator": "DecrementInteger",
+      "hash": "798e541713d636f6a968549f8e616aee02f8f499160ca03ab0abfaaa55dfbecc",
+      "status": "killed",
+      "phase": "phase1",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_ticket_claim_marker_derivation",
+      "ignored": false
+    },
+    {
+      "file": "Plugin/src/local_coursepilot/classes/workbench_ticket.php",
+      "line": 225,
+      "mutator": "IncrementInteger",
+      "hash": "7bf6abb1c4e75ba4695db717e797836a778eefc9aaf3edaed1f7c72ea37e38f9",
+      "status": "killed",
+      "phase": "phase1",
+      "assertionFailure": true,
+      "killer": "local_coursepilot\\oauth_tokens_674_last24_contract_test::test_ticket_claim_marker_derivation",
+      "ignored": false
+    }
+  ],
+  "rawReports": [
+    {
+      "phase": "phase1",
+      "file": "infection-connection.json",
+      "sha256": "beffdc11f716e2cab4560ca53e7cf042a6636388d81a81bab1dd9390a5a13f1d",
+      "stats": {
+        "totalMutantsCount": 351,
+        "killedCount": 326,
+        "notCoveredCount": 0,
+        "escapedCount": 24,
+        "errorCount": 0,
+        "syntaxErrorCount": 0,
+        "skippedCount": 0,
+        "ignoredCount": 0,
+        "timeOutCount": 1,
+        "msi": 93.16,
+        "mutationCodeCoverage": 100,
+        "coveredCodeMsi": 93.16
+      }
+    },
+    {
+      "phase": "phase1",
+      "file": "infection-version_history.json",
+      "sha256": "7c0b08f2707b4291ba9bdb1ceb8875bdaf2778bb83aec1658359655bafeeb8c8",
+      "stats": {
+        "totalMutantsCount": 138,
+        "killedCount": 118,
+        "notCoveredCount": 0,
+        "escapedCount": 20,
+        "errorCount": 0,
+        "syntaxErrorCount": 0,
+        "skippedCount": 0,
+        "ignoredCount": 0,
+        "timeOutCount": 0,
+        "msi": 85.51,
+        "mutationCodeCoverage": 100,
+        "coveredCodeMsi": 85.51
+      }
+    },
+    {
+      "phase": "phase1",
+      "file": "infection-workbench_ticket.json",
+      "sha256": "0e4835b3f0d571b89ac09c3bc7b970fd72aaec5216d56caf4f8b0afbb0cea402",
+      "stats": {
+        "totalMutantsCount": 71,
+        "killedCount": 63,
+        "notCoveredCount": 0,
+        "escapedCount": 8,
+        "errorCount": 0,
+        "syntaxErrorCount": 0,
+        "skippedCount": 0,
+        "ignoredCount": 0,
+        "timeOutCount": 0,
+        "msi": 88.73,
+        "mutationCodeCoverage": 100,
+        "coveredCodeMsi": 88.73
+      }
+    },
+    {
+      "phase": "phase2",
+      "file": "infection-connection.json",
+      "sha256": "094fcc4522bf4fc7c2e579ee96c60b523a369bdccbaf00daa1f67187d592f486",
+      "stats": {
+        "totalMutantsCount": 351,
+        "killedCount": 327,
+        "notCoveredCount": 0,
+        "escapedCount": 23,
+        "errorCount": 0,
+        "syntaxErrorCount": 0,
+        "skippedCount": 0,
+        "ignoredCount": 0,
+        "timeOutCount": 1,
+        "msi": 93.45,
+        "mutationCodeCoverage": 100,
+        "coveredCodeMsi": 93.45
+      }
+    }
+  ]
+}

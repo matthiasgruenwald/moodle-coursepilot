@@ -1,5 +1,14 @@
 # Prune-Bericht (#673, 2026-11-08)
 
+**Historische Messliste, keine freigegebene Löschliste.** Die 24 automatisch
+ausgenommenen Tests bilden die Vertragstests nicht vollständig ab. Vertragsprüfungen
+in A/B sind gemäß T4 und Spec-Story 33 keine gültigen Prune-Kandidaten. Auch A kann
+bei Subprozess-Tests ein Coverage-Artefakt sein. Die
+[HITL-Entscheidung vom 09.11.](675-prune-entscheidung-2026-11-09.md) erlaubt nur zwei
+einzeln bestätigte Duplikatbereinigungen. Alle übrigen Vorschläge warten auf die
+vollständige Kill-Matrix in [#753](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/753)
+und eine neue genaue Freigabe. Namen und Zahlen unten bleiben als Messhistorie erhalten.
+
 Liste für eine menschliche Entscheidung. Kein Test wurde gelöscht und keiner wird automatisch gelöscht.
 
 Methode: Als Töter eines Mutanten zählt der in `processOutput` genannte fehlgeschlagene Test (PHPUnit bricht beim ersten Fehlschlag ab). Ein Test, der denselben Mutanten töten würde, aber nach dem ersten Töter lief, bleibt daher unsichtbar: Kandidaten sind eine **Obermenge** der wirklich redundanten Tests und müssen einzeln geprüft werden. Datenprovider-Fälle sind je Testmethode zusammengefasst. Testbestand: 2783 Methoden aus der Coverage-Junit-Datei.

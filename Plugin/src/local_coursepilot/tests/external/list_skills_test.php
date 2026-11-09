@@ -129,10 +129,9 @@ final class list_skills_test extends \advanced_testcase {
     }
 
     /**
-     * Without WebDAV authorization, omit the location-selection notice and
-     * return an empty notices array (#494).
+     * Without WebDAV authorization or pending old content, return no notices.
      */
-    public function test_hinweise_field_is_empty_without_webdav_freischaltung(): void {
+    public function test_notices_are_empty_without_webdav_authorization_or_pending_old_content(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->grant_remote_access($user);
@@ -185,21 +184,6 @@ final class list_skills_test extends \advanced_testcase {
             'context_area' => 'mein-kontext',
             'materialordner' => 'mein-material',
         ]);
-
-        $result = list_skills::execute();
-        $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);
-
-        $this->assertSame([], $result['notices']);
-    }
-
-    /**
-     * Without pending old content, omit its notice.
-     */
-    public function test_hinweise_field_has_no_previouslocation_hint_by_default(): void {
-        $this->resetAfterTest();
-        $user = $this->getDataGenerator()->create_user();
-        $this->grant_remote_access($user);
-        $this->setUser($user);
 
         $result = list_skills::execute();
         $result = external_api::clean_returnvalue(list_skills::execute_returns(), $result);

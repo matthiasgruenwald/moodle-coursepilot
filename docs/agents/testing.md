@@ -188,6 +188,16 @@ curl -s -X POST https://spike.gruenwald.fun/local/coursepilot/mcp.php \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
+## Sicherheitsgrenze für externe Live-Proben
+
+Die WebDAV-Testinstanz NC-Zuhause (`nc.gruenwald.fun`, Konto `teacher_edit`) ist
+die private Cloud des Maintainers. Proben und Skripte dürfen ausschließlich unter
+`/spiketest/` lesen, schreiben, verschieben oder löschen. Die Wurzel wird nie
+gelistet; andere Ordner bleiben auch lesend unberührt. Material für den
+Merkzettel-Test liegt unter `/spiketest/material`.
+
+Diese bestehende Grenze wurde aus dem Worktree `t3/context-request` übernommen.
+
 ## Hooks aktivieren
 
 Claude, Codex und Menschen nutzen dieselben Git-Hooks und dasselbe Gate-Kommando
