@@ -36,7 +36,8 @@ final class add_glossary_entries_test extends \advanced_testcase {
      * The registered External path applies defaults and validates returns.
      *
      * @param int $cmid The cmid.
-     * @param array $entries The entries.
+     * @param mixed[][] $entries The entries.
+     *        Type: array<int,array<string,mixed>>.
      * @return mixed[]
      */
     private function call(int $cmid, array $entries): array {

@@ -645,13 +645,13 @@ final class material_files {
     }
 
     /**
-     * Resolve one list entry and copy it into the draft (#523: extracted from
-     * resolve_into_draft() to keep the function below 50 lines).
+     * Resolve one material reference and copy its content into the draft.
      *
      * @param \file_storage $fs
      * @param int $usercontextid
      * @param int $draftitemid
-     * @param string|array $entry
+     * @param string|mixed[] $entry
+     *        Type: string|array{path:string,target_folder?:string}.
      * @param string $locationkey
      */
     private static function embed_draft_entry(

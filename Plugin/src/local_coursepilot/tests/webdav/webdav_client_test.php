@@ -326,7 +326,7 @@ final class webdav_client_test extends \advanced_testcase {
                  *
                  * @param string $method The method.
                  * @param string $url The url.
-                 * @param array $headers The headers.
+                 * @param string[] $headers The headers.
                  * @param ?string $body The body.
                  * @return webdav_response
                  */
@@ -387,7 +387,7 @@ final class webdav_client_test extends \advanced_testcase {
     /**
      * Provides redirect statuscodes.
      *
-     * @return array<string, array{0: int}>
+     * @return array<int, array{0: int}>
      */
     public static function redirect_statuscodes(): array {
         return ['301' => [301], '302' => [302], '303' => [303], '307' => [307], '308' => [308]];
@@ -423,7 +423,7 @@ final class webdav_client_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return webdav_response
              */
@@ -462,7 +462,7 @@ final class webdav_client_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return webdav_response
              */
@@ -490,7 +490,7 @@ final class webdav_client_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return webdav_response
              */
@@ -534,7 +534,7 @@ final class webdav_client_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return webdav_response
              */
@@ -568,7 +568,7 @@ final class webdav_client_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return webdav_response
              */
@@ -640,7 +640,7 @@ final class webdav_client_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return webdav_response
              */
@@ -683,7 +683,7 @@ final class webdav_client_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return webdav_response
              */

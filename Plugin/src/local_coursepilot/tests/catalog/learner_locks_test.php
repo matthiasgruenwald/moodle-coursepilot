@@ -62,8 +62,8 @@ final class learner_locks_test extends \advanced_testcase {
             foreach ($catalogclass::learner_locks() as $fieldname => $condition) {
                 $where = $modname . '.' . $fieldname;
                 $this->assertArrayHasKey($fieldname, $fields, $where . ': Feld fehlt im Katalog.');
-                $this->assertContains($condition['op'] ?? null, learner_locks::OPS, $where . ': unbekannter Operator.');
-                $this->assertNotSame('', trim((string) ($condition['reason'] ?? '')), $where . ': Grund fehlt.');
+                $this->assertContains($condition['op'], learner_locks::OPS, $where . ': unbekannter Operator.');
+                $this->assertNotSame('', trim((string) ($condition['reason'])), $where . ': Grund fehlt.');
 
                 $field = $fields[$fieldname];
                 if ($condition['op'] === 'nonzero' || $condition['op'] === 'greater') {

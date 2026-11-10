@@ -349,7 +349,7 @@ final class provider implements
             [get_string('pluginname', 'local_coursepilot')],
             context_files::LEGACY_COMPONENT,
             context_files::LEGACY_FILEAREA,
-            context_files::ITEMID
+            (string) context_files::ITEMID
         );
 
         $markrecords = $DB->get_records('local_coursepilot_context_mark', ['userid' => $userid]);

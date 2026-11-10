@@ -537,7 +537,7 @@ final class update_mc_question extends external_api {
     /**
      * Asserts allowed embed extensions.
      *
-     * @param string[] $paths
+     * @param mixed[] $paths
      * @return void
      * @throws moodle_exception materialfiledisallowedtype
      */

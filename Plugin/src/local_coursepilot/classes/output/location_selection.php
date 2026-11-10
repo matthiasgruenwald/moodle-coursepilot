@@ -136,8 +136,10 @@ final class location_selection {
      * Provides page data.
      *
      * @param \stdClass $user The user.
-     * @param ?array $finishresult Type: array{type:string,text:string}|null.
-     * @param ?array $oauthreturn Type: array{client:\stdClass,params:array<string,string>}|null.
+     * @param string[]|null $finishresult
+     *        Type: array{type:string,text:string}|null.
+     * @param mixed[]|null $oauthreturn
+     *        Type: array{client:\stdClass,params:array<string,string>}|null.
      * @return array<string, mixed>
      */
     public static function page_data(\stdClass $user, ?array $finishresult, ?array $oauthreturn): array {
@@ -162,7 +164,8 @@ final class location_selection {
     /**
      * Provides notification data.
      *
-     * @param ?array $finishresult Type: array{type:string,text:string}|null.
+     * @param string[]|null $finishresult
+     *        Type: array{type:string,text:string}|null.
      * @return array{class: string, text: string}|null
      */
     private static function notification_data(?array $finishresult): ?array {
@@ -181,7 +184,8 @@ final class location_selection {
     /**
      * Provides oauth return data.
      *
-     * @param ?array $oauthreturn Type: array{client:\stdClass,params:array<string,string>}|null.
+     * @param mixed[]|null $oauthreturn
+     *        Type: array{client:\stdClass,params:array<string,string>}|null.
      * @return array{clientname: string, backurl: string}|null
      */
     private static function oauth_return_data(?array $oauthreturn): ?array {

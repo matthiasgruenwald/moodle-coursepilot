@@ -104,6 +104,7 @@ final class write_gate_test extends \advanced_testcase {
 
         // PHPUnit has only the English language pack. Read the German source
         // directly rather than depending on runtime language resolution.
+        /** @var array<string, string> $string */
         $string = [];
         require(__DIR__ . '/../lang/de/local_coursepilot.php');
         $this->assertArrayHasKey('modnamedriftlocked', $string);

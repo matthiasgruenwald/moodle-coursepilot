@@ -11,6 +11,8 @@ parameters:
         - /var/www/html/public/local/coursepilot/amd
         - /var/www/html/public/local/coursepilot/skills
     scanFiles:
+        - /var/www/html/public/cohort/lib.php
+        - /var/www/html/public/privacy/classes/local/request/approved_contextlist.php
         - /var/www/html/public/question/format.php
         - /var/www/html/public/completion/criteria/completion_criteria.php
     scanDirectories:
@@ -25,8 +27,14 @@ parameters:
     bootstrapFiles:
         - /var/www/phpstan-config/bootstrap.php
     stubFiles:
+        - /var/www/phpstan-config/plugin_effects.stub
+        - /var/www/phpstan-config/moodle_contracts.stub
         - /var/www/phpstan-config/file_storage.stub
         - /var/www/phpstan-config/qformat_xml.stub
+    # Core's rollback_delegated_transaction() always rethrows; rollback() delegates to it.
+    earlyTerminatingMethodCalls:
+        moodle_transaction:
+            - rollback
     tmpDir: /tmp/phpstan
     # Entfaellt, sobald die Baseline schrumpft und die Ratsche (Folgeticket) veraltete Eintraege meldet.
     reportUnmatchedIgnoredErrors: false

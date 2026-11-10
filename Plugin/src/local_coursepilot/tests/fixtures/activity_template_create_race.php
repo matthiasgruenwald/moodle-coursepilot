@@ -35,7 +35,7 @@ namespace local_coursepilot {
             foreach (debug_backtrace() as $frame) {
                 if (
                     ($frame['class'] ?? '') === private_files_storage_port::class &&
-                        ($frame['function'] ?? '') === 'write' &&
+                        $frame['function'] === 'write' &&
                         ($frame['args'][1] ?? '') === 'activity-types/book.md'
                 ) {
                     $GLOBALS['coursepilot603reads'] = ($GLOBALS['coursepilot603reads'] ?? 0) + 1;

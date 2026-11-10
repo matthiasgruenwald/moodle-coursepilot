@@ -55,6 +55,18 @@ final class webdav_capability_check extends check {
     }
 
     /**
+     * Settings action shown by Moodle's check renderer.
+     *
+     * @return action_link
+     */
+    public function get_action_link(): action_link {
+        global $USER;
+
+        $step = webdav_setup_steps::catalog((int) $USER->id)[webdav_setup_steps::STEP_CAPABILITY];
+        return new action_link($step['targeturl'], get_string('webdavcheckactionlink', 'local_coursepilot'));
+    }
+
+    /**
      * Returns result.
      *
      * @return result
@@ -63,8 +75,6 @@ final class webdav_capability_check extends check {
         global $USER, $DB;
 
         $steps = webdav_setup_steps::catalog((int) $USER->id);
-        $step = $steps[webdav_setup_steps::STEP_CAPABILITY];
-        $actionlink = new action_link($step['targeturl'], get_string('webdavcheckactionlink', 'local_coursepilot'));
 
         if (!$steps[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['ok']) {
             return new result(result::NA, get_string('webdavcheck3na', 'local_coursepilot'));
@@ -98,8 +108,7 @@ final class webdav_capability_check extends check {
                 'missing' => count($missing),
                 'total' => count($connecteduserids),
             ]),
-            implode("\n", $missing),
-            $actionlink
+            implode("\n", $missing)
         );
     }
 }

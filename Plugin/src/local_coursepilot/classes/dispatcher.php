@@ -63,7 +63,7 @@ final class dispatcher {
     /**
      * Handles a complete MCP request, returning a value instead of emitting output.
      *
-     * @param array|null $request The already decoded JSON body, or
+     * @param mixed[]|null $request The already decoded JSON body, or
      *        null if decoding failed (parse-error case).
      * @param string|null $token The Bearer token already extracted from
      *        the Authorization header.
@@ -107,7 +107,7 @@ final class dispatcher {
      * Request flow after origin validation and CORS preflight.
      * Extracted from handle() so one place adds CORS headers to every response.
      *
-     * @param array|null $request
+     * @param mixed[]|null $request
      * @param string|null $token
      * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
      * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
@@ -563,7 +563,7 @@ final class dispatcher {
      *
      * @param int $status The status.
      * @param string[] $headers
-     * @param array|null $body
+     * @param mixed[]|null $body
      * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function result(int $status, array $headers, ?array $body): array {

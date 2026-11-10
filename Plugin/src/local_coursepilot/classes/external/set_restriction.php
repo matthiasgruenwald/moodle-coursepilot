@@ -327,7 +327,7 @@ final class set_restriction extends external_api {
         global $DB;
 
         $rawgroupid = $condition['group_id'] ?? 0;
-        $isanygroup = $rawgroupid === 0 || $rawgroupid === null || $rawgroupid === '0';
+        $isanygroup = $rawgroupid === 0 || $rawgroupid === '0';
         $groupid = $isanygroup ? 0 : self::positive_int($rawgroupid);
         if ($groupid === null) {
             throw new moodle_exception(

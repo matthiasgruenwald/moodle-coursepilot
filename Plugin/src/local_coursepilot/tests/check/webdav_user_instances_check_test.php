@@ -68,4 +68,12 @@ final class webdav_user_instances_check_test extends \advanced_testcase {
         $this->assertSame('webdav_user_instances', $check->get_id());
         $this->assertSame(get_string('webdavcheck2name', 'local_coursepilot'), $check->get_name());
     }
+
+    public function test_check_links_to_the_relevant_admin_page(): void {
+        $this->resetAfterTest();
+
+        $link = (new webdav_user_instances_check())->get_action_link();
+        $this->assertSame((new \moodle_url('/admin/repository.php'))->out(false), $link->url->out(false));
+        $this->assertSame(get_string('webdavcheckactionlink', 'local_coursepilot'), $link->text);
+    }
 }

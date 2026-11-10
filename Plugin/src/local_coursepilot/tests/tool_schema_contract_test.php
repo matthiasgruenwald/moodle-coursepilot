@@ -119,6 +119,16 @@ final class tool_schema_contract_test extends \advanced_testcase {
         ], external_schema_converter::from_parameters($parameters));
     }
 
+    public function test_converter_rejects_an_unsupported_parameter_declaration(): void {
+        $unsupported = new class ('Unsupported', VALUE_REQUIRED, null) extends external_description {
+        };
+        $parameters = new external_function_parameters(['unsupported' => $unsupported]);
+
+        $this->expectException(\coding_exception::class);
+        $this->expectExceptionMessage('Unsupported external description:');
+        external_schema_converter::from_parameters($parameters);
+    }
+
     public function test_every_registered_tool_schema_matches_moodle_parameters(): void {
         $schemas = tool_registry::schemas();
         $tools = tool_registry::allowed_tools();

@@ -38,7 +38,8 @@ final class webdav_instance_test extends \advanced_testcase {
      * Provides location.
      *
      * @param int $instanceid The instanceid.
-     * @param ?array $fingerprint The fingerprint.
+     * @param mixed[]|null $fingerprint The fingerprint.
+     *        Type: array{server:string,basepath:string,account:string,iserv?:bool}|null.
      * @return pointer_location
      */
     private function location(int $instanceid, ?array $fingerprint = null): pointer_location {

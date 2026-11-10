@@ -271,9 +271,10 @@ final class storage_anchor {
      * Saves confirmed location selection as a complete pointer document.
      * Page logic supplies values, never bypasses the anchor for file writes.
      *
-     * @param array[] $locations
-     * @param array[] $history
-     * @param array|null $previouslocation
+     * @param mixed[][] $locations
+     *        Type: array<string,array<string,mixed>>.
+     * @param mixed[] $history
+     * @param mixed[]|null $previouslocation
      */
     public static function save_location_selection(array $locations, array $history, ?array $previouslocation): void {
         $document = [

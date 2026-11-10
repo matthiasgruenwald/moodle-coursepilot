@@ -17,19 +17,18 @@
 namespace local_coursepilot\event;
 
 /**
- * Failed Coursepilot MCP access (#339): authentication, permission,
+ * Failed Coursepilot MCP access: authentication, permission,
  * unknown tool/method, or failure during tool execution.
  *
  * Store a short fixed reason code/text, never the access token
  * (dispatcher::error()/handle_tools_call()). Emitted from errors-only
  * logging onward.
  *
- * @property-read array $other {
+ * @property-read array{reason: string, toolname?: ?string, path?: ?string, detail?: ?string} $other
  *      - string reason: Short error description, without secrets.
  *      - string|null toolname: Affected tool name, if known.
- *      - string|null path: Path touched by the failed access, if known (#501).
- *      - string|null detail: Internal diagnostic, only with full logging (#457).
- * }
+ *      - string|null path: Path touched by the failed access, if known.
+ *      - string|null detail: Internal diagnostic, only with full logging.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

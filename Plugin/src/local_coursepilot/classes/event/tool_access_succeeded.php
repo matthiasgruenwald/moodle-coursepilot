@@ -17,16 +17,15 @@
 namespace local_coursepilot\event;
 
 /**
- * Successful Coursepilot tool call through MCP (#339).
+ * Successful Coursepilot tool call through MCP.
  *
  * Emitted through Moodle's event API for native admin log reports when
  * access_log is set to at least reads and errors.
  *
- * @property-read array $other {
+ * @property-read array{toolname: string, path?: ?string} $other
  *      - string toolname: Called MCP tool name.
  *      - string|null path: Context or material path touched by the tool
  *        (Spec 0018 §9.2), otherwise null.
- * }
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot

@@ -186,7 +186,7 @@ final class webdav_storage_port implements storage_port {
         }
         return [
             'content' => $content,
-            'checksum' => pointer_reader::external_checkvalue($entry['etag'] ?? null, $entry['timemodified'] ?? 0),
+            'checksum' => pointer_reader::external_checkvalue($entry['etag'] ?? null, $entry['timemodified']),
             'size' => $entry['size'],
             'mimetype' => $mimetype,
             'timemodified' => $entry['timemodified'],
@@ -496,7 +496,8 @@ final class webdav_storage_port implements storage_port {
      * @param webdav_client $client
      * @param string $fileurl
      * @param string $content
-     * @param ?array $existing Type: array{etag:?string,timemodified:int,size:int}|null.
+     * @param mixed[]|null $existing
+     *        Type: array{etag:?string,timemodified:int,size:int}|null.
      * @param string $clientpath For the error message.
      * @throws storage_conflict_exception
      * @throws webdav_error every other error.
@@ -521,7 +522,8 @@ final class webdav_storage_port implements storage_port {
      * current state - even if the file is now missing entirely.
      * No comparison if no check value was passed (`null`).
      *
-     * @param ?array $existing Type: array{etag:?string,timemodified:int,size:int}|null.
+     * @param mixed[]|null $existing
+     *        Type: array{etag:?string,timemodified:int,size:int}|null.
      * @param string|null $expectedchecksum
      * @param string $clientpath For the error message.
      * @throws storage_conflict_exception

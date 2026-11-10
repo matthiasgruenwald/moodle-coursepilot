@@ -1411,6 +1411,7 @@ final class write_context_file_test extends \advanced_testcase {
      * PHPUnit resolves only English.
      */
     public function test_german_messages_carry_the_required_wording(): void {
+        /** @var array<string, string> $string */
         $string = [];
         require(__DIR__ . '/../../lang/de/local_coursepilot.php');
 

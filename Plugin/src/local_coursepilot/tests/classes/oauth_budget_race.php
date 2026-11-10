@@ -30,8 +30,8 @@ trait oauth_budget_race {
      * Run the fixture process once per argument list, the second while the
      * first holds the site budget barrier.
      *
-     * @param array $first Arguments of oauth_registration_process.php for the first process.
-     * @param array $second Arguments for the second process.
+     * @param string[] $first Arguments of oauth_registration_process.php for the first process.
+     * @param string[] $second Arguments for the second process.
      * @return int[] Sorted HTTP statuses printed by both processes.
      */
     protected function race_on_site_budget(array $first, array $second): array {

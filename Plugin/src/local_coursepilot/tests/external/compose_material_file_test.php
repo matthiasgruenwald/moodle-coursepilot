@@ -244,6 +244,15 @@ final class compose_material_file_test extends \advanced_testcase {
         ];
     }
 
+    /**
+     * Composition failures preserve the existing target.
+     *
+     * @param mixed[][] $parts Composition sources.
+     *        Type: array<int,array<string,mixed>>.
+     * @param string $arrangement Requested layout.
+     * @param string $target Target filename.
+     * @param string $errorcode Expected rejection.
+     */
     #[\PHPUnit\Framework\Attributes\DataProvider('failure_cases')]
     public function test_failures_leave_no_new_file_and_preserve_existing_target(
         array $parts,

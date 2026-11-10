@@ -286,7 +286,12 @@ final class version_history {
     private static function field_names(array $fields, string $lang): string {
         $names = implode(', ', array_slice($fields, 0, 4));
         if (count($fields) > 4) {
-            $names .= get_string_manager()->get_string('historymorefields', 'local_coursepilot', count($fields) - 4, $lang);
+            $names .= get_string_manager()->get_string(
+                'historymorefields',
+                'local_coursepilot',
+                (string) (count($fields) - 4),
+                $lang
+            );
         }
         return $names;
     }
@@ -319,7 +324,7 @@ final class version_history {
             $parts[] = get_string_manager()->get_string(
                 $added === 1 ? 'historyfileadded' : 'historyfilesadded',
                 'local_coursepilot',
-                $added,
+                (string) $added,
                 $lang
             );
         }
@@ -327,7 +332,7 @@ final class version_history {
             $parts[] = get_string_manager()->get_string(
                 $removed === 1 ? 'historyfileremoved' : 'historyfilesremoved',
                 'local_coursepilot',
-                $removed,
+                (string) $removed,
                 $lang
             );
         }
@@ -468,6 +473,6 @@ final class version_history {
         // even if they remain unused for display.
         $user = $DB->get_record('user', ['id' => $userid]);
         return $user ? fullname($user)
-            : get_string_manager()->get_string('historyunknownuser', 'local_coursepilot', $userid, $lang);
+            : get_string_manager()->get_string('historyunknownuser', 'local_coursepilot', (string) $userid, $lang);
     }
 }

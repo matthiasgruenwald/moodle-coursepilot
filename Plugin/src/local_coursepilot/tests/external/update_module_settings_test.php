@@ -584,7 +584,9 @@ final class update_module_settings_test extends \advanced_testcase {
         $this->assertCount(8, $modnamesviaupdatemodulesettings, 'Expected eight activity types via this vehicle.');
 
         foreach ($modnamesviaupdatemodulesettings as $modname) {
-            $instance = $this->getDataGenerator()->get_plugin_generator('mod_' . $modname)->create_instance([
+            $generator = $this->getDataGenerator()->get_plugin_generator('mod_' . $modname);
+            $this->assertInstanceOf(\testing_module_generator::class, $generator);
+            $instance = $generator->create_instance([
                 'course' => $course->id,
             ]);
 

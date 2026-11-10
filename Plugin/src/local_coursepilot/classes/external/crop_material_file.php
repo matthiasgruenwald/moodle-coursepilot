@@ -161,11 +161,12 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Resolve the target and check concurrency protection (#523: extracted
-     * from execute()).
+     * Resolve the target and check concurrency protection.
      *
      * @param mixed[] $params Validated execute() parameters.
-     * @return array{0: string, 1: string, 2: string, 3: ?array} [target directory, target filename,
+     * @return array{0: string, 1: string, 2: string,
+     *         3: array{content: string, mimetype: string, size: int, contenthash: string, timemodified: int}|null}
+     *         [target directory, target filename,
      *         target extension, existing file or null]
      */
     private static function resolve_target(array $params): array {
@@ -197,7 +198,8 @@ class crop_material_file extends external_api {
      * @param string $targetdir
      * @param string $targetfilename
      * @param string $targetextension
-     * @param ?array $existing
+     * @param scalar[]|null $existing
+     *        Type: array{content:string,mimetype:string,size:int,contenthash:string,timemodified:int}|null.
      * @return mixed[]
      */
     private static function crop_and_write(
@@ -273,15 +275,15 @@ class crop_material_file extends external_api {
     }
 
     /**
-     * Build the crop response (#523: extracted from crop_and_write() to keep
-     * the function below 50 lines).
+     * Build the crop response from the source and newly stored target.
      *
      * @param mixed[] $params Validated execute() parameters.
      * @param mixed[] $sourcestored Type: array{content:string,path:string,size:int,timemodified:int}.
      * @param string $sourcerelative
      * @param string $targetdir
      * @param string $targetfilename
-     * @param ?array $existing
+     * @param scalar[]|null $existing
+     *        Type: array{content:string,mimetype:string,size:int,contenthash:string,timemodified:int}|null.
      * @param int $width
      * @param int $height
      * @param int $newsize

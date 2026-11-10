@@ -255,6 +255,17 @@ Datei-Grundfunktionen ausdrücklich per `CoversClass` ab.
 Verzeichnispfad von Moodles `get_directory_files()` zu `string`. Der Stub
 unterdrückt keine Befunde; die bisherige Ausnahme im Anker entfällt.
 
+`moodle_contracts.stub` beschreibt die geprüften Core-Verträge für boolesche XMLDB-Indexflags,
+nullable Auswahlfelder, konkrete Testgeneratoren, die ganzzahligen `VALUE_*`-Konstanten, globale `stdClass`-Rückgaben
+der Availability-Bedingungen, Privacy-Kontext-IDs und die Rückgabe `false` für unregistrierte
+Tasks. `cohort/lib.php` wird zusätzlich statisch eingelesen. `plugin_effects.stub` kennzeichnet
+die Konfigurations- und Pointer-Leser als zustandsabhängig: PHPStan muss sie nach Änderungen
+erneut auswerten. Die Effekt-Tags liegen dort, weil Moodle-CS sie im Plugin-PHPDoc nicht
+akzeptiert. `earlyTerminatingMethodCalls` bildet den garantierten Ausnahmeweg von
+`moodle_transaction::rollback()` ab. Der Budget-Zähler benennt den Transaktionstyp ausdrücklich,
+weil der globale `$DB` dort statisch `mixed` ist. Die Core-Implementierung delegiert an
+`rollback_delegated_transaction()`, das die übergebene Ausnahme erneut wirft.
+
 ## Atomare Quiz-Einstellungen
 
 `catalog/quiz_write` übernimmt für `create_quiz` und `update_quiz_settings` die

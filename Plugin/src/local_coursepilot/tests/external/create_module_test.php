@@ -296,7 +296,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     #[DataProvider('invalid_intro_images')]
-    public function test_assign_create_rejects_invalid_intro_images_without_activity($paths, string $errorcode): void {
+    public function test_assign_create_rejects_invalid_intro_images_without_activity(mixed $paths, string $errorcode): void {
         global $DB;
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();

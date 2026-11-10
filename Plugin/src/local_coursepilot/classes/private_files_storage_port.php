@@ -227,7 +227,8 @@ final class private_files_storage_port implements storage_port {
      * content, including a now missing file. A null checksum skips comparison
      * and keeps unconditional overwrite/create behaviour.
      *
-     * @param ?array $existing Stored file data (content, mimetype, size, contenthash,
+     * @param scalar[]|null $existing Stored file data (content, mimetype, size, contenthash,
+     *        Type: array{content:string,mimetype:string,size:int,contenthash:string,timemodified:int}|null.
      *        timemodified) or null.
      * @param string|null $expectedchecksum
      * @param string $clientpath For the error message.

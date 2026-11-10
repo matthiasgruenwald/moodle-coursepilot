@@ -56,9 +56,9 @@ final class get_course_catalog_test extends \advanced_testcase {
 
         $instances = [];
         foreach (registry::known_modnames() as $modname) {
-            $instances[$modname] = $this->getDataGenerator()
-                ->get_plugin_generator('mod_' . $modname)
-                ->create_instance(['course' => $course->id, 'name' => 'Katalog ' . $modname]);
+            $generator = $this->getDataGenerator()->get_plugin_generator('mod_' . $modname);
+            $this->assertInstanceOf(\testing_module_generator::class, $generator);
+            $instances[$modname] = $generator->create_instance(['course' => $course->id, 'name' => 'Katalog ' . $modname]);
         }
 
         $catalog = get_course_catalog::execute($course->id, -1, '', 'full');

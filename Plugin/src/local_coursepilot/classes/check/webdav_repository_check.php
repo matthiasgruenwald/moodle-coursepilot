@@ -55,6 +55,20 @@ final class webdav_repository_check extends check {
     }
 
     /**
+     * Settings action shown by Moodle's check renderer.
+     *
+     * @return action_link
+     */
+    public function get_action_link(): action_link {
+        global $USER;
+
+        return new action_link(
+            webdav_setup_steps::catalog((int) $USER->id)[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['targeturl'],
+            get_string('webdavcheckactionlink', 'local_coursepilot')
+        );
+    }
+
+    /**
      * Returns result.
      *
      * @return result
@@ -63,7 +77,6 @@ final class webdav_repository_check extends check {
         global $USER;
 
         $step = webdav_setup_steps::catalog((int) $USER->id)[webdav_setup_steps::STEP_REPOSITORY_ACTIVE];
-        $actionlink = new action_link($step['targeturl'], get_string('webdavcheckactionlink', 'local_coursepilot'));
 
         if ($step['ok']) {
             return new result(result::OK, get_string('webdavcheck1ok', 'local_coursepilot'));
@@ -74,16 +87,14 @@ final class webdav_repository_check extends check {
             return new result(
                 result::INFO,
                 get_string('webdavcheck1infooptional', 'local_coursepilot'),
-                $step['instruction'],
-                $actionlink
+                $step['instruction']
             );
         }
 
         return new result(
             result::WARNING,
             get_string('webdavcheck1warning', 'local_coursepilot', count($affected)),
-            $step['instruction'],
-            $actionlink
+            $step['instruction']
         );
     }
 }

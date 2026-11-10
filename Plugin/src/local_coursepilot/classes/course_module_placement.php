@@ -67,7 +67,7 @@ final class course_module_placement {
             throw new \coding_exception('place_after: the target cm is not in its section');
         }
         $successor = $siblings[$position + 1] ?? null;
-        self::move_to($cmid, (int) $after->section, $successor === null ? null : (int) $successor);
+        self::move_to($cmid, (int) $after->sectionid, $successor === null ? null : (int) $successor);
     }
 
     /**

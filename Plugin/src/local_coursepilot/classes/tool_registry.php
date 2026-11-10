@@ -270,7 +270,8 @@ final class tool_registry {
     /**
      * Derives MCP input properties and required names from each registered tool's Moodle parameters.
      *
-     * @return array<string, array{properties: array, required?: array}> Input schema fragments keyed by MCP tool name.
+     * @return array<string, array{properties: array<string, array<string, mixed>>, required?: string[]}>
+     *         Input schema fragments keyed by MCP tool name.
      */
     public static function schemas(): array {
         $schemas = [];

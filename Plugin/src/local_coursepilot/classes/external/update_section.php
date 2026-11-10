@@ -150,7 +150,7 @@ final class update_section extends external_api {
             }
             $fields[$fieldname] = $value;
         }
-        if (array_key_exists('summary', $fields) && !array_key_exists('summaryformat', $fields)) {
+        if (array_key_exists('summary', $fields)) {
             $fields['summaryformat'] = FORMAT_HTML;
         }
         return $fields;

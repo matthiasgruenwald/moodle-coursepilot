@@ -1,0 +1,22 @@
+<?php
+
+namespace local_coursepilot {
+    class previous_location {
+        // Reads the current pointer file, which can change between calls.
+        /**
+         * @return mixed[]|null
+         * @phpstan-impure
+         */
+        public static function current() {}
+    }
+}
+namespace local_coursepilot\history {
+    class retention {
+        // Reads mutable plugin configuration; a previous result cannot be reused.
+        /**
+         * @return int
+         * @phpstan-impure
+         */
+        public static function days() {}
+    }
+}
