@@ -125,7 +125,7 @@ final class tool_schema_contract_test extends \advanced_testcase {
         $parameters = new external_function_parameters(['unsupported' => $unsupported]);
 
         $this->expectException(\coding_exception::class);
-        $this->expectExceptionMessage('Unsupported external description:');
+        $this->expectExceptionMessage('Unsupported external description: ' . get_class($unsupported));
         external_schema_converter::from_parameters($parameters);
     }
 

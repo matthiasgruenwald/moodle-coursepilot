@@ -59,7 +59,7 @@ final class webdav_user_instances_check extends check {
         global $USER;
 
         return new action_link(
-            webdav_setup_steps::catalog((int) $USER->id)[webdav_setup_steps::STEP_USER_INSTANCES]['targeturl'],
+            webdav_setup_steps::catalog($USER->id)[webdav_setup_steps::STEP_USER_INSTANCES]['targeturl'],
             get_string('webdavcheckactionlink', 'local_coursepilot')
         );
     }
@@ -72,7 +72,7 @@ final class webdav_user_instances_check extends check {
     public function get_result(): result {
         global $USER;
 
-        $steps = webdav_setup_steps::catalog((int) $USER->id);
+        $steps = webdav_setup_steps::catalog($USER->id);
         if (!$steps[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['ok']) {
             return new result(result::NA, get_string('webdavcheck2na', 'local_coursepilot'));
         }

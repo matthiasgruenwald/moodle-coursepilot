@@ -63,7 +63,7 @@ final class webdav_repository_check extends check {
         global $USER;
 
         return new action_link(
-            webdav_setup_steps::catalog((int) $USER->id)[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['targeturl'],
+            webdav_setup_steps::catalog($USER->id)[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['targeturl'],
             get_string('webdavcheckactionlink', 'local_coursepilot')
         );
     }
@@ -76,7 +76,7 @@ final class webdav_repository_check extends check {
     public function get_result(): result {
         global $USER;
 
-        $step = webdav_setup_steps::catalog((int) $USER->id)[webdav_setup_steps::STEP_REPOSITORY_ACTIVE];
+        $step = webdav_setup_steps::catalog($USER->id)[webdav_setup_steps::STEP_REPOSITORY_ACTIVE];
 
         if ($step['ok']) {
             return new result(result::OK, get_string('webdavcheck1ok', 'local_coursepilot'));
