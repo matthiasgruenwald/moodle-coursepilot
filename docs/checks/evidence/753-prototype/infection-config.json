@@ -1,0 +1,4 @@
+{"source":{"directories":["/var/www/html/public/local/coursepilot"],"excludes":["/tests/"]},
+ "phpUnit":{"configDir":"/var/www/html/public/local/coursepilot","customPath":"/var/www/reports/p753/phpunit-allfail.sh"},
+ "timeout":300,"bootstrap":"/var/www/reports/infection-bootstrap.php",
+ "logs":{"json":"/var/www/reports/p753/infection.json"},"tmpDir":"/var/www/reports/p753/tmp","mutators":{"@default":true}}

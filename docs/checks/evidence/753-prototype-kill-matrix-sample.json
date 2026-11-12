@@ -1,0 +1,1103 @@
+[
+ {
+  "status": "killed",
+  "mutator": "PublicVisibility",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 52,
+  "hash": "3f5255b19420ff8f743d7c55e5c53702",
+  "ran": 5,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_keeps_all_of_its_keys",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept",
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_is_returned_unchanged",
+   "local_coursepilot\\availability_privacy_test::test_empty_and_unparseable_input_yield_an_empty_string"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Identical",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 53,
+  "hash": "b1aa1a59e5b6899f21e1da41d82cdf58",
+  "ran": 5,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_keeps_all_of_its_keys",
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_is_returned_unchanged",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Identical",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 57,
+  "hash": "f1e36c822590a54f8f6266c16f96ffbc",
+  "ran": 5,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_empty_and_unparseable_input_yield_an_empty_string",
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_keeps_all_of_its_keys",
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept",
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_is_returned_unchanged"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalNot",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 71,
+  "hash": "498d402bd5c6f585ddc6aeb2da6c38df",
+  "ran": 4,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalNot",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 71,
+  "hash": "09fdc9f8798df4d058d9ffaba39e8c94",
+  "ran": 4,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalOr",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 71,
+  "hash": "76aafc8260f2f95dd4f9cb32e7493a4a",
+  "ran": 4,
+  "failing": []
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalOrAllSubExprNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 71,
+  "hash": "506f7a00452468cd0b0ff97bf9a161fe",
+  "ran": 4,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_is_returned_unchanged",
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_keeps_all_of_its_keys",
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalOrNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 71,
+  "hash": "d00ec6adbcee0da2d7a502451f3abbb7",
+  "ran": 4,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_is_returned_unchanged",
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_keeps_all_of_its_keys",
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayOneItem",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 72,
+  "hash": "d6ad7eb46bc26fe1d836aa446fc96ac2",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_document_without_condition_list_keeps_all_of_its_keys"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayItemRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 74,
+  "hash": "918f6621655e647bd873155452ba5c51",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "UnwrapArrayMap",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 74,
+  "hash": "df06eaaa59a8ce5fa8ad0c56f69aea19",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayOneItem",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 75,
+  "hash": "41ed4d9645f10889ff7a5608de794ca0",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalAnd",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 85,
+  "hash": "f8562e2424b03f5658221230bf0c7041",
+  "ran": 2,
+  "failing": []
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalAndAllSubExprNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 85,
+  "hash": "5bdff04e521c9a7d1eec49162a179c7f",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalAndNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 85,
+  "hash": "47f63b3282abb4d29006d460d08e8538",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept",
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalAndSingleSubExprNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 85,
+  "hash": "99c979a07df5a8a48e13837aac257f86",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Coalesce",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 88,
+  "hash": "fdbb15f71746bbcc03aa37460ef9a2db",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Identical",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 88,
+  "hash": "223d7a4d865c972dc45f6410a4f97897",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayOneItem",
+  "file": "/var/www/html/public/local/coursepilot/classes/availability_privacy.php",
+  "line": 91,
+  "hash": "1890bb9c456a907ec0a9a9dcf053a88d",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\availability_privacy_test::test_nested_condition_groups_are_masked_recursively",
+   "local_coursepilot\\availability_privacy_test::test_profile_condition_value_is_masked_and_other_fields_are_kept"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "PublicVisibility",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 42,
+  "hash": "35951b2f653026c7a8bd9d97684187ed",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_references_are_read_only",
+   "local_coursepilot\\cm_references_test::test_condition_on_another_cm_is_not_a_reference",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_completion_criterion_of_another_course_is_not_a_reference",
+   "local_coursepilot\\cm_references_test::test_no_references_gives_empty_list"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayItemRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 45,
+  "hash": "263b3ea7fae2cccb8e9f6b00859b06df",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_references_are_read_only",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_condition_on_another_cm_is_not_a_reference",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found",
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_no_references_gives_empty_list",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_completion_criterion_of_another_course_is_not_a_reference"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayItemRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 51,
+  "hash": "7249ce8d0f7d4d91c4d5919951862b9e",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_references_are_read_only",
+   "local_coursepilot\\cm_references_test::test_condition_on_another_cm_is_not_a_reference",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference",
+   "local_coursepilot\\cm_references_test::test_no_references_gives_empty_list",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found",
+   "local_coursepilot\\cm_references_test::test_completion_criterion_of_another_course_is_not_a_reference"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Foreach_",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 55,
+  "hash": "153cd54ea8c8c5a909fbcd4bb8843cfa",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "IfNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 56,
+  "hash": "1a3793d63f36611fda311a717423eeb6",
+  "ran": 6,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_condition_on_another_cm_is_not_a_reference"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayItemRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 57,
+  "hash": "fe949156790dd8b293c7c7b3eadc7799",
+  "ran": 4,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "CastInt",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 59,
+  "hash": "990b70387fae68d691d38dab3a5e4356",
+  "ran": 4,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Concat",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 60,
+  "hash": "1dfd69eaf2e46dd14e7de77f0d901516",
+  "ran": 4,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ConcatOperandRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 60,
+  "hash": "d89d2acc9c0aa4d40ad1ed006d0ce47a",
+  "ran": 4,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ConcatOperandRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 60,
+  "hash": "fd7ba449e9c3f105914f80d80568c4e8",
+  "ran": 4,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayItemRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 68,
+  "hash": "5a246a5e1106147aed26ae7f67098de6",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_condition_on_another_cm_is_not_a_reference",
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found",
+   "local_coursepilot\\cm_references_test::test_no_references_gives_empty_list",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_references_are_read_only",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_completion_criterion_of_another_course_is_not_a_reference"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Foreach_",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 72,
+  "hash": "d9c143774ba3bf7be50dc987f719fc05",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "IfNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 73,
+  "hash": "8689456a04b8584dcfa6f8d2bdf071df",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayItemRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 74,
+  "hash": "526f4bee7cf0ec739ed63ec5a3fc707a",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "CastInt",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 76,
+  "hash": "08b2f704108916a76be1d49089b0cfe9",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Concat",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 77,
+  "hash": "eb1946ff10fce2efd67b1f30882a5636",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ConcatOperandRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 77,
+  "hash": "e06ffa8529e5d635bc5ebff4ed1bf82f",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ConcatOperandRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 77,
+  "hash": "23f95ef6812f4e1f945b96ad3c2158c3",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayItemRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 82,
+  "hash": "b274f1e6ede4355fa4fbca10d0251dd5",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_completion_criterion_of_another_course_is_not_a_reference"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayItem",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 83,
+  "hash": "6f044c85a65b17eb1c24338576b34c8a",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_condition_on_another_cm_is_not_a_reference",
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_no_references_gives_empty_list",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_references_are_read_only",
+   "local_coursepilot\\cm_references_test::test_completion_criterion_of_another_course_is_not_a_reference"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "IfNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 87,
+  "hash": "722bc14e8aa4b6077ffc7941ec79214e",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_condition_on_another_cm_is_not_a_reference",
+   "local_coursepilot\\cm_references_test::test_no_references_gives_empty_list",
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found",
+   "local_coursepilot\\cm_references_test::test_completion_criterion_of_another_course_is_not_a_reference"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayItemRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 88,
+  "hash": "97d5362bbbcff21b503da51d67db58ed",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "CastInt",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 90,
+  "hash": "57de704187a38a28be78d7ba0e12729b",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Concat",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 91,
+  "hash": "dc2f32349dd4ef12595ed3352ce0a2f2",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ConcatOperandRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 91,
+  "hash": "23c14ec4c10e51af73d531c5d002bc7e",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ConcatOperandRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 91,
+  "hash": "4059ec720bad82aaf846adb63e2acd83",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_course_completion_criterion_is_found"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayOneItem",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 95,
+  "hash": "9f7f56810f09ad326ab408c7eef23673",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Identical",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 107,
+  "hash": "5f1c2dc75924c007b649c3ef140262e4",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling",
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Coalesce",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 110,
+  "hash": "619926157314b5582d667831235bed80",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling",
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Foreach_",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 110,
+  "hash": "3ec8292f141579720e8668110611d392",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling",
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "IfNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 111,
+  "hash": "6d9bcd8f876e6aff1944e64b429f0bdf",
+  "ran": 9,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "UnwrapArrayMerge",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 112,
+  "hash": "82bb7bfdfca6ef63e9cbe95f08810777",
+  "ran": 9,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "UnwrapArrayMerge",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 112,
+  "hash": "549da07fe7fc23f4121a52f565f8b829",
+  "ran": 9,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayOneItem",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 115,
+  "hash": "859aade74433904194e7bad6814c7c0c",
+  "ran": 10,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "PublicVisibility",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 124,
+  "hash": "a7fe66b06b88f45e55783820006f9d81",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Foreach_",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 126,
+  "hash": "ba108e5a6423cc35a48ddb277a0ed8e6",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers",
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "CastInt",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 128,
+  "hash": "7a8c278840baf866468b6333fb9e2b2b",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Concat",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 128,
+  "hash": "aaaa2ac686b40ea51c2619cdadb18cd0",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers",
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ConcatOperandRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 128,
+  "hash": "741de8de13827dd2c2210cde1052f2ea",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers",
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ConcatOperandRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 128,
+  "hash": "25c6e15c49d10e147a4e5a658f7f54f0",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "CastInt",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 128,
+  "hash": "165849466a1342bb9bc61354c60666d4",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Concat",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 128,
+  "hash": "e61bc003447748bf14b45acab78d5e6a",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling",
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ConcatOperandRemoval",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 128,
+  "hash": "6740bb96b0516d8521c81ee96c76b7f5",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups",
+   "local_coursepilot\\cm_references_test::test_pairs_use_whole_numbers",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "ArrayOneItem",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 131,
+  "hash": "c0730b016a21da5dfdb605fa6699deb4",
+  "ran": 3,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_pairs_list_all_conditions_of_nested_and_sibling_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "PublicVisibility",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 140,
+  "hash": "6f0e291be9ee4d693259919db16d8a1c",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Identical",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "79316d558020a2b88ff37b474e1f1d76",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "IncrementInteger",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "8fb6dcad31e906b8ea3d434761f0eee8",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Coalesce",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "dd1ab7113076080d089f89f637a9bdcc",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "CastInt",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "e3ae919cd996b401e1da6c7a61dfd3a8",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "DecrementInteger",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "9458eb9421d710433f422ef08dc76ae0",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Identical",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "b0f46b7d5cf0071cc224ca873ea7e38a",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalAnd",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "a4814e636bad9240aec2ea93c467ec35",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalAndAllSubExprNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "c08e20578f77bc2e1cf3dbb0628f26eb",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalAndNegation",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "21b65d1c94993eeca0470d1071f746a6",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_dangling_means_an_explicit_cm_zero",
+   "local_coursepilot\\cm_references_test::test_shared_parts_pairs_and_dangling"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "LogicalNot",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 153,
+  "hash": "f7fd250be52d6cba7149ec49d01676c5",
+  "ran": 7,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "FalseValue",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 154,
+  "hash": "83dd2c6a4cf22b2cfa4dc7a965b9d7e0",
+  "ran": 1,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Foreach_",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 156,
+  "hash": "c0f08fbdd38597a551299ed4f66b3ee6",
+  "ran": 7,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Coalesce",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 157,
+  "hash": "e02432547d0e39b76a9ebae49d62f370",
+  "ran": 6,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "CastInt",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 157,
+  "hash": "ededbcc4e7c195a057f7270854f33778",
+  "ran": 6,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "Identical",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 157,
+  "hash": "3a696f9208eb552dc659fc4db3f7a1b0",
+  "ran": 6,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_condition_on_another_cm_is_not_a_reference",
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "TrueValue",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 158,
+  "hash": "d5422ea012f9e8f9f363b0ff41626803",
+  "ran": 5,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_section_availability_is_found",
+   "local_coursepilot\\cm_references_test::test_a_condition_with_a_textual_cm_id_points_at_the_activity",
+   "local_coursepilot\\cm_references_test::test_activity_availability_is_found_including_nested_groups",
+   "local_coursepilot\\cm_references_test::test_every_kind_of_reference_is_listed_in_order"
+  ]
+ },
+ {
+  "status": "killed",
+  "mutator": "FalseValue",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 161,
+  "hash": "a475fe17be17b5be2e90ad10f8019e8b",
+  "ran": 2,
+  "failing": [
+   "local_coursepilot\\cm_references_test::test_availability_that_is_not_a_condition_tree_is_no_reference",
+   "local_coursepilot\\cm_references_test::test_condition_on_another_cm_is_not_a_reference"
+  ]
+ },
+ {
+  "status": "escaped",
+  "mutator": "CastString",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 56,
+  "hash": "5f0a464fae27d3c7b60cb70f83a3fd8b",
+  "ran": 6,
+  "failing": []
+ },
+ {
+  "status": "escaped",
+  "mutator": "CastString",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 73,
+  "hash": "eba92e40f7139e090e31426c2c148548",
+  "ran": 2,
+  "failing": []
+ },
+ {
+  "status": "escaped",
+  "mutator": "DecrementInteger",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 141,
+  "hash": "66848839ed8bc80cc14bdb1c6edc8865",
+  "ran": 2,
+  "failing": []
+ },
+ {
+  "status": "escaped",
+  "mutator": "DecrementInteger",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 157,
+  "hash": "f82f5483dd554a2c4b683aa762c83833",
+  "ran": 6,
+  "failing": []
+ },
+ {
+  "status": "escaped",
+  "mutator": "IncrementInteger",
+  "file": "/var/www/html/public/local/coursepilot/classes/cm_references.php",
+  "line": 157,
+  "hash": "c9d70fd2844dcdec3ec6b6739a27f31a",
+  "ran": 6,
+  "failing": []
+ }
+]
