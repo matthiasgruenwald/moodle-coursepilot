@@ -214,7 +214,7 @@ function runSection(section, ignores, baseline, environment, sourceHashes, asser
   const config = {
     source: { directories: [PLUGIN_IN_CONTAINER], excludes: mutation.infectionExcludePatterns(['tests/', ...baseline.excluded.map(e => e.path)]) },
     phpUnit: { configDir: PLUGIN_IN_CONTAINER, customPath: ALLFAIL ? `/var/www/reports/full673/${section.name}-allfail/mutation-allfail.sh` : '/var/www/html/vendor/bin/phpunit' },
-    timeout: 1800,
+    timeout: ALLFAIL ? 300 : 1800,
     bootstrap: '/var/www/reports/infection-bootstrap.php',
     logs: { json: `/var/www/reports/full673/${section.name}.json`, text: `/var/www/reports/full673/${section.name}.log` },
     tmpDir: `/var/www/reports/full673/${tmp}`,
