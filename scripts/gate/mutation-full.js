@@ -241,6 +241,7 @@ function runSection(section, ignores, baseline, environment, sourceHashes, asser
   for (const f of [jsonPath, logPath]) fs.writeFileSync(path.join(raw, `${path.basename(f)}.gz`), zlib.gzipSync(fs.readFileSync(f)));
   fs.writeFileSync(path.join(OUT, 'sections', `${section.name}.compact.json`), JSON.stringify({ section: section.name, files: section.files, covered, rows }));
   if (ALLFAIL) {
+    fs.mkdirSync(path.join(wrapperDir, 'data'), { recursive: true }); // a section without any covered mutant ran no PHPUnit
     const matrix = require('./mutation-matrix').collect(report, path.join(wrapperDir, 'data'), mutation);
     fs.writeFileSync(path.join(OUT, 'sections', `${section.name}.matrix.json`), JSON.stringify({ section: section.name, files: section.files, ...matrix }));
     const tar = spawnSync('tar', ['-czf', path.join(raw, `${section.name}-allfail.tar.gz`), '-C', wrapperDir, 'data'], { encoding: 'utf8' });
