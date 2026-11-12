@@ -51,6 +51,20 @@ final class webdav_user_instances_check extends check {
     }
 
     /**
+     * Settings action shown by Moodle's check renderer.
+     *
+     * @return action_link
+     */
+    public function get_action_link(): action_link {
+        global $USER;
+
+        return new action_link(
+            webdav_setup_steps::catalog($USER->id)[webdav_setup_steps::STEP_USER_INSTANCES]['targeturl'],
+            get_string('webdavcheckactionlink', 'local_coursepilot')
+        );
+    }
+
+    /**
      * Returns result.
      *
      * @return result
@@ -58,13 +72,12 @@ final class webdav_user_instances_check extends check {
     public function get_result(): result {
         global $USER;
 
-        $steps = webdav_setup_steps::catalog((int) $USER->id);
+        $steps = webdav_setup_steps::catalog($USER->id);
         if (!$steps[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['ok']) {
             return new result(result::NA, get_string('webdavcheck2na', 'local_coursepilot'));
         }
 
         $step = $steps[webdav_setup_steps::STEP_USER_INSTANCES];
-        $actionlink = new action_link($step['targeturl'], get_string('webdavcheckactionlink', 'local_coursepilot'));
 
         if ($step['ok']) {
             return new result(result::OK, get_string('webdavcheck2ok', 'local_coursepilot'));
@@ -73,8 +86,7 @@ final class webdav_user_instances_check extends check {
         return new result(
             result::WARNING,
             get_string('webdavcheck2warning', 'local_coursepilot'),
-            $step['instruction'],
-            $actionlink
+            $step['instruction']
         );
     }
 }

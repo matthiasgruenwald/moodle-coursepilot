@@ -174,7 +174,9 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
 
         $this->export_context_data_for_user($this->author->id, $ctx, 'local_coursepilot');
 
-        $data = writer::with_context($ctx)->get_data([
+        $exported = writer::with_context($ctx);
+        $this->assertInstanceOf(\core_privacy\tests\request\content_writer::class, $exported);
+        $data = $exported->get_data([
             get_string('pluginname', 'local_coursepilot'), get_string('historytitle', 'local_coursepilot'),
         ]);
         $this->assertCount(1, $data->versions);

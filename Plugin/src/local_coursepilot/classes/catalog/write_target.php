@@ -58,9 +58,9 @@ final class write_target {
      * @param mixed[] $state Effective target: defaults/current overlaid with $changes.
      */
     private function __construct(
-        /** @var array The changes. */
+        /** @var array<string, mixed> The changes. */
         public readonly array $changes,
-        /** @var array The state. */
+        /** @var array<string, mixed> The state. */
         public readonly array $state
     ) {
     }
@@ -277,7 +277,7 @@ final class write_target {
         // Moodle's form path silently falls back to visible without
         // allowstealth (set_moduleinfo_defaults()); only an explicit request
         // for stealth is affected, returning to 1 always works.
-        if (($this->changes['visibleoncoursepage'] ?? null) === 0 && !get_config(null, 'allowstealth')) {
+        if (($this->changes['visibleoncoursepage'] ?? null) === 0 && !get_config('core', 'allowstealth')) {
             throw new moodle_exception('stealthnotallowed', 'local_coursepilot');
         }
     }

@@ -126,7 +126,7 @@ final class catalog_file_write_test extends \advanced_testcase {
     /**
      * Valid file input combined with one rejected rule.
      *
-     * @return array<string, array{0: array, 1: string}>
+     * @return array<string, array{0: array<string, mixed>, 1: string}>
      */
     public static function rejected_updates(): array {
         return [
@@ -137,6 +137,13 @@ final class catalog_file_write_test extends \advanced_testcase {
         ];
     }
 
+    /**
+     * Rejected changes preserve the stored activity and its files.
+     *
+     * @param mixed[] $invalid Rejected field values.
+     *        Type: array<string,mixed>.
+     * @param string $errorcode Expected rejection.
+     */
     #[DataProvider('rejected_updates')]
     public function test_rejected_update_mutates_neither_files_nor_activity(array $invalid, string $errorcode): void {
         $cmid = $this->assign_with_files();
@@ -248,7 +255,7 @@ final class catalog_file_write_test extends \advanced_testcase {
     /**
      * Provides rejected creates.
      *
-     * @return array<string, array{0: array, 1: string}>
+     * @return array<string, array{0: array<string, mixed>, 1: string}>
      */
     public static function rejected_creates(): array {
         return [
@@ -259,6 +266,13 @@ final class catalog_file_write_test extends \advanced_testcase {
         ];
     }
 
+    /**
+     * Rejected changes preserve the stored activity and its files.
+     *
+     * @param mixed[] $invalid Rejected field values.
+     *        Type: array<string,mixed>.
+     * @param string $errorcode Expected rejection.
+     */
     #[DataProvider('rejected_creates')]
     public function test_rejected_create_mutates_neither_files_nor_course(array $invalid, string $errorcode): void {
         $before = $this->snapshot();

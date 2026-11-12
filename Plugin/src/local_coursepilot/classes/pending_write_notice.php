@@ -127,7 +127,7 @@ final class pending_write_notice {
      * it is written plugin-internally, a defective state is the
      * rare edge case, not the normal case).
      *
-     * @return array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id: int}>
+     * @return array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id?: int}>
      */
     private static function all(): array {
         global $USER;

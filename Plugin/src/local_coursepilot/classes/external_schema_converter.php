@@ -30,6 +30,9 @@ use core_external\external_value;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class external_schema_converter {
+    /** @var array<string, string> Moodle scalar types mapped to JSON Schema types. */
+    private const VALUE_TYPES = [PARAM_INT => 'integer', PARAM_FLOAT => 'number', PARAM_BOOL => 'boolean'];
+
     /**
      * Builds MCP input properties and required names from Moodle's parameter declaration.
      *
@@ -37,7 +40,8 @@ final class external_schema_converter {
      * because the dispatcher supplies it when publishing the tool's input schema.
      *
      * @param external_function_parameters $parameters Named inputs declared by an external function.
-     * @return array{properties: array<string, array>, required?: string[]} Input schemas and any required input names.
+     * @return array{properties: array<string, array<string, mixed>>, required?: string[]}
+     *         Input schemas and any required input names.
      */
     public static function from_parameters(external_function_parameters $parameters): array {
         $schema = self::from_structure($parameters);
@@ -58,12 +62,7 @@ final class external_schema_converter {
     private static function from_description(external_description $description): array {
         if ($description instanceof external_value) {
             $schema = [
-                'type' => match ($description->type) {
-                    PARAM_INT => 'integer',
-                    PARAM_FLOAT => 'number',
-                    PARAM_BOOL => 'boolean',
-                    default => 'string',
-                },
+                'type' => self::VALUE_TYPES[$description->type] ?? 'string',
                 'description' => $description->desc,
             ];
         } else if ($description instanceof external_multiple_structure) {
@@ -72,9 +71,11 @@ final class external_schema_converter {
                 'items' => self::from_description($description->content),
                 'description' => $description->desc,
             ];
-        } else {
+        } else if ($description instanceof external_single_structure) {
             $schema = self::from_structure($description);
             $schema['description'] = $description->desc;
+        } else {
+            throw new \coding_exception('Unsupported external description: ' . get_class($description));
         }
 
         if ($description->required === VALUE_DEFAULT) {
@@ -89,7 +90,8 @@ final class external_schema_converter {
      * Only VALUE_REQUIRED members enter the required list; the list is omitted when empty.
      *
      * @param external_single_structure $structure Named member declarations, including external-function parameters.
-     * @return array{type: string, properties: array<string, array>, required?: string[]} Object schema and required names.
+     * @return array{type: string, properties: array<string, array<string, mixed>>, required?: string[]}
+     *         Object schema and required names.
      */
     private static function from_structure(external_single_structure $structure): array {
         $schema = ['type' => 'object', 'properties' => []];

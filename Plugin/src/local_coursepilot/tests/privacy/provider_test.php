@@ -132,7 +132,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $this->export_context_data_for_user($user->id, \context_system::instance(), 'local_coursepilot');
 
-        $data = writer::with_context(\context_system::instance())->get_data([get_string('pluginname', 'local_coursepilot')]);
+        $exported = writer::with_context(\context_system::instance());
+        $this->assertInstanceOf(\core_privacy\tests\request\content_writer::class, $exported);
+        $data = $exported->get_data([get_string('pluginname', 'local_coursepilot')]);
         $this->assertNotEmpty($data->oauth_codes);
         $this->assertNotEmpty($data->oauth_tokens);
         $this->assertSame('test-client', $data->oauth_tokens[0]->clientid);
@@ -181,7 +183,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $this->export_context_data_for_user($user->id, $context, 'local_coursepilot');
 
-        $files = writer::with_context($context)->get_files([get_string('pluginname', 'local_coursepilot')]);
+        $exported = writer::with_context($context);
+        $this->assertInstanceOf(\core_privacy\tests\request\content_writer::class, $exported);
+        $files = $exported->get_files([get_string('pluginname', 'local_coursepilot')]);
         $this->assertCount(1, $files);
         $this->assertSame('vorlagen.md', reset($files)->get_filename());
     }
@@ -245,7 +249,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $this->export_context_data_for_user($user->id, $context, 'local_coursepilot');
 
-        $data = writer::with_context($context)->get_data(
+        $exported = writer::with_context($context);
+        $this->assertInstanceOf(\core_privacy\tests\request\content_writer::class, $exported);
+        $data = $exported->get_data(
             [get_string('pluginname', 'local_coursepilot'), get_string('privacy:metadata:context_mark', 'local_coursepilot')]
         );
         $this->assertNotEmpty($data->entries);

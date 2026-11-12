@@ -210,7 +210,7 @@ final class activity_type_templates_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */
@@ -314,7 +314,7 @@ final class activity_type_templates_test extends \advanced_testcase {
              *
              * @param string $method The method.
              * @param string $url The url.
-             * @param array $headers The headers.
+             * @param string[] $headers The headers.
              * @param ?string $body The body.
              * @return \local_coursepilot\webdav\webdav_response
              */

@@ -88,7 +88,9 @@ final class location_selection {
      * text and markup from the named keys.
      *
      * @param int $userid
-     * @param array|null $browse Result of {@see browse()}, when a level is open.
+     * @param mixed[]|null $browse Result of {@see browse()}, when a level is open.
+     *        Type: array{path:string,folders:array<int,array{name:string}>,iserv:bool,selectable:bool,
+     *        reasonkey:?string,entrycount:int,entrynames:string[]}|null.
      * @return mixed[]
      */
     public static function page_state(int $userid, ?array $browse = null): array {
@@ -363,10 +365,10 @@ final class location_selection {
     }
 
     /**
-     * Location history from the pointer (#494, Spec §2). Empty without a
+     * Location history from the pointer. Empty without a
      * pointer or for first-generation pointers that have no history.
      *
-     * @return array<int, array{date: int, target: string, from: array, to: array}>
+     * @return mixed[] Unvalidated history entries, including legacy text-only and malformed entries.
      */
     public static function history(): array {
         $document = storage_anchor::read_raw_pointer();
@@ -428,7 +430,7 @@ final class location_selection {
      * see {@see build_target()}).
      *
      * @param mixed[] $selection Type: array<string,array{type?:string,instanceid?:int,path?:string}>.
-     * @return array<string, array{location: string, path: string, instanceid?: int, fingerprint?: array}>
+     * @return array<string, array{location: string, path: string, instanceid?: int, fingerprint?: mixed[]}>
      */
     private static function resolve_wanted_targets(array $selection): array {
         $wanted = [];
@@ -441,7 +443,7 @@ final class location_selection {
     /**
      * Targets currently stored in the context pointer.
      *
-     * @return array<string, array{location: string, path: string, instanceid?: int, fingerprint?: array}>
+     * @return array<string, array{location: string, path: string, instanceid?: int, fingerprint?: mixed[]}>
      */
     private static function resolve_current_targets(): array {
         $current = [];
@@ -471,14 +473,13 @@ final class location_selection {
     }
 
     /**
-     * Detects real target changes and records history/previous location (#498,
-     * Spec #486 §9). A context-area move replaces the previous location only
+     * Detects real target changes and records history/previous location. A context-area move replaces the previous location only
      * with provable legacy context, keeping exactly one previous location.
      * Its files remain untouched. A material-only move leaves that field unchanged.
      *
      * @param mixed[] $wanted Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
      * @param mixed[] $current Type: array<string,array{location:string,path:string,instanceid?:int,fingerprint?:array}>.
-     * @return array{changed: string[], location_history: mixed[], previouslocation: ?array}
+     * @return array{changed: string[], location_history: mixed[], previouslocation: mixed[]|null}
      */
     private static function record_changes(array $wanted, array $current): array {
         $changed = [];
@@ -577,7 +578,7 @@ final class location_selection {
      * Provides current pointer value.
      *
      * @param string $target
-     * @return array{location: string, path: string, instanceid?: int, fingerprint?: mixed[]}
+     * @return array{location: string, path: string, instanceid?: int, fingerprint?: mixed[], chosen: bool}
      */
     private static function current_pointer_value(string $target): array {
         $area = self::area($target);

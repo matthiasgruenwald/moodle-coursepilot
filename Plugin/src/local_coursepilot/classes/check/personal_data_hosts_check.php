@@ -50,18 +50,25 @@ final class personal_data_hosts_check extends check {
     }
 
     /**
+     * Settings action shown by Moodle's check renderer.
+     *
+     * @return action_link
+     */
+    public function get_action_link(): action_link {
+        return new action_link(
+            new \moodle_url('/admin/settings.php', ['section' => 'local_coursepilot']),
+            get_string('webdavcheckactionlink', 'local_coursepilot')
+        );
+    }
+
+    /**
      * Returns result.
      *
      * @return result
      */
     public function get_result(): result {
-        $actionlink = new action_link(
-            new \moodle_url('/admin/settings.php', ['section' => 'local_coursepilot']),
-            get_string('webdavcheckactionlink', 'local_coursepilot')
-        );
-
         if (empty(personal_data_hosts::configured())) {
-            return new result(result::INFO, get_string('webdavcheck4info', 'local_coursepilot'), '', $actionlink);
+            return new result(result::INFO, get_string('webdavcheck4info', 'local_coursepilot'));
         }
 
         return new result(result::OK, get_string('webdavcheck4ok', 'local_coursepilot'));

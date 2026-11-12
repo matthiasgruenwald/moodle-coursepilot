@@ -108,6 +108,21 @@ final class course_module_placement_test extends \advanced_testcase {
         $this->assertSame([$a, $b, $c], $this->order((int) $course->id, 1));
     }
 
+    public function test_place_after_uses_the_target_section_and_appends_without_successor(): void {
+        [$course, [$a, $b, $c]] = $this->course_with_pages();
+        $courseid = (int) $course->id;
+        $first = (int) $this->getDataGenerator()->create_module('page', ['course' => $courseid], ['section' => 2])->cmid;
+        $last = (int) $this->getDataGenerator()->create_module('page', ['course' => $courseid], ['section' => 2])->cmid;
+        $this->assertNotSame(2, $this->section_id($courseid, 2), 'Section id and number must differ here.');
+
+        course_module_placement::place_after($a, $first);
+        $this->assertSame([$first, $a, $last], $this->order($courseid, 2));
+
+        course_module_placement::place_after($b, $last);
+        $this->assertSame([$first, $a, $last, $b], $this->order($courseid, 2));
+        $this->assertSame([$c], $this->order($courseid, 1));
+    }
+
     public function test_set_visible_hides_and_shows(): void {
         global $DB;
         [, [$a]] = $this->course_with_pages();

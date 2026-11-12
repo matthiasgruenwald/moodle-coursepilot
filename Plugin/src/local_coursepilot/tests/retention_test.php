@@ -221,7 +221,7 @@ final class retention_test extends \advanced_testcase {
      */
     private function run_task(): void {
         $task = \core\task\manager::get_scheduled_task(\local_coursepilot\task\purge_history::class);
-        $this->assertNotNull($task);
+        $this->assertInstanceOf(\local_coursepilot\task\purge_history::class, $task);
         ob_start();
         $task->execute();
         ob_end_clean();
@@ -285,7 +285,7 @@ final class retention_test extends \advanced_testcase {
         $this->assertSame(0, $DB->count_records('local_coursepilot_cm_version'));
 
         retention::enforce(1, $total);
-        $this->assertSame(0, $DB->count_records('local_coursepilot_cm_version'));
+        $this->assertFalse($DB->record_exists('local_coursepilot_cm_version', []));
     }
 
     /**
@@ -358,7 +358,10 @@ final class retention_test extends \advanced_testcase {
     public function test_install_registers_task_and_indexes(): void {
         global $DB;
         $this->resetAfterTest();
-        $this->assertNotNull(\core\task\manager::get_scheduled_task(\local_coursepilot\task\purge_history::class));
+        $this->assertInstanceOf(
+            \local_coursepilot\task\purge_history::class,
+            \core\task\manager::get_scheduled_task(\local_coursepilot\task\purge_history::class)
+        );
         $dbman = $DB->get_manager();
         $this->assertTrue($dbman->index_exists(
             new \xmldb_table('local_coursepilot_cm_version'),

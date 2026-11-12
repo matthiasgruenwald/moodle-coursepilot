@@ -279,7 +279,7 @@ final class glossary_entry_writer {
     /**
      * Category metadata only; creation follows mod/glossary/editcategories.php.
      *
-     * @param array $names The names.
+     * @param string[] $names The names.
      * @param \stdClass $glossary The glossary.
      * @param \context_module $context The context.
      * @return mixed[]

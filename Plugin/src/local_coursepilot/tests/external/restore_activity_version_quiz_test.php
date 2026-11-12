@@ -249,8 +249,9 @@ final class restore_activity_version_quiz_test extends \advanced_testcase {
      * Spec 0017.
      */
     public function test_arrangement_is_not_registered_as_mcp_tool(): void {
-        $this->assertFalse(
-            is_subclass_of(arrangement::class, \core_external\external_api::class),
+        $this->assertNotContains(
+            \core_external\external_api::class,
+            class_parents(arrangement::class),
             'arrangement must not be a web service endpoint.'
         );
 

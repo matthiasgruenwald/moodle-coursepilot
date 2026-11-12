@@ -10,6 +10,25 @@ const { runStatic } = require('../scripts/gate/static');
 const ROOT = path.join(__dirname, '..');
 const BASELINE = 'scripts/gate/phpstan/phpstan-baseline.neon';
 const POINTER = 'Plugin/src/local_coursepilot/classes/admin/pointer_scan.php';
+// Keep the debt fixture stable when the production pointer contract is corrected.
+const POINTER_SOURCE = String.raw`<?php
+namespace local_coursepilot\admin;
+class pointer_scan {
+    /**
+     * Reads raw_pointer_for() results without validating values.
+     * @param array|null $decoded
+     */
+    public static function has_external_target(?array $decoded): bool {
+        return false;
+    }
+    /**
+     * @param array|null $decoded
+     */
+    public static function has_open_previous_location(?array $decoded): bool {
+        return false;
+    }
+}
+`;
 const ENTRY = String.raw`parameters:
 	ignoreErrors:
 		-
@@ -26,7 +45,7 @@ function fixture(t, entry = ENTRY) {
   t.after(() => fs.rmSync(repo, { recursive: true, force: true }));
   fs.mkdirSync(path.dirname(path.join(repo, BASELINE)), { recursive: true });
   fs.mkdirSync(path.dirname(path.join(repo, POINTER)), { recursive: true });
-  fs.copyFileSync(path.join(ROOT, POINTER), path.join(repo, POINTER));
+  fs.writeFileSync(path.join(repo, POINTER), POINTER_SOURCE);
   fs.writeFileSync(path.join(repo, BASELINE), entry);
   return repo;
 }
@@ -69,10 +88,7 @@ test('runStatic: every real PHPStan suppression has a concrete reason and matchi
   assert.equal(report.blocking, 0, report.lines.join('\n'));
   assert.deepEqual(report.errors, []);
   const baseline = fs.readFileSync(path.join(ROOT, BASELINE), 'utf8');
-  const pointer = baseline.split('\t\t-\n').find(b => b.includes('has_external_target'));
-  assert.match(pointer, /raw_pointer_for/);
-  assert.match(pointer, /typing debt/i);
-  assert.match(pointer, /# resolution: https:\/\/github.com\/matthiasgruenwald\/moodle-coursepilot\/issues\/714/);
+  assert.doesNotMatch(baseline, /# resolution: https:\/\/github.com\/matthiasgruenwald\/moodle-coursepilot\/issues\/714\b/);
 });
 
 test('runStatic: unsupported baseline layout cannot silently skip the reason check', t => {

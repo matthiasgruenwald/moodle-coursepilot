@@ -38,7 +38,7 @@ final class webdav_response {
     public function __construct(
         /** @var int HTTP status. */
         public readonly int $statuscode,
-        /** @var array The headers. */
+        /** @var array<string, string> The headers. */
         public readonly array $headers,
         /** @var string Unmodified response body. */
         public readonly string $body,

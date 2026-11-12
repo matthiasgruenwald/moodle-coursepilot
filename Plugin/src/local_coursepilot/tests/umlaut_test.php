@@ -121,6 +121,7 @@ final class umlaut_test extends advanced_testcase {
      */
     public function test_plugin_description_states_write_lock_not_read_lock(): void {
         // Read the source directly because the test environment has no German language pack.
+        /** @var array<string, string> $string */
         $string = [];
         require(__DIR__ . '/../lang/de/local_coursepilot.php');
         $desc = $string['settingintroheading_desc'];

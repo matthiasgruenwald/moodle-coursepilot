@@ -41,7 +41,8 @@ final class pointer_location {
      * @param ?string $path The path.
      * @param ?int $instanceid The instanceid.
      * @param ?string $relativepath The relativepath.
-     * @param ?array $fingerprint The fingerprint.
+     * @param mixed[]|null $fingerprint The fingerprint.
+     *        Type: array<string,mixed>|null.
      */
     private function __construct(
         /** @var string The kind. */
@@ -52,7 +53,7 @@ final class pointer_location {
         public readonly ?int $instanceid = null,
         /** @var ?string The relativepath. */
         public readonly ?string $relativepath = null,
-        /** @var ?array The fingerprint. */
+        /** @var array<string, mixed>|null The fingerprint. */
         public readonly ?array $fingerprint = null,
     ) {
     }
@@ -72,7 +73,8 @@ final class pointer_location {
      *
      * @param int $instanceid WebDAV user instance repository_instances.id.
      * @param string $relativepath Selected folder relative to the instance base path.
-     * @param mixed[] $fingerprint Type: array{server:string,basepath:string,account:string}.
+     * @param mixed[] $fingerprint Selection-time metadata; may be incomplete before instance validation.
+     *        Type: array<string,mixed>.
      *        Server/base path/account at selection time (Spec §2).
      * @return self
      */

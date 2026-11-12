@@ -534,6 +534,7 @@ final class read_context_file_test extends \advanced_testcase {
      * (#516 acceptance criterion, CONTEXT.md).
      */
     public function test_german_read_failure_message_names_the_context_gap(): void {
+        /** @var array<string, string> $string */
         $string = [];
         require(__DIR__ . '/../../lang/de/local_coursepilot.php');
 

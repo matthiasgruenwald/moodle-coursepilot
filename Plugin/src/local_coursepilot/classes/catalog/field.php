@@ -58,7 +58,7 @@ final class field {
      * @param string $meaning Meaning for the teacher/AI.
      * @param bool $required Required field without a default?
      * @param mixed $default Form default, null if none exists.
-     * @param array|null $values Allowed values, literal - null if only determinable via
+     * @param scalar[]|null $values Allowed values, literal - null if only determinable via
      *        $sourcecallable.
      * @param string|null $sourcecallable Name of a callable Moodle source
      *        for the value range, e.g. "format_text_menu()".
@@ -76,7 +76,7 @@ final class field {
         public readonly bool $required,
         /** @var mixed Form default, null if none exists. */
         public readonly mixed $default,
-        /** @var ?array Allowed values, literal - null if only determinable via */
+        /** @var scalar[]|null Allowed values, literal - null if only determinable via */
         public readonly ?array $values,
         /** @var ?string Name of a callable Moodle source */
         public readonly ?string $sourcecallable,

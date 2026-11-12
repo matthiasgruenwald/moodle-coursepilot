@@ -54,7 +54,7 @@ final class webdav_setup_steps_test extends \advanced_testcase {
 
         $steps = webdav_setup_steps::catalog((int) $user->id);
 
-        $this->assertIsBool($steps[webdav_setup_steps::STEP_CAPABILITY]['ok']);
+        $this->assertFalse($steps[webdav_setup_steps::STEP_CAPABILITY]['ok']);
     }
 
     /**

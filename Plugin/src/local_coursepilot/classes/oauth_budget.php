@@ -59,6 +59,7 @@ final class oauth_budget {
         self::purge_expired($now);
         $siteid = self::site_row($scope, $expires);
 
+        /** @var \moodle_transaction $transaction */
         $transaction = $DB->start_delegated_transaction();
         try {
             $allowed = self::consume_locked($scope, $siteid, $source, $expires, $sitelimit, $sourcelimit);

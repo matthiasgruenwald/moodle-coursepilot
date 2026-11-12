@@ -216,6 +216,7 @@ final class list_skills_test extends \advanced_testcase {
         );
         // Old-content notices contain no count (#498). Check the German pack
         // for real umlauts and absence of digits.
+        /** @var array<string, string> $string */
         $string = [];
         require(__DIR__ . '/../../lang/de/local_coursepilot.php');
         $this->assertDoesNotMatchRegularExpression('/\d/', $string['listskillspreviouslocationhint']);

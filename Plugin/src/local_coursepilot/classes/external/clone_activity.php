@@ -236,7 +236,7 @@ final class clone_activity extends external_api {
      * by cleanup instead of leaving empty wrappers.
      *
      * @param mixed[] $node
-     * @param array|null $sourcenode The same source-tree node before cloning, used for the message.
+     * @param mixed[]|null $sourcenode The same source-tree node before cloning, used for the message.
      * @param mixed[] $removed By reference: message for each removed condition.
      * @return mixed[]|null null if the node or entire tree became empty.
      */
@@ -294,7 +294,7 @@ final class clone_activity extends external_api {
      * referenced activity when the source tree retains it. The new tree only
      * knows cm: 0.
      *
-     * @param array|null $sourcechild
+     * @param mixed[]|null $sourcechild
      * @return string
      */
     private static function describe_removed_condition(?array $sourcechild): string {
