@@ -2,6 +2,16 @@
 
 **Nur ein Vorschlag. Kein Test wurde gelöscht oder geändert.** Löschung braucht eine neue HITL-Freigabe von Matthias für genau eine Liste daraus.
 
+## Entscheidung vom 14.11.2026 (Matthias)
+
+- **Nachlauf abgelehnt, keine weiteren Mutationsläufe für #753.** Gründe: ca. 5 h Rechenzeit plus Instanz, um die Löschung von 84 Tests mit zusammen 12 s Laufzeit abzusichern, ist kein messbarer Nutzen. Der Nachlauf könnte außerdem die Hauptgruppe von Tier 1 kaum beurteilen: Tests, die ausgeschlossene Dateien schützen (`db/services.php`, `lang/`), töten nie einen Mutanten.
+- **Tier 1 und Tier 2 bleiben ohne Freigabe.** Es gibt keine Löschfreigabe, auch nicht für Tier 1. Dieser Bericht ist **Messstand**, keine Löschliste. Die neun Katalog-Vertragstests in Tier 1B fallen unter T4.
+- **Sichtung der 84 Tier-1-Tests** (reine Textsuche im Testrumpf auf Muster, kein Lauf, kein Beweis): Die Annahme „der Test schützt eine von der Mutation ausgeschlossene Datei“ trägt **nur zu einem Teil**.
+  - 29 von 84 verweisen direkt auf ausgeschlossene Bereiche (`lang/`/`get_string` 14, Capabilities/`db/access.php` 13, Events/Tasks 3, Einstiegsskripte 4; Mehrfachtreffer möglich). `db/services.php` direkt: 0, `version.php`: 0.
+  - 29 weitere haben eine andere Erklärung, warum keine Mutation sie treffen kann: Quelltext-/Dateiinhaltsprüfung 21, optionales Plugin Lightbox (laut Spec 0029 Umgebungsgrenze) 10, Registrierungs-/Katalogprüfung 15 (Mehrfachtreffer möglich).
+  - 26 von 84 haben im Rumpf keinen dieser Hinweise (u. a. Katalog-Vertragstests, Konstantenprüfungen, Profil-/Navigations-Tests von `lib.php`, Quiz-/Modul-Einstellungen). Für sie ist die Annahme **nicht belegt**; ein fehlender Kill ist dort kein Beweis für Wertlosigkeit.
+  - Alle 74 Tier-1A-Tests liefen auf keinem Mutanten (kein Line-Coverage-Treffer); 10 Tier-1B liefen und töteten keinen.
+
 Quelle: [Kill-Matrix](753-kill-matrix-2026-11-14.md), Rohbelege dort. Stand: Quellstand 38b16690b4f767f0e29cef15c42f7222abf78b94, Plugin-Baumdigest 71914b36927066e3d68866ad6b8aca1bcf467a40302b6e9de35a5ace3910719e, Coverage-JUnit sha256 34952223e1baf67c (2805 Testmethoden), Infection 0.29.14, 27 Abschnitte. Nicht zugeordnete Wrapper-Artefakte: 0. UNVOLLSTÄNDIG: 20 getötete/Timeout-Mutanten ohne Failing-Daten.
 
 ## Methode
