@@ -240,11 +240,13 @@ final class pseudofield_carry_forward {
         if (is_file($locallib)) {
             require_once($locallib);
         }
+        $editorfiles = $catalogclass::write_options()['editor_files'] ?? [];
         foreach ($editors as $pseudofield => $columns) {
             if (array_key_exists($pseudofield, $patch)) {
                 continue;
             }
             [$content, $format] = $columns;
+            $filearea = $editorfiles[$pseudofield]['filearea'] ?? $content;
             // Itemid 0 makes file_prepare_draft_area() create the draft and copy the
             // stored files into it; a pre-allocated id would leave the draft empty and
             // the save would delete the files.
@@ -253,9 +255,9 @@ final class pseudofield_carry_forward {
                 $draftitemid,
                 context_module::instance($cm->id)->id,
                 'mod_' . $modname,
-                $content,
+                $filearea,
                 0,
-                [],
+                $editorfiles[$pseudofield]['options'] ?? [],
                 (string) ($patch[$content] ?? $before[$content] ?? '')
             );
             $moduleinfo->{$pseudofield} = [

@@ -607,6 +607,9 @@ final class assign implements module_catalog {
     public static function write_options(): array {
         return [
             'editor_content' => ['activityeditor' => ['activity', 'activityformat']],
+            // Core keeps the activity text's files in "activityattachment", not in a
+            // "activity" area, and allows subfolders (mod_assign_mod_form).
+            'editor_files' => ['activityeditor' => ['filearea' => 'activityattachment', 'options' => ['subdirs' => true]]],
             'material_reference_fields' => ['introattachments' => ['component' => 'mod_assign', 'filearea' => 'introattachment']],
             'intro_image_field' => 'introimages',
             'admin_default_fields' => [

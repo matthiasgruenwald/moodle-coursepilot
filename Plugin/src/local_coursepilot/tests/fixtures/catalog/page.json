@@ -80,6 +80,14 @@
                 "content",
                 "contentformat"
             ]
+        },
+        "editor_files": {
+            "page": {
+                "filearea": "content",
+                "options": {
+                    "subdirs": true
+                }
+            }
         }
     },
     "common_field_names": [

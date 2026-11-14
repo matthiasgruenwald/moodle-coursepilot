@@ -254,6 +254,7 @@ final class drift_check {
             array_keys($options['scalar_to_repeated'] ?? []),
             array_values($options['scalar_to_repeated'] ?? []),
             array_keys($options['editor_content'] ?? []),
+            array_keys($options['editor_files'] ?? []),
             array_merge(...array_values($options['editor_content'] ?? [[]])),
             $options['read_fields'] ?? [],
             $options['patch_blocked_fields'] ?? [],
