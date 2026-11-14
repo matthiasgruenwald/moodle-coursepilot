@@ -57,7 +57,7 @@ final class xml_activity_creator_contract_test extends \advanced_testcase {
         $this->assertSame(
             'activity_xml requires <timemodified> in <lightboxgallery>. '
                 . 'Use the complete XML from coursepilot_export_default_activity.',
-            $e->getMessage()
+            $e->debuginfo
         );
     }
 
