@@ -254,6 +254,7 @@ final class drift_check {
             array_keys($options['scalar_to_repeated'] ?? []),
             array_values($options['scalar_to_repeated'] ?? []),
             array_keys($options['editor_content'] ?? []),
+            array_keys($options['editor_files'] ?? []),
             array_merge(...array_values($options['editor_content'] ?? [[]])),
             $options['read_fields'] ?? [],
             $options['patch_blocked_fields'] ?? [],
@@ -270,9 +271,16 @@ final class drift_check {
             $referenced = array_merge($referenced, array_keys($spec['fields'] ?? []));
         }
         $unknown = array_values(array_diff(array_unique($referenced), $known));
-        return array_map(
-            static fn(string $field): string => 'Field "' . $field . '" is referenced outside the catalog.',
-            $unknown
+        $nofilearea = array_diff_key($options['editor_content'] ?? [], $options['editor_files'] ?? []);
+        return array_merge(
+            array_map(
+                static fn(string $field): string => 'Field "' . $field . '" is referenced outside the catalog.',
+                $unknown
+            ),
+            array_map(
+                static fn(string $editor): string => 'Editor "' . $editor . '" has no file area in the write options.',
+                array_keys($nofilearea)
+            )
         );
     }
 }

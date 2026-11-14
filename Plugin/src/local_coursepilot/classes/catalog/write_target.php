@@ -209,6 +209,7 @@ final class write_target {
                 $target->changes
             );
             $target->apply_changes($catalogclass, $moduleinfo, context_module::instance($cm->id), $location, true);
+            pseudofield_carry_forward::draft_named_editors($catalogclass, $moduleinfo, $cm);
             \update_moduleinfo($cm, $moduleinfo, $course);
             self::ensure_assign_grade_item($catalogclass::modname(), (int) $cm->id);
         });

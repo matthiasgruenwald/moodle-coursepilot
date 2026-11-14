@@ -245,22 +245,74 @@ final class pseudofield_carry_forward {
                 continue;
             }
             [$content, $format] = $columns;
-            $draftitemid = file_get_unused_draft_itemid();
-            $text = file_prepare_draft_area(
-                $draftitemid,
-                context_module::instance($cm->id)->id,
-                'mod_' . $modname,
-                $content,
-                0,
-                [],
-                (string) ($patch[$content] ?? $before[$content] ?? '')
+            $moduleinfo->{$pseudofield} = self::editor_draft(
+                $catalogclass,
+                $pseudofield,
+                $cm,
+                (string) ($patch[$content] ?? $before[$content] ?? ''),
+                (int) ($patch[$format] ?? $before[$format] ?? FORMAT_HTML)
             );
-            $moduleinfo->{$pseudofield} = [
-                'text' => $text,
-                'format' => (int) ($patch[$format] ?? $before[$format] ?? FORMAT_HTML),
-                'itemid' => $draftitemid,
-            ];
         }
+    }
+
+    /**
+     * Gives every editor pseudofield the caller named, without a draft, a draft that holds the
+     * stored files. Core saves the draft of such an editor over the file area, so an empty one
+     * would delete the files the new text still references.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param \stdClass $moduleinfo Updated in place.
+     * @param \stdClass $cm
+     * @return void
+     */
+    public static function draft_named_editors(string $catalogclass, \stdClass $moduleinfo, \stdClass $cm): void {
+        foreach (array_keys($catalogclass::write_options()['editor_content'] ?? []) as $pseudofield) {
+            $named = $moduleinfo->{$pseudofield} ?? null;
+            if (!is_array($named) || !array_key_exists('text', $named) || !empty($named['itemid'])) {
+                continue;
+            }
+            $moduleinfo->{$pseudofield} = self::editor_draft(
+                $catalogclass,
+                $pseudofield,
+                $cm,
+                (string) $named['text'],
+                (int) ($named['format'] ?? FORMAT_HTML)
+            );
+        }
+    }
+
+    /**
+     * Builds an editor array whose draft holds the files stored in the editor's file area.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param string $pseudofield Editor pseudofield; its file area comes from the "editor_files" write option.
+     * @param \stdClass $cm
+     * @param string $text Stored text, with @@PLUGINFILE@@ references.
+     * @param int $format
+     * @return array{text: string, format: int, itemid: int}
+     */
+    private static function editor_draft(
+        string $catalogclass,
+        string $pseudofield,
+        \stdClass $cm,
+        string $text,
+        int $format
+    ): array {
+        $spec = $catalogclass::write_options()['editor_files'][$pseudofield];
+        // Itemid 0 makes file_prepare_draft_area() create the draft and copy the
+        // stored files into it; a pre-allocated id would leave the draft empty and
+        // the save would delete the files.
+        $draftitemid = 0;
+        $drafttext = file_prepare_draft_area(
+            $draftitemid,
+            context_module::instance($cm->id)->id,
+            'mod_' . $catalogclass::modname(),
+            $spec['filearea'],
+            0,
+            $spec['options'],
+            $text
+        );
+        return ['text' => $drafttext, 'format' => $format, 'itemid' => $draftitemid];
     }
 
     /**

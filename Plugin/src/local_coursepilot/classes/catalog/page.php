@@ -151,7 +151,12 @@ final class page implements module_catalog {
      * @return mixed[]
      */
     public static function write_options(): array {
-        return ['editor_content' => ['page' => ['content', 'contentformat']]];
+        return [
+            'editor_content' => ['page' => ['content', 'contentformat']],
+            // The editor stores its files in the content area, subfolders included
+            // (page_get_editor_options()).
+            'editor_files' => ['page' => ['filearea' => 'content', 'options' => ['subdirs' => true]]],
+        ];
     }
 
     /**

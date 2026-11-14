@@ -200,6 +200,7 @@ final class drift_check_messages_test extends \advanced_testcase {
             'admin_default_fields' => ['u_admin' => 'x'],
             'scalar_to_repeated' => ['u_scalar_key' => 'u_scalar_value'],
             'editor_content' => ['u_editor_key' => ['u_editor_a', 'u_editor_b']],
+            'editor_files' => ['u_editor_key' => ['filearea' => 'x', 'options' => []]],
             'read_fields' => ['u_read'],
             'patch_blocked_fields' => ['u_patch', 'u_read'],
             'intro_image_field' => 'u_intro_image',
@@ -241,5 +242,18 @@ final class drift_check_messages_test extends \advanced_testcase {
             'repeated_group' => ['g' => ['fields' => ['intro' => 'a']]],
             'editor_content' => [],
         ]]));
+    }
+
+    /**
+     * An editor whose text is rebuilt on writes needs its file area; each editor without one is named.
+     */
+    public function test_an_editor_without_a_file_area_is_reported(): void {
+        $this->assertSame(
+            ['Editor "intro" has no file area in the write options.'],
+            $this->violations(['write_options' => [
+                'editor_content' => ['intro' => ['intro', 'introformat'], 'introformat' => ['intro', 'introformat']],
+                'editor_files' => ['introformat' => ['filearea' => 'intro', 'options' => []]],
+            ]])
+        );
     }
 }

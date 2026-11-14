@@ -369,6 +369,14 @@
                 "activityformat"
             ]
         },
+        "editor_files": {
+            "activityeditor": {
+                "filearea": "activityattachment",
+                "options": {
+                    "subdirs": true
+                }
+            }
+        },
         "material_reference_fields": {
             "introattachments": {
                 "component": "mod_assign",
