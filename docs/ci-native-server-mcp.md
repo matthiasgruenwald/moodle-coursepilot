@@ -28,7 +28,10 @@ werden muss, weil diese ausschließlich auf `Gate (required)` zeigt.
 | 5.3 (`MOODLE_503_STABLE`) | 8.3 | MariaDB 11.4 | volle Suite |
 | 5.3 (`MOODLE_503_STABLE`) | 8.4 | PostgreSQL 17 | volle Suite |
 
-Alle sechs Kombinationen sind verpflichtend; ein Fehler sperrt den Gesamtcheck.
+Nach dem Merge (Push auf `dev`/`main`, manueller Lauf) sind alle sechs Kombinationen verpflichtend;
+ein Fehler färbt den Gesamtcheck rot. Ein Pull Request prüft drei davon (ADR 0033): das `full`-Gate
+auf 5.1/MariaDB/PHP 8.4 sowie 5.2/MariaDB/PHP 8.3 und 5.3/PostgreSQL/PHP 8.4, also jede Moodle-Linie,
+jede Datenbank und jede PHP-Version einmal.
 PostgreSQL 17 erfüllt auch die [Datenbankanforderungen von Moodle 5.1](https://moodledev.io/general/releases/5.1#database-requirements)
 (mindestens PostgreSQL 15). Dieselbe vollständige Plugin-Suite läuft auf beiden
 Datenbanktypen; PostgreSQL prüft grün/rot ohne Coverage oder zweite Ratsche.
@@ -43,8 +46,10 @@ nicht automatisch zugesagt.
 `quality` richtet einen isolierten Gate-Container mit Moodle 5.1, PHP 8.4, MariaDB 11.4
 und PCOV ein (`scripts/gate/setup-container.sh`, versionierte Composer-Lockfiles).
 Dort läuft derselbe `npm run gate -- full`-Einstieg wie lokal: Node-Verträge,
-volle PHPUnit-Suite, Coverage-/CRAP-Ratsche und alle statischen Prüfungen. Der Job läuft als Matrix
-aus vier Teilen (`GATE_MUTATION_PART=i/4`); jeder mutiert nur sein Viertel der geänderten Dateien. Die übrigen
+volle PHPUnit-Suite, Coverage-/CRAP-Ratsche und alle statischen Prüfungen. Im Pull Request läuft er
+einmal und ohne Mutation. Nach dem Merge (Push, manueller Lauf) läuft er als Matrix aus vier Teilen
+(`GATE_MUTATION_PART=i/4`); jeder mutiert sein Viertel der geänderten Dateien als Trend, Befunde
+erscheinen als Warnung und blockieren nicht (ADR 0033). Die übrigen
 fünf PHPUnit-Kombinationen erheben keine zweite Coverage-Regel. Das frühere feste
 80-%-Skript samt Vertragstest ist entfernt.
 

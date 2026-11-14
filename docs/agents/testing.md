@@ -208,9 +208,9 @@ npm run hooks:install   # git config core.hooksPath scripts/githooks
 ```
 
 - `pre-commit` führt `npm run gate -- fast` aus und blockiert den Commit bei Befund.
-- `pre-push` führt `npm run gate -- full` aus (rund 15 Minuten) und blockiert bei
-  Ratschenverletzung. Den vollen Lauf abgekoppelt starten, wenn der Harness lange
-  Läufe abschießt (Exit 144), siehe oben. Der Hook blockiert, wenn ein gepushter
+- `pre-push` führt `npm run gate -- matrix` und danach `npm run gate -- fast` aus (ADR 0033).
+  `full` (rund 25 Minuten) läuft verbindlich in CI und lokal nur auf Wunsch; dann abgekoppelt
+  starten, wenn der Harness lange Läufe abschießt (Exit 144), siehe oben. Der Hook blockiert, wenn ein gepushter
   Branch nicht `HEAD` ist oder versionierte Dateien geändert sind: Geprüft wird der
   Arbeitsbaum, er muss dem gepushten Stand entsprechen.
 - Die Edit-Hooks in `.claude/settings.json` und `.codex/hooks.json` rufen

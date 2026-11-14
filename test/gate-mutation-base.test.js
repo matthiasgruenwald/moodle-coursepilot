@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { mutationBase, recordGreen, snapshot, rulesDigest, runsMutationInFull } = require('../scripts/gate/mutation-base');
+const { mutationBase, recordGreen, snapshot, rulesDigest, runsMutationInFull, mutationIsAdvisory } = require('../scripts/gate/mutation-base');
 
 function fixture() {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-mutation-base-'));
@@ -122,10 +122,13 @@ test('mutation base: green is not recorded when the run started dirty or HEAD mo
   } finally { f.done(); }
 });
 
-test('gate full mutates in CI and on request, not on a plain local push', () => {
+test('gate full mutates only on request, also in CI (ADR 0033)', () => {
   assert.equal(runsMutationInFull({}), false);
   assert.equal(runsMutationInFull({ GATE_MUTATION: '0' }), false);
   assert.equal(runsMutationInFull({ GATE_MUTATION: '1' }), true);
-  assert.equal(runsMutationInFull({ CI: 'true' }), true);
-  assert.equal(runsMutationInFull({ GITHUB_ACTIONS: 'true' }), true);
+  assert.equal(runsMutationInFull({ CI: 'true' }), false);
+  assert.equal(runsMutationInFull({ GITHUB_ACTIONS: 'true', GATE_MUTATION: '0' }), false);
+  assert.equal(runsMutationInFull({ GITHUB_ACTIONS: 'true', GATE_MUTATION: '1' }), true);
+  assert.equal(mutationIsAdvisory({}), false);
+  assert.equal(mutationIsAdvisory({ GATE_MUTATION_ADVISORY: '1' }), true);
 });

@@ -40,7 +40,7 @@ Der Server-MCP liegt unter `Plugin/src/local_coursepilot/` und wird für Entwick
 ## Aufgabenhandling
 
 - Vor Funktionsänderung: alle Aufrufer grep-en.
-- **Coding Standards:** vor dem Schreiben oder Reviewen von Code, Tests oder Skill-Korpus [`CODING_STANDARDS.md`](CODING_STANDARDS.md) lesen.
+- **Coding Standards:** vor dem Schreiben oder Reviewen von Code, Tests oder Skill-Korpus [`CODING_STANDARDS.md`](CODING_STANDARDS.md) lesen, dazu die Projektabweichungen in [`docs/agents/standards-abweichungen.md`](docs/agents/standards-abweichungen.md).
 - Pläne gehören nach `docs/plans/` (versioniert).
 - Single-context Repo: `CONTEXT.md` im Root, `docs/adr/` für Architekturentscheidungen, `docs/specs/` für Produktspezifikationen.
 
@@ -88,7 +88,7 @@ Entpackt Plugin und `well-known` aus dem Tag nach `/opt/plugins/*-main` und füh
 
 Nach Edit/Write von Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` läuft `node scripts/gate/gate.js edit`
 (dasselbe Gate wie `pre-commit`, Befunde als Rückmeldung bei Exitcode 2). Git-Hooks einmal pro Klon
-aktivieren: `npm run hooks:install` (`pre-commit` = `gate fast`, `pre-push` = `gate full`, kein Husky).
+aktivieren: `npm run hooks:install` (`pre-commit` = `gate fast`, `pre-push` = `gate matrix` + `gate fast`, kein Husky; `full` läuft verbindlich in CI, ADR 0033).
 
 Codex nutzt dieselben Hooks: `.codex/hooks.json` spiegelt `.claude/settings.json`, Details in
 [`docs/gate.md`](docs/gate.md) und [`docs/agents/testing.md`](docs/agents/testing.md).

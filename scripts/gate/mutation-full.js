@@ -209,7 +209,7 @@ function runSection(section, ignores, baseline, environment, sourceHashes, asser
     bootstrap: '/var/www/reports/infection-bootstrap.php',
     logs: { json: `/var/www/reports/full673/${section.name}.json`, text: `/var/www/reports/full673/${section.name}.log` },
     tmpDir: `/var/www/reports/full673/${tmp}`,
-    mutators: { '@default': true },
+    mutators: mutation.MUTATORS,
   };
   fs.writeFileSync(path.join(dir, `${section.name}-config.json`), JSON.stringify(config, null, 2));
   const args = [`--configuration=/var/www/reports/full673/${section.name}-config.json`, '--threads=1', '--only-covering-test-cases',
@@ -360,7 +360,7 @@ async function verify(file, filter) {
     bootstrap: '/var/www/reports/infection-bootstrap.php',
     logs: { json: `/var/www/reports/verify/${name}.json` },
     tmpDir: `/var/www/reports/verify/${name}-tmp`,
-    mutators: { '@default': true },
+    mutators: mutation.MUTATORS,
   };
   fs.writeFileSync(path.join(dir, `${name}-config.json`), JSON.stringify(config, null, 2));
   fs.rmSync(path.join(dir, `${name}.json`), { force: true });

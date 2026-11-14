@@ -1,5 +1,5 @@
 #!/bin/sh
-# Versionierter Git-Hook (ADR 0029): volles Gate mit Ratsche vor jedem Push.
+# Versionierter Git-Hook (ADR 0029, ADR 0033): Matrix und schnelles Gate vor jedem Push.
 # Das Gate prueft den Arbeitsbaum. Damit das gepruefte dem gepushten Stand entspricht, blockiert der
 # Hook, wenn ein Branch-Ref nicht HEAD ist oder versionierte Dateien geaendert sind.
 # Loeschen und Tags (kein neuer Code) brauchen kein Gate. Reine docs/- und .md-Pushes auch nicht.
@@ -29,7 +29,7 @@ if ! git diff --quiet HEAD --; then
   exit 1
 fi
 [ "$docs_only" = 1 ] && exit 0
-# Cheap first: new tests on another Moodle version/database, then the full gate. Mutation runs in CI only
-# (locally: GATE_MUTATION=1 or `gate mutation`), so a push does not wait hours for it.
+# ADR 0033: a push waits for the new tests on another Moodle version/database and the fast gate only.
+# The full suite with coverage and ratchet is binding in CI; locally on demand: npm run gate -- full.
 node scripts/gate/gate.js matrix || exit 1
-exec node scripts/gate/gate.js full
+exec node scripts/gate/gate.js fast

@@ -2,7 +2,7 @@
  * Ratsche des Gates (ADR 0029, ADR 0030 Nachtrag). Reine Auswertung; gate.js liefert
  * Clover-Bericht und Git-Zugriff. Befunde (alle blockierend), Format `datei:zeile: regel: text`:
  *
- *   ratchet-coverage          Gesamt-Coverage unter der Baseline
+ *   ratchet-coverage          Gesamt-Coverage unter der Baseline und unter 95 % (ADR 0033)
  *   ratchet-baseline-lowered  Baseline-Datei niedriger als im Ziel-Branch
  *   ratchet-file-coverage     geaenderte Datei unter 90 % Line-Coverage
  *   ratchet-method-crap       geaenderte Methode mit CRAP ueber 8
@@ -13,6 +13,8 @@
 'use strict';
 
 const FILE_MIN = 90;
+// Total coverage is held at this floor, not at the last measured value (ADR 0033).
+const COVERAGE_FLOOR = 95;
 const CRAP_MAX = 8;
 
 const finding = (file, line, rule, text) => ({ file, line, rule, text });
@@ -48,10 +50,11 @@ const ratioBelow = (a, b) => a.covered * b.statements < b.covered * a.statements
 
 const describe = t => `${pct(t.covered, t.statements).toFixed(2)}% (${t.covered}/${t.statements})`;
 
-/** Gesamt-Coverage darf nie sinken. */
+/** Gesamt-Coverage darf nicht unter die Baseline sinken; ueber COVERAGE_FLOOR blockiert ein Rueckgang nicht mehr. */
 function coverageFindings(measured, baseline) {
-  return ratioBelow(measured, baseline)
-    ? [finding('scripts/gate/baseline.json', 0, 'ratchet-coverage', `Gesamt-Coverage ${describe(measured)} unter Baseline ${describe(baseline)}`)]
+  const floor = { covered: COVERAGE_FLOOR, statements: 100 };
+  return ratioBelow(measured, baseline) && ratioBelow(measured, floor)
+    ? [finding('scripts/gate/baseline.json', 0, 'ratchet-coverage', `Gesamt-Coverage ${describe(measured)} unter Baseline ${describe(baseline)} und unter der Untergrenze ${COVERAGE_FLOOR}%`)]
     : [];
 }
 
@@ -212,6 +215,7 @@ module.exports = {
   pct,
   totals,
   coverageFindings,
+  ratioBelow,
   loweredFindings,
   parsePhpstanBaseline,
   phpstanFindings,

@@ -1,6 +1,8 @@
 # ADR 0029 — Qualitäts-Gate als Ratsche statt fester Schwellen
 
-Status: angenommen (05.10.2026)
+Status: angenommen (05.10.2026); geändert durch [ADR 0033](0033-mutation-als-trend-und-schlankes-pr-gate.md)
+(14.11.2026): Mutation ist Trend statt Merge-Bedingung, `pre-push` führt `fast` statt `full` aus,
+Gesamt-Coverage blockiert nur unter 95 %.
 
 ## Context
 

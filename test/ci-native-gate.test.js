@@ -7,12 +7,20 @@ const path = require('node:path');
 const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
-test('CI cross-DB: every supported Moodle line runs the full suite on PostgreSQL without coverage', () => {
+test('CI cross-DB: push runs every Moodle line on PostgreSQL, a pull request two corners, without coverage', () => {
   const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/native-ci.yml'), 'utf8');
   const phpunit = workflow.split('  phpunit:\n')[1].split('\n  js-native:')[0];
+  const include = phpunit.match(/include: \$\{\{ fromJSON\(github\.event_name == 'pull_request' && '(\[.*?\])' \|\| '(\[.*?\])'\) \}\}/);
+  assert.ok(include, 'the matrix is chosen by event');
+  const legs = list => JSON.parse(list).map(l => `${l['moodle-branch']} ${l.database} ${l['php-version']}`);
+  const [pullRequest, everything] = [legs(include[1]), legs(include[2])];
   for (const branch of ['MOODLE_501_STABLE', 'MOODLE_502_STABLE', 'MOODLE_503_STABLE']) {
-    assert.match(phpunit, new RegExp(`moodle-branch: ${branch}\\n            database: pgsql\\n            php-version: '8.4'`));
+    assert.ok(everything.includes(`${branch} pgsql 8.4`), `${branch} on PostgreSQL`);
   }
+  assert.equal(everything.length, 5);
+  // ADR 0033: with quality (5.1, MariaDB, PHP 8.4) a pull request sees each Moodle line, database and PHP version once.
+  assert.deepEqual(pullRequest, ['MOODLE_502_STABLE mariadb 8.3', 'MOODLE_503_STABLE pgsql 8.4']);
+  assert.ok(pullRequest.every(leg => everything.includes(leg)));
   assert.match(phpunit, /image: postgres:17/);
   assert.match(phpunit, /DB: \$\{\{ matrix.database \}\}/);
   assert.match(phpunit, /MOODLE_BRANCH: \$\{\{ matrix.moodle-branch \}\}/);
@@ -29,7 +37,11 @@ test('CI wiring: full on the minimum version is mandatory with target history an
   assert.match(quality, /format\('origin\/\{0\}', github\.base_ref\)/);
   assert.match(quality, /github\.event\.before/);
   assert.match(quality, /npm run gate -- full/);
-  assert.match(quality, /matrix:\s+part: \[0, 1, 2, 3\]/);
+  // ADR 0033: one part without mutation on a pull request; four advisory mutation parts otherwise.
+  assert.match(quality, /part: \$\{\{ fromJSON\(github\.event_name == 'pull_request' && '\[0\]' \|\| '\[0, 1, 2, 3\]'\) \}\}/);
+  assert.match(quality, /GATE_MUTATION: \$\{\{ github\.event_name != 'pull_request' && '1' \|\| '0' \}\}/);
+  assert.match(quality, /GATE_MUTATION_ADVISORY: '1'/);
+  assert.match(quality, /git diff --quiet "\$\(git merge-base HEAD "\$GATE_BASE_REF"\)" HEAD -- scripts\/gate composer\.json composer\.lock/);
   assert.match(quality, /GATE_MUTATION_PART: \$\{\{ matrix\.part \}\}\/4/);
   assert.match(quality, /if: always\(\)[\s\S]*actions\/upload-artifact@v4/);
   assert.match(quality, /name: gate-trend-MOODLE_501_STABLE-/);
