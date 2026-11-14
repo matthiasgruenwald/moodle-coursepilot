@@ -89,7 +89,7 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
 
     /**
      * quiz.sumgrades equals the sum of the slot marks after appending,
-     * also for several questions and a second append call (#729).
+     * also for several questions and a second append call.
      */
     public function test_recomputes_sumgrades_to_sum_of_slot_marks(): void {
         global $DB;
@@ -106,17 +106,70 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
 
         $this->assertEquals(0, $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]));
 
-        add_questions_to_quiz::execute((int) $quiz->cmid, [$question1->id, $question2->id]);
+        $result = add_questions_to_quiz::execute((int) $quiz->cmid, [$question1->id, $question2->id]);
+        external_api::clean_returnvalue(add_questions_to_quiz::execute_returns(), $result);
         $this->assertEquals(3.5, $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]));
 
         // Second call: one duplicate, one new question.
-        add_questions_to_quiz::execute((int) $quiz->cmid, [$question2->id, $question3->id]);
+        $result = add_questions_to_quiz::execute((int) $quiz->cmid, [$question2->id, $question3->id]);
+        external_api::clean_returnvalue(add_questions_to_quiz::execute_returns(), $result);
         $this->assertEquals(4.5, $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]));
         $this->assertEqualsWithDelta(
             (float) $DB->get_field_sql('SELECT SUM(maxmark) FROM {quiz_slots} WHERE quizid = ?', [$quiz->id]),
             (float) $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]),
             1e-9
         );
+    }
+
+    /**
+     * An invalid question in the list aborts the whole call before any
+     * write: no slot, sumgrades unchanged, no history entry.
+     */
+    public function test_invalid_question_aborts_before_any_slot_is_added(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [$course, $quiz, $category] = $this->create_course_with_quiz();
+        $this->login_editing_teacher($course);
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id, $course->id, false, MUST_EXIST);
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $valid = $questiongenerator->create_question('truefalse', null, ['category' => $category->id]);
+        $before = (int) $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cm->id]);
+
+        try {
+            add_questions_to_quiz::execute((int) $quiz->cmid, [$valid->id, 999999999]);
+            $this->fail('Expected exception for the unknown question.');
+        } catch (\dml_missing_record_exception $e) {
+            $this->assertNotEmpty($e->getMessage());
+        }
+
+        $this->assertCount(0, $DB->get_records('quiz_slots', ['quizid' => $quiz->id]));
+        $this->assertEquals(0, $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]));
+        $this->assertSame($before, (int) $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cm->id]));
+    }
+
+    /**
+     * Preview attempts are deleted when questions are appended, like on the
+     * quiz editing page.
+     */
+    public function test_deletes_preview_attempts_after_appending(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [$course, $quiz, $category] = $this->create_course_with_quiz();
+        $this->login_editing_teacher($course);
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $question1 = $questiongenerator->create_question('truefalse', null, ['category' => $category->id]);
+        $question2 = $questiongenerator->create_question('truefalse', null, ['category' => $category->id]);
+        add_questions_to_quiz::execute((int) $quiz->cmid, [$question1->id]);
+
+        $quizobj = \mod_quiz\quiz_settings::create((int) $quiz->id);
+        quiz_prepare_and_start_new_attempt($quizobj, 1, new \stdClass());
+        $this->assertSame(1, (int) $DB->count_records('quiz_attempts', ['quiz' => $quiz->id, 'preview' => 1]));
+
+        add_questions_to_quiz::execute((int) $quiz->cmid, [$question2->id]);
+
+        $this->assertSame(0, (int) $DB->count_records('quiz_attempts', ['quiz' => $quiz->id, 'preview' => 1]));
     }
 
     /**

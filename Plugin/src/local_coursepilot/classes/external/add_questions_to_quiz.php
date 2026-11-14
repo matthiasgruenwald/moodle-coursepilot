@@ -43,6 +43,10 @@ require_once($CFG->libdir . '/questionlib.php');
  * exist, the whole call aborts, no partial success - the same principle
  * as {@see \local_coursepilot\quiz\arrangement::restore()}.
  *
+ * Side effects like the quiz editing page: before the first write every
+ * question and its capability is validated (all or nothing); after appending,
+ * preview attempts are deleted and quiz.sumgrades is recomputed.
+ *
  * Change history: quiz_add_quiz_question() triggers the native
  * slot_created event, which does NOT count among the 16 observed
  * mod_quiz structure events (db/events.php: new question = content,
@@ -106,11 +110,19 @@ final class add_questions_to_quiz extends external_api {
 
         $quiz->cmid = (int) $cm->id;
 
-        $appended = [];
-        $anyadded = false;
+        // Validate every question and its capability before the first write
+        // (all or nothing).
+        $questions = [];
         foreach ($params['questionids'] as $questionid) {
             $question = $DB->get_record('question', ['id' => (int) $questionid], '*', MUST_EXIST);
             question_require_capability_on($question, 'use');
+            $questions[(int) $questionid] = $question;
+        }
+
+        $appended = [];
+        $anyadded = false;
+        foreach ($params['questionids'] as $questionid) {
+            $question = $questions[(int) $questionid];
 
             // Note: quiz_add_quiz_question() returns an explicit false ONLY in the
             // duplicate case - on success the function falls through without
@@ -131,7 +143,7 @@ final class add_questions_to_quiz extends external_api {
 
         if ($anyadded) {
             // Note: quiz_add_quiz_question() does not maintain quiz.sumgrades; the
-            // editing page recomputes it after adding (#729). Without it a
+            // editing page recomputes it after adding. Without it a
             // quiz with grade > 0 and sumgrades = 0 cannot be attempted.
             quiz_delete_previews($quiz);
             \mod_quiz\quiz_settings::create((int) $quiz->id)->get_grade_calculator()->recompute_quiz_sumgrades();
