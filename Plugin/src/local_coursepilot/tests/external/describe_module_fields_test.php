@@ -146,12 +146,30 @@ final class describe_module_fields_test extends \advanced_testcase {
         $this->assertNotEquals($short, $full, 'Short form and full form must differ.');
 
         $sperrliste = $full['module']['blocked_fields'];
-        $this->assertContains('name', $sperrliste, 'label.name must be blocked - it is derived from the intro.');
+        $this->assertNotContains('name', $sperrliste, 'label.name is the writable course index title.');
         $this->assertContains('course', $sperrliste);
         $this->assertContains('timemodified', $sperrliste);
 
         $pseudonames = array_column($full['module']['pseudo_fields'], 'name');
         $this->assertContains('coursepagevisibility', $pseudonames);
+    }
+
+    /**
+     * The text card name is writable and described as the course index title.
+     */
+    public function test_label_name_is_writable_and_described_as_course_index_title(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $result = external_api::clean_returnvalue(
+            describe_module_fields::execute_returns(),
+            describe_module_fields::execute('label', true)
+        );
+
+        $fields = array_column($result['module']['fields'], null, 'name');
+        $this->assertArrayHasKey('name', $fields);
+        $this->assertStringContainsString('course index', $fields['name']['meaning']);
+        $this->assertNotContains('name', $result['module']['blocked_fields']);
     }
 
     /**

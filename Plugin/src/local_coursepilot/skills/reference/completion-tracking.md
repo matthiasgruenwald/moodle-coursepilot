@@ -94,4 +94,4 @@ planned, pages.
 - Never require an activity with completion=0.
 - For multiple conditions, every activity_cmid must already have completion
   configured through coursepilot_set_completion.
-- label blocks name; see `coursepilot_get_skill("technical-notes")`.
+- label name is only its course index title; see `coursepilot_get_skill("technical-notes")`.

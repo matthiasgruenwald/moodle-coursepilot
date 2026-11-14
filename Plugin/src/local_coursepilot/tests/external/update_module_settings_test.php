@@ -40,6 +40,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(\local_coursepilot\catalog\choice::class)]
 #[CoversClass(\local_coursepilot\catalog\folder::class)]
 #[CoversClass(\local_coursepilot\catalog\forum::class)]
+#[CoversClass(\local_coursepilot\catalog\label::class)]
 #[CoversClass(\local_coursepilot\catalog\page::class)]
 #[CoversClass(\local_coursepilot\catalog\resource::class)]
 #[CoversClass(\local_coursepilot\catalog\quiz::class)]
@@ -442,6 +443,47 @@ final class update_module_settings_test extends \advanced_testcase {
         update_module_settings::execute($forum->cmid, json_encode(['intro' => 'Neue Forumsbeschreibung']));
 
         $this->assertSame('Neue Forumsbeschreibung', $this->read($forum->cmid)['intro']);
+    }
+
+    /**
+     * A text card name patch sets the title the course index shows.
+     */
+    public function test_label_name_patch_sets_the_course_index_title(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $label = $this->getDataGenerator()->create_module('label', [
+            'course' => $course->id,
+            'intro' => 'Willkommen im Kurs',
+        ]);
+
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($label->cmid, json_encode(['name' => 'Einführung']))
+        );
+
+        $this->assertSame('name', $result['changes'][0]['field']);
+        $this->assertSame('Einführung', $this->read($label->cmid)['name']);
+        $this->assertSame('Einführung', get_fast_modinfo($course->id)->get_cm($label->cmid)->name);
+    }
+
+    /**
+     * A later intro-only patch keeps a name that was set explicitly.
+     */
+    public function test_label_intro_patch_keeps_an_explicit_name(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $label = $this->getDataGenerator()->create_module('label', [
+            'course' => $course->id,
+            'intro' => 'Willkommen im Kurs',
+        ]);
+        update_module_settings::execute($label->cmid, json_encode(['name' => 'Einführung']));
+
+        update_module_settings::execute($label->cmid, json_encode(['intro' => 'Ganz anderer Text']));
+
+        $settings = $this->read($label->cmid);
+        $this->assertSame('Ganz anderer Text', $settings['intro']);
+        $this->assertSame('Einführung', $settings['name']);
+        $this->assertSame('Einführung', get_fast_modinfo($course->id)->get_cm($label->cmid)->name);
     }
 
     /**
