@@ -127,6 +127,23 @@ final class arrangement_restore_contract_test extends \advanced_testcase {
         );
     }
 
+    public function test_restoring_a_changed_maxmark_recomputes_quiz_sumgrades(): void {
+        global $DB;
+        [$quiz] = $this->quiz_with_two_questions();
+        $slotid = (int) $this->slots($quiz)[0]->id;
+        $target = arrangement::capture((int) $quiz->id);
+        $DB->set_field('quiz_slots', 'maxmark', 3.5, ['id' => $slotid]);
+
+        arrangement::restore((int) $quiz->id, $target);
+
+        $this->assertEqualsWithDelta(
+            (float) $DB->get_field_sql('SELECT SUM(maxmark) FROM {quiz_slots} WHERE quizid = ?', [$quiz->id]),
+            (float) $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]),
+            1e-9
+        );
+        $this->assertEqualsWithDelta(2.0, (float) $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]), 1e-9);
+    }
+
     public function test_a_stored_require_previous_value_above_one_is_restored_as_a_flag(): void {
         global $DB;
         [$quiz] = $this->quiz_with_two_questions();
