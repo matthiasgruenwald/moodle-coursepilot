@@ -216,6 +216,19 @@ final class update_module_settings_embedded_files_test extends \advanced_testcas
     }
 
     /**
+     * Naming the "page" editor explicitly keeps content files in subfolders.
+     */
+    public function test_a_page_write_naming_the_page_editor_keeps_content_files_in_subfolders(): void {
+        $this->resetAfterTest();
+        $cmid = $this->page_with_embedded_files();
+        $this->store_file($cmid, 'mod_page', 'content', '/sub/', 'deep.png');
+
+        $this->write($cmid, ['page' => '<p>New <img src="@@PLUGINFILE@@/body.png"><img src="@@PLUGINFILE@@/sub/deep.png"></p>']);
+
+        $this->assertSame(['/body.png', '/sub/deep.png'], $this->stored_files($cmid, 'mod_page', 'content'));
+    }
+
+    /**
      * Setting completion on a page takes the same carried-forward editor draft and keeps the file.
      */
     public function test_setting_completion_on_a_page_keeps_the_content_file(): void {
@@ -252,6 +265,29 @@ final class update_module_settings_embedded_files_test extends \advanced_testcas
         $this->assertSame(
             ['/sub/deep.png', '/task.png'],
             $this->stored_files((int) $assign->cmid, 'mod_assign', 'activityattachment')
+        );
+    }
+
+    /**
+     * Naming the "activityeditor" explicitly keeps the files and rewrites the stored text back to its references.
+     */
+    public function test_an_assignment_write_naming_the_activity_editor_keeps_the_files(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->course_with_teacher();
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $this->store_file((int) $assign->cmid, 'mod_assign', 'activityattachment', '/', 'task.png');
+        $this->store_file((int) $assign->cmid, 'mod_assign', 'activityattachment', '/sub/', 'deep.png');
+
+        $this->write((int) $assign->cmid, ['activityeditor' => '<p>New <img src="@@PLUGINFILE@@/task.png"></p>']);
+
+        $this->assertSame(
+            ['/sub/deep.png', '/task.png'],
+            $this->stored_files((int) $assign->cmid, 'mod_assign', 'activityattachment')
+        );
+        $this->assertSame(
+            '<p>New <img src="@@PLUGINFILE@@/task.png"></p>',
+            $DB->get_field('assign', 'activity', ['id' => $assign->id])
         );
     }
 }
