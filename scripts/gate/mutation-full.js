@@ -32,6 +32,8 @@ const INSTANCE = process.env.FULL_MUTATION_INSTANCE || 'main';
 const REVERSE = process.env.FULL_MUTATION_ORDER === 'reverse';
 const PREFIX = `${PLUGIN_REL}/`;
 const CHUNK = 10;
+// Kill matrix mode (#753): all failing tests per mutant instead of the first, see mutation-matrix.js.
+const ALLFAIL = process.env.FULL_MUTATION_ALLFAIL === '1';
 // Contract tests that guard an interface rather than kill mutants; each exemption names its reason.
 const EXEMPT = [
   [/\\privacy\\/, 'Privacy API contract (provider and metadata)'],
@@ -202,10 +204,17 @@ function runSection(section, ignores, baseline, environment, sourceHashes, asser
   const dir = path.join(GATE_DIR, 'reports', 'full673');
   const tmp = `${section.name}-tmp`;
   fs.mkdirSync(dir, { recursive: true });
+  const wrapperDir = path.join(dir, `${section.name}-allfail`);
+  if (ALLFAIL) {
+    fs.rmSync(wrapperDir, { recursive: true, force: true });
+    fs.mkdirSync(wrapperDir, { recursive: true });
+    fs.copyFileSync(path.join(__dirname, 'mutation-allfail.sh'), path.join(wrapperDir, 'mutation-allfail.sh'));
+    fs.chmodSync(path.join(wrapperDir, 'mutation-allfail.sh'), 0o755);
+  }
   const config = {
     source: { directories: [PLUGIN_IN_CONTAINER], excludes: mutation.infectionExcludePatterns(['tests/', ...baseline.excluded.map(e => e.path)]) },
-    phpUnit: { configDir: PLUGIN_IN_CONTAINER, customPath: '/var/www/html/vendor/bin/phpunit' },
-    timeout: 1800,
+    phpUnit: { configDir: PLUGIN_IN_CONTAINER, customPath: ALLFAIL ? `/var/www/reports/full673/${section.name}-allfail/mutation-allfail.sh` : '/var/www/html/vendor/bin/phpunit' },
+    timeout: ALLFAIL ? 300 : 1800,
     bootstrap: '/var/www/reports/infection-bootstrap.php',
     logs: { json: `/var/www/reports/full673/${section.name}.json`, text: `/var/www/reports/full673/${section.name}.log` },
     tmpDir: `/var/www/reports/full673/${tmp}`,
@@ -231,6 +240,13 @@ function runSection(section, ignores, baseline, environment, sourceHashes, asser
   fs.mkdirSync(raw, { recursive: true });
   for (const f of [jsonPath, logPath]) fs.writeFileSync(path.join(raw, `${path.basename(f)}.gz`), zlib.gzipSync(fs.readFileSync(f)));
   fs.writeFileSync(path.join(OUT, 'sections', `${section.name}.compact.json`), JSON.stringify({ section: section.name, files: section.files, covered, rows }));
+  if (ALLFAIL) {
+    fs.mkdirSync(path.join(wrapperDir, 'data'), { recursive: true }); // a section without any covered mutant ran no PHPUnit
+    const matrix = require('./mutation-matrix').collect(report, path.join(wrapperDir, 'data'), mutation);
+    fs.writeFileSync(path.join(OUT, 'sections', `${section.name}.matrix.json`), JSON.stringify({ section: section.name, files: section.files, ...matrix }));
+    const tar = spawnSync('tar', ['-czf', path.join(raw, `${section.name}-allfail.tar.gz`), '-C', wrapperDir, 'data'], { encoding: 'utf8' });
+    if (tar.status !== 0) throw new Error(`section ${section.name}: raw archive failed: ${tar.stderr}`);
+  }
   fs.rmSync(dir, { recursive: true, force: true });
   const info = { section: section.name, instance: INSTANCE, files: section.files.length, seconds, exit: 0, finished: stamp(), skipped: report.stats.skippedCount || 0, ...summarize(rows) };
   const done = path.join(OUT, 'sections', `${section.name}.done`);
@@ -384,7 +400,7 @@ async function verify(file, filter) {
   return open.length;
 }
 
-module.exports = { mainInstanceWarning, treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, compact, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale, verify };
+module.exports = { EXEMPT, mainInstanceWarning, treeDigest, changeOf, planSections, killedByFromOutput, coveredTestsFromLog, testsFromJunit, compact, summarize, pruneCandidates, testKey, newestMtime, coverageIsStale, verify };
 
 /** Warning for run/verify on the shared main instance; empty when another instance is named or the command is read-only. */
 function mainInstanceWarning(cmd, env = process.env) {
