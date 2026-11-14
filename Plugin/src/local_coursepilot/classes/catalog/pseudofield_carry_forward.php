@@ -245,7 +245,10 @@ final class pseudofield_carry_forward {
                 continue;
             }
             [$content, $format] = $columns;
-            $draftitemid = file_get_unused_draft_itemid();
+            // Itemid 0 makes file_prepare_draft_area() create the draft and copy the
+            // stored files into it; a pre-allocated id would leave the draft empty and
+            // the save would delete the files.
+            $draftitemid = 0;
             $text = file_prepare_draft_area(
                 $draftitemid,
                 context_module::instance($cm->id)->id,
