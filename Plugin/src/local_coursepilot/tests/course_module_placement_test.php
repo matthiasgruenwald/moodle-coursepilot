@@ -255,6 +255,27 @@ final class course_module_placement_test extends \advanced_testcase {
         $this->assertFalse($DB->record_exists('page', ['id' => $orphan]), 'The linked instance is deleted with the row.');
     }
 
+    public function test_discarding_a_linked_activity_that_never_reached_its_section_removes_it_completely(): void {
+        global $DB;
+        [$course] = $this->course_with_pages();
+        $moduleid = (int) $DB->get_field('modules', 'id', ['name' => 'page']);
+        $instance = (int) $DB->insert_record('page', (object) [
+            'course' => $course->id, 'name' => 'Unplaced', 'intro' => '', 'introformat' => 1, 'content' => '',
+            'contentformat' => 1, 'legacyfiles' => 0, 'display' => 5, 'displayoptions' => '', 'revision' => 1,
+            'timemodified' => time(),
+        ]);
+        $cmid = (int) $DB->insert_record('course_modules', (object) [
+            'course' => $course->id, 'module' => $moduleid, 'instance' => $instance, 'section' => 0,
+        ]);
+        \context_module::instance($cmid);
+
+        course_module_placement::discard_failed($cmid, $instance);
+
+        $this->assertFalse($DB->record_exists('course_modules', ['id' => $cmid]));
+        $this->assertFalse($DB->record_exists('page', ['id' => $instance]));
+        $this->assertFalse($DB->record_exists('context', ['contextlevel' => CONTEXT_MODULE, 'instanceid' => $cmid]));
+    }
+
     public function test_discarding_a_half_made_row_removes_its_context(): void {
         global $DB;
         [$course] = $this->course_with_pages();

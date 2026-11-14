@@ -131,12 +131,19 @@ final class course_module_placement {
             rebuild_course_cache($cm->course, true);
             return;
         }
-        rebuild_course_cache($cm->course, true);
-        $info = get_fast_modinfo($cm->course)->get_cm($cmid);
+        // A cm that creation never placed (failure before the section link) is in no section sequence, and the
+        // core delete then removes the activity but throws on the missing sequence entry. Placing it first
+        // lets the core delete run through completely, with its events and cache purge.
+        $section = $DB->get_record('course_sections', ['id' => $cm->section]);
+        if (!$section || !in_array((string) $cmid, explode(',', (string) $section->sequence), true)) {
+            course_add_cm_to_section($cm->course, $cmid, 0);
+        }
         $forced = $CFG->forced_plugin_settings['tool_recyclebin'] ?? null;
         $CFG->forced_plugin_settings['tool_recyclebin']['coursebinenable'] = 0;
         try {
-            course_get_format($cm->course)->delete_module($info, false);
+            // Not the format's delete_module(): it needs the cm in the course cache, which lists only
+            // cms in a section sequence. The core delete it delegates to works from the row alone.
+            course_delete_module($cmid, false);
         } finally {
             if ($forced === null) {
                 unset($CFG->forced_plugin_settings['tool_recyclebin']);

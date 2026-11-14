@@ -33,7 +33,8 @@ final class export_default_activity_674_final_contract_test extends \advanced_te
 
     /**
      * When native creation fails after the instance exists but before the cm row links to it, the instance is
-     * handed to the cleanup: it completes the link, and the incomplete removal is reported explicitly.
+     * handed to the cleanup: it completes the link and removes the activity, so the original failure surfaces
+     * and nothing is left behind.
      */
     public function test_a_failure_before_the_link_hands_the_instance_to_the_cleanup(): void {
         global $DB;
@@ -70,6 +71,15 @@ final class export_default_activity_674_final_contract_test extends \advanced_te
             $failure = $this->caught(fn() => export_default_activity::execute($course->id, 'book'));
             $left = array_values($DB->get_records('course_modules', ['course' => $course->id]));
             $books = array_values($DB->get_records('book', ['course' => $course->id]));
+            $contexts = $DB->count_records_select(
+                'context',
+                'contextlevel = ? AND path LIKE ?',
+                [CONTEXT_MODULE, \context_course::instance($course->id)->path . '/%']
+            );
+            $sequences = array_filter(
+                $DB->get_fieldset_select('course_sections', 'sequence', 'course = ?', [$course->id]),
+                fn($sequence) => $sequence !== null && $sequence !== ''
+            );
             if ($DB->is_transaction_started()) {
                 $DB->force_transaction_rollback();
             }
@@ -78,10 +88,10 @@ final class export_default_activity_674_final_contract_test extends \advanced_te
             $ddl->close();
         }
 
-        $this->assertInstanceOf(\moodle_exception::class, $failure);
-        $this->assertSame('defaultactivitycleanupfailed', $failure->errorcode);
-        $this->assertCount(1, $books);
-        $this->assertCount(1, $left);
-        $this->assertSame((int) $books[0]->id, (int) $left[0]->instance, 'The cleanup completed the link to the instance.');
+        $this->assertInstanceOf(\dml_write_exception::class, $failure, 'The original failure surfaces, not a cleanup error.');
+        $this->assertSame([], $left, 'No course module row is left.');
+        $this->assertSame([], $books, 'No orphaned book instance is left.');
+        $this->assertSame(0, $contexts, 'No module context is left.');
+        $this->assertSame([], $sequences, 'No section sequence mentions the discarded module.');
     }
 }
