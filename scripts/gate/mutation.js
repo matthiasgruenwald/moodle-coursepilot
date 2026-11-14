@@ -138,4 +138,11 @@ function evaluate(report, changed, ignores, diffSelected = false, environment = 
   return findings;
 }
 
-module.exports = { parseIgnores, parseReport, parseEnvironment, parseSourceHashes, infectionExcludePatterns, identity, evaluate };
+/**
+ * Infection mutators. The cast profile is off (ADR 0033): the plugin runs without strict_types, so removing
+ * a cast in front of a typed parameter, a PARAM_INT value or a string context is equivalent almost every time.
+ */
+const MUTATORS = { '@default': true, '@cast': false };
+
+module.exports = {
+  MUTATORS, parseIgnores, parseReport, parseEnvironment, parseSourceHashes, infectionExcludePatterns, identity, evaluate };

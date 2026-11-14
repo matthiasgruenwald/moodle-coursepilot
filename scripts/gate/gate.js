@@ -417,11 +417,16 @@ function runFull() {
   printReport(clover, path.join(GATE_DIR, 'reports', 'gate-report.json'), true);
   const ratcheted = printRatchet(clover);
   const staticPassed = printStatic(staticChecks.ALL_CHECKS);
-  // Mutation is the slow part (hours on a large diff): CI always runs it, locally only on demand.
-  const mutated = !passed || !mutationBase.runsMutationInFull(process.env)
-    ? passed : runMutation(undefined, true);
-  if (passed && !mutationBase.runsMutationInFull(process.env)) {
-    console.log('summary: mutation skipped (runs in CI; locally on demand: npm run gate -- mutation or GATE_MUTATION=1)');
+  // Mutation is the slow part (hours on a large diff) and a trend, not a merge condition (ADR 0033).
+  const wanted = mutationBase.runsMutationInFull(process.env);
+  let mutated = !passed || !wanted ? passed : runMutation(undefined, true);
+  if (passed && !wanted) {
+    console.log('summary: mutation skipped (trend run after merge; on demand: npm run gate -- mutation or GATE_MUTATION=1)');
+  }
+  if (passed && wanted && !mutated && mutationBase.mutationIsAdvisory(process.env)) {
+    console.log('summary: mutation advisory, findings above do not block (ADR 0033)');
+    if (process.env.GITHUB_ACTIONS) console.log('::warning title=Mutation (Trend)::Mutation findings or tool errors, see the full log and the uploaded reports. They do not block.');
+    mutated = true;
   }
   return staticPassed && ratcheted && nodePassed && passed && mutated;
 }
@@ -568,7 +573,7 @@ function runMutation(pilotDirectory, reuseCoverage = false) {
     bootstrap: '/var/www/reports/infection-bootstrap.php',
     logs: { json: `/var/www/reports/${jsonName}`, text: `/var/www/reports/${prefix}.log` },
     tmpDir: `/var/www/reports/${prefix}-tmp`,
-    mutators: { '@default': true },
+    mutators: mutation.MUTATORS,
   };
   fs.writeFileSync(path.join(GATE_DIR, 'reports', `${prefix}-config.json`), JSON.stringify(config, null, 2));
   fs.copyFileSync(path.join(__dirname, 'infection-bootstrap.php'), path.join(GATE_DIR, 'reports', 'infection-bootstrap.php'));
@@ -857,7 +862,7 @@ function printRatchet(cloverPath) {
 function runBaseline(cloverPath) {
   const baseline = loadBaseline();
   const measured = ratchet.totals(repoClover(loadParsed(cloverPath)).files, baseline.excluded, PLUGIN_PREFIX);
-  if (ratchet.coverageFindings(measured, baseline.coverage).length > 0) {
+  if (ratchet.ratioBelow(measured, baseline.coverage)) {
     throw new Error('Messwert liegt unter der Baseline, die Baseline wird nie gesenkt');
   }
   const next = { ...baseline, coverage: { covered: measured.covered, statements: measured.statements } };

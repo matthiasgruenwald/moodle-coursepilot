@@ -1,6 +1,9 @@
 # Gate-Container und Gate-Kommando
 
-Stand: Spec 0029, Gate scharf. Das Gate misst Coverage und CRAP, führt die
+Stand: Spec 0029, Gate scharf, mit den Änderungen aus
+[ADR 0033](adr/0033-mutation-als-trend-und-schlankes-pr-gate.md): Mutation ist ein Trend nach dem
+Merge, `pre-push` führt `matrix` und `fast` aus, die Gesamt-Coverage blockiert nur unter 95 %.
+Wo ältere Abschnitte unten etwas anderes sagen, gilt ADR 0033. Das Gate misst Coverage und CRAP, führt die
 statischen Prüfungen aus und **blockiert** nach der Ratschenregel aus ADR 0029
 (Abschnitt [Ratsche](#ratsche)). Git-Hooks und Edit-Hooks rufen dasselbe
 Kommando auf (Abschnitt [Hooks](#hooks)).
@@ -50,7 +53,7 @@ Container auf:
 ```bash
 npm run gate -- fast               # Node-Tests + PHPUnit der Tests zu geänderten Klassen
 npm run gate -- matrix             # neue/geänderte Tests auf Moodle 5.3 + PostgreSQL (private Instanz, vor dem Push)
-npm run gate -- full               # Node-Tests + volle Suite mit pcov, danach Bericht (rund 15 Minuten); Mutation nur in CI oder mit GATE_MUTATION=1
+npm run gate -- full               # Node-Tests + volle Suite mit pcov, danach Bericht (rund 25 Minuten); Mutation nur mit GATE_MUTATION=1
 npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
 npm run gate -- ratchet [clover.xml] # Ratsche; ohne Clover nur die Baselines
 npm run gate -- baseline [clover.xml] # Coverage-Baseline anheben (nie senken)
@@ -83,12 +86,14 @@ Ohne Zuordnung meldet das Gate `no-test-mapped`.
 
 ### Mutationsprüfung
 
-Wo sie läuft: `gate full` (also der pre-push-Hook) führt die Mutation **nur in CI** aus, lokal nur auf
-Wunsch (`npm run gate -- mutation` oder `GATE_MUTATION=1 npm run gate -- full`). Grund: Auf einem großen
-Diff gegen `dev` dauert sie Stunden, und CI prüft dasselbe verbindlich ein zweites Mal. Der CI-Job
-`quality` läuft als Matrix aus vier Teilen (`GATE_MUTATION_PART=i/4`): Jeder Teil führt Suite und
-Ratsche vollständig aus, mutiert aber nur sein Viertel der geänderten Dateien (Aufteilung nach
-Zeilenzahl, `mutation-shard.js`). `Gate (required)` verlangt alle vier Teile.
+Wo sie läuft (ADR 0033): `gate full` mutiert nur mit `GATE_MUTATION=1`. CI setzt das **nach dem Merge**
+(Push auf `dev`/`main`, manueller Lauf), nie im Pull Request, zusammen mit `GATE_MUTATION_ADVISORY=1`:
+Befunde stehen im Log, in den Berichten und als Warnung am Lauf, färben ihn aber nicht rot. Der CI-Job
+`quality` läuft dann als Matrix aus vier Teilen (`GATE_MUTATION_PART=i/4`): Jeder Teil führt Suite und
+Ratsche vollständig aus und mutiert sein Viertel der geänderten Dateien (Aufteilung nach
+Zeilenzahl, `mutation-shard.js`). Lokal auf Wunsch: `npm run gate -- mutation` (blockierend für den
+Aufrufer) oder `GATE_MUTATION=1 npm run gate -- full`. Die Cast-Mutatoren (Infection-Profil `@cast`)
+sind abgeschaltet: Ohne `strict_types` sind sie fast immer äquivalent.
 
 `full` erzeugt neben Clover auch PHPUnit-XML-Coverage und JUnit unter
 `reports/infection-coverage/`. Infection 0.29 aus dem versionierten Composer-Lockfile
@@ -96,7 +101,8 @@ verwendet diese Messung desselben Quellstands; ein zweiter vollständiger Testla
 Es läuft im Gate-Container mit `--threads=1` und `--only-covering-test-cases`:
 Nur Testfälle, die die mutierte Zeile abdecken, werden pro Mutant ausgeführt.
 Es gibt keine MSI-Gesamtschwelle. Ein überlebender Mutant auf einer geänderten
-Produktionszeile blockiert mit `mutation-survived` und Exit 1.
+Produktionszeile ergibt den Befund `mutation-survived`; `npm run gate -- mutation` endet damit
+mit Exit 1, der CI-Trendlauf meldet ihn nur.
 Nicht abgedeckte Mutanten blockiert die Mutationsprüfung nicht selbst: Sie sind
 Bereich der Coverage-Ratsche. Zeitüberschreitende Mutanten zählen wie in Infection als
 getötet; vorab übersprungene Mutanten machen den Report dagegen rot.
@@ -153,7 +159,8 @@ Knotenstart und Knotenende gegen den Diff geprüft; jeder ausgewählte Überlebe
 Fehlerhafte Mutantenprozesse und Syntaxfehler blockieren mit `mutation-error` und Ursache,
 auch wenn der Infection-Hauptprozess Exit 0 liefert. Ignores können solche Fehler nicht verdecken.
 
-CI führt zusätzlich `node scripts/gate/mutation-proof.js` im isolierten QA-Mount aus.
+CI führt zusätzlich `node scripts/gate/mutation-proof.js` im isolierten QA-Mount aus, sobald der Diff
+`scripts/gate/` oder die Composer-Dateien ändert (sonst übersprungen, ADR 0033).
 Ein kleines Fixture mit zunächst grüner, zu schwacher Assertion erzeugt echte überlebende
 Infection-Mutanten: Gate-Exit 1. Ein Ignore ohne Begründung erzeugt Gate-Exit 1.
 Nach der stärkeren Assertion werden echte Mutanten getötet und das Gate ist grün.
@@ -169,7 +176,7 @@ Einzelzeiten, Originalpfade und die Grenzen der Volllauf-Hochrechnung.
 
 Nichts davon ersetzt CI: CI prüft weiter den vollen Diff gegen den Zielbranch auf einer Instanz.
 
-**`matrix`** (läuft im `pre-push` vor dem teuren `full`): wählt wie `fast` die neuen/geänderten Tests
+**`matrix`** (läuft im `pre-push` vor `fast`): wählt wie `fast` die neuen/geänderten Tests
 (`*_test.php` und die Tests zu geänderten Klassen), aber seit dem letzten Push dieses Branches
 (`@{upstream}`, sonst Zielbranch; `GATE_MATRIX_BASE=<ref>` überschreibt) und führt sie auf einer
 privaten Instanz mit anderer Moodle-Version und Datenbank aus. Profile in
@@ -352,7 +359,7 @@ Bestand über der Regel blockiert erst, wenn jemand ihn anfasst.
 
 | Regel im Bericht | Blockiert, wenn |
 |---|---|
-| `ratchet-coverage` | Gesamt-Coverage unter dem Wert in `scripts/gate/baseline.json` (nach Ausschlussliste) |
+| `ratchet-coverage` | Gesamt-Coverage unter dem Wert in `scripts/gate/baseline.json` (nach Ausschlussliste) **und** unter der Untergrenze 95 % (ADR 0033) |
 | `ratchet-baseline-lowered` | `baseline.json` niedriger als im Vergleichsstand |
 | `ratchet-clover-missing` | eine relevante geänderte Produktionsdatei im Clover fehlt (Coverage und CRAP ungemessen) |
 | `ratchet-file-coverage` | eine geänderte Produktionsdatei unter 90 % Line-Coverage |
@@ -365,7 +372,8 @@ Dazu kommen die statischen Prüfungen (siehe oben) und die Schichtregeln.
 **Was wann greift:** `pre-commit` (`fast`) blockiert bei statischen Befunden, fehlgeschlagenen
 Tests und wachsenden Baselines (`ratchet-phpstan-grown`, `ratchet-deptrac-grown`,
 `ratchet-baseline-lowered`). Die Regeln, die einen Coverage-Bericht brauchen, also
-Gesamt-Coverage, Datei ≥ 90 % und Methode CRAP ≤ 8, greifen erst bei `pre-push` (`full`) und in CI.
+Gesamt-Coverage, Datei ≥ 90 % und Methode CRAP ≤ 8, greifen erst bei `full`, also verbindlich in CI
+(`pre-push` führt seit ADR 0033 `matrix` und `fast` aus).
 
 Geänderte Interfaces haben kein ausführbares PHPUnit-Coverage-Ziel. Ihre Adapter-Vertragstests
 tragen `#[Group('interface_name')]` und weiterhin `CoversClass` für die jeweilige Implementierung;
@@ -436,7 +444,7 @@ npm run hooks:install
 | Hook | Ruft auf | Dauer |
 |---|---|---|
 | `pre-commit` | `gate fast` (Node-Tests, PHPUnit zu geänderten Klassen, statische Prüfungen, Baseline-Ratsche) | unter einer Minute plus zugeordnete PHPUnit-Tests |
-| `pre-push` | `gate full` (Node-Tests, volle PHPUnit-Suite, Coverage- und CRAP-Ratsche, alle statischen Prüfungen); einmal je Push, auch bei mehreren Refs | rund 15 Minuten |
+| `pre-push` | `gate matrix`, dann `gate fast` (ADR 0033); einmal je Push, auch bei mehreren Refs. `full` läuft verbindlich in CI | Sekunden bis wenige Minuten |
 | Edit-Hook Claude/Codex | `gate edit`, startet `fast` bei Änderung an Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` | wie `fast` |
 
 Der Edit-Hook (`.claude/settings.json`, `.codex/hooks.json`) schreibt Befunde auf stderr und

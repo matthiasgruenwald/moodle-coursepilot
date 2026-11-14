@@ -5,8 +5,8 @@
 # Spike- oder Produktivinstanz, keine persoenlichen Verbindungen, kein
 # Praxiskurs (User Story 2/14).
 #
-# quality: Moodle 5.1, derselbe full-Einstieg wie lokal, inklusive Ratsche.
-# phpunit: weitere unterstützte Moodle-/DB-Kombinationen ohne zweite Coverage-Regel.
+# quality: Moodle 5.1, derselbe full-Einstieg wie lokal, inklusive Ratsche; Mutation nur nach dem Merge als Trend (ADR 0033).
+# phpunit: weitere unterstützte Moodle-/DB-Kombinationen ohne zweite Coverage-Regel; im PR zwei Ecken, sonst alle.
 # js-native und artifact bleiben Pflichtjobs; Gate (required) prüft alle Ergebnisse.
 # Fehlgeschlagene, fehlende oder übersprungene Jobs können nicht grün aggregieren.
 #
@@ -47,13 +47,17 @@ jobs:
   quality:
     name: Full quality gate (Moodle 5.1, MariaDB, PHP 8.4, Teil ${{ matrix.part }}/4)
     runs-on: ubuntu-22.04
-    # Each part runs the full suite and the ratchet, but mutates only its quarter of the changed files.
+    # ADR 0033: a pull request runs the suite and the ratchet once, without mutation. After the merge
+    # (push, manual run) four parts each mutate their quarter of the changed files as a trend.
     strategy:
       fail-fast: false
       matrix:
-        part: [0, 1, 2, 3]
+        part: ${{ fromJSON(github.event_name == 'pull_request' && '[0]' || '[0, 1, 2, 3]') }}
     timeout-minutes: 360
     env:
+      GATE_MUTATION: ${{ github.event_name != 'pull_request' && '1' || '0' }}
+      # Mutation findings are a trend: they are reported and never turn the job red.
+      GATE_MUTATION_ADVISORY: '1'
       GATE_MUTATION_PART: ${{ matrix.part }}/4
       GATE_MOODLE_REF: origin/MOODLE_501_STABLE
       # PR: actual target branch. Push: compare the state before the push.
@@ -93,7 +97,12 @@ jobs:
           bash scripts/gate/setup-container.sh 2>&1 | tee "$GATE_DIR/reports/setup.log"
 
       - name: Echte Infection-Fehlerpfade im isolierten Gate prüfen
+        # The proof guards the gate's own mutation wiring: it runs only when that wiring changed.
         run: |
+          if git diff --quiet "$(git merge-base HEAD "$GATE_BASE_REF")" HEAD -- scripts/gate composer.json composer.lock; then
+            echo "mutation-proof skipped: scripts/gate and Composer files unchanged" | tee "$GATE_DIR/reports/mutation-proof.log"
+            exit 0
+          fi
           set +e
           node scripts/gate/mutation-proof.js 2>&1 | tee "$GATE_DIR/reports/mutation-proof.log"
           result=${PIPESTATUS[0]}
@@ -123,22 +132,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - moodle-branch: MOODLE_501_STABLE
-            database: pgsql
-            php-version: '8.4'
-          - moodle-branch: MOODLE_502_STABLE
-            database: mariadb
-            php-version: '8.3'
-          - moodle-branch: MOODLE_502_STABLE
-            database: pgsql
-            php-version: '8.4'
-          - moodle-branch: MOODLE_503_STABLE
-            database: mariadb
-            php-version: '8.3'
-          - moodle-branch: MOODLE_503_STABLE
-            database: pgsql
-            php-version: '8.4'
+        # ADR 0033: a pull request checks two corners (with quality: each Moodle line, both databases,
+        # both PHP versions once); push and manual runs check every combination.
+        include: ${{ fromJSON(github.event_name == 'pull_request' && '[{"moodle-branch":"MOODLE_502_STABLE","database":"mariadb","php-version":"8.3"},{"moodle-branch":"MOODLE_503_STABLE","database":"pgsql","php-version":"8.4"}]' || '[{"moodle-branch":"MOODLE_501_STABLE","database":"pgsql","php-version":"8.4"},{"moodle-branch":"MOODLE_502_STABLE","database":"mariadb","php-version":"8.3"},{"moodle-branch":"MOODLE_502_STABLE","database":"pgsql","php-version":"8.4"},{"moodle-branch":"MOODLE_503_STABLE","database":"mariadb","php-version":"8.3"},{"moodle-branch":"MOODLE_503_STABLE","database":"pgsql","php-version":"8.4"}]') }}
     env:
       PHP_VERSION: ${{ matrix.php-version }}
       DB: ${{ matrix.database }}

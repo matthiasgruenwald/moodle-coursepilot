@@ -243,6 +243,15 @@ test('ratchet: Gesamt-Coverage unter der Baseline ist rot', () => {
   assert.match(r.out, /scripts\/gate\/baseline\.json:0: ratchet-coverage: Gesamt-Coverage 65\.00%/);
 });
 
+test('ratchet: ueber der Untergrenze 95 % blockiert ein Rueckgang unter die Baseline nicht (ADR 0033)', () => {
+  const repo = makeRepo({ baseline: { ...BASELINE, coverage: { covered: 99, statements: 100 } } });
+  const above = ratchet(repo, clover({ extraFiles: [{ name: 'classes/b.php', st: 90, cov: 87 }] }));
+  assert.equal(above.status, 0, above.out);
+  const below = ratchet(repo, clover({ extraFiles: [{ name: 'classes/b.php', st: 90, cov: 85 }] }));
+  assert.equal(below.status, 1);
+  assert.match(below.out, /ratchet-coverage: Gesamt-Coverage 94\.00% .* unter der Untergrenze 95%/);
+});
+
 test('ratchet: Bestand unter 90 % mit hohem CRAP blockiert nur, wenn die Datei geaendert wird', () => {
   const repo = makeRepo();
   const xml = clover({ aCovered: 5, crapHard: 40, extraFiles: goodExtra });
@@ -573,7 +582,9 @@ if (args[0] === 'inspect') {
     const blocked = spawnSync('git', ['push', 'origin', 'HEAD:refs/heads/work'], { cwd: repo, encoding: 'utf8', env: { ...process.env, GATE_REPO: repo, GATE_BASE_REF: 'HEAD', GATE_FAILURE_LOG: path.join(repo, 'failures.log'), ...env } });
     const blockedOut = `${blocked.stdout}${blocked.stderr}`;
     assert.match(blockedOut, /Node contract failure/);
-    assert.match(blockedOut, /PHPUnit fixture: green/);
+    // ADR 0033: the push runs the fast gate; the full suite is binding in CI.
+    assert.match(blockedOut, /summary: mode=fast node=fail/);
+    assert.doesNotMatch(blockedOut, /PHPUnit fixture: green/);
     assert.match(blockedOut, /summary: ratchet .* violations=0/);
     assert.match(blockedOut, /summary: static .*phpstan=0 .*deptrac=0/);
     assert.doesNotMatch(blockedOut, /gate-error|versionierte Dateien sind geaendert/);
@@ -613,16 +624,17 @@ if (args[0] === 'inspect') {
   }
 });
 
-test('pre-push: Gate full rot blockiert den Push, gruen laesst ihn durch', () => {
+test('pre-push: rotes Gate blockiert den Push, gruen laesst ihn mit matrix und fast durch', () => {
   const red = pushRepo(1);
   const blocked = push(red, 'HEAD:refs/heads/work');
   assert.notEqual(blocked.status, 0);
   assert.match(blocked.out, /stub matrix/);
-  assert.doesNotMatch(blocked.out, /stub full/, 'the matrix check blocks before the expensive full gate');
+  assert.doesNotMatch(blocked.out, /stub fast/, 'the matrix check blocks before the fast gate');
   const green = pushRepo(0);
   const passed = push(green, 'HEAD:refs/heads/work');
   assert.equal(passed.status, 0);
-  assert.match(passed.out, /stub matrix\nstub full/);
+  assert.match(passed.out, /stub matrix\nstub fast/);
+  assert.doesNotMatch(passed.out, /stub full/, 'ADR 0033: a push never waits for the full gate');
 });
 
 test('pre-push: Loeschen eines Branches und Tags brauchen kein Gate', () => {
@@ -653,7 +665,7 @@ test('pre-push: reine docs/- und .md-Pushes laufen ohne Gate, Code-Aenderungen n
   git(repo, 'commit', '--no-verify', '-qm', 'docs');
   const docs = push(repo, 'HEAD:refs/heads/work');
   assert.equal(docs.status, 0, docs.out);
-  assert.doesNotMatch(docs.out, /stub (matrix|full)/);
+  assert.doesNotMatch(docs.out, /stub (matrix|fast|full)/);
   write(repo, 'a.txt', 'geaendert');
   git(repo, 'commit', '-qam', 'code', '--no-verify');
   const code = push(repo, 'HEAD:refs/heads/work');
@@ -674,7 +686,7 @@ test('pre-push: gepushter Stand muss der geprueften sein (Ref nicht HEAD, geaend
   const dirty = push(repo, 'HEAD:refs/heads/work');
   assert.notEqual(dirty.status, 0);
   assert.match(dirty.out, /versionierte Dateien sind geaendert/);
-  assert.doesNotMatch(dirty.out, /stub (matrix|full)/);
+  assert.doesNotMatch(dirty.out, /stub (matrix|fast|full)/);
 });
 
 test('Aktivierung und Edit-Hooks: ein npm-Skript, Claude und Codex rufen dasselbe Gate, kein php -l', () => {
