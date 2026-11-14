@@ -290,9 +290,16 @@ final class export_default_activity_test extends \advanced_testcase {
             'includefile' => null,
         ]]);
 
-        export_default_activity::execute($course->id, 'book');
+        try {
+            export_default_activity::execute($course->id, 'book');
 
-        $this->assertSame(['0/0'], self::$seen);
+            $this->assertSame(['0/0'], self::$seen);
+        } finally {
+            // Replacing observers makes core keep them across the next reset; the
+            // second reset reloads the real ones so later tests see this plugin's observers.
+            \core\event\manager::phpunit_reset();
+            \core\event\manager::phpunit_reset();
+        }
     }
 
     public function test_requires_the_native_add_right_of_the_activity_type(): void {
