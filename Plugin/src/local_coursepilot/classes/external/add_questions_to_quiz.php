@@ -130,6 +130,11 @@ final class add_questions_to_quiz extends external_api {
         }
 
         if ($anyadded) {
+            // Note: quiz_add_quiz_question() does not maintain quiz.sumgrades; the
+            // editing page recomputes it after adding (#729). Without it a
+            // quiz with grade > 0 and sumgrades = 0 cannot be attempted.
+            quiz_delete_previews($quiz);
+            \mod_quiz\quiz_settings::create((int) $quiz->id)->get_grade_calculator()->recompute_quiz_sumgrades();
             version_writer::capture_on_update((int) $cm->id, (int) $USER->id);
         }
 

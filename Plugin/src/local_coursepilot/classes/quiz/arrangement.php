@@ -136,6 +136,8 @@ final class arrangement {
         self::restore_slot_order($quizobj, $targetslots);
         self::restore_page_breaks($quizobj, $targetslots);
         self::restore_slot_fields($quizobj, $targetslots);
+        // Note: update_slot_maxmark() does not maintain quiz.sumgrades (#729).
+        $quizobj->get_grade_calculator()->recompute_quiz_sumgrades();
         self::restore_sections($quizobj, $target['sections']);
         self::restore_feedback($quizid, $target['feedback']);
     }

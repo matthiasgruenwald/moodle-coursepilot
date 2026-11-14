@@ -88,6 +88,38 @@ final class add_questions_to_quiz_test extends \advanced_testcase {
     }
 
     /**
+     * quiz.sumgrades equals the sum of the slot marks after appending,
+     * also for several questions and a second append call (#729).
+     */
+    public function test_recomputes_sumgrades_to_sum_of_slot_marks(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [$course, $quiz, $category] = $this->create_course_with_quiz();
+        $this->login_editing_teacher($course);
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $question1 = $questiongenerator->create_question('truefalse', null, ['category' => $category->id]);
+        $question2 = $questiongenerator->create_question('truefalse', null, ['category' => $category->id]);
+        $question3 = $questiongenerator->create_question('truefalse', null, ['category' => $category->id]);
+        $DB->set_field('question', 'defaultmark', 2.5, ['id' => $question2->id]);
+
+        $this->assertEquals(0, $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]));
+
+        add_questions_to_quiz::execute((int) $quiz->cmid, [$question1->id, $question2->id]);
+        $this->assertEquals(3.5, $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]));
+
+        // Second call: one duplicate, one new question.
+        add_questions_to_quiz::execute((int) $quiz->cmid, [$question2->id, $question3->id]);
+        $this->assertEquals(4.5, $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]));
+        $this->assertEqualsWithDelta(
+            (float) $DB->get_field_sql('SELECT SUM(maxmark) FROM {quiz_slots} WHERE quizid = ?', [$quiz->id]),
+            (float) $DB->get_field('quiz', 'sumgrades', ['id' => $quiz->id]),
+            1e-9
+        );
+    }
+
+    /**
      * An existing question is skipped and reported with "added": false;
      * no second slot is created.
      */
