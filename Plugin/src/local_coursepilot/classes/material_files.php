@@ -144,10 +144,18 @@ final class material_files {
             invalidpathkey: 'invalidmaterialpath',
             quotaerrorkey: 'materialquotaexceeded',
             checkwritablename: static function (string $filename): void {
-                if (!preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/', $filename) || !self::is_allowed_extension($filename)) {
+                $allowed = implode(', ', self::allowed_extensions());
+                if (!preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/', $filename)) {
+                    throw new \moodle_exception('materialfileinvalidname', 'local_coursepilot', '', (object) [
+                        'filename' => $filename,
+                        'allowed' => $allowed,
+                        'suggestion' => self::suggest_name($filename),
+                    ]);
+                }
+                if (!self::is_allowed_extension($filename)) {
                     throw new \moodle_exception('materialfiledisallowedtype', 'local_coursepilot', '', (object) [
                         'filename' => $filename,
-                        'allowed' => implode(', ', self::allowed_extensions()),
+                        'allowed' => $allowed,
                     ]);
                 }
             },
@@ -290,6 +298,27 @@ final class material_files {
      */
     public static function allowed_extensions(): array {
         return array_values(array_unique(array_merge(self::ALLOWED_UPLOAD_EXTENSIONS, self::ALLOWED_IMAGE_EXTENSIONS)));
+    }
+
+    /**
+     * A name that follows the naming rule, derived from a refused one: umlauts
+     * transliterated, every other disallowed character run turned into one
+     * underscore, the last dot kept as the extension separator. Only a hint
+     * for the message; nothing is renamed.
+     *
+     * @param string $filename
+     * @return string
+     */
+    public static function suggest_name(string $filename): string {
+        $dot = strrpos($filename, '.');
+        $base = $dot === false ? $filename : substr($filename, 0, $dot);
+        $extension = $dot === false ? '' : preg_replace('/[^A-Za-z0-9]/', '', substr($filename, $dot + 1));
+        $base = strtr($base, [
+            'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'Ä' => 'Ae', 'Ö' => 'Oe', 'Ü' => 'Ue', 'ß' => 'ss',
+        ]);
+        $base = trim(preg_replace('/[^A-Za-z0-9_-]+/', '_', \core_text::specialtoascii($base)), '_');
+        $base = $base === '' ? 'datei' : preg_replace('/[_-]*_[_-]*/', '_', $base);
+        return $extension === '' ? $base : $base . '.' . $extension;
     }
 
     /**

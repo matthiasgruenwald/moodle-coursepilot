@@ -70,7 +70,8 @@ class compose_material_file extends external_api {
             'arrangement' => new external_value(PARAM_ALPHA, 'vertical (top to bottom) or horizontal (left to right)'),
             'targetpath' => new external_value(
                 PARAM_PATH,
-                'PNG target path relative to the workbench root, resolved like crop_material_file; an existing file is replaced'
+                'PNG target path relative to the workbench root, resolved like crop_material_file; an existing file is replaced; '
+                . 'the file name must be ASCII without spaces or umlauts (A-Z, a-z, 0-9, _, -), normalise it first'
             ),
         ]);
     }

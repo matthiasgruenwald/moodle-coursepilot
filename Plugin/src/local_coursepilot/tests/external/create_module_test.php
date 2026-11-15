@@ -366,7 +366,10 @@ final class create_module_test extends \advanced_testcase {
     public function test_resource_accepts_an_uploaded_opendocument_file(): void {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
-        $this->create_material_file('lernjournal.odt', 'PK-odf');
+        \core_external\external_api::clean_returnvalue(
+            \local_coursepilot\external\upload_material_file::execute_returns(),
+            \local_coursepilot\external\upload_material_file::execute('lernjournal.odt', base64_encode('PK-odf'))
+        );
 
         $result = $this->create($course->id, 0, 'resource', [
             'name' => 'Lernjournal',

@@ -116,6 +116,20 @@ final class upload_material_file_test extends \advanced_testcase {
         }
     }
 
+    public function test_a_name_with_spaces_is_refused_with_a_normalised_proposal(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            $this->upload('Lernjournal Algorithmik – Vorlage.odt', 'Inhalt');
+            $this->fail('A name outside the naming rule must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialfileinvalidname', $e->errorcode);
+            $this->assertStringContainsString('Lernjournal_Algorithmik_Vorlage.odt', $e->getMessage());
+            $this->assertStringNotContainsString('File type not allowed', $e->getMessage());
+        }
+    }
+
     public function test_svg_stays_allowed(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());

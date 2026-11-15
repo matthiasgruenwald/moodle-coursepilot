@@ -43,7 +43,13 @@ class upload_material_file extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'path' => new external_value(PARAM_PATH, 'File path relative to the material store, e.g. "screenshot.png"'),
+            'path' => new external_value(
+                PARAM_PATH,
+                'File path relative to the material store, e.g. "screenshot.png". The file name must be ASCII without '
+                . 'spaces or umlauts (A-Z, a-z, 0-9, _, -) with one allowed extension ('
+                . implode(', ', material_files::allowed_extensions())
+                . '); normalise it first'
+            ),
             'content_base64' => new external_value(PARAM_RAW, 'Base64-encoded file content'),
             'expected_contenthash' => new external_value(
                 PARAM_ALPHANUMEXT,

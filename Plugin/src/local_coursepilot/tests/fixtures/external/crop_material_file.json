@@ -63,7 +63,7 @@
             },
             "targetpath": {
                 "class": "core_external\\external_value",
-                "desc": "Target crop path, relative to the material folder, e.g. \"crop.png\"",
+                "desc": "Target crop path, relative to the material folder, e.g. \"crop.png\"; the file name must be ASCII without spaces or umlauts (A-Z, a-z, 0-9, _, -) with one allowed extension, normalise it first",
                 "required": 1,
                 "default": null,
                 "allownull": true,

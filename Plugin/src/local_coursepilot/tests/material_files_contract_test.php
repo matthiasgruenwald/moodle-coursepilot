@@ -84,18 +84,56 @@ final class material_files_contract_test extends \advanced_testcase {
             'dot inside the base name' => ['a.b-c.pdf'],
             'trailing characters' => ['a.pdf!'],
             'no extension' => ['readme'],
-            'extension not allowed' => ['run.exe'],
             'empty base' => ['.pdf'],
+            'issue name with spaces and dash' => ['Lernjournal Algorithmik – Vorlage.odt'],
+            'umlaut' => ['Übung.odt'],
+            'space' => ['a b.pdf'],
+            'two dots' => ['a.b.odt'],
         ];
     }
 
     #[DataProvider('refused_names')]
-    public function test_names_outside_the_policy_are_refused_with_name_and_allowed_list(string $filename): void {
+    public function test_names_outside_the_policy_are_refused_as_invalid_names(string $filename): void {
         $e = $this->caught(fn() => (material_files::area()->checkwritablename)($filename));
 
         $this->assertInstanceOf(\moodle_exception::class, $e);
-        $this->assertSame('materialfiledisallowedtype', $e->errorcode);
+        $this->assertSame('materialfileinvalidname', $e->errorcode);
         $this->assertSame($filename, $e->a->filename);
+    }
+
+    /**
+     * Provides refused names with the normalised name the message proposes.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function suggested_names(): array {
+        return [
+            'issue name' => ['Lernjournal Algorithmik – Vorlage.odt', 'Lernjournal_Algorithmik_Vorlage.odt'],
+            'umlaut' => ['Übung.odt', 'Uebung.odt'],
+            'space' => ['a b.pdf', 'a_b.pdf'],
+            'two dots' => ['a.b.odt', 'a_b.odt'],
+            'upper case extension kept' => ['Größe  1.PDF', 'Groesse_1.PDF'],
+        ];
+    }
+
+    #[DataProvider('suggested_names')]
+    public function test_the_invalid_name_message_proposes_a_normalised_name(string $filename, string $suggestion): void {
+        $e = $this->caught(fn() => (material_files::area()->checkwritablename)($filename));
+        $this->assertInstanceOf(\moodle_exception::class, $e);
+        $message = get_string($e->errorcode, 'local_coursepilot', $e->a);
+
+        $this->assertSame($suggestion, $e->a->suggestion);
+        $this->assertStringContainsString($filename, $message);
+        $this->assertStringContainsString($suggestion, $message);
+        $this->assertStringContainsString('odt', $message);
+    }
+
+    public function test_a_valid_name_with_a_foreign_extension_is_refused_as_type(): void {
+        $e = $this->caught(fn() => (material_files::area()->checkwritablename)('run.exe'));
+
+        $this->assertInstanceOf(\moodle_exception::class, $e);
+        $this->assertSame('materialfiledisallowedtype', $e->errorcode);
+        $this->assertSame('run.exe', $e->a->filename);
         $this->assertSame(implode(', ', material_files::allowed_extensions()), $e->a->allowed);
     }
 
