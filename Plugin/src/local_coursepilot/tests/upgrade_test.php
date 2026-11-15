@@ -43,7 +43,7 @@ final class upgrade_test extends \advanced_testcase {
             set_config('version', 0, 'local_coursepilot');
             $this->expectOutputRegex('/context file\(s\) copied to Private Files/');
             $this->assertTrue(\xmldb_local_coursepilot_upgrade(0));
-            $this->assertSame('2026100344', get_config('local_coursepilot', 'version'));
+            $this->assertSame('2026111500', get_config('local_coursepilot', 'version'));
             $errors = $dbman->check_database_schema($dbman->get_install_xml_schema());
             $names = array_map(static fn(\xmldb_table $table): string => $table->getName(), $tables);
             $this->assertSame([], array_intersect_key($errors, array_flip($names)));
@@ -81,8 +81,8 @@ final class upgrade_test extends \advanced_testcase {
             $this->assertSame((int) $USER->id, connection::authenticate_access_token($tokens['access_token']));
             $rotated = connection::rotate_refresh_token($tokens['refresh_token'], 'retained-client');
             $this->assertNotNull($rotated);
-            $this->assertTrue(\xmldb_local_coursepilot_upgrade(2026100344));
-            $this->assertSame('2026100344', get_config('local_coursepilot', 'version'));
+            $this->assertTrue(\xmldb_local_coursepilot_upgrade(2026111500));
+            $this->assertSame('2026111500', get_config('local_coursepilot', 'version'));
             $this->assertSame((int) $USER->id, connection::authenticate_access_token($rotated['access_token']));
         } finally {
             if (!$dbman->table_exists($budgettable)) {

@@ -55,6 +55,47 @@ final class availability_privacy_test extends \advanced_testcase {
         $this->assertSame('***', $result['c'][0]['c'][0]['v']);
     }
 
+    /**
+     * Unknown plugins may store personal data under arbitrary keys, including nested objects.
+     */
+    public function test_unknown_conditions_expose_only_their_type_and_a_mask(): void {
+        $json = json_encode(['op' => '&', 'c' => [
+            ['type' => 'stubtype', 'v' => 'sentinel', 'users' => ['private@example.test'], 'c' => []],
+            ['op' => '|', 'c' => [['type' => 'otherplugin', 'cohort' => ['name' => 'private cohort']]]],
+        ]]);
+
+        $result = json_decode(availability_privacy::sanitize($json), true);
+
+        $this->assertSame(['type' => 'stubtype', 'v' => '***'], $result['c'][0]);
+        $this->assertSame(['type' => 'otherplugin', 'v' => '***'], $result['c'][1]['c'][0]);
+    }
+
+    /**
+     * Known non-profile core types retain their full payload.
+     *
+     * @param mixed[] $condition Core condition.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('safe_conditions')]
+    public function test_allowlisted_conditions_remain_readable(array $condition): void {
+        $json = json_encode(['op' => '&', 'c' => [$condition]]);
+        $this->assertSame($json, availability_privacy::sanitize($json));
+    }
+
+    /**
+     * Non-personal core availability condition payloads.
+     *
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function safe_conditions(): array {
+        return [
+            'completion' => [['type' => 'completion', 'cm' => 12, 'e' => 1]],
+            'date' => [['type' => 'date', 'd' => '>=', 't' => 1700000000]],
+            'grade' => [['type' => 'grade', 'id' => 5, 'min' => 50]],
+            'group' => [['type' => 'group', 'id' => 4]],
+            'grouping' => [['type' => 'grouping', 'id' => 3]],
+        ];
+    }
+
     public function test_document_without_condition_list_is_returned_unchanged(): void {
         $this->assertSame('{"op":"&"}', availability_privacy::sanitize('{"op":"&"}'));
     }
