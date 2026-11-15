@@ -122,13 +122,7 @@ final class course_module_placement {
             $cm->instance = $instanceid;
         }
         if ((int) $cm->instance === 0) {
-            $context = \context_module::instance($cmid, IGNORE_MISSING);
-            if ($context) {
-                $context->delete();
-            }
-            delete_mod_from_section($cm->id, $cm->section);
-            $DB->delete_records('course_modules', ['id' => $cm->id]);
-            rebuild_course_cache($cm->course, true);
+            self::remove_half_made_row($cm);
             return;
         }
         // A cm that creation never placed (failure before the section link) is in no section sequence, so the
@@ -152,5 +146,21 @@ final class course_module_placement {
             }
             rebuild_course_cache($cm->course, true);
         }
+    }
+
+    /**
+     * Removes a cm row that never got an instance. The regular delete cannot take it.
+     *
+     * @param \stdClass $cm The course_modules row.
+     */
+    private static function remove_half_made_row(\stdClass $cm): void {
+        global $DB;
+        $context = \context_module::instance($cm->id, IGNORE_MISSING);
+        if ($context) {
+            $context->delete();
+        }
+        delete_mod_from_section($cm->id, $cm->section);
+        $DB->delete_records('course_modules', ['id' => $cm->id]);
+        rebuild_course_cache($cm->course, true);
     }
 }
