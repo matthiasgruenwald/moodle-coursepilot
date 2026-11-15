@@ -17,9 +17,10 @@ Es wurde kein Produktcode geändert. Einzige Änderung außerhalb dieses Reports
   Werkzeuge geben das Feld gar nicht aus.
 - **Änderungsverlauf** (Nachprüfung #632): die Korrekturen halten. Dateinamen aus Abgabebereichen und Profilwerte
   erscheinen nicht. Offen bleibt ein anderes Thema: Klarname und Benutzer-ID der Bearbeiter.
-- **Befunde (4):** ein Fail-open in der Markierungserkennung für Kontextdateien (P2, per Probe belegt),
-  ungefilterte Instanzspalten mit Zugangsdaten (P2, per Probe belegt, kein Personenbezug im engen Sinn),
-  Bearbeiternamen im Verlauf (P3), Denylist-Charakter von `sanitize()` (P3, nur Code).
+- **Befunde (4):** ungefilterte Instanzspalten mit Zugangsdaten, auch für Lehrkräfte ohne Bearbeitungsrecht
+  (P2, per Probe belegt, kein Personenbezug im engen Sinn), ein Fail-open in der Markierungserkennung für
+  Kontextdateien (P3, per Probe belegt), Bearbeiternamen im Verlauf (P3), Denylist-Charakter von `sanitize()`
+  (P3, nur Code).
 - Was der Code nicht erkennen kann (Freitext, Dateinamen, Bilder), regelte der Skill-Korpus bisher nur für das
   **Schreiben** unmarkierter Dateien, nicht für **Ausgaben von Werkzeugen**. Diese Lücke ist mit einem kurzen
   Abschnitt geschlossen.
@@ -43,12 +44,12 @@ Beleg „Probe" = `dispatcher::handle()` im Spike-Container (Abschnitt Nachweise
 
 | Werkzeug | Feld | Pb | nötig | gesichert | Beleg |
 |---|---|---|---|---|---|
-| `list_courses` | `id`, `fullname`, `shortname`, `visible` | nein (Kursnamen) | ja | n. a. | `list_courses.php:60-66` (nur `enrol_get_my_courses('id, fullname, shortname, visible')`); Probe |
+| `list_courses` | `id`, `fullname`, `shortname`, `visible` | nein (Kursnamen) | ja | n. a. | `list_courses.php:58-68` (nur `enrol_get_my_courses('id, fullname, shortname, visible')`); Probe |
 | `get_course_catalog` | Abschnitt: `name`, `summary`, `availability` | Freitext möglich; `availability` ja (Profilwert) | ja | `availability` ja (`sanitize`); Freitext nein | `get_course_catalog.php:149`; Probe: Profil-E-Mail nicht enthalten |
 | | Modul: `name`, `content` (`intro`/Seiteninhalt), `settings`, `availability`, `quizslots.questionname` | Freitext möglich; `availability` ja | ja | `availability` ja (`:206`); Freitext nein | `module_state`/Katalogklassen lesen nur Spalten der Aktivität (`assign.php:496-570`, `page.php:139`); keine Nutzertabelle |
 | `get_modules` | `cmid`, `sectionnum`, `modname`, `name`, Sichtbarkeit | nein | ja | n. a. | `get_modules.php` `execute_returns`: kein `availability`-Feld; Probe |
 | `get_sections` | `name`, `summary` | Freitext möglich | ja | Freitext nein | `get_sections.php`; kein `availability`-Feld; Probe |
-| `get_module_settings` | `settings_json`: komplette Instanzzeile `SELECT *` plus `cm`-Felder | Freitext möglich (`intro`); **Zugangsdaten** je nach Modultyp (Befund F2) | Einstellungen ja, Geheimnisse nein | `availabilityconditionsjson` ja (`module_state.php:93`); sonst nein | `module_state.php:71`; Probe: `lti.password` erscheint im Klartext |
+| `get_module_settings` | `settings_json`: komplette Instanzzeile `SELECT *` plus `cm`-Felder | Freitext möglich (`intro`); **Zugangsdaten** je nach Modultyp (Befund F2) | Einstellungen ja, Geheimnisse nein | `availabilityconditionsjson` ja (`module_state.php:93`); sonst nein | `module_state.php:43-58,71` (`read_settings`, `SELECT *`); Probe: Klartext-Treffer siehe F2, auch für nicht erschlossene Arten und für Lehrkräfte ohne Bearbeitungsrecht |
 | `describe_module_fields` | Feldkatalog (Namen, Typen, Standardwerte) | nein | ja | n. a. | statischer Katalog, keine Nutzerdaten |
 | `get_version_info` | Moodle-/Plugin-Version, Datum | nein | ja | n. a. | `get_version_info.php`; Probe |
 | `list_skills`, `get_skill` | Skilltexte, Triggertexte | nein | ja | n. a. | statischer Korpus |
@@ -60,7 +61,7 @@ Beleg „Probe" = `dispatcher::handle()` im Spike-Container (Abschnitt Nachweise
 | `list_activity_versions` | `userid`, `user` (Klarname), `summary_line` („Version 2 - Name, Zeit …") | **ja** (Name und ID der Bearbeiter, auch Kolleginnen/Kollegen und Admin) | Rolle ja, Klarname/ID nein | nein | `version_history.php:250-251`; Probe: Klarname erscheint (Befund F3) |
 | | `source_cmid`, `source`, `timestamp` | nein | ja | n. a. | `version_history.php` `describe_meta` |
 | `compare_activity_versions` | `before`/`after`: `userid`, `user` | wie oben | wie oben | nein | `version_history.php:250-251` |
-| | `changes[].before_json/after_json` (Instanzzeile + `course_modules`-Zeile) | Freitext möglich; `availability` ja; **Zugangsdaten** modultypabhängig | Änderungen ja | `availability` ja (`public_state`, `:364-372`); Rest nein | `version_writer.php:202,150`; Probe Verfügbarkeit: `***`; Zugangsdaten nur aus Code geschlossen |
+| | `changes[].before_json/after_json` (Instanzzeile + `course_modules`-Zeile) | Freitext möglich; `availability` ja; **Zugangsdaten** modultypabhängig | Änderungen ja | `availability` ja (`public_state`, `:364-372`); Rest nein | `version_writer.php:202,150`; Probe Verfügbarkeit: `***`; Probe Zugangsdaten: Treffer (F2) |
 | | `files[].filename` | ja (Abgabedateien) | nur Gestaltungsdateien | ja (positive Allowlist `file_policy::allows`, Capture und Lesen) | `file_policy.php`; vorhandener Test `dispatcher_test::test_history_comparison_protects_current_and_legacy_data`; Probe |
 | `restore_activity_version` | `changes[]`, `message` | wie `compare` | ja | wie `compare`: Änderungen laufen über `module_settings::write`, das `read_settings` (`sanitize`) vergleicht | `version_restore.php:65-77`; `availabilityconditionsjson` ist kein beschreibbares Feld (`shared_block.php`) |
 
@@ -121,47 +122,67 @@ MCP-Werkzeuge und blieben außerhalb des Prüfumfangs.
 
 ## Befunde nach Schwere
 
-### F1 – P2: Markierungserkennung ist fail-open (Probe belegt)
+### F1 – P3: Markierungserkennung ist fail-open bei Randformen (Probe belegt)
 
-`personal_data::is_marked()` erkennt `personenbezug: true` nur mit dem Muster
-`/^---\s*\n(.*?)\n---\s*\n/s` und der Zeichenfolge `true` in Kleinschreibung (`personal_data.php:52`).
-Folgende Varianten gelten als **unmarkiert** (isolierte Prüfung der Funktion; durch die Werkzeug-Probe bestätigt):
+`personal_data::is_marked()` erkennt `personenbezug: true` mit `/^---\s*\n(.*?)\n---\s*\n/s` und der Zeichenfolge
+`personenbezug:\s*true\b` in Kleinschreibung (`personal_data.php:52-55`). Korrekt gesperrt (Probe): kanonische Form,
+`coursepilot.personenbezug:true`, CRLF, Frontmatter ohne Rumpf. Als **unmarkiert** gelten:
 
-| Variante | `is_marked()` |
-|---|---|
-| UTF-8-BOM vor `---` (Windows-Editoren) | false |
-| `personenbezug: True` / `"true"` / `yes` | false |
-| Leerzeile vor dem ersten `---` | false |
-| schließendes `---` am Dateiende ohne Zeilenumbruch | false |
+| Variante | `is_marked()` | Einordnung |
+|---|---|---|
+| UTF-8-BOM vor `---` | false | **realistisch**: Windows-Editor, Rückweg per WebDAV/Upload |
+| Leerzeile vor dem ersten `---` | false | Randform |
+| schließendes `---` direkt am Dateiende (ohne Zeilenumbruch) | false | Randform |
+| `personenbezug : true` (Leerzeichen vor dem Doppelpunkt) | false | Randform, YAML-gültig |
+| `personenbezug: True` | false | nur YAML-konform (Spec 0010 nennt `true`) |
+| `personenbezug: "true"` / `yes` | false | **keine gültige Markierung** nach Spec 0010 und YAML 1.2 |
 
-**Szenario:** Eine Lehrkraft bearbeitet ein Förderprofil mit einem Editor, der eine BOM voranstellt. Die Datei trägt
-eine gültige Markierung, `read_context_file` liefert sie bei ausgeschaltetem Schalter trotzdem an die KI
-(Probe: `bom-marked.md`, `yes-marked.md`, `upper-marked.md` → Inhalt im Ergebnis; `list_context_files` zeigt
-`locked=false`). Dieselbe Erkennung steuert Schreibsperre und Host-Freigabe
-(`context_files.php:266-289`, `personal_data_hosts.php`): ein so markierter Inhalt kann auch auf einen nicht
-freigegebenen externen WebDAV-Host geschrieben werden. Der Schalter versagt also ausgerechnet beim „mitgebrachten
-Bestand" (ADR 0011, Festlegung 2).
+Die beiden letzten Zeilen zu sperren wäre eine bewusste fail-closed-Erweiterung, keine Fehlerbehebung einer gültigen Markierung.
 
-**Vorschlag:** Erkennung tolerant machen (BOM abschneiden, Groß-/Kleinschreibung, `"true"`/`'true'`/`yes`/`on`,
-führende Leerzeilen, Dateiende ohne Zeilenumbruch) und im Zweifel sperren (fail-closed). `locked` in der Liste für
-alle Dateitypen aus derselben Funktion ableiten statt nur für `.md`.
+**Szenario:** Eine Lehrkraft bearbeitet ein Förderprofil mit einem Editor, der eine BOM voranstellt. Die Datei ist
+gemeint als markiert; `read_context_file` liefert sie bei ausgeschaltetem Schalter an die KI (Probe `bom-marked.md`;
+`list_context_files` zeigt `locked=false`). Dieselbe Erkennung steuert Schreibsperre und Host-Freigabe
+(`context_files.php:266-289`, `personal_data_hosts.php`): ein so geschriebener Inhalt kann auch auf einen nicht
+freigegebenen externen WebDAV-Host gelangen. Der Schalter versagt dann beim „mitgebrachten Bestand" (ADR 0011,
+Festlegung 2). Wegen der engen Voraussetzungen (BOM oder Sonderform) P3.
 
-### F2 – P2: `SELECT *` auf die Aktivitätszeile gibt Zugangsdaten aus (Probe belegt; Nebenbefund, kein Personenbezug im engen Sinn)
+**Vorschlag:** BOM abschneiden, führende Leerzeilen und Dateiende ohne Zeilenumbruch tolerieren, Leerzeichen vor dem
+Doppelpunkt tolerieren; optional (Spec-Entscheidung) `True`/`yes`/`"true"` als fail-closed aufnehmen.
 
-`module_state::effective_settings()` (`module_state.php:71`) liest die komplette Instanzzeile jedes Aktivitätstyps,
-nicht nur der katalogisierten. `get_module_settings` liefert sie unverändert; `version_writer::build_moduleinfo()`
-(`:202`) speichert dieselbe Zeile im Verlauf, `compare_activity_versions` und `restore_activity_version` geben
-geänderte Felder daraus aus. Auf dem Spike tragen mehrere Tabellen Geheimnisse: `lti.password`, `lti.servicesalt`,
-`lti.resourcekey`, `bigbluebuttonbn.moderatorpass`/`viewerpass`/`guestpassword`/`guestlinkuid`, `lesson.password`.
-Probe: Eine `lti`-Aktivität mit `password` liefert den Wert im Klartext aus `get_module_settings`
-(`export_activity_backup` enthält ihn nicht). Personenbezug folgt nur mittelbar (Zugang zu Räumen oder Diensten);
-dem Geist von K6 („nur das Nötige") widerspricht es trotzdem. Die Ausgabe für `compare` ist **nur aus dem Code
-geschlossen**, nicht per Probe belegt.
+**Eigene Entscheidung (nicht Teil von T1):** `locked` in der Liste wird nur für `.md` berechnet
+(`context_area.php:135-141`), die Lesesperre in `read_context_file.php:97` gilt für alle Dateitypen. Die Liste kann
+also `locked=false` zeigen, wo das Lesen scheitert. Ob die Liste für alle Typen prüfen soll (Kosten: Lesen jeder Datei),
+ist getrennt zu entscheiden.
 
-**Vorschlag:** Spaltensperrliste oder -allowlist je Aktivitätstyp, einmal an `effective_settings()` und
-`build_moduleinfo()` angewandt.
+### F2 – P2: `SELECT *` auf die Aktivitätszeile gibt Zugangsdaten aus, auch an nicht bearbeitende Lehrkräfte (Probe belegt)
+
+`get_module_settings` gibt über `module_state::read_settings()`/`effective_settings()` (`module_state.php:43-58,71`)
+die komplette Instanzzeile aus, auch für nicht erschlossene Aktivitätsarten. `version_writer::build_moduleinfo()`
+(`:202`) speichert dieselbe Zeile roh in `local_coursepilot_cm_version.moduleinfo_json`; `public_state()` maskiert dort
+nur die Verfügbarkeit. Ergebnisse der Probe (Klartext-Treffer im Ergebnis von `dispatcher::handle()`):
+
+| Aktivität | Felder | `get_module_settings` | `compare_activity_versions` | `export_activity_backup` | Verlauf gespeichert |
+|---|---|---|---|---|---|
+| lti | `password`, `resourcekey`, `servicesalt` | Treffer | Treffer | kein Treffer | ja |
+| lesson | `password` | Treffer | Treffer | Treffer | ja |
+| quiz | `password` | Treffer (gewollt, `quizpassword`, siehe T2) | Treffer | Treffer | ja |
+| bigbluebuttonbn | `moderatorpass`, `viewerpass`, `guestpassword`, `guestlinkuid` | Treffer | Treffer | Treffer für `moderatorpass`, `viewerpass` | ja |
+
+`list_activity_versions` nennt nur Feldnamen, keine Werte.
+
+**Rechteausweitung (Probe):** Eine Lehrkraft vom Archetyp `teacher` (nicht bearbeitend; `manageactivities=0`,
+`mod/lti:addinstance=0`) erhält Secret, Salt und Passwörter genauso wie die bearbeitende Lehrkraft, obwohl sie das
+Bearbeitungsformular nie sieht. Der Archetyp `teacher` trägt `local/coursepilot:use` (`db/access.php:29-36`). Der
+`servicesalt` wird von Moodle niemandem angezeigt; mit Secret und Salt lassen sich LTI-1.1-Bewertungsrückmeldungen
+fälschen. Die Einordnung „der Gestalter sieht es ohnehin" trägt nicht. Hinzu kommt der KI-Anbieter als Empfänger
+(K6). Das ist kein Personenbezug im engen Sinn, sondern ein Verstoß gegen „nur das
+Nötige" und eine Rechteausweitung; P2.
+
+**Vorschlag:** siehe T2 (Liste je Aktivitätsart; Rohverlauf bleibt, gefiltert wird bei Ausgabe).
 
 ### F3 – P3: Verlauf gibt Klarnamen und Benutzer-ID der Bearbeiter aus
+
+Unbekannte Nutzer erscheinen als „User #<id>" (`historyunknownuser`, `lang/en/local_coursepilot.php:152`); auch das ist eine Benutzer-ID.
 
 `describe_meta()` liefert `userid` und `user` (`fullname()`), `summary_line` wiederholt den Namen
 (`version_history.php:250-251`, `lang/en/local_coursepilot.php:149-152`). Probe: „Version 2 - <Klarname>,
@@ -199,22 +220,34 @@ wenn Klone in Kurse mit anderem Teilnehmerkreis wandern. Keine Maßnahme vorgesc
 
 ## Folgeticket-Entwürfe (nicht angelegt)
 
-### T1 – `fix(personal_data): Markierung tolerant erkennen und im Zweifel sperren`
+### T1 – `fix(personal_data): Markierung tolerant erkennen`
 
-**Problem:** F1. BOM, `True`/`yes`/`"true"`, Leerzeile vor dem Frontmatter und Dateiende ohne Zeilenumbruch gelten
-als unmarkiert; Lese- und Schreibsperre sowie Host-Freigabe greifen nicht.
-**Abnahmeprobe (`dispatcher::handle()`, `allowpersonaldata` aus):** Je Variante eine Datei im Kontextbereich anlegen;
-`coursepilot_read_context_file` endet mit `contextfilelocked`; `coursepilot_list_context_files` zeigt `locked=true`
-(auch für `.csv`/`.txt` mit Markierung); `coursepilot_write_context_file` und `coursepilot_append_context_file` mit der
-Variante als Inhalt werden abgelehnt, auf einem nicht freigegebenen externen Host ebenso (`personal_data_hosts`).
-Negativfall: `personenbezug: false` bleibt les- und schreibbar.
+**Problem:** F1 (P3). BOM, Leerzeile vor dem Frontmatter, Dateiende direkt nach `---` und `personenbezug : true` gelten
+als unmarkiert. Optional (Spec-Entscheidung): `True`, `"true"`, `yes` fail-closed.
+**Zusätzlich:** `mark_memory` speichert das Ergebnis je Datei in der Datenbank (`mark_memory.php:63,104`,
+`ismarked`). Alte `ismarked=0`-Einträge für BOM-/Randform-Dateien blieben nach einer Codekorrektur wirksam; ein
+`upgrade.php`-Schritt muss die Tabelle bereinigen. Die akzeptierte Menge von Schreibweisen ist in Spec 0010 festzuschreiben.
+**Abnahmeprobe (`dispatcher::handle()`, `allowpersonaldata` aus):** Je Variante eine Datei anlegen, Liste einmal
+aufrufen (füllt `mark_memory` mit der alten Logik), Upgrade ausführen; danach `coursepilot_list_context_files` zeigt
+`locked=true`, `coursepilot_read_context_file` endet mit `contextfilelocked`, `coursepilot_write_context_file` und
+`coursepilot_append_context_file` mit der Variante als Inhalt werden abgelehnt, auf nicht freigegebenem externen Host
+ebenso. Negativfall: `personenbezug: false` bleibt les- und schreibbar.
 
-### T2 – `fix(catalog): Zugangsdaten-Spalten aus Instanzzeile, Verlauf und Vergleich ausschließen`
+### T2 – `fix(catalog): Zugangsdaten je Aktivitätsart aus Einstellungen und Vergleich ausblenden`
 
-**Problem:** F2. `SELECT *` liefert `lti.password`, `bigbluebuttonbn.moderatorpass`, `lesson.password` u. a.
-**Abnahmeprobe:** `lti`-Aktivität mit `password`, `servicesalt`, `resourcekey` anlegen; `coursepilot_get_module_settings`,
-nach einer Änderung `coursepilot_compare_activity_versions` und `coursepilot_list_activity_versions` enthalten
-keinen dieser Werte; `coursepilot_restore_activity_version` schreibt sie nicht zurück und gibt sie nicht aus.
+**Problem:** F2 (P2). Liste **je Aktivitätsart**, keine pauschale Spaltensperre: `quiz.password` ist gewollt lesbar
+(Feld `quizpassword`, `catalog/quiz.php:526,573,840`, `learner_locks`); `lesson` ist nicht erschlossen
+(`registry.php`: label, page, url, folder, resource, choice, forum, assign, quiz), `lesson.password` ist deshalb kein
+Katalogfeld und kann ausgeblendet werden. Zu sperren: `lti.password`, `resourcekey`, `servicesalt`, `lesson.password`,
+`bigbluebuttonbn.moderatorpass`/`viewerpass`/`guestpassword`/`guestlinkuid`. Speicherung im Verlauf bleibt roh
+(Wiederherstellen braucht den Rohstand); gefiltert wird in `public_state()` und `effective_settings()`.
+**Offene Entscheidung:** Passwörter im Backup-XML (`export_activity_backup`: quiz, lesson, bbb) behalten (Klon-Treue)
+oder ausblenden.
+**Abnahmeprobe (`dispatcher::handle()`):** Aktivitäten mit Sentinel-Werten anlegen; `coursepilot_get_module_settings`
+und nach einer Änderung `coursepilot_compare_activity_versions`, je einmal mit bearbeitender **und** mit nicht
+bearbeitender Lehrkraft (Archetyp `teacher`), enthalten keinen gesperrten Wert; `quizpassword` bleibt lesbar. Ein
+Schreibvorgang (`coursepilot_update_module_settings`) auf ein anderes Feld leert das Secret nicht;
+`coursepilot_restore_activity_version` überschreibt es nicht.
 
 ### T3 – `feat(history): Bearbeiter im Verlauf pseudonymisieren`
 
@@ -226,9 +259,12 @@ und markieren eigene Änderungen unterscheidbar.
 ### T4 – `fix(availability): sanitize() auf Allowlist umstellen`
 
 **Problem:** F4. Unbekannte Bedingungstypen bleiben unmaskiert.
-**Abnahmeprobe:** Aktivität mit Bedingung `{"type":"x_user","v":"<sentinel>"}` per DB setzen;
-`coursepilot_get_course_catalog`, `coursepilot_get_module_settings`, `coursepilot_compare_activity_versions`
-enthalten den Wert nicht; Kern-Typen `completion`, `date`, `grade`, `group`, `grouping` bleiben lesbar.
+**Abnahmeprobe:** `sanitize()` ist reine JSON-Funktion und wertet die Bedingung nicht aus. Die Probe setzt daher die
+Bedingung direkt in `course_modules.availability` (Stub-Typ mit Sentinel-Wert, `{"type":"stubtype","v":"<sentinel>"}`)
+und liest über `coursepilot_get_course_catalog`, `coursepilot_get_module_settings`,
+`coursepilot_compare_activity_versions` (zwei Stände); ein Auswerten über `core_availability` findet nicht statt, die
+Probe scheitert also nicht an „unknown condition". Der Wert fehlt in der Ausgabe; `completion`, `date`, `grade`,
+`group`, `grouping` bleiben lesbar.
 
 ## Skill-Hinweise
 
@@ -272,15 +308,15 @@ Gruppenbedingung auf Abschnitt und Aktivität; zwei Verlaufsstände; fünf Konte
 `export_activity_backup` (7 plus Klone), `export_default_activity`, `clone_activity` (6), `report_clone_lineage`,
 `plan_quiz_cleanup`, `get_question_categories`, `plan_question_category_cleanup`, `get_question`,
 `export_questions_xml`, `list_context_files`, `read_context_file` (5). Geprüft wurde, ob eine der Marken in der
-Antwort steht. Treffer: nur `lti`-Passwort (F2) und die erwartet freigegebenen Kontextdateien (F1); alle Lernendenmarken
+Antwort steht. Treffer: nur Zugangsdaten (F2, zweite Probe) und die erwartet freigegebenen Kontextdateien (F1); alle Lernendenmarken
 **ohne Treffer**. Der Bind-Mount `/opt/plugins/local_coursepilot` wurde am Ende wieder exakt auf den Branch-Stand
 gesetzt (`diff -rq` identisch).
 
-**Nur aus dem Code geschlossen, nicht per Probe belegt:** Ausgabe von `compare_activity_versions` für Zugangsdaten
-(F2), Drittanbieter-Bedingungstypen (F4), Bildinhalte von `preview_material_file`, `restore_activity_version` über die
+**Nur aus dem Code geschlossen, nicht per Probe belegt:** Drittanbieter-Bedingungstypen (F4), Bildinhalte von `preview_material_file`, `restore_activity_version` über die
 Verfügbarkeitsfelder (kein beschreibbares Feld), reine Schreibwerkzeuge (Ausgabe sind Nachricht und eigene Eingabe).
 
 **Nicht geprüft:** externe WebDAV-Speicher, Admin-Seiten, Moodle-Webservice-Zugriff außerhalb von MCP,
-Drittanbieter-Aktivitätstypen (z. B. `data`, `workshop`, `h5pactivity`) mit eigenen Nutzerspalten über die Kernspalten
-hinaus (nur Spaltennamen der Kerntabellen auf dem Spike geprüft), Moodle-Versionen außer 5.1, `participant`-artige
+Kern-Aktivitätstypen ohne Katalog (z. B. `data`, `workshop`, `h5pactivity`) und die Drittanbieter-Plugins des Spikes
+(`checklist`, `choicegroup`, `learningmap`, `lightboxgallery`, `subcourse`) mit eigenen Nutzerspalten (nur Spaltennamen
+von Kerntabellen geprüft), Moodle-Versionen außer 5.1, `participant`-artige
 Plugins, die ein Administrator an den Dienst anhängt (deckt `privacy_surface_test` ab).

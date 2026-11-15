@@ -68,14 +68,25 @@ identifier. Preserve these identifiers in existing teacher files.
 ### Personal data in tool results
 
 The plugin withholds only what it can detect: context files marked
-`coursepilot.personenbezug: true` while the switch is off. It cannot see
-names in free text such as page, label or assignment text, question text,
-file names, material files or unmarked context files. When any tool result
-contains student names or other personal data, do not copy or reuse it
-(plans, course content, materials, other files, other conversations), tell
-the teacher that it appeared and where, and continue without it. Apply this
-equally to editor names in version history, which are colleagues' names:
-use them only to answer the teacher's history question.
+`coursepilot.personenbezug: true` while the switch is off, profile values in
+availability conditions, and user data in activity backups. It cannot see
+student or colleague names in free text: page, label or assignment text,
+question text, file names, material files, images, unmarked context files,
+and editor names in version history.
+
+When a tool result contains the name of a student or colleague (not authors,
+historical persons or the teacher), or other personal data about them:
+
+- Do not copy it into new content (plans, course content, materials,
+  other files) and do not repeat it in later tool calls. Leave existing
+  content where it is: when you read, change and write a file back, keep an
+  existing name unchanged and do not silently remove it.
+- Tell the teacher once per finding that it appeared and where, then
+  continue without it.
+- Exception: context files marked `coursepilot.personenbezug: true` that
+  the switch has released, and work under the real-name rule in
+  `coursepilot_get_skill("context-area")`, may use the names they contain
+  for that teaching work.
 
 ## References: read when relevant
 
