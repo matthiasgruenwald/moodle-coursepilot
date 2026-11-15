@@ -478,12 +478,47 @@ final class update_module_settings_test extends \advanced_testcase {
         ]);
         update_module_settings::execute($label->cmid, json_encode(['name' => 'Einführung']));
 
-        update_module_settings::execute($label->cmid, json_encode(['intro' => 'Ganz anderer Text']));
+        external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($label->cmid, json_encode(['intro' => 'Ganz anderer Text']))
+        );
 
         $settings = $this->read($label->cmid);
         $this->assertSame('Ganz anderer Text', $settings['intro']);
         $this->assertSame('Einführung', $settings['name']);
         $this->assertSame('Einführung', get_fast_modinfo($course->id)->get_cm($label->cmid)->name);
+    }
+
+    /**
+     * An empty or null name patch derives the title again from the current intro.
+     *
+     * @param mixed $empty The empty name value sent by the client.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('empty_names')]
+    public function test_label_empty_name_patch_rederives_the_title_from_the_intro(mixed $empty): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $label = $this->getDataGenerator()->create_module('label', [
+            'course' => $course->id,
+            'name' => 'Einführung',
+            'intro' => '<p>Neuer Anfang</p>',
+        ]);
+
+        external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($label->cmid, json_encode(['name' => $empty]))
+        );
+
+        $this->assertSame('Neuer Anfang', get_fast_modinfo($course->id)->get_cm($label->cmid)->name);
+    }
+
+    /**
+     * Empty name values a client may send.
+     *
+     * @return array<string, array{mixed}>
+     */
+    public static function empty_names(): array {
+        return ['empty string' => [''], 'null' => [null]];
     }
 
     /**

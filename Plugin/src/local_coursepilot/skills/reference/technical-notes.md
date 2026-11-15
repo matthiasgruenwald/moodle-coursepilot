@@ -45,9 +45,10 @@ Do not use plain-text formulas such as f = 1/T or U_GPIO.
 
 For phase labels, name is the title shown in the course index and
 navigation. Set it together with the visible heading in intro. Without
-name, Moodle derives it from the start of the intro text; a name that is
-set stays unchanged when intro is edited later, so change it with
-coursepilot_update_module_settings:
+name, Moodle derives it from the start of the intro text once, at creation.
+Afterwards the name never follows the intro, also not a derived one. Change
+it with coursepilot_update_module_settings, or send "name": "" there to
+derive it again from the current intro:
 
 ```
 coursepilot_create_module(courseid, sectionnum, modname="label",

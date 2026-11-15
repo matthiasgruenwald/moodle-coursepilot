@@ -51,9 +51,10 @@ final class label implements module_catalog {
             new field(
                 'name',
                 'PARAM_TEXT',
-                'Title of the text card as shown in the course index and navigation. '
-                    . 'Optional: when empty, Moodle derives it from the start of the intro, '
-                    . 'and a name set once stays unchanged when the intro changes later.',
+                'Title of the text card as shown in the course index and navigation. Optional: '
+                    . 'Moodle derives it from the start of the intro once, when the card is created '
+                    . 'without a name. Afterwards the name never follows the intro, also not a derived '
+                    . 'one. To derive it again from the current intro, set name to an empty string.',
                 false,
                 null,
                 null,

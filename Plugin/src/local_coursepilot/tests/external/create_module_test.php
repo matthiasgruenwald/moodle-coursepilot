@@ -886,6 +886,18 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
+     * A null name counts as not named: the title comes from the intro.
+     */
+    public function test_label_created_with_null_name_derives_it_from_the_intro(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->create($course->id, 0, 'label', ['name' => null, 'intro' => '<p>Textfeld-Inhalt</p>']);
+
+        $this->assertSame('Textfeld-Inhalt', get_fast_modinfo($course->id)->get_cm($result['cmid'])->name);
+    }
+
+    /**
      * Every creation records history version 1 through add_moduleinfo()’s
      * native course_module_created event (#385).
      */

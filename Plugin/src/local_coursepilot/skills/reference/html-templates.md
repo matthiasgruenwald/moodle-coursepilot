@@ -46,7 +46,8 @@ Replace all placeholders with actual unit/subtopic content:
 ## Phase headers: label
 
 Set intro for the content and name for the short title shown in the course index.
-Without name, Moodle derives the title from the start of the intro text.
+Without name, Moodle derives the title once from the start of the intro text at creation;
+afterwards the name never follows the intro. To derive it again, update name to "".
 
 ```html
 <div style="background:linear-gradient(135deg,[COLOR]dd,[COLOR]);border-radius:10px;padding:16px 20px;margin:10px 0;box-shadow:0 3px 10px rgba(0,0,0,0.15);">
