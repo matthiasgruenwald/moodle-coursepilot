@@ -83,13 +83,15 @@ final class material_files {
 
     /**
      * General upload allowlist (Spec 0018 §6), retained from the local 1.x
-     * UPLOAD_MIME_TYPES policy.
+     * UPLOAD_MIME_TYPES policy, plus the OpenDocument document types
+     * (text, spreadsheet, presentation, drawing) of LibreOffice and Collabora.
      *
      * @var string[]
      */
     private const ALLOWED_UPLOAD_EXTENSIONS = [
         'pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'html', 'htm',
         'png', 'jpg', 'jpeg', 'gif', 'svg', 'txt', 'csv', 'zip',
+        'odt', 'ods', 'odp', 'odg',
     ];
 
     /**

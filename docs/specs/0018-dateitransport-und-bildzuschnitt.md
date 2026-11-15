@@ -283,7 +283,11 @@ wird mit klarer Meldung abgewiesen, statt still etwas anderes zu tun.
 
 Der lokale Weg führt bereits zwei Whitelists — eine für allgemeine Uploads (PDF, DOC/DOCX,
 XLS/XLSX, PPT/PPTX, HTML, PNG, JPG) und eine engere für einbettbare Bilder (PNG, JPG, GIF,
-SVG, WEBP). Beide werden **unverändert übernommen**.
+SVG, WEBP). Beide werden übernommen. Die allgemeine Liste ist um die OpenDocument-Typen
+ODT, ODS, ODP und ODG ergänzt: LibreOffice und Collabora (Nextcloud) speichern darin
+standardmäßig, und eine Lehrkraft darf sie in Moodles Oberfläche ohnehin hochladen. Wie
+bei DOCX, XLSX und PPTX prüft Kurspilot nur die Endung, nicht den Inhalt. Vorlagen- und
+Flachformate (OTT, FODT usw.) bleiben draußen.
 
 **SVG bleibt drin.** Es zu streichen würde Kurspilot **restriktiver** machen als Moodles
 eigenen Dateiwähler: dieselbe Lehrkraft darf dieselbe SVG jederzeit von Hand hochladen.

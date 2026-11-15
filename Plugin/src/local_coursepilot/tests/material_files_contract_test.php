@@ -125,6 +125,10 @@ final class material_files_contract_test extends \advanced_testcase {
                 'txt',
                 'csv',
                 'zip',
+                'odt',
+                'ods',
+                'odp',
+                'odg',
                 'webp',
             ],
             material_files::allowed_extensions()

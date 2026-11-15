@@ -363,6 +363,22 @@ final class create_module_test extends \advanced_testcase {
         $this->assertSame('Arbeitsblattinhalt', $stored->get_content());
     }
 
+    public function test_resource_accepts_an_uploaded_opendocument_file(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $this->create_material_file('lernjournal.odt', 'PK-odf');
+
+        $result = $this->create($course->id, 0, 'resource', [
+            'name' => 'Lernjournal',
+            'files' => ['lernjournal.odt'],
+        ]);
+
+        $modulecontext = \context_module::instance($result['cmid']);
+        $stored = get_file_storage()->get_file($modulecontext->id, 'mod_resource', 'content', 0, '/', 'lernjournal.odt');
+        $this->assertNotFalse($stored, 'The ODT must be under mod_resource/content.');
+        $this->assertSame('PK-odf', $stored->get_content());
+    }
+
     /**
      * Embed directly from external inventory without routing through
      * the workbench (#496, Spec #486 §7).
