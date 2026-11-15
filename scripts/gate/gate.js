@@ -796,6 +796,26 @@ function changesSince(base) {
 }
 
 /**
+ * One-time rollout of the gate to a branch without baselines (#715). `GATE_BOOTSTRAP_BASE` must be
+ * the full SHA of the comparison commit, and that commit must have none of the three baselines.
+ * Then the working baselines are the first stock; lines changed since `armedAt` (or the merge base,
+ * if younger) are still checked. Any other
+ * comparison commit ignores the variable, so a missing baseline stays an error there.
+ * @returns {boolean}
+ */
+function isBootstrapBase(base) {
+  const wanted = process.env.GATE_BOOTSTRAP_BASE;
+  if (!wanted || (git(['rev-parse', '--verify', `${base}^{commit}`]) || '').trim() !== wanted) {
+    return false;
+  }
+  const present = [BASELINE_REL, PHPSTAN_BASELINE_REL, DEPTRAC_BASELINE_REL].filter(rel => gitShow(base, rel) !== null);
+  if (present.length > 0) {
+    throw new Error(`GATE_BOOTSTRAP_BASE=${wanted} hat bereits Gate-Baselines (${present.join(', ')}); Bootstrap nur fuer einen Stand ohne Baselines`);
+  }
+  return true;
+}
+
+/**
  * Ratsche. Ohne Clover nur die Baselines (schnell, fuer fast); mit Clover zusaetzlich
  * Gesamt-Coverage, geaenderte Dateien (>= 90 %) und geaenderte Methoden (CRAP <= 8).
  * @returns {{lines: string[], ok: boolean}}
@@ -804,8 +824,9 @@ function runRatchet(cloverPath) {
   const baseline = loadBaseline();
   const base = resolveBase(baseline.armedAt);
   const found = [];
+  const bootstrap = isBootstrapBase(base);
   const requiredBaseline = rel => {
-    const text = gitShow(base, rel);
+    const text = bootstrap ? fs.readFileSync(path.join(REPO, rel), 'utf8') : gitShow(base, rel);
     if (text === null) {
       throw new Error(`Zielbranch-Baseline fehlt: ${rel} in ${base}; explizite Bootstrap-Abnahme erforderlich`);
     }
@@ -817,10 +838,13 @@ function runRatchet(cloverPath) {
   const pairs = text => deptrac.parseBaseline(text).map(e => `${e.from} -> ${e.to}`);
   const deptracNow = fs.readFileSync(path.join(REPO, DEPTRAC_BASELINE_REL), 'utf8');
   const deptracBase = requiredBaseline(DEPTRAC_BASELINE_REL);
-  const changeBase = (git(['merge-base', 'HEAD', base]) || '').trim();
-  if (!changeBase) {
+  const mergeBase = (git(['merge-base', 'HEAD', base]) || '').trim();
+  if (!mergeBase) {
     throw new Error(`Keine gemeinsame Git-Historie mit Vergleichsref ${base}`);
   }
+  // Bootstrap: the one-time cleanup before `armedAt` is stock, as in the local comparison.
+  const armed = bootstrap && git(['rev-parse', '--verify', `${baseline.armedAt}^{commit}`]) && isAncestor(baseline.armedAt, 'HEAD') && !isAncestor(baseline.armedAt, mergeBase);
+  const changeBase = armed ? baseline.armedAt : mergeBase;
   const { changed, renames } = changesSince(changeBase);
   // Baseline-Pfade sind Container-relativ (`../html/public/local/coursepilot/...`).
   const baselinePrefix = '../html/public/local/coursepilot/';
@@ -848,6 +872,9 @@ function runRatchet(cloverPath) {
     measuredNote = `coverage=${pct(measured.covered, measured.statements).toFixed(2)}% baseline=${pct(baseline.coverage.covered, baseline.coverage.statements).toFixed(2)}%`;
   }
   const lines = found.map(ratchet.formatFinding);
+  if (bootstrap) {
+    lines.push(`gate-bootstrap: ${base} hat keine Gate-Baselines; Baselines des Arbeitsstands gelten als Erstbestand (GATE_BOOTSTRAP_BASE, #715)`);
+  }
   lines.push(`summary: ratchet base=${base.slice(0, 12)} ${measuredNote} violations=${found.length}`);
   return { lines, ok: found.length === 0 };
 }
