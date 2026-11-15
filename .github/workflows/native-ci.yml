@@ -62,6 +62,9 @@ jobs:
       GATE_MOODLE_REF: origin/MOODLE_501_STABLE
       # PR: actual target branch. Push: compare the state before the push.
       GATE_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event_name == 'push' && github.event.before || format('origin/{0}', inputs.target_branch) }}
+      # One-time main rollout (#715): only this main commit, which has no gate baselines, is
+      # accepted as bootstrap base. Inert for every other comparison commit; remove after the rollout.
+      GATE_BOOTSTRAP_BASE: 2b534e52bd04f928cb1371870f6a70962d6b297e
     steps:
       - name: Gate-Verzeichnisse zur Laufzeit festlegen
         run: |

@@ -90,6 +90,15 @@ Die [passende Vorbereitungsmessung](release/667-main-bootstrap-vorbereitung.md)
 enthält den tatsächlichen Main-Nenner, rohe Statikbefunde und die noch offenen
 Bootstrap-Blocker. Sie behauptet keine grüne Main-Gate-Abnahme.
 
+Technischer Weg:
+Der Release-PR bringt Gate und Baselines selbst mit, der Vergleich gegen `origin/main` findet dort
+aber keine. Der Workflow setzt deshalb `GATE_BOOTSTRAP_BASE` fest auf den einen Main-Commit ohne
+Baselines (`2b534e52…`). Nur für diesen Vergleichsstand gelten die Baselines des Kandidaten als
+Erstbestand, siehe [Gate-Doku](gate.md#ratsche). Das deckt den Release-PR und den Push-Lauf direkt
+nach dem Merge (`github.event.before` ist derselbe Commit). Danach hat `main` Baselines: Hotfix-PRs
+und die manuelle Main-Abnahme vergleichen normal, die Variable ist wirkungslos und wird nach dem
+Rollout aus dem Workflow entfernt.
+
 Feature-PR-Freigabe setzt die echte grüne CI-Abnahme aller Pflichtjobs voraus.
 Der historische 80-%-CI-Nachweis von #268 belegt ausschließlich das frühere Verhalten.
 
