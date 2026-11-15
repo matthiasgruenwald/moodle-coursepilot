@@ -6,6 +6,15 @@ lokalen Coursepilot-MCP. Entwicklungs- und Issue-Repository ist
 (primäres Repository); der Plugin-Quellbaum wird separat als Mirror für das Moodle Plugin
 Directory veröffentlicht.
 
+## Coursepilot 2.1.4-beta — Fehlerbehebungen und Qualitäts-Baseline
+
+- **Tests starten wieder:** Nach `add_questions_to_quiz` berechnet Coursepilot die Punktesumme des Tests neu. Zuvor blieb sie 0 und Moodle verweigerte den Versuchsstart. Bereits betroffene Tests heilen beim nächsten Hinzufügen einer Frage oder bei einer Änderung eines Platzes.
+- **Eingebettete Dateien bleiben erhalten:** Änderungen an Textseiten und Aufgaben über `update_module_settings` oder `set_completion` löschen die im Inhalt eingebetteten Dateien nicht mehr, auch nicht in Unterordnern. Bereits gelöschte Dateien werden nicht wiederhergestellt.
+- **Textfelder mit Namen:** Der Name eines Textfelds (Titel im Kursindex) lässt sich setzen und ändern. Ohne Angabe leitet Moodle ihn einmalig aus dem Text ab; `"name": ""` leitet ihn neu ab. Bestehende Textfelder mit dem Namen „label“ brauchen einmalig einen Namen.
+- **Aufräumen nach fehlgeschlagenem Anlegen:** Schlägt das Anlegen einer Aktivität spät fehl, meldet Coursepilot den ursprünglichen Fehler statt eines Aufräumfehlers.
+- Tests und Aufgaben: Bewertungs- und Einstellungsänderungen an Tests werden vollständig oder gar nicht geschrieben; das Wiederherstellen von Verzeichnissen erhält Unterordner.
+- Intern: Qualitäts-Baseline (Spec 0029) mit verbindlichem Gate, 99 % Testabdeckung und Mutationsprüfung. Keine Schemaänderung. Die Moodle-Buildnummer ist `2026111500`; Installationen führen das reguläre Plugin-Upgrade aus. Moodle 5.1, 5.2 und 5.3 bleiben unterstützt.
+
 ## Coursepilot 2.1.3-beta — Aufgaben ohne Bewertung
 
 - Über `create_module` angelegte und über `update_module_settings` bearbeitete Aufgaben besitzen nach erfolgreichem Schreiben ein primäres Grade-Item. Damit funktionieren Lerneransicht, Versuchshistorie und Moodle Mobile auch ohne Bewertung und ohne Gradebook-Feedback.
