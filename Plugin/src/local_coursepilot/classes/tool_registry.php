@@ -24,7 +24,14 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class tool_registry {
-    /** @var array<string, array{classname: class-string, descriptionkey: string}> */
+    /**
+     * Registered tools. Write tools (see is_write()) must declare `destructive` (can delete or overwrite
+     * existing content) and `idempotent` (a repeated call with the same arguments changes nothing more);
+     * both become MCP annotations. `external` marks tools that can reach an external WebDAV location.
+     *
+     * @var array<string, array{classname: class-string, descriptionkey: string, destructive?: bool,
+     *     idempotent?: bool, external?: bool}>
+     */
     private const TOOLS = [
         'coursepilot_list_courses' => [
             'classname' => 'local_coursepilot\external\list_courses',
@@ -53,46 +60,72 @@ final class tool_registry {
         'coursepilot_restore_activity_version' => [
             'classname' => 'local_coursepilot\external\restore_activity_version',
             'descriptionkey' => 'tool_restore_activity_version',
+            // Overwrites the current activity state with an earlier one; every call records a new version.
+            'destructive' => true,
+            'idempotent' => false,
         ],
         'coursepilot_update_module_settings' => [
             'classname' => 'local_coursepilot\external\update_module_settings',
             'descriptionkey' => 'tool_update_module_settings',
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_create_module' => [
             'classname' => 'local_coursepilot\external\create_module',
             'descriptionkey' => 'tool_create_module',
+            'destructive' => false,
+            'idempotent' => false,
         ],
         'coursepilot_create_quiz' => [
             'classname' => 'local_coursepilot\external\create_quiz',
             'descriptionkey' => 'tool_create_quiz',
+            'destructive' => false,
+            'idempotent' => false,
         ],
         'coursepilot_update_quiz_settings' => [
             'classname' => 'local_coursepilot\external\update_quiz_settings',
             'descriptionkey' => 'tool_update_quiz_settings',
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_set_completion' => [
             'classname' => 'local_coursepilot\external\set_completion',
             'descriptionkey' => 'tool_set_completion',
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_set_restriction' => [
             'classname' => 'local_coursepilot\external\set_restriction',
             'descriptionkey' => 'tool_set_restriction',
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_ensure_section' => [
             'classname' => 'local_coursepilot\external\ensure_section',
             'descriptionkey' => 'tool_ensure_section',
+            // Renames an existing section to the given name; otherwise creates it.
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_update_section' => [
             'classname' => 'local_coursepilot\external\update_section',
             'descriptionkey' => 'tool_update_section',
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_move_section' => [
             'classname' => 'local_coursepilot\external\move_section',
             'descriptionkey' => 'tool_move_section',
+            // Repositions only; no content is lost and the old order is restorable.
+            'destructive' => false,
+            'idempotent' => true,
         ],
         'coursepilot_move_module' => [
             'classname' => 'local_coursepilot\external\move_module',
             'descriptionkey' => 'tool_move_module',
+            // Repositions only; no content is lost and the old position is restorable.
+            'destructive' => false,
+            'idempotent' => true,
         ],
         'coursepilot_get_sections' => [
             'classname' => 'local_coursepilot\external\get_sections',
@@ -101,34 +134,56 @@ final class tool_registry {
         'coursepilot_ensure_question_bank' => [
             'classname' => 'local_coursepilot\external\ensure_question_bank',
             'descriptionkey' => 'tool_ensure_question_bank',
+            // Finds or creates; never changes an existing bank.
+            'destructive' => false,
+            'idempotent' => true,
         ],
         'coursepilot_ensure_question_category' => [
             'classname' => 'local_coursepilot\external\ensure_question_category',
             'descriptionkey' => 'tool_ensure_question_category',
+            // Finds or creates; never changes an existing category.
+            'destructive' => false,
+            'idempotent' => true,
         ],
         'coursepilot_update_question_category' => [
             'classname' => 'local_coursepilot\external\update_question_category',
             'descriptionkey' => 'tool_update_question_category',
+            // Renames or reparents an existing category.
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_move_question' => [
             'classname' => 'local_coursepilot\external\move_question',
             'descriptionkey' => 'tool_move_question',
+            // Repositions only; questions and versions stay intact.
+            'destructive' => false,
+            'idempotent' => true,
         ],
         'coursepilot_create_mc_question' => [
             'classname' => 'local_coursepilot\external\create_mc_question',
             'descriptionkey' => 'tool_create_mc_question',
+            'destructive' => false,
+            'idempotent' => false,
         ],
         'coursepilot_update_mc_question' => [
             'classname' => 'local_coursepilot\external\update_mc_question',
             'descriptionkey' => 'tool_update_mc_question',
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_import_questions_xml' => [
             'classname' => 'local_coursepilot\external\import_questions_xml',
             'descriptionkey' => 'tool_import_questions_xml',
+            // Adds questions; a repeated call adds them again.
+            'destructive' => false,
+            'idempotent' => false,
         ],
         'coursepilot_export_questions_xml' => [
             'classname' => 'local_coursepilot\external\export_questions_xml',
             'descriptionkey' => 'tool_export_questions_xml',
+            // Writes the XML file into the material store and replaces a file of the same name.
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_get_question_categories' => [
             'classname' => 'local_coursepilot\external\get_question_categories',
@@ -137,6 +192,9 @@ final class tool_registry {
         'coursepilot_ensure_quiz_question_categories' => [
             'classname' => 'local_coursepilot\external\ensure_quiz_question_categories',
             'descriptionkey' => 'tool_ensure_quiz_question_categories',
+            // Initializes missing categories; existing ones stay as they are.
+            'destructive' => false,
+            'idempotent' => true,
         ],
         'coursepilot_plan_question_category_cleanup' => [
             'classname' => 'local_coursepilot\external\get_question_category_cleanup_plan',
@@ -153,10 +211,15 @@ final class tool_registry {
         'coursepilot_add_glossary_entries' => [
             'classname' => 'local_coursepilot\\external\\add_glossary_entries',
             'descriptionkey' => 'tool_add_glossary_entries',
+            'destructive' => false,
+            'idempotent' => false,
         ],
         'coursepilot_add_questions_to_quiz' => [
             'classname' => 'local_coursepilot\external\add_questions_to_quiz',
             'descriptionkey' => 'tool_add_questions_to_quiz',
+            // Only appends; a question already in the quiz gets no second slot. Preview attempts are cleared as in the quiz editor.
+            'destructive' => false,
+            'idempotent' => true,
         ],
         'coursepilot_get_version_info' => [
             'classname' => 'local_coursepilot\external\get_version_info',
@@ -165,6 +228,7 @@ final class tool_registry {
         'coursepilot_list_context_files' => [
             'classname' => 'local_coursepilot\external\list_context_files',
             'descriptionkey' => 'tool_list_context_files',
+            'external' => true,
         ],
         'coursepilot_describe_module_fields' => [
             'classname' => 'local_coursepilot\external\describe_module_fields',
@@ -173,34 +237,56 @@ final class tool_registry {
         'coursepilot_read_context_file' => [
             'classname' => 'local_coursepilot\external\read_context_file',
             'descriptionkey' => 'tool_read_context_file',
+            'external' => true,
         ],
         'coursepilot_write_context_file' => [
             'classname' => 'local_coursepilot\external\write_context_file',
             'descriptionkey' => 'tool_write_context_file',
+            // Creates or fully overwrites the file.
+            'destructive' => true,
+            'idempotent' => true,
+            'external' => true,
         ],
         'coursepilot_append_context_file' => [
             'classname' => 'local_coursepilot\external\append_context_file',
             'descriptionkey' => 'tool_append_context_file',
+            // A repeated call appends the content again.
+            'destructive' => false,
+            'idempotent' => false,
+            'external' => true,
         ],
         'coursepilot_list_material_files' => [
             'classname' => 'local_coursepilot\external\list_material_files',
             'descriptionkey' => 'tool_list_material_files',
+            'external' => true,
         ],
         'coursepilot_upload_material_file' => [
             'classname' => 'local_coursepilot\external\upload_material_file',
             'descriptionkey' => 'tool_upload_material_file',
+            // Creates or fully overwrites the file.
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_preview_material_file' => [
             'classname' => 'local_coursepilot\external\preview_material_file',
             'descriptionkey' => 'tool_preview_material_file',
+            'external' => true,
         ],
         'coursepilot_crop_material_file' => [
             'classname' => 'local_coursepilot\external\crop_material_file',
             'descriptionkey' => 'tool_crop_material_file',
+            // Replaces an existing target file.
+            'destructive' => true,
+            'idempotent' => true,
+            'external' => true,
         ],
         'coursepilot_compose_material_file' => [
             'classname' => 'local_coursepilot\external\compose_material_file',
             'descriptionkey' => 'tool_compose_material_file',
+            // Replaces an existing target file.
+            'destructive' => true,
+            'idempotent' => true,
+            'external' => true,
         ],
         'coursepilot_report_loose_material_files' => [
             'classname' => 'local_coursepilot\external\report_loose_material_files',
@@ -209,14 +295,20 @@ final class tool_registry {
         'coursepilot_delete_material_files' => [
             'classname' => 'local_coursepilot\external\delete_material_files',
             'descriptionkey' => 'tool_delete_material_files',
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_clone_activity' => [
             'classname' => 'local_coursepilot\external\clone_activity',
             'descriptionkey' => 'tool_clone_activity',
+            'destructive' => false,
+            'idempotent' => false,
         ],
         'coursepilot_create_activity_from_xml' => [
             'classname' => 'local_coursepilot\external\create_activity_from_xml',
             'descriptionkey' => 'tool_create_activity_from_xml',
+            'destructive' => false,
+            'idempotent' => false,
         ],
         'coursepilot_export_activity_backup' => [
             'classname' => 'local_coursepilot\external\export_activity_backup',
@@ -225,6 +317,9 @@ final class tool_registry {
         'coursepilot_export_default_activity' => [
             'classname' => 'local_coursepilot\external\export_default_activity',
             'descriptionkey' => 'tool_export_default_activity',
+            // Creates a hidden throwaway activity and removes it again; nothing is left behind.
+            'destructive' => false,
+            'idempotent' => true,
         ],
         'coursepilot_report_clone_lineage' => [
             'classname' => 'local_coursepilot\external\report_clone_lineage',
@@ -238,6 +333,9 @@ final class tool_registry {
         'coursepilot_dismiss_pending_entry' => [
             'classname' => 'local_coursepilot\external\dismiss_pending_entry',
             'descriptionkey' => 'tool_dismiss_pending_entry',
+            // Removes the note entry for good.
+            'destructive' => true,
+            'idempotent' => true,
         ],
         'coursepilot_create_workbench_download_links' => [
             'classname' => 'local_coursepilot\external\create_workbench_download_links',
@@ -246,6 +344,9 @@ final class tool_registry {
         'coursepilot_dismiss_previous_location' => [
             'classname' => 'local_coursepilot\external\dismiss_previous_location',
             'descriptionkey' => 'tool_dismiss_previous_location',
+            // Closes the legacy context holdings for good; files are never touched.
+            'destructive' => true,
+            'idempotent' => true,
         ],
     ];
 
@@ -280,6 +381,31 @@ final class tool_registry {
             $schemas[$name] = external_schema_converter::from_parameters($classname::execute_parameters());
         }
         return $schemas;
+    }
+
+    /**
+     * MCP tool annotations per tool, derived from the read/write classification of the registry.
+     *
+     * Read tools carry only readOnlyHint and openWorldHint: destructiveHint and idempotentHint have
+     * no meaning for them. Write tools must declare both values in their registry entry.
+     *
+     * @return array<string, array<string, bool>> ToolAnnotations keyed by MCP tool name.
+     */
+    public static function annotations(): array {
+        $annotations = [];
+        foreach (self::TOOLS as $name => $tool) {
+            $iswrite = self::is_write_class($tool['classname']);
+            $annotations[$name] = ['readOnlyHint' => !$iswrite];
+            if ($iswrite) {
+                if (!isset($tool['destructive'], $tool['idempotent'])) {
+                    throw new \coding_exception("Write tool {$name} must declare destructive and idempotent.");
+                }
+                $annotations[$name]['destructiveHint'] = $tool['destructive'];
+                $annotations[$name]['idempotentHint'] = $tool['idempotent'];
+            }
+            $annotations[$name]['openWorldHint'] = $tool['external'] ?? false;
+        }
+        return $annotations;
     }
 
     /**

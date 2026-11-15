@@ -87,4 +87,62 @@ final class tool_registry_classification_test extends \advanced_testcase {
             $this->assertNotSame('', $functions[$function]['description'], $function);
         }
     }
+
+    /**
+     * Tools whose files can live on an external WebDAV location (context area, material store reads).
+     */
+    private const OPEN_WORLD = [
+        'coursepilot_list_context_files', 'coursepilot_read_context_file', 'coursepilot_write_context_file',
+        'coursepilot_append_context_file', 'coursepilot_list_material_files', 'coursepilot_preview_material_file',
+        'coursepilot_crop_material_file', 'coursepilot_compose_material_file',
+    ];
+
+    /**
+     * Every registered tool name, one data set each.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function tool_names(): array {
+        return array_map(static fn(string $name): array => [$name], array_combine(
+            array_keys(tool_registry::allowed_tools()),
+            array_keys(tool_registry::allowed_tools())
+        ));
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('tool_names')]
+    public function test_annotations_are_derived_from_the_access_type(string $name): void {
+        $function = tool_registry::allowed_tools()[$name];
+        $iswrite = tool_registry::service_functions()[$function]['type'] === 'write';
+        $annotations = tool_registry::annotations()[$name];
+
+        $this->assertSame(!$iswrite, $annotations['readOnlyHint'], $name);
+        $this->assertSame(in_array($name, self::OPEN_WORLD, true), $annotations['openWorldHint'], $name);
+        if ($iswrite) {
+            $this->assertArrayHasKey('destructiveHint', $annotations, $name);
+            $this->assertArrayHasKey('idempotentHint', $annotations, $name);
+        } else {
+            $this->assertArrayNotHasKey('destructiveHint', $annotations, $name);
+            $this->assertArrayNotHasKey('idempotentHint', $annotations, $name);
+        }
+    }
+
+    public function test_destructive_tools_are_exactly_those_that_delete_or_overwrite(): void {
+        $destructive = array_keys(array_filter(
+            tool_registry::annotations(),
+            static fn(array $annotations): bool => ($annotations['destructiveHint'] ?? false) === true
+        ));
+        sort($destructive);
+
+        $expected = [
+            'coursepilot_restore_activity_version', 'coursepilot_update_module_settings',
+            'coursepilot_update_quiz_settings', 'coursepilot_set_completion', 'coursepilot_set_restriction',
+            'coursepilot_ensure_section', 'coursepilot_update_section', 'coursepilot_update_question_category',
+            'coursepilot_update_mc_question', 'coursepilot_export_questions_xml', 'coursepilot_write_context_file',
+            'coursepilot_upload_material_file', 'coursepilot_crop_material_file', 'coursepilot_compose_material_file',
+            'coursepilot_delete_material_files', 'coursepilot_dismiss_pending_entry',
+            'coursepilot_dismiss_previous_location',
+        ];
+        sort($expected);
+        $this->assertSame($expected, $destructive);
+    }
 }

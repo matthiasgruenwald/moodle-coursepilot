@@ -514,6 +514,7 @@ final class dispatcher {
     private static function tools(): array {
         $descriptions = tool_registry::descriptions();
         $schemas = tool_registry::schemas();
+        $annotations = tool_registry::annotations();
         $tools = [];
         foreach (array_keys(privacy_surface::allowed_tools()) as $name) {
             $schema = $schemas[$name] ?? null;
@@ -529,6 +530,7 @@ final class dispatcher {
                 'name' => $name,
                 'description' => $descriptions[$name] ?? '',
                 'inputSchema' => $inputschema,
+                'annotations' => $annotations[$name],
             ];
         }
         return $tools;

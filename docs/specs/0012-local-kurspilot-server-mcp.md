@@ -402,6 +402,10 @@ Entscheidungen, per PHPUnit erzwungen, kein Node-Test):
   verbotene Bestandteile und Abgleichstatus.
 - `tools/list` und `tools/call` leiten sich beide aus derselben Allowlist ab
   — gelistet und aufrufbar ist dieselbe Menge (Umsetzung #309).
+- `tools/list` liefert je Werkzeug `annotations` (MCP 2025-11-25, `ToolAnnotations`):
+  `readOnlyHint` folgt der Lese-/Schreib-Einstufung der Registry; Schreibwerkzeuge
+  deklarieren `destructiveHint` und `idempotentHint` im Registry-Eintrag; `openWorldHint`
+  ist nur für Werkzeuge mit möglichem WebDAV-Zugriff `true`.
 
 ## 7. Discovery (`.well-known`) ohne Webserver-Eingriff
 
