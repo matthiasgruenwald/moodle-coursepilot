@@ -136,6 +136,7 @@ final class write_target {
         self::normalise_create_fields($catalogclass, $fields);
         $target = self::create($catalogclass, $fields, $confirmedlocks);
         self::assert_file_references($catalogclass, $fields);
+        cm_indent::assert_supported($course, $fields);
 
         require_once($CFG->dirroot . '/course/modlib.php');
         $cmid = self::in_transaction(static function () use ($target, $catalogclass, $course, $sectionnum, $location): int {
@@ -161,6 +162,7 @@ final class write_target {
             $target->apply_changes($catalogclass, $moduleinfo, context_course::instance($course->id), $location, false);
             $created = \add_moduleinfo($moduleinfo, $course);
             self::ensure_assign_grade_item($catalogclass::modname(), (int) $created->coursemodule);
+            cm_indent::apply($course, (int) $created->coursemodule, $target->changes);
             return (int) $created->coursemodule;
         });
         return ['cmid' => $cmid, 'changes' => $fields];
@@ -194,6 +196,7 @@ final class write_target {
         pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $patch);
         $target = self::update($catalogclass, $patch, $current, $confirmedlocks);
         self::assert_file_references($catalogclass, $patch);
+        cm_indent::assert_supported($course, $patch);
 
         require_once($CFG->dirroot . '/course/modlib.php');
         self::in_transaction(static function () use ($target, $catalogclass, $cm, $course, $current, $location): void {
@@ -212,6 +215,7 @@ final class write_target {
             pseudofield_carry_forward::draft_named_editors($catalogclass, $moduleinfo, $cm);
             \update_moduleinfo($cm, $moduleinfo, $course);
             self::ensure_assign_grade_item($catalogclass::modname(), (int) $cm->id);
+            cm_indent::apply($course, (int) $cm->id, $target->changes);
         });
         return $patch;
     }

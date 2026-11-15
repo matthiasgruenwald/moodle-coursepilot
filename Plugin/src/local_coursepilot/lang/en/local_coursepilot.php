@@ -151,6 +151,7 @@ $string['historysummarymarker'] = 'Version {$a->version} ({$a->source}) - {$a->u
 $string['historytitle'] = 'Change history';
 $string['historyunknownuser'] = 'User #{$a}';
 $string['historyview'] = 'View history';
+$string['indentationnotsupported'] = 'The course format "{$a->format}" does not show indentation, so an activity cannot be indented in this course. Use "indent": 0 or leave the field out. Nothing was written.';
 $string['invalidcontextpath'] = 'Invalid path.';
 $string['invalideditorpseudofield'] = 'Field "{$a->field}" needs the content as text or as an object with "text" - {$a->value} was supplied. Without "text" the content would end up empty, so nothing was written.';
 $string['invalidfieldname'] = 'Field names in felder_json must be strings. Nothing was written.';

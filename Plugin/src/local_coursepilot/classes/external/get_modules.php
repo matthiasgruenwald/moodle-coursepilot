@@ -84,7 +84,7 @@ class get_modules extends external_api {
             }
         }
 
-        $sql = "SELECT cm.id as cmid, cm.visible, cm.visibleoncoursepage, cs.section as sectionnum, cs.sequence,
+        $sql = "SELECT cm.id as cmid, cm.visible, cm.visibleoncoursepage, cm.indent, cs.section as sectionnum, cs.sequence,
                        m.name as modname, cm.instance
                   FROM {course_modules} cm
                   JOIN {modules} m ON m.id = cm.module
@@ -115,6 +115,7 @@ class get_modules extends external_api {
                 'name'       => $displayname,
                 'visible'    => (int) $row->visible,
                 'visibleoncoursepage' => (int) $row->visibleoncoursepage,
+                'indent'     => (int) $row->indent,
             ], shared_block::derive_visibility((int) $row->visible, (int) $row->visibleoncoursepage));
         }
 
@@ -148,6 +149,7 @@ class get_modules extends external_api {
                 'name'       => new external_value(PARAM_TEXT, 'Display name of the activity'),
                 'visible'    => new external_value(PARAM_INT, 'Visible (1) or hidden (0)'),
                 'visibleoncoursepage' => new external_value(PARAM_INT, 'Stealth: 1 = shown on course page, 0 = stealth'),
+                'indent'     => new external_value(PARAM_INT, 'Indentation on the course page: 0 = none, 1 = indented'),
                 'coursepagevisibility' => new external_value(PARAM_TEXT, 'shown | stealth'),
                 'availability_status' => new external_value(PARAM_TEXT, 'shown | stealth | hidden'),
             ])

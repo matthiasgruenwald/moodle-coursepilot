@@ -93,6 +93,7 @@ final class read_tools_contract_test extends \advanced_testcase {
                 'name' => 'A',
                 'visible' => 1,
                 'visibleoncoursepage' => 0,
+                'indent' => 0,
                 'coursepagevisibility' => 'stealth',
                 'availability_status' => 'stealth',
             ],

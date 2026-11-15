@@ -75,6 +75,7 @@ final class module_state {
             'visible' => (int) $cm->visible,
             'visibleoncoursepage' => (int) $cm->visibleoncoursepage,
             'idnumber' => (string) $cm->idnumber,
+            'indent' => (int) $cm->indent,
             'groupmode' => (int) groups_get_activity_groupmode($cm),
             'groupingid' => (int) $cm->groupingid,
             'course' => (int) $cm->course,

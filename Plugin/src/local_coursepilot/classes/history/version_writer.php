@@ -207,6 +207,7 @@ final class version_writer {
             'visible' => (int) $cm->visible,
             'visibleoncoursepage' => (int) $cm->visibleoncoursepage,
             'cmidnumber' => (string) $cm->idnumber,
+            'indent' => (int) $cm->indent,
             'groupmode' => (int) groups_get_activity_groupmode($cm),
             'groupingid' => (int) $cm->groupingid,
             'course' => (int) $cm->course,

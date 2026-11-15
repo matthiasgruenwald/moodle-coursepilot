@@ -125,6 +125,7 @@ $string['historysummarymarker'] = 'Version {$a->version} ({$a->source}) - {$a->u
 $string['historytitle'] = 'Änderungsverlauf';
 $string['historyunknownuser'] = 'Nutzer #{$a}';
 $string['historyview'] = 'Verlauf ansehen';
+$string['indentationnotsupported'] = 'Das Kursformat "{$a->format}" zeigt keine Einrückung, daher lässt sich eine Aktivität in diesem Kurs nicht einrücken. "indent": 0 verwenden oder das Feld weglassen. Nichts wurde geschrieben.';
 $string['invalidcontextpath'] = 'Ungültiger Pfad.';
 $string['invalideditorpseudofield'] = 'Das Feld "{$a->field}" braucht den Inhalt als Text oder als Objekt mit "text" - angegeben war {$a->value}. Ohne "text" bliebe der Inhalt leer, deshalb wurde nichts geschrieben.';
 $string['invalidfieldvalue'] = 'Ungültiger Wert "{$a->value}" für Feld "{$a->field}" bei Aktivitätsart "{$a->modname}". describe_module_fields(modname: "{$a->modname}", vollständig: true) zeigt den Wertebereich. Nichts wurde geschrieben.';

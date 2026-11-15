@@ -455,6 +455,7 @@ des modulübergreifenden Blocks:
 | `groupmode` | keine Gruppen / getrennt / sichtbar |
 | `groupingid` | Gruppierung (nur IDs, siehe Fog of war) |
 | `idnumber` | Kennung für Bewertungsberechnungen |
+| `indent` | Einrückung auf der Kursseite, 0 oder 1 (Kern-Oberfläche kennt nur diese zwei Stufen); geschrieben über die Kurseditor-Aktion, nicht über `update_moduleinfo()`; Formate ohne Einrückung lehnen 1 ab |
 
 Stealth setzt voraus, dass die Instanz `allowstealth` erlaubt; ist es aus,
 scheitert der Schreibvorgang nach §3.6 mit klarer Meldung statt still.
