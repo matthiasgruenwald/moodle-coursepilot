@@ -306,7 +306,7 @@ final class dispatcher_responses_test extends \advanced_testcase {
         $this->assertSame(300000, $modern['body']['result']['ttlMs']);
         $this->assertSame(array_keys(privacy_surface::allowed_tools()), array_column($legacy['body']['result']['tools'], 'name'));
         foreach ($legacy['body']['result']['tools'] as $tool) {
-            $this->assertSame(['name', 'description', 'inputSchema'], array_keys($tool));
+            $this->assertSame(['name', 'description', 'inputSchema', 'annotations'], array_keys($tool));
             $this->assertSame('object', $tool['inputSchema']['type']);
             $this->assertFalse($tool['inputSchema']['additionalProperties']);
         }

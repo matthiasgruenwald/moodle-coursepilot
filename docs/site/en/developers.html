@@ -56,7 +56,7 @@
 
     <h2 id="werkzeugvertrag">Tool contract</h2>
     <ul>
-      <li><strong>One declaration per tool:</strong> <code>tool_registry::TOOLS</code> drives the web service registration (<code>db/services.php</code>), the MCP schema (derived from <code>execute_parameters()</code>) and the privacy allowlist. No second schema declaration.</li>
+      <li><strong>One declaration per tool:</strong> <code>tool_registry::TOOLS</code> drives the web service registration (<code>db/services.php</code>), the MCP schema (derived from <code>execute_parameters()</code>) and the privacy allowlist. No second schema declaration. The same entry yields the MCP <code>annotations</code> in <code>tools/list</code>: <code>readOnlyHint</code> from the read/write classification, <code>destructiveHint</code> and <code>idempotentHint</code> as declared per write tool (read tools send false and true; idempotent means the same call leaves the same Moodle state), <code>openWorldHint</code> true for tools that can reach an external WebDAV location (context area, material files via <code>location</code>).</li>
       <li><strong>English base:</strong> tool names, parameters, return keys and descriptions are English; Moodle strings live only in <code>lang/en/</code> (ADR 0024).</li>
       <li><strong>Writing or reading</strong> follows from the naming pattern. Mutating tools use the pattern of a confirmation parameter (<code>confirmed</code>).</li>
       <li><strong>Contract tests:</strong> <code>tool_schema_contract_test.php</code> and <code>privacy_surface_test.php</code> check the surface actually registered.</li>

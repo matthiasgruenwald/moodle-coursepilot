@@ -87,4 +87,103 @@ final class tool_registry_classification_test extends \advanced_testcase {
             $this->assertNotSame('', $functions[$function]['description'], $function);
         }
     }
+
+    /**
+     * Tools that can reach an external WebDAV location: the context area and the material store (`location`).
+     */
+    private const OPEN_WORLD = [
+        'coursepilot_list_context_files', 'coursepilot_read_context_file', 'coursepilot_write_context_file',
+        'coursepilot_append_context_file', 'coursepilot_list_material_files', 'coursepilot_preview_material_file',
+        'coursepilot_crop_material_file', 'coursepilot_compose_material_file', 'coursepilot_create_module',
+        'coursepilot_update_module_settings', 'coursepilot_add_glossary_entries', 'coursepilot_import_questions_xml',
+        'coursepilot_update_mc_question', 'coursepilot_create_activity_from_xml',
+    ];
+
+    /**
+     * Writing tools that can delete or overwrite existing content.
+     */
+    private const DESTRUCTIVE = [
+        'coursepilot_restore_activity_version', 'coursepilot_update_module_settings',
+        'coursepilot_update_quiz_settings', 'coursepilot_set_completion', 'coursepilot_set_restriction',
+        'coursepilot_ensure_section', 'coursepilot_update_section', 'coursepilot_update_question_category',
+        'coursepilot_update_mc_question', 'coursepilot_import_questions_xml', 'coursepilot_export_questions_xml',
+        'coursepilot_write_context_file', 'coursepilot_upload_material_file', 'coursepilot_crop_material_file',
+        'coursepilot_compose_material_file', 'coursepilot_delete_material_files',
+        'coursepilot_dismiss_pending_entry', 'coursepilot_dismiss_previous_location',
+        'coursepilot_create_activity_from_xml',
+    ];
+
+    /**
+     * Writing tools whose repeated call with the same arguments leaves Moodle unchanged.
+     */
+    private const IDEMPOTENT = [
+        'coursepilot_restore_activity_version', 'coursepilot_update_module_settings',
+        'coursepilot_update_quiz_settings', 'coursepilot_set_completion', 'coursepilot_set_restriction',
+        'coursepilot_ensure_section', 'coursepilot_update_section', 'coursepilot_update_question_category',
+        'coursepilot_export_questions_xml', 'coursepilot_write_context_file', 'coursepilot_upload_material_file',
+        'coursepilot_crop_material_file', 'coursepilot_compose_material_file', 'coursepilot_delete_material_files',
+        'coursepilot_dismiss_pending_entry', 'coursepilot_dismiss_previous_location', 'coursepilot_move_module',
+        'coursepilot_move_question', 'coursepilot_ensure_question_bank', 'coursepilot_ensure_question_category',
+        'coursepilot_ensure_quiz_question_categories', 'coursepilot_add_questions_to_quiz',
+        'coursepilot_export_default_activity',
+    ];
+
+    /**
+     * Every registered tool name, one data set each.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function tool_names(): array {
+        $names = array_keys(tool_registry::allowed_tools());
+        return array_map(static fn(string $name): array => [$name], array_combine($names, $names));
+    }
+
+    /**
+     * The four hints of every tool follow its access type and the declared expectations.
+     *
+     * @param string $name MCP tool name.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('tool_names')]
+    public function test_annotations_are_derived_from_the_access_type(string $name): void {
+        $function = tool_registry::allowed_tools()[$name];
+        $iswrite = tool_registry::service_functions()[$function]['type'] === 'write';
+
+        $this->assertSame([
+            'readOnlyHint' => !$iswrite,
+            'destructiveHint' => in_array($name, self::DESTRUCTIVE, true),
+            'idempotentHint' => !$iswrite || in_array($name, self::IDEMPOTENT, true),
+            'openWorldHint' => in_array($name, self::OPEN_WORLD, true),
+        ], tool_registry::annotations()[$name], $name);
+    }
+
+    /**
+     * A write tool without its destructive/idempotent declaration is rejected.
+     */
+    public function test_a_write_tool_without_declarations_is_rejected(): void {
+        $this->expectException(\coding_exception::class);
+        $this->expectExceptionMessage('Write tool coursepilot_x must declare');
+        $this->annotation_for('coursepilot_x', ['destructive' => true], true);
+    }
+
+    /**
+     * A read tool that declares destructive or idempotent is rejected.
+     */
+    public function test_a_read_tool_with_declarations_is_rejected(): void {
+        $this->expectException(\coding_exception::class);
+        $this->expectExceptionMessage('Read tool coursepilot_x must not declare');
+        $this->annotation_for('coursepilot_x', ['destructive' => false, 'idempotent' => true], false);
+    }
+
+    /**
+     * Calls the private builder with a synthetic registry entry.
+     *
+     * @param string $name Tool name.
+     * @param mixed[] $tool Registry entry.
+     * @param bool $iswrite Classification.
+     * @return bool[]
+     */
+    private function annotation_for(string $name, array $tool, bool $iswrite): array {
+        $method = new \ReflectionMethod(tool_registry::class, 'annotation_for');
+        return $method->invoke(null, $name, $tool, $iswrite);
+    }
 }
