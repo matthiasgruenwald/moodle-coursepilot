@@ -2,9 +2,21 @@
     "modname": "label",
     "fields": [
         {
+            "name": "name",
+            "type": "PARAM_TEXT",
+            "meaning": "Title of the text card as shown in the course index and navigation. Optional: Moodle derives it from the start of the intro once, when the card is created without a name. Afterwards the name never follows the intro, also not a derived one. To derive it again from the current intro, set name to an empty string.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/label/mod_form.php:41-49 (text element \"name\", PARAM_TEXT or PARAM_CLEANHTML); mod/label/lib.php:36-40 (get_label_name() keeps a non-empty name)"
+            }
+        },
+        {
             "name": "intro",
             "type": "PARAM_RAW",
-            "meaning": "The text content of the text card (HTML). Moodle derives the display name from it.",
+            "meaning": "The text content of the text card (HTML). Shown on the course page.",
             "required": true,
             "default_json": "null",
             "value_range": {
@@ -26,15 +38,18 @@
             }
         }
     ],
-    "write_options": [],
+    "write_options": {
+        "missing_form_values": {
+            "name": ""
+        }
+    },
     "common_field_names": [
+        "name",
         "intro",
         "introformat"
     ],
     "pseudofields": [],
-    "blocklist": [
-        "name"
-    ],
+    "blocklist": [],
     "combination_rules": [],
     "side_effects": [],
     "bundles": [],

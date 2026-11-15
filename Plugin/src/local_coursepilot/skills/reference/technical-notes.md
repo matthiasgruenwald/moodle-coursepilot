@@ -43,13 +43,16 @@ Do not use plain-text formulas such as f = 1/T or U_GPIO.
 
 ## Critical naming rules
 
-For phase labels, name is blocked. Moodle derives the navigation name
-from intro through get_label_name(). Put the phase name in intro HTML,
-never name in fields_json:
+For phase labels, name is the title shown in the course index and
+navigation. Set it together with the visible heading in intro. Without
+name, Moodle derives it from the start of the intro text once, at creation.
+Afterwards the name never follows the intro, also not a derived one. Change
+it with coursepilot_update_module_settings, or send "name": "" there to
+derive it again from the current intro:
 
 ```
 coursepilot_create_module(courseid, sectionnum, modname="label",
-   fields_json='{"intro": "<h3>Phase 1 – Inform &amp; analyze</h3>"}')
+   fields_json='{"name": "Phase 1 – Inform & analyze", "intro": "<h3>Phase 1 – Inform &amp; analyze</h3>"}')
 ```
 
 For assignments, pages and links, omit Phase x prefixes because the
@@ -67,7 +70,7 @@ Translate content and names into the teacher's requested course language.
 ## Before creation
 
 1. Page or assignment? Reading-only uses page; submissions use assign.
-2. Naming? label uses intro for its phase name and no name parameter.
+2. Naming? label takes name for its course index title and intro for its visible text.
    Remove Phase x prefixes from assignments/pages/links.
 3. Placeholders? Follow `coursepilot_get_skill("interactive-elements")`.
    Remove answers and overly concrete hints, such as esp32dev examples.

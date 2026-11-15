@@ -17,15 +17,15 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Field catalog for mod_label (Spec 0015 §4.1: green, no special handling
- * except the blocked "name" column). First catalogued activity kind -
- * proves the design (#379).
+ * Field catalog for mod_label (Spec 0015 §4.1: green, no special handling).
+ * First catalogued activity kind - proves the design (#379).
  *
  * mod_label/db/install.xml only knows id, course, name, intro, introformat,
  * timemodified. course/timemodified are already in
- * {@see shared_block::blocked_fields()}; "name" is added here because Moodle derives it
- * itself from the intro (mod/label/lib.php: get_label_name()) - a
- * patch would be overwritten immediately.
+ * {@see shared_block::blocked_fields()}. "name" is the one title the course
+ * index shows: mod/label/lib.php get_label_name() keeps a non-empty name and
+ * derives one from the intro only when the name is empty, so the field is
+ * writable and the derivation is the fallback.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -49,9 +49,23 @@ final class label implements module_catalog {
     public static function fields(): array {
         return [
             new field(
+                'name',
+                'PARAM_TEXT',
+                'Title of the text card as shown in the course index and navigation. Optional: '
+                    . 'Moodle derives it from the start of the intro once, when the card is created '
+                    . 'without a name. Afterwards the name never follows the intro, also not a derived '
+                    . 'one. To derive it again from the current intro, set name to an empty string.',
+                false,
+                null,
+                null,
+                null,
+                'mod/label/mod_form.php:41-49 (text element "name", PARAM_TEXT or PARAM_CLEANHTML); '
+                    . 'mod/label/lib.php:36-40 (get_label_name() keeps a non-empty name)'
+            ),
+            new field(
                 'intro',
                 'PARAM_RAW',
-                'The text content of the text card (HTML). Moodle derives the display name from it.',
+                'The text content of the text card (HTML). Shown on the course page.',
                 true,
                 null,
                 null,
@@ -97,7 +111,9 @@ final class label implements module_catalog {
      * @return mixed[]
      */
     public static function write_options(): array {
-        return [];
+        // Moodle's form sends an empty name, which makes get_label_name() derive the title
+        // from the intro; without the key add_moduleinfo() would store the module name "label".
+        return ['missing_form_values' => ['name' => '']];
     }
 
     /**
@@ -124,7 +140,7 @@ final class label implements module_catalog {
      * @return mixed[]
      */
     public static function blocklist(): array {
-        return ['name'];
+        return [];
     }
 
     /**

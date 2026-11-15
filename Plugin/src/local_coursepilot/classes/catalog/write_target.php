@@ -435,9 +435,12 @@ final class write_target {
     ): void {
         $options = $catalogclass::write_options();
         $imagefield = $options['intro_image_field'] ?? null;
+        $formvalues = $options['missing_form_values'] ?? [];
         foreach ($this->changes as $fieldname => $value) {
             if ($fieldname !== $imagefield) {
-                $moduleinfo->{self::moduleinfo_property($fieldname)} = $value;
+                // A null counts as not named: the form's empty value applies, so core
+                // does not treat the property as set (modlib stores the module name then).
+                $moduleinfo->{self::moduleinfo_property($fieldname)} = $value ?? $formvalues[$fieldname] ?? null;
             }
         }
         foreach (array_intersect_key($options['material_reference_fields'] ?? [], $this->changes) as $fieldname => $spec) {

@@ -146,7 +146,10 @@ final class describe_module_fields_test extends \advanced_testcase {
         $this->assertNotEquals($short, $full, 'Short form and full form must differ.');
 
         $sperrliste = $full['module']['blocked_fields'];
-        $this->assertContains('name', $sperrliste, 'label.name must be blocked - it is derived from the intro.');
+        $this->assertNotContains('name', $sperrliste, 'label.name is the writable course index title.');
+        $fields = array_column($full['module']['fields'], null, 'name');
+        $this->assertArrayHasKey('name', $fields);
+        $this->assertStringContainsString('course index', $fields['name']['meaning']);
         $this->assertContains('course', $sperrliste);
         $this->assertContains('timemodified', $sperrliste);
 

@@ -862,6 +862,42 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
+     * A text card created with a name shows that name in the course index.
+     */
+    public function test_label_created_with_name_uses_it_as_course_index_title(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->create($course->id, 0, 'label', ['name' => 'Praxis: KI-Sekretär', 'intro' => 'Aufgabe']);
+
+        $this->assertSame('Praxis: KI-Sekretär', get_fast_modinfo($course->id)->get_cm($result['cmid'])->name);
+    }
+
+    /**
+     * Without a name a text card is titled from the start of its intro.
+     */
+    public function test_label_created_without_name_derives_it_from_the_intro(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->create($course->id, 0, 'label', ['intro' => '<p>Textfeld-Inhalt</p>']);
+
+        $this->assertSame('Textfeld-Inhalt', get_fast_modinfo($course->id)->get_cm($result['cmid'])->name);
+    }
+
+    /**
+     * A null name counts as not named: the title comes from the intro.
+     */
+    public function test_label_created_with_null_name_derives_it_from_the_intro(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->create($course->id, 0, 'label', ['name' => null, 'intro' => '<p>Textfeld-Inhalt</p>']);
+
+        $this->assertSame('Textfeld-Inhalt', get_fast_modinfo($course->id)->get_cm($result['cmid'])->name);
+    }
+
+    /**
      * Every creation records history version 1 through add_moduleinfo()’s
      * native course_module_created event (#385).
      */
