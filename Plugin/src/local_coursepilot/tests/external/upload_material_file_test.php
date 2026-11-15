@@ -17,6 +17,7 @@
 namespace local_coursepilot\external;
 
 use local_coursepilot\material_files;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -67,6 +68,66 @@ final class upload_material_file_test extends \advanced_testcase {
 
         $this->expectException(\moodle_exception::class);
         $this->upload('programm.exe', 'Inhalt');
+    }
+
+    /**
+     * Provides the OpenDocument extensions teachers' LibreOffice files carry.
+     *
+     * @return string[][]
+     */
+    public static function opendocument_names(): array {
+        return [
+            'text' => ['lernjournal.odt'],
+            'spreadsheet' => ['auswertung.ods'],
+            'presentation' => ['vortrag.odp'],
+            'drawing' => ['skizze.odg'],
+        ];
+    }
+
+    #[DataProvider('opendocument_names')]
+    public function test_opendocument_files_are_stored_in_the_material_area(string $name): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $result = \core_external\external_api::clean_returnvalue(
+            upload_material_file::execute_returns(),
+            upload_material_file::execute($name, base64_encode('PK-odf'))
+        );
+
+        $this->assertTrue($result['created']);
+        $this->assertSame($name, $result['path']);
+        $this->assertSame('PK-odf', $this->read_stored($user, '/coursepilot-material/', $name));
+    }
+
+    public function test_refusal_lists_the_opendocument_extensions_as_allowed(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            $this->upload('programm.exe', 'Inhalt');
+            $this->fail('A disallowed extension must be refused.');
+        } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
+        }
+
+        foreach (['odt', 'ods', 'odp', 'odg'] as $extension) {
+            $this->assertStringContainsString($extension, $message);
+        }
+    }
+
+    public function test_a_name_with_spaces_is_refused_with_a_normalised_proposal(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            $this->upload('Lernjournal Algorithmik – Vorlage.odt', 'Inhalt');
+            $this->fail('A name outside the naming rule must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialfileinvalidname', $e->errorcode);
+            $this->assertStringContainsString('Lernjournal_Algorithmik_Vorlage.odt', $e->getMessage());
+            $this->assertStringNotContainsString('File type not allowed', $e->getMessage());
+        }
     }
 
     public function test_svg_stays_allowed(): void {

@@ -279,11 +279,18 @@ wird mit klarer Meldung abgewiesen, statt still etwas anderes zu tun.
 
 ---
 
-## 6. Dateitypen: die Bestandslisten, unverändert
+## 6. Dateitypen: die Bestandslisten, um OpenDocument ergänzt
 
 Der lokale Weg führt bereits zwei Whitelists — eine für allgemeine Uploads (PDF, DOC/DOCX,
-XLS/XLSX, PPT/PPTX, HTML, PNG, JPG) und eine engere für einbettbare Bilder (PNG, JPG, GIF,
-SVG, WEBP). Beide werden **unverändert übernommen**.
+XLS/XLSX, PPT/PPTX, HTML/HTM, PNG, JPG/JPEG, GIF, SVG, TXT, CSV, ZIP) und eine engere für einbettbare Bilder (PNG, JPG, GIF,
+SVG, WEBP). Beide werden übernommen. Die allgemeine Liste ist um die OpenDocument-Typen
+ODT, ODS, ODP und ODG ergänzt: LibreOffice und Collabora (Nextcloud) speichern darin
+standardmäßig, und eine Lehrkraft darf sie in Moodles Oberfläche ohnehin hochladen. Wie
+bei DOCX, XLSX und PPTX prüft Kurspilot nur die Endung, nicht den Inhalt. Vorlagen- und
+Flachformate (OTT, OTS, OTP, FODT usw.) bleiben draußen: sie sind Vorlagen, die erst nach
+"Neu aus Vorlage" Dokumente werden, oder Flat-XML-Fassungen; als Download für Lernende
+brauchen sie die Lehrkraft nicht, und der Anlass (fertige Dokumente) ist mit ODT/ODS/ODP/ODG
+gedeckt.
 
 **SVG bleibt drin.** Es zu streichen würde Kurspilot **restriktiver** machen als Moodles
 eigenen Dateiwähler: dieselbe Lehrkraft darf dieselbe SVG jederzeit von Hand hochladen.

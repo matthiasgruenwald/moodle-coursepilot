@@ -220,6 +220,7 @@ $string['materialexternalerror'] = 'Der Materialbestand konnte nicht gelesen wer
 $string['materialfilechanged'] = 'Nicht geschrieben: {$a} wurde seit dem letzten Lesen geändert — bitte die Datei neu lesen und den Vorgang wiederholen.';
 $string['materialfilecreated'] = '{$a} neu angelegt.';
 $string['materialfiledisallowedtype'] = 'Dateityp nicht zulässig: {$a->filename} — erlaubt sind: {$a->allowed}.';
+$string['materialfileinvalidname'] = 'Dateiname nicht zulässig: {$a->filename}. Dateinamen im Materialbereich dürfen nur die Buchstaben A-Z und a-z, Ziffern, "_" und "-" enthalten, gefolgt von genau einer Endung aus dieser Liste: {$a->allowed}. Benenne die Datei um, zum Beispiel in: {$a->suggestion}';
 $string['materialfilenotfound'] = 'Keine Materialdatei unter "{$a}" gefunden — erwarteter Pfad im Materialordner. Erst mit upload_material_file ablegen, dann verweisen.';
 $string['materialfileoverwritten'] = '{$a->path} überschrieben (vorher: {$a->before} Byte, jetzt: {$a->after} Byte).';
 $string['materialfilesdeleted'] = '{$a->count} Datei(en) gelöscht, {$a->freed} MB freigeworden.';

@@ -56,7 +56,11 @@ class crop_material_file extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'sourcepath' => new external_value(PARAM_PATH, 'Source material image path, relative to the material folder'),
-            'targetpath' => new external_value(PARAM_PATH, 'Target crop path, relative to the material folder, e.g. "crop.png"'),
+            'targetpath' => new external_value(
+                PARAM_PATH,
+                'Target crop path, relative to the material folder, e.g. "crop.png"; the file name must be ASCII without '
+                . 'spaces or umlauts (A-Z, a-z, 0-9, _, -) with one allowed extension, normalise it first'
+            ),
             'x0' => new external_value(PARAM_FLOAT, 'Left crop edge, relative 0-1'),
             'y0' => new external_value(PARAM_FLOAT, 'Top crop edge, relative 0-1'),
             'x1' => new external_value(PARAM_FLOAT, 'Right crop edge, relative 0-1'),
