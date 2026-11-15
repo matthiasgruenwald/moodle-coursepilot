@@ -439,7 +439,10 @@ final class dispatcher_test extends \advanced_testcase {
             $this->assertArrayHasKey('annotations', $tool, $name);
             $this->assertSame(!$iswrite, $tool['annotations']['readOnlyHint'], $name);
             $this->assertIsBool($tool['annotations']['openWorldHint'], $name);
-            $this->assertSame($iswrite, array_key_exists('destructiveHint', $tool['annotations']), $name);
+            $this->assertSame(tool_registry::annotations()[$name], $tool['annotations'], $name);
+            if (!$iswrite) {
+                $this->assertFalse($tool['annotations']['destructiveHint'], $name);
+            }
         }
     }
 
