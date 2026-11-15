@@ -196,7 +196,7 @@ final class write_target {
         pseudofield_carry_forward::normalise_editor_pseudofields($catalogclass, $patch);
         $target = self::update($catalogclass, $patch, $current, $confirmedlocks);
         self::assert_file_references($catalogclass, $patch);
-        cm_indent::assert_supported($course, $patch);
+        cm_indent::assert_supported($course, $patch, (int) ($current['indent'] ?? 0));
 
         require_once($CFG->dirroot . '/course/modlib.php');
         self::in_transaction(static function () use ($target, $catalogclass, $cm, $course, $current, $location): void {
@@ -213,9 +213,9 @@ final class write_target {
             );
             $target->apply_changes($catalogclass, $moduleinfo, context_module::instance($cm->id), $location, true);
             pseudofield_carry_forward::draft_named_editors($catalogclass, $moduleinfo, $cm);
+            cm_indent::stage($cm, $target->changes);
             \update_moduleinfo($cm, $moduleinfo, $course);
             self::ensure_assign_grade_item($catalogclass::modname(), (int) $cm->id);
-            cm_indent::apply($course, (int) $cm->id, $target->changes);
         });
         return $patch;
     }

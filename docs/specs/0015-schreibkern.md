@@ -457,6 +457,8 @@ des modulübergreifenden Blocks:
 | `idnumber` | Kennung für Bewertungsberechnungen |
 | `indent` | Einrückung auf der Kursseite, 0 oder 1 (Kern-Oberfläche kennt nur diese zwei Stufen); geschrieben über die Kurseditor-Aktion, nicht über `update_moduleinfo()`; Formate ohne Einrückung lehnen 1 ab |
 
+Eine Änderung von `indent` landet in derselben Version wie die übrigen Felder (der Wert wird vor `update_moduleinfo()` auf die Kursmodulzeile gesetzt). Beim Anlegen entstehen dagegen zwei Versionen: `add_moduleinfo()` übernimmt `indent` nicht, die Einrückung folgt danach über die Kurseditor-Aktion; Version 1 zeigt 0, Version 2 den Wert. Bewusst so gelassen, ein eigener SQL-Schreibzugriff wäre der einzige Weg zu einer Version.
+
 Stealth setzt voraus, dass die Instanz `allowstealth` erlaubt; ist es aus,
 scheitert der Schreibvorgang nach §3.6 mit klarer Meldung statt still.
 

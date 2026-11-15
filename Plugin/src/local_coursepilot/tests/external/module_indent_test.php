@@ -317,4 +317,210 @@ final class module_indent_test extends \advanced_testcase {
         $this->assertSame(1, $this->settings($quiz->cmid)['indent']);
         $this->assertSame(1, $this->listed_indent($course->id, (int) $quiz->cmid));
     }
+
+    /**
+     * Number of recorded versions of an activity.
+     *
+     * @param int $cmid
+     * @return int
+     */
+    private function version_count(int $cmid): int {
+        global $DB;
+        return $DB->count_records('local_coursepilot_cm_version', ['cmid' => $cmid]);
+    }
+
+    /**
+     * Writes that name the indentation record exactly one new version.
+     *
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function update_patches(): array {
+        return ['indent only' => [['indent' => 1]], 'indent and name' => [['indent' => 1, 'name' => 'Neu']]];
+    }
+
+    /**
+     * An update with an indentation leaves one version behind, not an extra one for the indentation.
+     *
+     * @param array<string, mixed> $patch
+     */
+    #[DataProvider('update_patches')]
+    public function test_update_with_indent_records_one_version(array $patch): void {
+        $this->resetAfterTest();
+        $course = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Seite']);
+        update_module_settings::execute($page->cmid, json_encode(['name' => 'Anders']));
+        $before = $this->version_count((int) $page->cmid);
+
+        update_module_settings::execute($page->cmid, json_encode($patch));
+
+        $this->assertSame($before + 1, $this->version_count((int) $page->cmid));
+        $this->assertSame(1, $this->settings($page->cmid)['indent']);
+    }
+
+    /**
+     * A quiz update with an indentation records one version as well.
+     */
+    public function test_quiz_update_with_indent_records_one_version(): void {
+        $this->resetAfterTest();
+        $course = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'name' => 'Test']);
+        update_quiz_settings::execute($quiz->cmid, json_encode(['name' => 'Anders']));
+        $before = $this->version_count((int) $quiz->cmid);
+
+        update_quiz_settings::execute($quiz->cmid, json_encode(['indent' => 1]));
+
+        $this->assertSame($before + 1, $this->version_count((int) $quiz->cmid));
+        $this->assertSame(1, $this->settings($quiz->cmid)['indent']);
+    }
+
+    /**
+     * Repeating the current indentation is not refused where the format shows none.
+     */
+    public function test_repeating_the_current_indent_is_accepted_without_format_support(): void {
+        $this->resetAfterTest();
+        $course = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        update_module_settings::execute($page->cmid, json_encode(['indent' => 1]));
+        set_config('indentation', 0, 'format_topics');
+
+        $result = update_module_settings::execute($page->cmid, json_encode(['indent' => 1]));
+
+        $this->assertSame([], $result['changes']);
+        $this->assertSame(1, $this->settings($page->cmid)['indent']);
+    }
+
+    /**
+     * Restoring an older version brings the indentation back.
+     */
+    public function test_restore_brings_the_indentation_back(): void {
+        $this->resetAfterTest();
+        $course = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Seite']);
+        update_module_settings::execute($page->cmid, json_encode(['indent' => 1]));
+        $indented = $this->version_count((int) $page->cmid);
+        update_module_settings::execute($page->cmid, json_encode(['indent' => 0, 'name' => 'Spaeter']));
+
+        restore_activity_version::execute($page->cmid, $indented);
+
+        $state = $this->settings($page->cmid);
+        $this->assertSame(1, $state['indent']);
+        $this->assertSame('Seite', $state['name']);
+    }
+
+    /**
+     * A version recorded before the field existed restores without touching the indentation.
+     */
+    public function test_restore_of_a_version_without_indent_keeps_the_indentation(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Seite']);
+        $row = $DB->get_record('local_coursepilot_cm_version', ['cmid' => $page->cmid, 'version' => 1], '*', MUST_EXIST);
+        foreach (['moduleinfo_json', 'coursemodule_json'] as $column) {
+            $recorded = json_decode($row->$column, true);
+            unset($recorded['indent']);
+            $DB->set_field('local_coursepilot_cm_version', $column, json_encode($recorded), ['id' => $row->id]);
+        }
+        update_module_settings::execute($page->cmid, json_encode(['indent' => 1, 'name' => 'Spaeter']));
+
+        restore_activity_version::execute($page->cmid, 1);
+
+        $state = $this->settings($page->cmid);
+        $this->assertSame('Seite', $state['name']);
+        $this->assertSame(1, $state['indent']);
+    }
+
+    /**
+     * Where the format no longer shows indentation, a restore still brings back the rest of the version.
+     */
+    public function test_restore_skips_the_indentation_without_format_support(): void {
+        $this->resetAfterTest();
+        $course = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Seite']);
+        update_module_settings::execute($page->cmid, json_encode(['indent' => 1]));
+        $indented = $this->version_count((int) $page->cmid);
+        update_module_settings::execute($page->cmid, json_encode(['indent' => 0, 'name' => 'Spaeter']));
+        set_config('indentation', 0, 'format_topics');
+
+        restore_activity_version::execute($page->cmid, $indented);
+
+        $state = $this->settings($page->cmid);
+        $this->assertSame('Seite', $state['name']);
+        $this->assertSame(0, $state['indent']);
+    }
+
+    /**
+     * A quiz created with an indentation is indented.
+     */
+    public function test_create_quiz_sets_indent(): void {
+        $this->resetAfterTest();
+        $course = $this->course_with_editing_teacher();
+
+        $result = external_api::clean_returnvalue(
+            create_quiz::execute_returns(),
+            create_quiz::execute($course->id, 1, json_encode([
+                'name' => 'Test', 'intro' => 'Beschreibung', 'subnet' => '', 'browsersecurity' => '-',
+                'preferredbehaviour' => 'deferredfeedback', 'indent' => 1,
+            ]))
+        );
+
+        $this->assertSame(1, $this->settings($result['cmid'])['indent']);
+    }
+
+    /**
+     * A clone keeps the indentation of its original.
+     */
+    public function test_clone_keeps_the_indentation(): void {
+        $this->resetAfterTest();
+        $course = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Seite']);
+        update_module_settings::execute($page->cmid, json_encode(['indent' => 1]));
+
+        $result = external_api::clean_returnvalue(
+            clone_activity::execute_returns(),
+            clone_activity::execute((int) $page->cmid, 'Kopie')
+        );
+
+        $this->assertSame(1, $this->settings((int) $result['cmid'])['indent']);
+    }
+
+    /**
+     * Setting completion leaves the indentation alone.
+     */
+    public function test_set_completion_keeps_the_indentation(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->enablecompletion = 1;
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        update_module_settings::execute($page->cmid, json_encode(['indent' => 1]));
+
+        set_completion::execute($page->cmid, json_encode(['completion' => COMPLETION_TRACKING_MANUAL]));
+
+        $this->assertSame(1, $this->settings($page->cmid)['indent']);
+    }
+
+    /**
+     * Without the edit capability the indentation is refused and unchanged.
+     */
+    public function test_indent_needs_the_edit_capability(): void {
+        $this->resetAfterTest();
+        $course = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $this->setUser($student);
+
+        try {
+            update_module_settings::execute($page->cmid, json_encode(['indent' => 1]));
+            $this->fail('Expected exception was not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertNotSame('', $e->errorcode);
+        }
+        $this->setAdminUser();
+        $this->assertSame(0, $this->settings($page->cmid)['indent']);
+    }
 }

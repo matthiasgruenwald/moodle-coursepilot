@@ -23,9 +23,11 @@ use moodle_exception;
 /**
  * Indentation of an activity on the course page (course_modules.indent).
  *
- * add_moduleinfo() and update_moduleinfo() ignore the property, so the write
- * goes through the course editor's own actions (cm_moveright/cm_moveleft), which
- * check the capability, rebuild the course cache and raise course_module_updated.
+ * update_moduleinfo() writes the course module row it is given, so an update
+ * sets the value on that row first. add_moduleinfo() builds its row itself and
+ * ignores the property, so a new activity is indented afterwards through the
+ * course editor's own actions (cm_moveright/cm_moveleft), which check the
+ * capability, rebuild the course cache and raise course_module_updated.
  * Moodle's interface knows two levels, so the catalog allows exactly 0 and 1.
  * Whether a course shows indentation is the course format's decision.
  *
@@ -38,16 +40,19 @@ final class cm_indent {
     public const FIELD = 'indent';
 
     /**
-     * Refuses an indentation in a course whose format does not display one.
-     * Resetting to 0 stays possible, it only removes a leftover.
+     * Refuses a changed indentation in a course whose format does not display one.
+     * Resetting to 0 stays possible, it only removes a leftover, and repeating
+     * the current value changes nothing.
      *
      * @param \stdClass $course
      * @param mixed[] $changes Named fields of the write.
+     * @param int $current Indentation the activity has now (0 for a new one).
      * @return void
      * @throws moodle_exception indentationnotsupported
      */
-    public static function assert_supported(\stdClass $course, array $changes): void {
-        if ((int) ($changes[self::FIELD] ?? 0) === 0 || course_get_format($course)->uses_indentation()) {
+    public static function assert_supported(\stdClass $course, array $changes, int $current = 0): void {
+        $requested = (int) ($changes[self::FIELD] ?? 0);
+        if ($requested === 0 || $requested === $current || self::course_shows_indentation($course)) {
             return;
         }
         throw new moodle_exception('indentationnotsupported', 'local_coursepilot', '', [
@@ -56,7 +61,46 @@ final class cm_indent {
     }
 
     /**
-     * Writes the named indentation of a saved activity; does nothing when the
+     * Whether the course's format displays indentation.
+     *
+     * @param \stdClass $course
+     * @return bool
+     */
+    public static function course_shows_indentation(\stdClass $course): bool {
+        return course_get_format($course)->uses_indentation();
+    }
+
+    /**
+     * Removes the indentation from a patch for a course that does not show one,
+     * so a restore still brings back the rest.
+     *
+     * @param mixed[] $patch
+     * @param \stdClass $course
+     * @return mixed[]
+     */
+    public static function without_unsupported(array $patch, \stdClass $course): array {
+        if (!self::course_shows_indentation($course)) {
+            unset($patch[self::FIELD]);
+        }
+        return $patch;
+    }
+
+    /**
+     * Puts the named indentation on the course module row that update_moduleinfo()
+     * writes back, so the update records one change instead of two.
+     *
+     * @param \stdClass $cm Course module row handed to update_moduleinfo().
+     * @param mixed[] $changes Named fields of the write.
+     * @return void
+     */
+    public static function stage(\stdClass $cm, array $changes): void {
+        if (array_key_exists(self::FIELD, $changes)) {
+            $cm->indent = (int) $changes[self::FIELD];
+        }
+    }
+
+    /**
+     * Indents a newly created activity; does nothing when the
      * write does not name the field or the value already holds.
      *
      * @param \stdClass $course

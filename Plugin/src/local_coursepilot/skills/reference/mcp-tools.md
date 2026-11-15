@@ -17,7 +17,7 @@ Read this to select the responsible read or write tool.
 | `coursepilot_update_section` | Set section name and an introduction only when planned |
 | `coursepilot_move_section` | Move an existing section without content changes |
 | `coursepilot_move_module` | Move an existing activity by cmid to a section or position within it |
-| `coursepilot_update_module_settings` field `indent` | Indent an activity one level (0 or 1; also on create). Use it for an activity that belongs to the one above it, such as a chatbot link below its assignment. Course formats without indentation reject 1 |
+| `coursepilot_update_module_settings` field `indent` | Indent an activity one level (0 or 1; accepted by `coursepilot_create_module`, `coursepilot_create_quiz` and `coursepilot_update_quiz_settings` as well). Use it for an activity that belongs to the one above it, such as a chatbot link below its assignment. Course formats without indentation reject 1 |
 | `coursepilot_create_module` | Create cataloged activities; modname selects label, page, assign, url, resource, folder, choice or forum |
 | `coursepilot_update_module_settings` | Patch individual settings, with field names/values determined by modname |
 | `coursepilot_set_completion` | Set completion tracking: the only path for completion* fields, blocked by generic create/update tools |

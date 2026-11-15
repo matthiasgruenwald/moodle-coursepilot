@@ -136,7 +136,7 @@ final class quiz_write {
         );
         $newgrade = $grade >= 0 ? $grade : (float) $quiz->grade;
         quiz_write_bridge::validate_combination_rules($target->state, $merged, $newgrade);
-        cm_indent::assert_supported(get_course((int) $cm->course), $merged);
+        cm_indent::assert_supported(get_course((int) $cm->course), $merged, (int) $before['indent']);
 
         $gradechanged = $grade >= 0 && abs($grade - (float) $quiz->grade) > 0.00001;
         return self::in_transaction(static function () use ($cm, $quiz, $merged, $before, $grade, $gradechanged): array {
@@ -159,8 +159,8 @@ final class quiz_write {
 
             self::apply_patch($moduleinfo, $quiz, $merged);
 
+            cm_indent::stage($cm, $merged);
             \update_moduleinfo($cm, $moduleinfo, $course);
-            cm_indent::apply($course, (int) $cm->id, $merged);
 
             $after = quiz::effective_state($cm, $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST));
             [$changes, $sideeffects] = self::diff_and_side_effects($merged, $before, $after, $gradechanged);
