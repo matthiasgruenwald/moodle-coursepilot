@@ -100,8 +100,8 @@ final class cm_indent {
     }
 
     /**
-     * Indents a newly created activity; does nothing when the
-     * write does not name the field or the value already holds.
+     * Indents a newly created activity when the write asks for it. A new
+     * activity starts at 0, so only the step to the right can be needed.
      *
      * @param \stdClass $course
      * @param int $cmid
@@ -109,21 +109,9 @@ final class cm_indent {
      * @return void
      */
     public static function apply(\stdClass $course, int $cmid, array $changes): void {
-        global $DB;
-
-        if (!array_key_exists(self::FIELD, $changes)) {
+        if ((int) ($changes[self::FIELD] ?? 0) !== 1) {
             return;
         }
-        $indent = (int) $changes[self::FIELD];
-        if ((int) $DB->get_field('course_modules', 'indent', ['id' => $cmid], MUST_EXIST) === $indent) {
-            return;
-        }
-        $actions = new stateactions();
-        $updates = new stateupdates(course_get_format($course));
-        if ($indent === 1) {
-            $actions->cm_moveright($updates, $course, [$cmid]);
-        } else {
-            $actions->cm_moveleft($updates, $course, [$cmid]);
-        }
+        (new stateactions())->cm_moveright(new stateupdates(course_get_format($course)), $course, [$cmid]);
     }
 }
