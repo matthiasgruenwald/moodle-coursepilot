@@ -58,6 +58,7 @@ final class quiz_write {
         );
         $newgrade = $grade >= 0 ? $grade : quiz_write_bridge::default_grade();
         quiz_write_bridge::validate_combination_rules($target->state, $merged, $newgrade);
+        cm_indent::assert_supported(get_course($courseid), $merged);
 
         return self::in_transaction(static function () use ($courseid, $sectionnum, $target, $merged, $newgrade): array {
             global $CFG, $DB;
@@ -89,6 +90,7 @@ final class quiz_write {
             $created = \add_moduleinfo($moduleinfo, $course);
 
             $cmid = (int) $created->coursemodule;
+            cm_indent::apply($course, $cmid, $merged);
             $calendarcreated = $DB->record_exists('event', ['modulename' => 'quiz', 'instance' => $created->instance]);
             [$createdfields, $sideeffects] = self::report_and_side_effects($merged, $newgrade, $calendarcreated);
 
@@ -134,6 +136,7 @@ final class quiz_write {
         );
         $newgrade = $grade >= 0 ? $grade : (float) $quiz->grade;
         quiz_write_bridge::validate_combination_rules($target->state, $merged, $newgrade);
+        cm_indent::assert_supported(get_course((int) $cm->course), $merged, (int) $before['indent']);
 
         $gradechanged = $grade >= 0 && abs($grade - (float) $quiz->grade) > 0.00001;
         return self::in_transaction(static function () use ($cm, $quiz, $merged, $before, $grade, $gradechanged): array {
@@ -156,6 +159,7 @@ final class quiz_write {
 
             self::apply_patch($moduleinfo, $quiz, $merged);
 
+            cm_indent::stage($cm, $merged);
             \update_moduleinfo($cm, $moduleinfo, $course);
 
             $after = quiz::effective_state($cm, $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST));

@@ -18,7 +18,7 @@ namespace local_coursepilot\catalog;
 
 /**
  * Cross-module block (Spec 0015 §2.3): visibility, stealth, group mode,
- * grouping, idnumber and section assignment live in {course_modules}, not
+ * grouping, idnumber, indentation and section assignment live in {course_modules}, not
  * in the instance table, but use the same update_moduleinfo() form path.
  * Defined ONCE and appended by describe_module_fields for every activity
  * kind; no module class duplicates it (acceptance criterion #379).
@@ -153,6 +153,18 @@ final class shared_block {
                 null,
                 null,
                 'lib/db/install.xml:329 (course_modules.idnumber)'
+            ),
+            new field(
+                cm_indent::FIELD,
+                'PARAM_INT',
+                'Indentation on the course page: 0 = none, 1 = indented one level (for example a link below its '
+                    . 'assignment). Only for course formats that show indentation.',
+                false,
+                0,
+                [0, 1],
+                null,
+                'course/format/classes/stateactions.php:cm_moveright/cm_moveleft (course_modules.indent; the '
+                    . 'course editor knows levels 0 and 1; course_format::uses_indentation())'
             ),
             new field(
                 'sectionnum',

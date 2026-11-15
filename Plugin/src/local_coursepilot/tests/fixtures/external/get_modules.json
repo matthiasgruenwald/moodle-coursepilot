@@ -102,6 +102,14 @@
                     "allownull": true,
                     "type": "int"
                 },
+                "indent": {
+                    "class": "core_external\\external_value",
+                    "desc": "Indentation on the course page: 0 = none, 1 = indented",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "int"
+                },
                 "coursepagevisibility": {
                     "class": "core_external\\external_value",
                     "desc": "shown | stealth",

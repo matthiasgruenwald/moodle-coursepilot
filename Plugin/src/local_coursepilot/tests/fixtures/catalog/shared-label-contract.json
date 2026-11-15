@@ -66,6 +66,19 @@
             "learner_lock": "null"
         },
         {
+            "name": "indent",
+            "type": "PARAM_INT",
+            "meaning": "Indentation on the course page: 0 = none, 1 = indented one level (for example a link below its assignment). Only for course formats that show indentation.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "course/format/classes/stateactions.php:cm_moveright/cm_moveleft (course_modules.indent; the course editor knows levels 0 and 1; course_format::uses_indentation())"
+            },
+            "learner_lock": "null"
+        },
+        {
             "name": "sectionnum",
             "type": "PARAM_INT",
             "meaning": "Section number (0-based) assigned to the activity.",
