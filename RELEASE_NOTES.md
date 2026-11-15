@@ -13,7 +13,13 @@ Directory veröffentlicht.
 - **Textfelder mit Namen:** Der Name eines Textfelds (Titel im Kursindex) lässt sich setzen und ändern. Ohne Angabe leitet Moodle ihn einmalig aus dem Text ab; `"name": ""` leitet ihn neu ab. Bestehende Textfelder mit dem Namen „label“ brauchen einmalig einen Namen.
 - **Aufräumen nach fehlgeschlagenem Anlegen:** Schlägt das Anlegen einer Aktivität spät fehl, meldet Coursepilot den ursprünglichen Fehler statt eines Aufräumfehlers.
 - Tests und Aufgaben: Bewertungs- und Einstellungsänderungen an Tests werden vollständig oder gar nicht geschrieben; das Wiederherstellen von Verzeichnissen erhält Unterordner.
-- Intern: Qualitäts-Baseline (Spec 0029) mit verbindlichem Gate, 99 % Testabdeckung und Mutationsprüfung. Keine Schemaänderung. Die Moodle-Buildnummer ist `2026111500`; Installationen führen das reguläre Plugin-Upgrade aus. Moodle 5.1, 5.2 und 5.3 bleiben unterstützt.
+- **OpenDocument-Upload:** Der Material-Upload nimmt `odt`, `ods`, `odp` und `odg` an. Ein Dateiname, der die Namensregel verletzt, bekommt eine eigene Meldung mit Regel und Namensvorschlag statt „Dateityp nicht erlaubt“.
+- **Einrückung:** Jede Aktivität hat das Feld `indent` (0 oder 1), schreibbar über `create_module` und `update_module_settings`, lesbar in `get_modules` und `get_module_settings`. Es wird in Aktivitätsversionen gesichert und wiederhergestellt. Kursformate ohne Einrückung lehnen `indent = 1` ab.
+- **Werkzeug-Annotationen:** `tools/list` kennzeichnet jedes Werkzeug als lesend oder schreibend, dazu destruktiv, idempotent und mit Außenzugriff (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`). KI-Clients können damit Rückfragen gezielter stellen.
+- **Zugangsdaten bleiben in Moodle:** Zugangsdaten von LTI, Lektion und BigBlueButton erscheinen weder in den Einstellungen noch im Versionsvergleich; geänderte Werte zeigt der Vergleich als `[redacted]`. Bei unbekannten Aktivitäten werden zugangsdatenartige Felder zusätzlich ausgefiltert. Das Zugangspasswort eines Tests bleibt nutzbar.
+- **Personenbezug-Markierung robuster:** Die Markierung in Kontextdateien wird auch mit BOM und in Randformen erkannt; solche Dateien bleiben gesperrt. Das Upgrade leert den Markierungscache einmalig, die nächste Auflistung prüft alle Dateien neu.
+- **Verfügbarkeitsbedingungen:** Bedingungen unbekannter Verfügbarkeits-Plugins gibt Coursepilot nur noch maskiert zurück; die fünf Kerntypen bleiben unverändert.
+- Intern: Qualitäts-Baseline (Spec 0029) mit verbindlichem Gate, 99 % Testabdeckung und Mutationsprüfung. Keine Schemaänderung; das Upgrade leert nur den Markierungscache. Die Moodle-Buildnummer ist `2026111500`; Installationen führen das reguläre Plugin-Upgrade aus. Moodle 5.1, 5.2 und 5.3 bleiben unterstützt.
 
 ## Coursepilot 2.1.3-beta — Aufgaben ohne Bewertung
 

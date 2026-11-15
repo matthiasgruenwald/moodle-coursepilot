@@ -90,7 +90,7 @@ Die [passende Vorbereitungsmessung](release/667-main-bootstrap-vorbereitung.md)
 enthält den tatsächlichen Main-Nenner, rohe Statikbefunde und die noch offenen
 Bootstrap-Blocker. Sie behauptet keine grüne Main-Gate-Abnahme.
 
-Technischer Weg:
+Technischer Weg (Abnahme: [`release/715-main-bootstrap-abnahme-2026-11-15.md`](release/715-main-bootstrap-abnahme-2026-11-15.md)):
 Der Release-PR bringt Gate und Baselines selbst mit, der Vergleich gegen `origin/main` findet dort
 aber keine. Der Workflow setzt deshalb `GATE_BOOTSTRAP_BASE` fest auf den einen Main-Commit ohne
 Baselines (`2b534e52…`). Nur für diesen Vergleichsstand gelten die Baselines des Kandidaten als
