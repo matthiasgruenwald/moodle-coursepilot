@@ -16,7 +16,7 @@
 
 namespace local_coursepilot\history;
 
-defined('MOODLE_INTERNAL') || die();
+use local_coursepilot\catalog\completion_settings;
 
 /**
  * Snapshot store of the change history (#385, Spec 0015 §10.4/§10.8).
@@ -38,7 +38,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class version_writer {
-
     /** @var string Origin while only the native Moodle write path is observed. */
     public const SOURCE_MOODLE = version_source::MOODLE;
 
@@ -108,6 +107,7 @@ final class version_writer {
             return $versionid;
         } catch (\Throwable $e) {
             $transaction->rollback($e);
+            throw $e;
         }
     }
 
@@ -117,7 +117,8 @@ final class version_writer {
      * @param int $cmid
      * @param int $userid User under which the write ran (event userid).
      * @param string $source
-     * @param int|null $sourcecmid Reference cmid, see {@see version_source}: clone source (cloned) or new cmid (superseded), otherwise null.
+     * @param int|null $sourcecmid Reference cmid, see {@see version_source}: clone source (cloned) or new cmid (superseded),
+     * otherwise null.
      * @return int id of the newly created version
      */
     public static function capture(
@@ -164,6 +165,7 @@ final class version_writer {
             return $versionid;
         } catch (\Throwable $e) {
             $transaction->rollback($e);
+            throw $e;
         }
     }
 
@@ -179,7 +181,10 @@ final class version_writer {
         if ($cm->modname !== 'quiz') {
             return null;
         }
-        return json_encode(\local_coursepilot\quiz\arrangement::capture((int) $cm->instance), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return json_encode(
+            \local_coursepilot\quiz\arrangement::capture((int) $cm->instance),
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
     }
 
     /**
@@ -188,7 +193,7 @@ final class version_writer {
      * form side effects.
      *
      * @param \stdClass $cm
-     * @return array
+     * @return mixed[]
      */
     private static function build_moduleinfo(\stdClass $cm): array {
         global $CFG, $DB;
@@ -202,23 +207,18 @@ final class version_writer {
             'visible' => (int) $cm->visible,
             'visibleoncoursepage' => (int) $cm->visibleoncoursepage,
             'cmidnumber' => (string) $cm->idnumber,
+            'indent' => (int) $cm->indent,
             'groupmode' => (int) groups_get_activity_groupmode($cm),
             'groupingid' => (int) $cm->groupingid,
             'course' => (int) $cm->course,
             'module' => (int) $cm->module,
             'modulename' => (string) $cm->modname,
             'instance' => (int) $cm->instance,
-            'completion' => (int) $cm->completion,
-            'completionview' => (int) $cm->completionview,
-            'completionexpected' => (int) $cm->completionexpected,
-            'completionusegrade' => $cm->completiongradeitemnumber === null ? 0 : 1,
-            'completionpassgrade' => (int) $cm->completionpassgrade,
-            'completiongradeitemnumber' => $cm->completiongradeitemnumber,
             'showdescription' => (int) $cm->showdescription,
             'downloadcontent' => $cm->downloadcontent,
             'lang' => (string) $cm->lang,
             'tags' => \core_tag_tag::get_item_tags_array('core', 'course_modules', $cm->id),
-        ]);
+        ], completion_settings::course_settings($cm));
 
         if (!empty($CFG->enableavailability)) {
             // Raw conditions as in get_moduleinfo_data(); profile masking
@@ -236,7 +236,7 @@ final class version_writer {
      * gradepass/gradecat/outcome fields as in course/modlib.php::get_moduleinfo_data()
      * (lines 848-885), deliberately kept outside of get_module_settings.
      *
-     * @param array $data
+     * @param mixed[] $data
      * @param \stdClass $cm
      * @return void
      */

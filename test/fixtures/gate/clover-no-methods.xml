@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1">
+  <project timestamp="1" name="Clover Coverage">
+    <file name="/var/www/html/public/local/coursepilot/classes/a.php">
+      <class name="a" namespace="local_coursepilot">
+        <metrics complexity="3" methods="2" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="10" coveredstatements="9" elements="12" coveredelements="10"/>
+      </class>
+      <line num="13" type="stmt" count="5"/>
+      <metrics loc="40" ncloc="30" classes="1" methods="2" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="10" coveredstatements="9" elements="12" coveredelements="10"/>
+    </file>
+    <file name="/var/www/html/public/local/coursepilot/classes/b.php">
+      <line num="9" type="stmt" count="0"/>
+      <metrics loc="20" ncloc="15" classes="1" methods="1" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="10" coveredstatements="4" elements="11" coveredelements="5"/>
+    </file>
+    <metrics files="2" loc="60" ncloc="45" classes="2" methods="3" coveredmethods="2" conditionals="0" coveredconditionals="0" statements="20" coveredstatements="13" elements="23" coveredelements="15"/>
+  </project>
+</coverage>

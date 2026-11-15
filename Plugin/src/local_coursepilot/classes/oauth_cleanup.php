@@ -32,7 +32,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class oauth_cleanup {
-
     /** @var int Rows per step and run; the next run continues. */
     public const BATCH = 500;
 
@@ -55,8 +54,12 @@ final class oauth_cleanup {
         $deleted += self::delete_batch(workbench_ticket::TABLE, 'expires < :now', ['now' => $now], $batch);
         $deleted += self::delete_dead_connections($now, $batch);
         // Unattributed historical rows: never usable, only revoked or expired ones exist after the #638 backfill.
-        $deleted += self::delete_batch('local_coursepilot_oauth_token',
-            'connectionid IS NULL AND (revoked = 1 OR refreshexpires < :now)', ['now' => $now], $batch);
+        $deleted += self::delete_batch(
+            'local_coursepilot_oauth_token',
+            'connectionid IS NULL AND (revoked = 1 OR refreshexpires < :now)',
+            ['now' => $now],
+            $batch
+        );
         return $deleted + self::delete_unused_clients($now, $batch);
     }
 
@@ -81,7 +84,11 @@ final class oauth_cleanup {
               WHERE g.revoked = 1
                  OR NOT EXISTS (SELECT 1 FROM {local_coursepilot_oauth_token} t
                                  WHERE t.connectionid = g.id AND t.refreshexpires >= :now)
-           ORDER BY g.id', ['now' => $now], 0, $batch));
+           ORDER BY g.id',
+            ['now' => $now],
+            0,
+            $batch
+        ));
         if (!$ids) {
             return 0;
         }
@@ -106,7 +113,7 @@ final class oauth_cleanup {
     private static function delete_unused_clients(int $now, int $batch): int {
         global $DB;
 
-        // ponytail: the code check scans the code table, which only holds
+        // Deliberate shortcut - ponytail: the code check scans the code table, which only holds
         // codes of the last minutes after the code step; index clientid if that changes.
         $ids = array_keys($DB->get_records_sql(
             'SELECT c.id FROM {local_coursepilot_oauth_client} c
@@ -115,7 +122,11 @@ final class oauth_cleanup {
                                  WHERE g.revoked = 0 AND g.clientid = c.clientid)
                 AND NOT EXISTS (SELECT 1 FROM {local_coursepilot_oauth_code} o
                                  WHERE o.clientid = c.clientid AND o.expires >= :now)
-           ORDER BY c.id', ['horizon' => $now - self::CLIENT_UNUSED_TTL, 'now' => $now], 0, $batch));
+           ORDER BY c.id',
+            ['horizon' => $now - self::CLIENT_UNUSED_TTL, 'now' => $now],
+            0,
+            $batch
+        ));
         if ($ids) {
             $DB->delete_records_list('local_coursepilot_oauth_client', 'id', $ids);
         }
@@ -127,7 +138,7 @@ final class oauth_cleanup {
      *
      * @param string $table
      * @param string $where Fixed SQL from this class, never user input.
-     * @param array $params
+     * @param mixed[] $params
      * @param int $batch
      * @return int
      */

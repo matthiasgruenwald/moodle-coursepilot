@@ -1,0 +1,101 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "courseid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "name",
+                "type": "string",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "name": {
+                "class": "core_external\\external_value",
+                "desc": "Name of the question bank, e.g. \"Biologie 9a - Immunsystem\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "questionbankid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the (created or reused) question bank",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "name": {
+                "class": "core_external\\external_value",
+                "desc": "Name of the question bank",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "contextid": {
+                "class": "core_external\\external_value",
+                "desc": "Context ID of the question bank",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "topcategoryid": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the question bank's top category",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "created": {
+                "class": "core_external\\external_value",
+                "desc": "true if newly created; false if a same-named one was reused",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing message",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

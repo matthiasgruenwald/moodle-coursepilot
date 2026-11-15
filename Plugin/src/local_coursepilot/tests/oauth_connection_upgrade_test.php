@@ -14,10 +14,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
+/**
+ * Bounded, resumable native migration of synthetic legacy pairs and tickets.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
+ */
+
 namespace local_coursepilot;
 
-/** Bounded, resumable native migration of synthetic legacy pairs and tickets. */
-#[\PHPUnit\Framework\Attributes\CoversNothing]
+/**
+ * Bounded, resumable native migration of synthetic legacy pairs and tickets.
+ */
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_migrate_oauth_connections')]
 final class oauth_connection_upgrade_test extends \advanced_testcase {
     public function test_interrupted_backfill_resumes_without_guessing_historical_families(): void {
         global $DB, $CFG;
@@ -53,9 +63,14 @@ final class oauth_connection_upgrade_test extends \advanced_testcase {
         $cfg = $DB->export_dbconfig();
         // Moodle's execute() rejects trigger-body semicolons; use the native DDL connection.
         $options = (array) ($cfg->dboptions ?? []);
-        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        $ddl = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
         $ddl->query("CREATE TRIGGER $trigger BEFORE UPDATE ON $table FOR EACH ROW BEGIN
             IF NEW.id = $ids[100] AND NEW.connectionid IS NOT NULL THEN
                 SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic interrupted migration';
@@ -80,21 +95,23 @@ final class oauth_connection_upgrade_test extends \advanced_testcase {
         $this->assertNull($DB->get_field('local_coursepilot_oauth_token', 'connectionid', ['id' => $unknown]));
         $ticketrecord = $DB->get_record(workbench_ticket::TABLE, ['id' => $ticket], '*', MUST_EXIST);
         $this->assertSame($expires, (int) $ticketrecord->expires);
-        $this->assertSame((int) $DB->get_field('local_coursepilot_oauth_token', 'connectionid', ['id' => $ids[0]]),
-            (int) $ticketrecord->oauthconnectionid);
-        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token('access638-0'));
-        $successor = oauth_lib::rotate_refresh_token('refresh638-0', 'legacy');
+        $this->assertSame(
+            (int) $DB->get_field('local_coursepilot_oauth_token', 'connectionid', ['id' => $ids[0]]),
+            (int) $ticketrecord->oauthconnectionid
+        );
+        $this->assertSame((int) $user->id, connection::authenticate_access_token('access638-0'));
+        $successor = connection::rotate_refresh_token('refresh638-0', 'legacy');
         $this->assertNotNull($successor);
         // Unknown historical hashes must not be guessed into a same-user/client family.
-        $this->assertNull(oauth_lib::rotate_refresh_token('overwritten-historical-refresh', 'legacy'));
-        $this->assertNull(oauth_lib::rotate_refresh_token('unrecoverable-original-refresh', 'legacy'));
-        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token($successor['access_token']));
-        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token('access638-1'));
+        $this->assertNull(connection::rotate_refresh_token('overwritten-historical-refresh', 'legacy'));
+        $this->assertNull(connection::rotate_refresh_token('unrecoverable-original-refresh', 'legacy'));
+        $this->assertSame((int) $user->id, connection::authenticate_access_token($successor['access_token']));
+        $this->assertSame((int) $user->id, connection::authenticate_access_token('access638-1'));
         // The first retained, consumed value after migration is a proven replay.
-        $this->assertNull(oauth_lib::rotate_refresh_token('refresh638-0', 'legacy'));
-        $this->assertNull(oauth_lib::authenticate_access_token($successor['access_token']));
-        $this->assertNull(oauth_lib::rotate_refresh_token($successor['refresh_token'], 'legacy'));
-        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token('access638-1'));
+        $this->assertNull(connection::rotate_refresh_token('refresh638-0', 'legacy'));
+        $this->assertNull(connection::authenticate_access_token($successor['access_token']));
+        $this->assertNull(connection::rotate_refresh_token($successor['refresh_token'], 'legacy'));
+        $this->assertSame((int) $user->id, connection::authenticate_access_token('access638-1'));
         $errors = $DB->get_manager()->check_database_schema($DB->get_manager()->get_install_xml_schema());
         $this->assertSame([], array_intersect_key($errors, array_flip([
             'local_coursepilot_oauth_grant', 'local_coursepilot_oauth_token', workbench_ticket::TABLE,

@@ -32,7 +32,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(curl_transport::class)]
 final class curl_transport_test extends \advanced_testcase {
-
     /**
      * A security helper that blocks every address - simulates Moodle's
      * host block without depending on real network or admin settings.
@@ -43,9 +42,18 @@ final class curl_transport_test extends \advanced_testcase {
      */
     private function always_blocking_helper(): \core\files\curl_security_helper {
         return new class extends \core\files\curl_security_helper {
+            /**
+             * Provides url is blocked.
+             *
+             * @param mixed $urlstring The urlstring.
+             * @param mixed $notused The notused.
+             */
             public function url_is_blocked($urlstring, $notused = null) {
                 return true;
             }
+            /**
+             * Returns blocked url string.
+             */
             public function get_blocked_url_string() {
                 return 'Blocked by Moodle host block.';
             }
@@ -126,6 +134,8 @@ final class curl_transport_test extends \advanced_testcase {
     }
 
     /**
+     * Provides verbs.
+     *
      * @return array<string, array{0: string, 1: ?string}>
      */
     public static function verbs(): array {
@@ -156,5 +166,119 @@ final class curl_transport_test extends \advanced_testcase {
         $response = $transport->request($method, 'https://example.invalid/dav/x.md', ['Depth' => '1'], $body);
 
         $this->assertSame(200, $response->statuscode);
+    }
+
+    /**
+     * A curl double that records the options of the request and answers with a scripted result.
+     *
+     * @param \stdClass $capture Receives the options of the request in its property "options".
+     * @param int $errno Curl error number to report.
+     * @param string[]|string[][] $headers Response headers as Moodle's curl reports them.
+     * @return \curl
+     */
+    private function scripted_curl(\stdClass $capture, int $errno = 0, array $headers = []): \curl {
+        return new class ($capture, $errno, $headers) extends \curl {
+            /**
+             * Creates the double.
+             *
+             * @param \stdClass $capture Receives the options of the request.
+             * @param int $scriptederrno Reported curl error number.
+             * @param string[]|string[][] $scriptedheaders Reported response headers.
+             */
+            public function __construct(
+                /** @var \stdClass Receives the options of the request. */
+                private readonly \stdClass $capture,
+                /** @var int Reported curl error number. */
+                private readonly int $scriptederrno,
+                /** @var string[]|string[][] Reported response headers. */
+                private readonly array $scriptedheaders,
+            ) {
+                parent::__construct();
+            }
+
+            /**
+             * Records the options and answers.
+             *
+             * @param string $url The url.
+             * @param mixed[] $params The params.
+             * @param mixed[] $options The options.
+             * @return string
+             */
+            public function get($url, $params = [], $options = []) {
+                $this->capture->options = $options;
+                return 'Antwort';
+            }
+
+            /**
+             * Reports a made request.
+             *
+             * @return array<string, int>
+             */
+            public function get_info() {
+                return ['http_code' => 207];
+            }
+
+            /**
+             * Reports the scripted error number.
+             *
+             * @return int
+             */
+            public function get_errno() {
+                return $this->scriptederrno;
+            }
+
+            /**
+             * Reports the scripted headers (name fixed by the parent class).
+             *
+             * @return string[]|string[][]
+             */
+            public function getResponse() { // phpcs:ignore moodle.NamingConventions.ValidFunctionName.LowercaseMethod
+                return $this->scriptedheaders;
+            }
+        };
+    }
+
+    /**
+     * The progress callback lets normal transfers run and aborts a download or upload above the limit.
+     */
+    public function test_progress_callback_aborts_only_oversized_transfers(): void {
+        $capture = new \stdClass();
+        (new curl_transport($this->scripted_curl($capture), 'lehrkraft', 'pw'))->request('GET', 'https://example.invalid/dav/x.md');
+        $abort = $capture->options['CURLOPT_XFERINFOFUNCTION'];
+        $limit = 50 * 1024 * 1024;
+
+        $this->assertSame(0, $abort(null, 0, 1024, 0, 2048));
+        $this->assertSame(0, $abort(null, 0, $limit, 0, $limit));
+        $this->assertSame(1, $abort(null, 0, $limit + 1, 0, 0));
+        $this->assertSame(1, $abort(null, 0, 0, 0, $limit + 1));
+    }
+
+    /**
+     * A connection failure carries the error number but neither address nor credentials.
+     */
+    public function test_connection_failure_names_only_the_error_number(): void {
+        $transport = new curl_transport($this->scripted_curl(new \stdClass(), 28), 'lehrkraft', 'geheim-pw');
+
+        try {
+            $transport->request('GET', 'https://example.invalid/dav/x.md');
+            $this->fail('A failed connection must be reported.');
+        } catch (webdav_transport_exception $e) {
+            $this->assertSame('WebDAV connection failed (errno 28).', $e->getMessage());
+        }
+    }
+
+    /**
+     * Response headers are lowercased; a repeated header contributes its last value.
+     */
+    public function test_response_headers_are_lowercased_and_repeated_ones_use_the_last_value(): void {
+        $headers = ['Content-Type' => ['text/html', 'application/xml'], 'ETag' => '"abc"'];
+        $transport = new curl_transport($this->scripted_curl(new \stdClass(), 0, $headers), 'lehrkraft', 'pw');
+
+        $response = $transport->request('GET', 'https://example.invalid/dav/x.md');
+
+        $this->assertSame(207, $response->statuscode);
+        $this->assertSame('Antwort', $response->body);
+        $this->assertSame('application/xml', $response->header('content-type'));
+        $this->assertSame('"abc"', $response->header('etag'));
     }
 }

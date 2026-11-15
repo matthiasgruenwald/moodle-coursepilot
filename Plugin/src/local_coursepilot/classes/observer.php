@@ -19,8 +19,6 @@ namespace local_coursepilot;
 use local_coursepilot\history\retention;
 use local_coursepilot\history\version_writer;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Change history observer (#385, Spec 0015 §10.8): serializes current state
  * to snapshot tables without calling MCP tools or web services. Also deletes
@@ -31,7 +29,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class observer {
-
     /**
      * Version 1 is captured on creation (#386, Spec 0015 §10.3). Activities
      * created since history was introduced therefore bypass discovered-state

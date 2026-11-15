@@ -32,9 +32,12 @@ require_once($CFG->dirroot . '/local/coursepilot/db/upgradelib.php');
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-#[\PHPUnit\Framework\Attributes\CoversNothing]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_repair_oauth_schema_drift')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_hash_oauth_tokens')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_migrate_history_sources')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_migrate_anchor_files')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_translate_pending_entries')]
 final class upgradelib_test extends \advanced_testcase {
-
     /** @var string[] Tables affected by schema drift. */
     private const TABLES = [
         'local_coursepilot_oauth_client',
@@ -131,8 +134,8 @@ final class upgradelib_test extends \advanced_testcase {
         $dbman->drop_field($tokentable, $accesshash);
         $dbman->drop_field($tokentable, $refreshhash);
 
-        $access = oauth_lib::random_token(32);
-        $refresh = oauth_lib::random_token(32);
+        $access = bin2hex(random_bytes(32));
+        $refresh = bin2hex(random_bytes(32));
         $accessfield = new \xmldb_field('accesstoken', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null, 'id');
         $refreshfield = new \xmldb_field('refreshtoken', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null, 'accesstoken');
         $dbman->add_field($tokentable, $accessfield);
@@ -145,8 +148,8 @@ final class upgradelib_test extends \advanced_testcase {
             'refreshtoken' => $refresh,
             'clientid' => 'legacy-client',
             'userid' => $user->id,
-            'expires' => time() + oauth_lib::ACCESS_TOKEN_TTL,
-            'refreshexpires' => time() + oauth_lib::REFRESH_TOKEN_TTL,
+            'expires' => time() + connection::ACCESS_TOKEN_TTL,
+            'refreshexpires' => time() + connection::REFRESH_TOKEN_TTL,
             'revoked' => 0,
             'timecreated' => time(),
         ]);
@@ -156,8 +159,8 @@ final class upgradelib_test extends \advanced_testcase {
 
         $this->assertFalse($dbman->field_exists($tokentable, $accessfield));
         $this->assertFalse($dbman->field_exists($tokentable, $refreshfield));
-        $this->assertSame((int) $user->id, oauth_lib::authenticate_access_token($access));
-        $this->assertNotNull(oauth_lib::rotate_refresh_token($refresh, 'legacy-client'));
+        $this->assertSame((int) $user->id, connection::authenticate_access_token($access));
+        $this->assertNotNull(connection::rotate_refresh_token($refresh, 'legacy-client'));
         $this->assertSame([], $this->schema_errors());
     }
 
@@ -206,7 +209,10 @@ final class upgradelib_test extends \advanced_testcase {
 
         $broken = $this->getDataGenerator()->create_user();
         $brokencontext = \context_user::instance($broken->id);
-        $fs->create_file_from_string(['contextid' => $brokencontext->id] + $record + ['filename' => '.coursepilot-ort.json'], '{kaputt');
+        $fs->create_file_from_string(
+            ['contextid' => $brokencontext->id] + $record + ['filename' => '.coursepilot-ort.json'],
+            '{kaputt'
+        );
 
         local_coursepilot_migrate_anchor_files();
         local_coursepilot_migrate_anchor_files();

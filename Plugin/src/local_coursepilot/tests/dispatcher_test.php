@@ -29,8 +29,11 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(dispatcher::class)]
 #[CoversClass(\local_coursepilot\history\file_policy::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\event\tool_access_failed::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\event\tool_access_succeeded::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\tool_registry::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\external\create_activity_from_xml::class)]
 final class dispatcher_test extends \advanced_testcase {
-
     /**
      * Creates a user with a valid OAuth access token (#337) - replaces the
      * former web service token workaround. By default the system-wide
@@ -68,14 +71,14 @@ final class dispatcher_test extends \advanced_testcase {
     private function issue_access_token(int $userid, int $expiresoffset = 3600, bool $revoked = false): string {
         global $DB;
 
-        $accesstoken = oauth_lib::random_token(32);
+        $accesstoken = bin2hex(random_bytes(32));
         $record = new \stdClass();
         $record->accesstokenhash = hash('sha256', $accesstoken);
-        $record->refreshtokenhash = hash('sha256', oauth_lib::random_token(32));
+        $record->refreshtokenhash = hash('sha256', bin2hex(random_bytes(32)));
         $record->clientid = 'test-client';
         $record->userid = $userid;
         $record->expires = time() + $expiresoffset;
-        $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
+        $record->refreshexpires = time() + connection::REFRESH_TOKEN_TTL;
         $record->revoked = $revoked ? 1 : 0;
         $record->timecreated = time();
         $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
@@ -88,6 +91,8 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
@@ -97,13 +102,18 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * Provides headers.
+     *
+     * @param mixed[] $overrides The overrides.
      * @return array{origin: null, pathinfo: string, method: string}
      */
     private function headers(array $overrides = []): array {
         return array_merge(['origin' => null, 'pathinfo' => '', 'method' => 'POST'], $overrides);
     }
 
-    /** Named MCP inputs must survive Moodle's positional External invocation (#633). */
+    /**
+     * Named MCP inputs must survive Moodle's positional External invocation (#633).
+     */
     public function test_xml_preview_requires_predecessor_without_mutation(): void {
         $this->resetAfterTest();
         [$token, $arguments] = $this->xml_supersede_fixture();
@@ -146,8 +156,10 @@ final class dispatcher_test extends \advanced_testcase {
         // Moodle updates the modification timestamp when visibility changes.
         unset($oldbook->timemodified, $afterbook->timemodified);
         $this->assertEquals($oldbook, $afterbook);
-        $this->assertEquals($before['course_modules'][$other->cmid],
-            $DB->get_record('course_modules', ['id' => $other->cmid], '*', MUST_EXIST));
+        $this->assertEquals(
+            $before['course_modules'][$other->cmid],
+            $DB->get_record('course_modules', ['id' => $other->cmid], '*', MUST_EXIST)
+        );
         $this->assertEquals($before['files'], $DB->get_records('files', null, 'id'));
         $oldsection = $before['course_modules'][1]->section;
         $sequence = explode(',', $DB->get_field('course_sections', 'sequence', ['id' => $oldsection], MUST_EXIST));
@@ -156,7 +168,11 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertTrue($DB->record_exists('local_coursepilot_cm_version', ['cmid' => 1]));
     }
 
-    /** Synthetic first module has the historically dangerous truthy cmid 1. */
+    /**
+     * Synthetic first module has the historically dangerous truthy cmid 1.
+     *
+     * @return mixed[]
+     */
     private function xml_supersede_fixture(): array {
         global $DB;
         [$teacher, $token] = $this->create_authenticated_user();
@@ -169,9 +185,12 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame(1, (int) $book->cmid);
         $xml = \local_coursepilot\external\export_default_activity::execute($course->id, 'book')['xml'];
         $other = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
-        $DB->set_field('course_modules', 'availability',
+        $DB->set_field(
+            'course_modules',
+            'availability',
             json_encode(['op' => '&', 'c' => [['type' => 'completion', 'cm' => 1, 'e' => 1]], 'showc' => [true]]),
-            ['id' => $other->cmid]);
+            ['id' => $other->cmid]
+        );
         get_file_storage()->create_file_from_string([
             'contextid' => \context_module::instance(1)->id, 'component' => 'mod_book', 'filearea' => 'intro',
             'itemid' => 0, 'filepath' => '/', 'filename' => 'synthetic.txt',
@@ -180,26 +199,44 @@ final class dispatcher_test extends \advanced_testcase {
             'activity_xml' => $xml, 'replaces_cmid' => 1], $other];
     }
 
+    /**
+     * Provides xml call.
+     *
+     * @param string $token The token.
+     * @param mixed[] $arguments The arguments.
+     * @return mixed[]
+     */
     private function xml_call(string $token, array $arguments): array {
-        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/call',
+        $response = dispatcher::handle(
+            ['id' => 1, 'method' => 'tools/call',
             'params' => ['name' => 'coursepilot_create_activity_from_xml', 'arguments' => $arguments]],
-            $token, $this->headers());
+            $token,
+            $this->headers()
+        );
         $this->assertSame(200, $response['status']);
         return $response['body']['result'];
     }
 
-    /** Snapshot durable activity state; ordinary access auditing is allowed. */
+    /**
+     * Snapshot durable activity state; ordinary access auditing is allowed.
+     *
+     * @return mixed[]
+     */
     private function xml_mutation_state(): array {
         global $DB;
         $result = [];
-        foreach (['course_modules', 'course_sections', 'book', 'book_chapters', 'files',
-                'local_coursepilot_cm_version', 'local_coursepilot_cm_file', 'local_coursepilot_cm_version_file'] as $table) {
+        foreach (
+            ['course_modules', 'course_sections', 'book', 'book_chapters', 'files',
+                'local_coursepilot_cm_version', 'local_coursepilot_cm_file', 'local_coursepilot_cm_version_file'] as $table
+        ) {
             $result[$table] = $DB->get_records($table, null, 'id');
         }
         return $result;
     }
 
-    /** History never exposes submission metadata or profile values, including legacy rows. */
+    /**
+     * History never exposes submission metadata or profile values, including legacy rows.
+     */
     public function test_history_comparison_protects_current_and_legacy_data(): void {
         global $DB, $CFG;
         $this->resetAfterTest();
@@ -212,9 +249,11 @@ final class dispatcher_test extends \advanced_testcase {
         $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
         $cmid = (int) $assign->cmid;
         $context = \context_module::instance($cmid);
-        foreach ([['assignsubmission_file', 'submission_files', 'student-secret.pdf'],
+        foreach (
+            [['assignsubmission_file', 'submission_files', 'student-secret.pdf'],
                 ['mod_assign', 'unknown', 'unknown-secret.pdf'],
-                ['mod_assign', 'intro', 'design.png']] as [$component, $area, $name]) {
+                ['mod_assign', 'intro', 'design.png']] as [$component, $area, $name]
+        ) {
             get_file_storage()->create_file_from_string([
                 'contextid' => $context->id, 'component' => $component, 'filearea' => $area,
                 'itemid' => 0, 'filepath' => '/', 'filename' => $name,
@@ -232,8 +271,10 @@ final class dispatcher_test extends \advanced_testcase {
 
         // Simulate historical metadata from before the positive allowlist, even with gap=0.
         $versionid = $DB->get_field('local_coursepilot_cm_version', 'id', ['cmid' => $cmid, 'version' => 2]);
-        foreach ([['assignsubmission_file', 'submission_files', 'legacy-student.pdf'],
-                ['mod_assign', 'unknown', 'legacy-unknown.pdf']] as [$component, $area, $name]) {
+        foreach (
+            [['assignsubmission_file', 'submission_files', 'legacy-student.pdf'],
+                ['mod_assign', 'unknown', 'legacy-unknown.pdf']] as [$component, $area, $name]
+        ) {
             $fileid = $DB->insert_record('local_coursepilot_cm_file', (object) [
                 'component' => $component, 'filearea' => $area, 'filename' => $name,
                 'pathnamehash' => sha1($name), 'contenthash' => sha1('synthetic'),
@@ -244,15 +285,19 @@ final class dispatcher_test extends \advanced_testcase {
                 'versionid' => $versionid, 'fileid' => $fileid, 'gap' => 0,
             ]);
         }
-        foreach (['coursepilot_compare_activity_versions' => ['cmid' => $cmid, 'from_version' => 1, 'to_version' => 2],
-                'coursepilot_list_activity_versions' => ['cmid' => $cmid]] as $name => $arguments) {
+        foreach (
+            ['coursepilot_compare_activity_versions' => ['cmid' => $cmid, 'from_version' => 1, 'to_version' => 2],
+                'coursepilot_list_activity_versions' => ['cmid' => $cmid]] as $name => $arguments
+        ) {
             $response = dispatcher::handle(['id' => 1, 'method' => 'tools/call',
                 'params' => ['name' => $name, 'arguments' => $arguments]], $token, $this->headers());
             $this->assertSame(200, $response['status']);
             $this->assertFalse($response['body']['result']['isError'] ?? false, json_encode($response));
             $encoded = json_encode($response);
-            foreach (['student-secret.pdf', 'unknown-secret.pdf', 'legacy-student.pdf', 'legacy-unknown.pdf',
-                    'private-profile@example.invalid'] as $secret) {
+            foreach (
+                ['student-secret.pdf', 'unknown-secret.pdf', 'legacy-student.pdf', 'legacy-unknown.pdf',
+                    'private-profile@example.invalid'] as $secret
+            ) {
                 $this->assertStringNotContainsString($secret, $encoded);
             }
             if ($name === 'coursepilot_compare_activity_versions') {
@@ -294,7 +339,7 @@ final class dispatcher_test extends \advanced_testcase {
         $this->assertSame(200, $response['status']);
         $this->assertSame('local_coursepilot', $response['body']['result']['serverInfo']['name']);
 
-        // #577: the handshake version comes from the same canonical source
+        // The handshake version comes from the same canonical source
         // as version.php - no hard-coded prototype value any more.
         global $CFG;
         $plugin = new \stdClass();
@@ -375,6 +420,30 @@ final class dispatcher_test extends \advanced_testcase {
 
         $names = array_column($response['body']['result']['tools'], 'name');
         $this->assertSame(array_keys(privacy_surface::allowed_tools()), $names);
+    }
+
+    /**
+     * Every listed tool carries the annotations derived from its read/write classification.
+     */
+    public function test_tools_list_annotates_every_tool_from_its_access_type(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/list'], $token, $this->headers());
+
+        $functions = tool_registry::service_functions();
+        $allowed = tool_registry::allowed_tools();
+        foreach ($response['body']['result']['tools'] as $tool) {
+            $name = $tool['name'];
+            $iswrite = $functions[$allowed[$name]]['type'] === 'write';
+            $this->assertArrayHasKey('annotations', $tool, $name);
+            $this->assertSame(!$iswrite, $tool['annotations']['readOnlyHint'], $name);
+            $this->assertIsBool($tool['annotations']['openWorldHint'], $name);
+            $this->assertSame(tool_registry::annotations()[$name], $tool['annotations'], $name);
+            if (!$iswrite) {
+                $this->assertFalse($tool['annotations']['destructiveHint'], $name);
+            }
+        }
     }
 
     /**
@@ -778,7 +847,7 @@ final class dispatcher_test extends \advanced_testcase {
         $unconfirmed = $unconfirmedresponse['body']['result']['structuredContent']['questions'][0];
         $this->assertSame('suspect', $unconfirmed['status']);
 
-        // "confirmed": true confirms explicitly - now it is written.
+        // Note: "confirmed": true confirms explicitly - now it is written.
         $confirmedresponse = dispatcher::handle(
             [
                 'id' => 5,
@@ -880,6 +949,8 @@ XML;
     }
 
     /**
+     * Returns questionid of the latest version.
+     *
      * @param int $questionbankentryid
      * @return int questionid of the latest version
      */
@@ -1486,7 +1557,8 @@ XML;
         $exception = (object) [
             'errorcode' => 'invalidresponse',
             'message' => 'Invalid response value detected.',
-            'debuginfo' => "Invalid response value detected in sections[0].modules[0].settings[2].value.\nError code: invalidresponse",
+            'debuginfo' => "Invalid response value detected in sections[0].modules[0].settings[2].value.\nError code: "
+                . "invalidresponse",
         ];
         $method = new \ReflectionMethod(dispatcher::class, 'diagnostic_detail');
 
@@ -1590,7 +1662,7 @@ XML;
      * without.
      *
      * @param string $method
-     * @return array
+     * @return mixed[]
      */
     private function arguments_for(string $method): array {
         if ($method === 'tools/call') {
@@ -1654,7 +1726,7 @@ XML;
 
         $this->assertArrayNotHasKey('resultType', $legacy['body']['result']);
         $this->assertArrayNotHasKey('resultType', $unknown['body']['result']);
-        // #458: 'complete' is the only success value that the revision knows
+        // The value 'complete' is the only success value that the revision knows
         // for tools/call ('input_required' remains reserved for the MRTR
         // pattern, which we do not offer). Caching fields belong exclusively
         // on list responses - a ttlMs on a write operation suggests to a
@@ -2009,7 +2081,10 @@ XML;
 
         $this->assertSame(200, $response['status']);
         $this->assertTrue($response['body']['result']['isError']);
-        $this->assertStringContainsString('CAPABILITY_MISSING:local/coursepilot:use', $response['body']['result']['content'][0]['text']);
+        $this->assertStringContainsString(
+            'CAPABILITY_MISSING:local/coursepilot:use',
+            $response['body']['result']['content'][0]['text']
+        );
     }
 
     /**
@@ -2048,7 +2123,7 @@ XML;
         $this->resetAfterTest();
         [, $token] = $this->create_authenticated_user();
 
-        oauth_lib::revoke_all_tokens();
+        connection::revoke_all_tokens();
         $response = dispatcher::handle(['id' => 1, 'method' => 'initialize'], $token, $this->headers());
 
         $this->assertSame(401, $response['status']);
@@ -2155,7 +2230,7 @@ XML;
     public function test_access_token_never_appears_in_a_logged_event(): void {
         $this->resetAfterTest();
         $sink = $this->redirectEvents();
-        $secrettoken = oauth_lib::random_token(32);
+        $secrettoken = bin2hex(random_bytes(32));
 
         dispatcher::handle(['id' => 1, 'method' => 'initialize'], $secrettoken, $this->headers());
 
@@ -2164,5 +2239,63 @@ XML;
             $this->assertStringNotContainsString($secrettoken, $encoded);
         }
         $sink->close();
+    }
+
+    /**
+     * The resource path itself serves the protected-resource metadata (RFC 9728 §3), uncached.
+     */
+    public function test_resource_path_serves_protected_resource_metadata(): void {
+        global $CFG;
+        $this->resetAfterTest();
+
+        $response = dispatcher::handle(
+            null,
+            null,
+            $this->headers(['pathinfo' => '/.well-known/oauth-protected-resource', 'method' => 'GET'])
+        );
+
+        $this->assertSame(200, $response['status']);
+        $this->assertSame('no-store', $response['headers']['Cache-Control']);
+        $this->assertSame(oauth_lib::protected_resource_metadata($CFG->wwwroot), $response['body']);
+    }
+
+    /**
+     * MCP over HTTP is POST only; other verbs are refused with an Allow header.
+     */
+    public function test_get_request_is_refused_with_allow_header(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(null, $token, $this->headers(['method' => 'GET']));
+
+        $this->assertSame(405, $response['status']);
+        $this->assertSame('POST', $response['headers']['Allow']);
+    }
+
+    /**
+     * Protocol notifications are acknowledged without a body.
+     */
+    public function test_initialized_notification_is_acknowledged_without_body(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(['method' => 'notifications/initialized'], $token, $this->headers());
+
+        $this->assertSame(202, $response['status']);
+        $this->assertNull($response['body']);
+    }
+
+    /**
+     * A suspended account loses MCP access even with a valid, unrevoked token.
+     */
+    public function test_suspended_user_is_refused_despite_a_valid_token(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$user, $token] = $this->create_authenticated_user();
+        $DB->set_field('user', 'suspended', 1, ['id' => $user->id]);
+
+        $response = dispatcher::handle(['id' => 1, 'method' => 'initialize'], $token, $this->headers());
+
+        $this->assertSame(401, $response['status']);
     }
 }

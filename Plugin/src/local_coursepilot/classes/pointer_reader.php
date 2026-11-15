@@ -30,7 +30,6 @@ use local_coursepilot\webdav\webdav_setup_steps;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class pointer_reader {
-
     /**
      * Derive a check value from ETag or `getlastmodified` (Issue #513,
      * Spec #486 §4/§6). {@see webdav_storage_port} returns it as `contenthash`
@@ -46,6 +45,17 @@ final class pointer_reader {
      */
     public static function external_checkvalue(?string $etag, int $timemodified): string {
         return $etag !== null ? sha1('etag:' . $etag) : sha1('mtime:' . $timemodified);
+    }
+
+    /**
+     * Translates a storage-port outage using the established public error vocabulary.
+     *
+     * @param storage_failure $e Adapter-neutral outage.
+     * @param string $stringkey Caller-specific message key.
+     * @return \moodle_exception
+     */
+    public static function storage_exception(storage_failure $e, string $stringkey = 'webdavexternalerror'): \moodle_exception {
+        return self::webdav_exception(new webdav_error($e->errorclass), $stringkey);
     }
 
     /**
@@ -72,7 +82,7 @@ final class pointer_reader {
             $stringkey = 'webdavexternalerrorunclear';
         }
         return new \moodle_exception($stringkey, 'local_coursepilot', '', (object) [
-            // Issue #565: localized label rather than the internal constant; see webdav_error::label().
+            // Localized label rather than the internal constant; see webdav_error::label().
             'errorclass' => webdav_error::label($e->errorclass),
             'page' => webdav_setup_steps::LOCATION_SELECTION_PAGE,
         ]);

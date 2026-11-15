@@ -22,8 +22,6 @@ use local_coursepilot\history\retention;
 use local_coursepilot\history\version_writer;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Create a developed activity type from an activity XML (Spec 0026 module 3, ADR 0028).
  *
@@ -45,7 +43,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class xml_activity_creator {
-
     /** Text marker of a file reference; files are out of scope of the comparison. */
     private const FILE_MARKER = '@@PLUGINFILE@@';
 
@@ -56,6 +53,8 @@ final class xml_activity_creator {
     private const NULL_MARKER = '$@NULL@$';
 
     /**
+     * Creates the xml activity creator.
+     *
      * @param int $courseid
      * @param string $modname developed (not catalogued, not excluded) activity type
      * @param int $sectionnum target section number
@@ -63,8 +62,8 @@ final class xml_activity_creator {
      * @param bool $hidden leave the activity hidden after the check
      * @param int|null $replacescmid supersede this activity of the same type in the same course;
      *        $sectionnum is then ignored (the new one lands behind the old one)
-     * @param array $files Declared file-area supplements from material paths.
-     * @return array{cmid: int, presets: string[], references: array, successor_cmid: int, hidden_predecessors: int}
+     * @param mixed[] $files Declared file-area supplements from material paths.
+     * @return array{cmid: int, presets: string[], references: mixed[], successor_cmid: int, hidden_predecessors: int}
      * references: {@see cm_references::references_to()} of the old cmid, empty without $replacescmid;
      * successor_cmid/hidden_predecessors: {@see self::chain()}, 0 without $replacescmid
      * @throws moodle_exception kind gate, xmlroundtripmismatch
@@ -143,7 +142,11 @@ final class xml_activity_creator {
      * Dry run of superseding: the same checks as create(), writes nothing, names what still
      * points at the old activity (Spec 0026 module 6, plan preview).
      *
-     * @return array{references: array, successor_cmid: int, hidden_predecessors: int}
+     * @param int $courseid The courseid.
+     * @param string $modname The modname.
+     * @param string $activityxml The activityxml.
+     * @param int $replacescmid The replacescmid.
+     * @return array{references: mixed[], successor_cmid: int, hidden_predecessors: int}
      * references: {@see cm_references::references_to()}; the rest: {@see self::chain()}
      * @throws moodle_exception kind gate
      * @throws invalid_parameter_exception invalid XML or unusable $replacescmid
@@ -164,13 +167,19 @@ final class xml_activity_creator {
      * vanish with a deleted middle version (purge_cm); such a gap ends the walk, so the hints
      * are a lower bound then. A persistent chain field (upgrade.php) if that ever matters.
      *
+     * @param int $courseid The courseid.
+     * @param int $oldcmid The oldcmid.
      * @return array{successor_cmid: int, hidden_predecessors: int}
      */
     private static function chain(int $courseid, int $oldcmid): array {
         global $DB;
         $cms = get_fast_modinfo($courseid)->cms;
-        $markers = $DB->get_records('local_coursepilot_cm_version',
-            ['courseid' => $courseid, 'source' => version_writer::SOURCE_SUPERSEDED], 'id ASC', 'id, cmid, sourcecmid');
+        $markers = $DB->get_records(
+            'local_coursepilot_cm_version',
+            ['courseid' => $courseid, 'source' => version_writer::SOURCE_SUPERSEDED],
+            'id ASC',
+            'id, cmid, sourcecmid'
+        );
         $next = [];
         $previous = [];
         foreach ($markers as $m) {
@@ -187,7 +196,8 @@ final class xml_activity_creator {
     /**
      * Follows $links from $start, cycle-safe.
      *
-     * @param array<int, int> $links cmid => linked cmid
+     * @param int[] $links cmid => linked cmid
+     * @param int $start The start.
      * @return int[] the linked cmids in walking order, $start excluded
      */
     private static function walk(array $links, int $start): array {
@@ -201,6 +211,10 @@ final class xml_activity_creator {
     /**
      * Places the new activity behind the old one, hides the old one, notes the marker state.
      * Inside create()'s try block: a failure here discards the new activity.
+     *
+     * @param int $newcmid The newcmid.
+     * @param int $oldcmid The oldcmid.
+     * @param int $userid The userid.
      */
     private static function supersede(int $newcmid, int $oldcmid, int $userid): void {
         course_module_placement::place_after($newcmid, $oldcmid);
@@ -209,6 +223,11 @@ final class xml_activity_creator {
     }
 
     /**
+     * Asserts replaceable.
+     *
+     * @param int $cmid The cmid.
+     * @param int $courseid The courseid.
+     * @param string $modname The modname.
      * @throws invalid_parameter_exception no activity of this type in this course
      */
     private static function assert_replaceable(int $cmid, int $courseid, string $modname): void {
@@ -219,6 +238,10 @@ final class xml_activity_creator {
     }
 
     /**
+     * Asserts valid.
+     *
+     * @param string $xml The xml.
+     * @param string $modname The modname.
      * @throws invalid_parameter_exception not well-formed, root is not the activity of $modname
      */
     private static function assert_valid(string $xml, string $modname): void {
@@ -230,12 +253,18 @@ final class xml_activity_creator {
             libxml_clear_errors();
             libxml_use_internal_errors($previous);
         }
-        if (!$ok || $dom->documentElement->nodeName !== 'activity' || $dom->documentElement->getAttribute('modulename') !== $modname) {
+        if (
+            !$ok
+            || $dom->documentElement->nodeName !== 'activity'
+            || $dom->documentElement->getAttribute('modulename') !== $modname
+        ) {
             throw new invalid_parameter_exception("activity_xml is not a valid activity XML of type \"$modname\".");
         }
         // The Lightboxgallery restore step reads this field before inserting the activity.
-        if ($modname === 'lightboxgallery' &&
-                (new \DOMXPath($dom))->query('/activity/lightboxgallery/timemodified')->length === 0) {
+        if (
+            $modname === 'lightboxgallery' &&
+                (new \DOMXPath($dom))->query('/activity/lightboxgallery/timemodified')->length === 0
+        ) {
             throw new invalid_parameter_exception('activity_xml requires <timemodified> in <lightboxgallery>. '
                 . 'Use the complete XML from coursepilot_export_default_activity.');
         }
@@ -261,7 +290,22 @@ final class xml_activity_creator {
         return ['mismatches' => $mismatches, 'presets' => array_values(array_unique($presets))];
     }
 
-    private static function compare_node(\DOMElement $in, \DOMElement $out, string $path, array &$mismatches, array &$presets): void {
+    /**
+     * Compares node.
+     *
+     * @param \DOMElement $in The in.
+     * @param \DOMElement $out The out.
+     * @param string $path The path.
+     * @param mixed[] $mismatches The mismatches.
+     * @param mixed[] $presets The presets.
+     */
+    private static function compare_node(
+        \DOMElement $in,
+        \DOMElement $out,
+        string $path,
+        array &$mismatches,
+        array &$presets
+    ): void {
         $inchildren = self::element_children($in);
         if (!$inchildren) {
             self::compare_leaf($in, $out, $path, $mismatches);
@@ -290,17 +334,33 @@ final class xml_activity_creator {
         }
     }
 
+    /**
+     * Compares leaf.
+     *
+     * @param \DOMElement $in The in.
+     * @param \DOMElement $out The out.
+     * @param string $path The path.
+     * @param mixed[] $mismatches The mismatches.
+     */
     private static function compare_leaf(\DOMElement $in, \DOMElement $out, string $path, array &$mismatches): void {
         $expected = self::normalise(self::text($in));
         $actual = self::normalise(self::text($out));
-        if (str_contains($expected, self::FILE_MARKER) || $expected === $actual
-                || (is_numeric($expected) && is_numeric($actual) && (float) $expected === (float) $actual)) {
+        if (
+            str_contains($expected, self::FILE_MARKER) || $expected === $actual
+                || (is_numeric($expected) && is_numeric($actual) && (float) $expected === (float) $actual)
+        ) {
             return;
         }
         $mismatches[] = ['path' => $path, 'expected' => $expected, 'actual' => $actual];
     }
 
-    /** @return \DOMElement[] direct element children, optionally of one name */
+    /**
+     * Returns direct element children, optionally of one name.
+     *
+     * @param \DOMElement $node The node.
+     * @param ?string $name The name.
+     * @return \DOMElement[] direct element children, optionally of one name
+     */
     private static function element_children(\DOMElement $node, ?string $name = null): array {
         $result = [];
         foreach ($node->childNodes as $child) {
@@ -311,6 +371,12 @@ final class xml_activity_creator {
         return $result;
     }
 
+    /**
+     * Tells whether the xml activity creator is ignored.
+     *
+     * @param \DOMElement $node The node.
+     * @return bool
+     */
     private static function is_ignored(\DOMElement $node): bool {
         $name = $node->nodeName;
         if (in_array($name, ['id', 'contextid', 'file', 'files', 'fileref', 'inforef'], true) || str_starts_with($name, 'time')) {
@@ -319,10 +385,22 @@ final class xml_activity_creator {
         return str_ends_with($name, 'id') && is_numeric(trim($node->textContent));
     }
 
+    /**
+     * Provides text.
+     *
+     * @param \DOMElement $node The node.
+     * @return string
+     */
     private static function text(\DOMElement $node): string {
         return $node->textContent;
     }
 
+    /**
+     * Normalises the xml activity creator.
+     *
+     * @param string $value The value.
+     * @return string
+     */
     private static function normalise(string $value): string {
         $value = trim(str_replace("\r\n", "\n", $value));
         return $value === self::NULL_MARKER ? '' : $value;

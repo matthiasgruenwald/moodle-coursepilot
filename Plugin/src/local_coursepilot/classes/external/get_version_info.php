@@ -22,8 +22,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\plugin_meta;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Moodle and plugin version information (#425 F3).
  *
@@ -43,8 +41,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class get_version_info extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -52,7 +51,9 @@ final class get_version_info extends external_api {
     }
 
     /**
-     * @return array
+     * Runs the get version info tool.
+     *
+     * @return mixed[]
      */
     public static function execute(): array {
         global $CFG;
@@ -92,6 +93,8 @@ final class get_version_info extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -1,0 +1,12 @@
+[
+  {
+    "file": "Plugin/src/local_coursepilot/tests/external/compose_material_file_test.php",
+    "match": "Ö",
+    "reason": "Kommentar benennt den Testbuchstaben Ö (Umlaut-Rendering im PDF), kein deutscher Fließtext"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/tests/external/read_context_file_test.php",
+    "match": "ü",
+    "reason": "Kommentar zitiert den deutschen Meldungstext \"Kontext-Lücke\", den der Test prüft"
+  }
+]

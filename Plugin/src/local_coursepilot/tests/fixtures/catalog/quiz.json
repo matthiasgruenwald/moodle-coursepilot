@@ -1,0 +1,976 @@
+{
+    "modname": "quiz",
+    "fields": [
+        {
+            "name": "name",
+            "type": "PARAM_TEXT",
+            "meaning": "Display name of the quiz.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:76-83 (PARAM_TEXT or PARAM_CLEANHTML depending on $CFG->formatstringstriptags)"
+            }
+        },
+        {
+            "name": "intro",
+            "type": "PARAM_RAW",
+            "meaning": "Description (intro) of the quiz.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/db/install.xml (quiz.intro, NOTNULL without DB default)"
+            }
+        },
+        {
+            "name": "introformat",
+            "type": "PARAM_INT",
+            "meaning": "Text format of the intro.",
+            "required": false,
+            "default_json": "\"1\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "format_text_menu()",
+                "source": "lib/weblib.php:464 (format_text_menu()); column mod/quiz/db/install.xml (quiz.introformat)"
+            }
+        },
+        {
+            "name": "timeopen",
+            "type": "PARAM_INT",
+            "meaning": "Unix timestamp: quiz opens. 0 = no opening time. Creates a calendar event (see side effects).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:92-94 (date_time_selector, optional); column mod/quiz/db/install.xml (quiz.timeopen)"
+            }
+        },
+        {
+            "name": "timeclose",
+            "type": "PARAM_INT",
+            "meaning": "Unix timestamp: quiz closes. 0 = no closing time. Creates a calendar event (see side effects).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:96-97 (date_time_selector, optional); column mod/quiz/db/install.xml (quiz.timeclose)"
+            }
+        },
+        {
+            "name": "timelimit",
+            "type": "PARAM_INT",
+            "meaning": "Time limit in seconds from attempt start. 0 = no time limit. Same field as for an assignment (assign::timelimit).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:100-102 (duration, optional); column mod/quiz/db/install.xml (quiz.timelimit)"
+            }
+        },
+        {
+            "name": "overduehandling",
+            "type": "PARAM_ALPHA",
+            "meaning": "Overdue attempt handling: automatically submit, allow a grace period, or abandon the attempt.",
+            "required": false,
+            "default_json": "\"autoabandon\"",
+            "value_range": {
+                "values_json": "[\"autosubmit\",\"graceperiod\",\"autoabandon\"]",
+                "source_callable": "quiz_get_overdue_handling_options()",
+                "source": "mod/quiz/locallib.php:939 (quiz_get_overdue_handling_options()); column mod/quiz/db/install.xml (quiz.overduehandling, DEFAULT=autoabandon)"
+            }
+        },
+        {
+            "name": "graceperiod",
+            "type": "PARAM_INT",
+            "meaning": "Grace period in seconds after the time limit, during which submission is still accepted. Only effective for \"overduehandling\"=\"graceperiod\"; must exceed a server-wide minimum duration (see combination rules).",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:113-116 (duration, optional, hideIf overduehandling neq graceperiod); column mod/quiz/db/install.xml (quiz.graceperiod)"
+            }
+        },
+        {
+            "name": "preferredbehaviour",
+            "type": "PARAM_ALPHA",
+            "meaning": "Question behaviour: how and when an answer is graded and feedback given (e.g. immediate feedback, deferred feedback, deferred feedback with certainty-based marking).",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "\\question_engine::get_behaviour_options()",
+                "source": "question/engine/lib.php (question_engine::get_behaviour_options()); mod/quiz/mod_form.php:202-205; column mod/quiz/db/install.xml (quiz.preferredbehaviour, NOTNULL without DB default)"
+            }
+        },
+        {
+            "name": "canredoquestions",
+            "type": "PARAM_BOOL",
+            "meaning": "Learners may redo a question already completed within the attempt. Only effective for behaviours that allow a question to finish during the attempt.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:208-215 (select); column mod/quiz/db/install.xml (quiz.canredoquestions)"
+            }
+        },
+        {
+            "name": "attempts",
+            "type": "PARAM_INT",
+            "meaning": "Maximum number of allowed attempts. 0 = unlimited.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:151-156 (select, 0-QUIZ_MAX_ATTEMPT_OPTION); column mod/quiz/db/install.xml (quiz.attempts)"
+            }
+        },
+        {
+            "name": "attemptonlast",
+            "type": "PARAM_BOOL",
+            "meaning": "A new attempt carries forward the last attempt's answers (1) instead of starting empty (0). Only visible when more than one attempt is allowed.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:218-223 (selectyesno, hideIf attempts eq 1); column mod/quiz/db/install.xml (quiz.attemptonlast)"
+            }
+        },
+        {
+            "name": "grademethod",
+            "type": "PARAM_INT",
+            "meaning": "How the quiz grade is calculated across attempts: highest grade, average, first or last attempt.",
+            "required": false,
+            "default_json": "1",
+            "value_range": {
+                "values_json": "[1,2,3,4]",
+                "source_callable": "quiz_get_grading_options()",
+                "source": "mod/quiz/lib.php:61-64 (QUIZ_GRADEHIGHEST/AVERAGE/ATTEMPTFIRST/ATTEMPTLAST); mod/quiz/locallib.php:916 (quiz_get_grading_options()); column mod/quiz/db/install.xml (quiz.grademethod, DEFAULT=1)"
+            }
+        },
+        {
+            "name": "decimalpoints",
+            "type": "PARAM_INT",
+            "meaning": "Decimal places displayed for the overall grade.",
+            "required": false,
+            "default_json": "2",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:264-269 (select, 0-QUIZ_MAX_DECIMAL_OPTION); column mod/quiz/db/install.xml (quiz.decimalpoints, DEFAULT=2)"
+            }
+        },
+        {
+            "name": "questiondecimalpoints",
+            "type": "PARAM_INT",
+            "meaning": "Decimal places displayed for individual question grades. -1 = same as \"decimalpoints\".",
+            "required": false,
+            "default_json": "-1",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:272-278 (select, -1 to QUIZ_MAX_Q_DECIMAL_OPTION); column mod/quiz/db/install.xml (quiz.questiondecimalpoints, DEFAULT=-1)"
+            }
+        },
+        {
+            "name": "questionsperpage",
+            "type": "PARAM_INT",
+            "meaning": "Number of questions before a new page starts when editing/shuffling. 0 = all questions on one page.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "quiz_questions_per_page_options()",
+                "source": "mod/quiz/locallib.php:1001 (quiz_questions_per_page_options()); column mod/quiz/db/install.xml (quiz.questionsperpage)"
+            }
+        },
+        {
+            "name": "navmethod",
+            "type": "PARAM_ALPHA",
+            "meaning": "Quiz navigation: jump freely between questions (\"free\") or proceed in order only (\"sequential\").",
+            "required": false,
+            "default_json": "\"free\"",
+            "value_range": {
+                "values_json": "[\"free\",\"sequential\"]",
+                "source_callable": "quiz_get_navigation_options()",
+                "source": "mod/quiz/lib.php:76-77,1849 (QUIZ_NAVMETHOD_FREE/SEQ, quiz_get_navigation_options()); column mod/quiz/db/install.xml (quiz.navmethod, DEFAULT=free)"
+            }
+        },
+        {
+            "name": "shuffleanswers",
+            "type": "PARAM_BOOL",
+            "meaning": "Shuffle answer parts within each question if supported by its type.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:192-194 (selectyesno); column mod/quiz/db/install.xml (quiz.shuffleanswers)"
+            }
+        },
+        {
+            "name": "subnet",
+            "type": "PARAM_RAW",
+            "meaning": "Allowed IP addresses/ranges from which a quiz attempt may be started (format as in address_in_subnet()). Empty = unrestricted.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:294-296 (text); column mod/quiz/db/install.xml (quiz.subnet, NOTNULL without DB default)"
+            }
+        },
+        {
+            "name": "browsersecurity",
+            "type": "PARAM_ALPHANUMEXT",
+            "meaning": "Browser restriction during the attempt, e.g. secure fullscreen mode. \"-\" = unrestricted.",
+            "required": true,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": "\\mod_quiz\\access_manager::get_browser_security_choices()",
+                "source": "mod/quiz/classes/access_manager.php:128 (get_browser_security_choices()); mod/quiz/mod_form.php:315-317; column mod/quiz/db/install.xml (quiz.browsersecurity, NOTNULL without DB default)"
+            }
+        },
+        {
+            "name": "delay1",
+            "type": "PARAM_INT",
+            "meaning": "Enforced delay in seconds between the first and second attempts.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:299-304 (duration, optional, hideIf attempts eq 1); column mod/quiz/db/install.xml (quiz.delay1)"
+            }
+        },
+        {
+            "name": "delay2",
+            "type": "PARAM_INT",
+            "meaning": "Enforced delay in seconds between the second and subsequent attempts.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:306-312 (duration, optional, hideIf attempts eq 1 or eq 2); column mod/quiz/db/install.xml (quiz.delay2)"
+            }
+        },
+        {
+            "name": "showuserpicture",
+            "type": "PARAM_INT",
+            "meaning": "Show the user picture during the attempt and on the review page: none, small or large.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1,2]",
+                "source_callable": "quiz_get_user_image_options()",
+                "source": "mod/quiz/locallib.php:69-79 (QUIZ_SHOWIMAGE_NONE/SMALL/LARGE), :951 (quiz_get_user_image_options()); column mod/quiz/db/install.xml (quiz.showuserpicture)"
+            }
+        },
+        {
+            "name": "showblocks",
+            "type": "PARAM_BOOL",
+            "meaning": "Show blocks during the quiz attempt.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:282-283 (selectyesno); column mod/quiz/db/install.xml (quiz.showblocks)"
+            }
+        },
+        {
+            "name": "allowofflineattempts",
+            "type": "PARAM_BOOL",
+            "meaning": "Allow offline quiz attempts in the Moodle app. Provided by access rule plugin quizaccess_offlineattempts, not the form core itself.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/accessrule/offlineattempts/rule.php:100-107 (add_settings_form_fields()); column mod/quiz/db/install.xml (quiz.allowofflineattempts)"
+            }
+        },
+        {
+            "name": "precreateattempts",
+            "type": "PARAM_BOOL",
+            "meaning": "Precreate attempts for learners. Only visible when administration has configured a precreation time window AND \"timeopen\" is set.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:118-135 (select, conditionally visible); column mod/quiz/db/install.xml (quiz.precreateattempts, NULLable)"
+            }
+        }
+    ],
+    "write_options": {
+        "restores_arrangement": true,
+        "date_order_rules": [
+            {
+                "reference": "timeopen",
+                "field": "timeclose",
+                "mode": "not_before"
+            }
+        ],
+        "settings_aliases": {
+            "quizpassword": "password"
+        }
+    },
+    "common_field_names": [
+        "name",
+        "intro",
+        "timeopen",
+        "timeclose",
+        "timelimit",
+        "attempts",
+        "grademethod",
+        "preferredbehaviour",
+        "navmethod",
+        "shuffleanswers"
+    ],
+    "pseudofields": [
+        {
+            "name": "gradepass",
+            "type": "PARAM_FLOAT",
+            "meaning": "Passing grade in quiz grade points, NOT percent: a finite JSON number from 0 to the maximum grade (inclusive); 0 disables the passing threshold. For 80%, read the current grade with get_module_settings and supply 0.8 * grade (10 -> 8, 25 -> 20). If the grade parameter changes the maximum in the same call, use that new maximum.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "course/modlib.php: edit_module_post_actions() (grade_items.gradepass, itemnumber 0)"
+            }
+        },
+        {
+            "name": "quizpassword",
+            "type": "PARAM_TEXT",
+            "meaning": "Password required before starting/resuming a quiz attempt. Empty = no password. Form name for the \"password\" column (see blocklist) - both refer to the same field, but only \"quizpassword\" is writable through the form path.",
+            "required": false,
+            "default_json": "\"\"",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:289-291 (passwordunmask \"quizpassword\"); data_preprocessing()/data_postprocessing() mirror to the \"password\" column"
+            }
+        },
+        {
+            "name": "feedbacktext",
+            "type": "array",
+            "meaning": "Overall feedback texts by grade band, sorted descending - ONE field, not a field sequence: feedbacktext[0] is feedback for 100% down to the first boundary. Only effective when \"grade\" (blocklist) is greater than 0.",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:339-368 (repeat_elements() of the feedbacktext/feedbackboundaries group)"
+            }
+        },
+        {
+            "name": "feedbackboundaries",
+            "type": "float[]",
+            "meaning": "Grade boundaries for feedback bands, linked by the same key as \"feedbacktext\" - one fewer than feedbacktext entries. Absolute or percentage (e.g. \"50%\"), must be sorted descending and between 0 and \"grade\" (see combination rules).",
+            "required": false,
+            "default_json": "null",
+            "value_range": {
+                "values_json": "null",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php:344-347,570-611 (repeat_elements(); validation())"
+            }
+        },
+        {
+            "name": "attemptduring",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the quiz attempt itself can be reviewed. Timing: during the attempt. One of 32 individual checkboxes from which Moodle computes the \"reviewattempt\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "attemptimmediately",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the quiz attempt itself can be reviewed. Timing: immediately after submission. One of 32 individual checkboxes from which Moodle computes the \"reviewattempt\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "attemptopen",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the quiz attempt itself can be reviewed. Timing: later, while the quiz is still open. One of 32 individual checkboxes from which Moodle computes the \"reviewattempt\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "attemptclosed",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the quiz attempt itself can be reviewed. Timing: after the quiz has closed. One of 32 individual checkboxes from which Moodle computes the \"reviewattempt\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "correctnessduring",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether each question shows the correct/incorrect indicator. Timing: during the attempt. One of 32 individual checkboxes from which Moodle computes the \"reviewcorrectness\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "correctnessimmediately",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether each question shows the correct/incorrect indicator. Timing: immediately after submission. One of 32 individual checkboxes from which Moodle computes the \"reviewcorrectness\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "correctnessopen",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether each question shows the correct/incorrect indicator. Timing: later, while the quiz is still open. One of 32 individual checkboxes from which Moodle computes the \"reviewcorrectness\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "correctnessclosed",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether each question shows the correct/incorrect indicator. Timing: after the quiz has closed. One of 32 individual checkboxes from which Moodle computes the \"reviewcorrectness\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "maxmarksduring",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the maximum marks for each question are visible. Timing: during the attempt. One of 32 individual checkboxes from which Moodle computes the \"reviewmaxmarks\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "maxmarksimmediately",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the maximum marks for each question are visible. Timing: immediately after submission. One of 32 individual checkboxes from which Moodle computes the \"reviewmaxmarks\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "maxmarksopen",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the maximum marks for each question are visible. Timing: later, while the quiz is still open. One of 32 individual checkboxes from which Moodle computes the \"reviewmaxmarks\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "maxmarksclosed",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the maximum marks for each question are visible. Timing: after the quiz has closed. One of 32 individual checkboxes from which Moodle computes the \"reviewmaxmarks\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "marksduring",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the earned marks for each question are visible. Ineffective without \"maxmarks\" for the same review time. Timing: during the attempt. One of 32 individual checkboxes from which Moodle computes the \"reviewmarks\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "marksimmediately",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the earned marks for each question are visible. Ineffective without \"maxmarks\" for the same review time. Timing: immediately after submission. One of 32 individual checkboxes from which Moodle computes the \"reviewmarks\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "marksopen",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the earned marks for each question are visible. Ineffective without \"maxmarks\" for the same review time. Timing: later, while the quiz is still open. One of 32 individual checkboxes from which Moodle computes the \"reviewmarks\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "marksclosed",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the earned marks for each question are visible. Ineffective without \"maxmarks\" for the same review time. Timing: after the quiz has closed. One of 32 individual checkboxes from which Moodle computes the \"reviewmarks\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "specificfeedbackduring",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether answer-specific feedback is visible. Timing: during the attempt. One of 32 individual checkboxes from which Moodle computes the \"reviewspecificfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "specificfeedbackimmediately",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether answer-specific feedback is visible. Timing: immediately after submission. One of 32 individual checkboxes from which Moodle computes the \"reviewspecificfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "specificfeedbackopen",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether answer-specific feedback is visible. Timing: later, while the quiz is still open. One of 32 individual checkboxes from which Moodle computes the \"reviewspecificfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "specificfeedbackclosed",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether answer-specific feedback is visible. Timing: after the quiz has closed. One of 32 individual checkboxes from which Moodle computes the \"reviewspecificfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "generalfeedbackduring",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether general question feedback is visible. Timing: during the attempt. One of 32 individual checkboxes from which Moodle computes the \"reviewgeneralfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "generalfeedbackimmediately",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether general question feedback is visible. Timing: immediately after submission. One of 32 individual checkboxes from which Moodle computes the \"reviewgeneralfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "generalfeedbackopen",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether general question feedback is visible. Timing: later, while the quiz is still open. One of 32 individual checkboxes from which Moodle computes the \"reviewgeneralfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "generalfeedbackclosed",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether general question feedback is visible. Timing: after the quiz has closed. One of 32 individual checkboxes from which Moodle computes the \"reviewgeneralfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "rightanswerduring",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the correct answer is visible. Timing: during the attempt. One of 32 individual checkboxes from which Moodle computes the \"reviewrightanswer\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "rightanswerimmediately",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the correct answer is visible. Timing: immediately after submission. One of 32 individual checkboxes from which Moodle computes the \"reviewrightanswer\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "rightansweropen",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the correct answer is visible. Timing: later, while the quiz is still open. One of 32 individual checkboxes from which Moodle computes the \"reviewrightanswer\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "rightanswerclosed",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether the correct answer is visible. Timing: after the quiz has closed. One of 32 individual checkboxes from which Moodle computes the \"reviewrightanswer\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "overallfeedbackduring",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether overall quiz feedback is visible. Timing: during the attempt. One of 32 individual checkboxes from which Moodle computes the \"reviewoverallfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "overallfeedbackimmediately",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether overall quiz feedback is visible. Timing: immediately after submission. One of 32 individual checkboxes from which Moodle computes the \"reviewoverallfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "overallfeedbackopen",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether overall quiz feedback is visible. Timing: later, while the quiz is still open. One of 32 individual checkboxes from which Moodle computes the \"reviewoverallfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        },
+        {
+            "name": "overallfeedbackclosed",
+            "type": "PARAM_BOOL",
+            "meaning": "Whether overall quiz feedback is visible. Timing: after the quiz has closed. One of 32 individual checkboxes from which Moodle computes the \"reviewoverallfeedback\" bitmask (blocklist) - the same vocabulary as the eight blocked columns, broken down by review time.",
+            "required": false,
+            "default_json": "0",
+            "value_range": {
+                "values_json": "[0,1]",
+                "source_callable": null,
+                "source": "mod/quiz/mod_form.php (self::$reviewfields, add_review_options_group()); mod/quiz/lib.php: quiz_process_options() (bitmask assembly)"
+            }
+        }
+    ],
+    "blocklist": [
+        "grade",
+        "sumgrades",
+        "password",
+        "reviewattempt",
+        "reviewcorrectness",
+        "reviewmaxmarks",
+        "reviewmarks",
+        "reviewspecificfeedback",
+        "reviewgeneralfeedback",
+        "reviewrightanswer",
+        "reviewoverallfeedback",
+        "completionattemptsexhausted",
+        "completionminattempts"
+    ],
+    "combination_rules": [
+        "\"timeclose\" must not precede \"timeopen\" when both are set (mod/quiz/mod_form.php: validation()).",
+        "\"graceperiod\" must exceed a server-wide minimum duration (admin setting \"graceperiodmin\") when \"overduehandling\"=\"graceperiod\" (validation()).",
+        "\"feedbackboundaries[]\" must be sorted descending and each value must be between 0 and \"grade\" ; the count must be exactly one fewer than \"feedbacktext[]\" (validation()).",
+        "\"gradepass\" must be a finite JSON number from 0 to the effective maximum grade inclusive, in grade points, not percent. Coursepilot enforces this range for every question behaviour. 0 disables the passing threshold; a simultaneous grade change supplies the new maximum."
+    ],
+    "side_effects": [
+        "\"timeopen\"/\"timeclose\" each create or update a calendar event (mod/quiz/lib.php: quiz_update_events())."
+    ],
+    "bundles": {
+        "mini-check": {
+            "preferredbehaviour": "immediatefeedback",
+            "attempts": 0,
+            "grademethod": 1,
+            "timelimit": 0,
+            "questionsperpage": 1,
+            "navmethod": "free",
+            "shuffleanswers": 1,
+            "attemptonlast": 0,
+            "delay1": 0,
+            "delay2": 0,
+            "decimalpoints": 2,
+            "attemptduring": 1,
+            "attemptimmediately": 0,
+            "attemptopen": 0,
+            "attemptclosed": 0,
+            "correctnessduring": 1,
+            "correctnessimmediately": 0,
+            "correctnessopen": 0,
+            "correctnessclosed": 0,
+            "maxmarksduring": 1,
+            "maxmarksimmediately": 0,
+            "maxmarksopen": 0,
+            "maxmarksclosed": 0,
+            "marksduring": 1,
+            "marksimmediately": 0,
+            "marksopen": 0,
+            "marksclosed": 0,
+            "specificfeedbackduring": 1,
+            "specificfeedbackimmediately": 0,
+            "specificfeedbackopen": 0,
+            "specificfeedbackclosed": 0,
+            "generalfeedbackduring": 1,
+            "generalfeedbackimmediately": 0,
+            "generalfeedbackopen": 0,
+            "generalfeedbackclosed": 0,
+            "rightanswerduring": 0,
+            "rightanswerimmediately": 0,
+            "rightansweropen": 0,
+            "rightanswerclosed": 0,
+            "overallfeedbackduring": 0,
+            "overallfeedbackimmediately": 1,
+            "overallfeedbackopen": 1,
+            "overallfeedbackclosed": 1
+        },
+        "progress-check": {
+            "preferredbehaviour": "deferredcbm",
+            "attempts": 0,
+            "grademethod": 1,
+            "timelimit": 0,
+            "questionsperpage": 0,
+            "navmethod": "free",
+            "shuffleanswers": 1,
+            "attemptonlast": 0,
+            "delay1": 300,
+            "delay2": 300,
+            "decimalpoints": 2,
+            "attemptduring": 0,
+            "attemptimmediately": 1,
+            "attemptopen": 1,
+            "attemptclosed": 1,
+            "correctnessduring": 0,
+            "correctnessimmediately": 1,
+            "correctnessopen": 1,
+            "correctnessclosed": 1,
+            "maxmarksduring": 1,
+            "maxmarksimmediately": 1,
+            "maxmarksopen": 1,
+            "maxmarksclosed": 1,
+            "marksduring": 1,
+            "marksimmediately": 1,
+            "marksopen": 1,
+            "marksclosed": 1,
+            "specificfeedbackduring": 0,
+            "specificfeedbackimmediately": 1,
+            "specificfeedbackopen": 1,
+            "specificfeedbackclosed": 1,
+            "generalfeedbackduring": 0,
+            "generalfeedbackimmediately": 1,
+            "generalfeedbackopen": 1,
+            "generalfeedbackclosed": 1,
+            "rightanswerduring": 0,
+            "rightanswerimmediately": 0,
+            "rightansweropen": 0,
+            "rightanswerclosed": 0,
+            "overallfeedbackduring": 0,
+            "overallfeedbackimmediately": 1,
+            "overallfeedbackopen": 1,
+            "overallfeedbackclosed": 1
+        },
+        "final-test": {
+            "preferredbehaviour": "deferredfeedback",
+            "attempts": 2,
+            "grademethod": 2,
+            "timelimit": 0,
+            "questionsperpage": 0,
+            "navmethod": "free",
+            "shuffleanswers": 1,
+            "attemptonlast": 0,
+            "delay1": 900,
+            "delay2": 900,
+            "decimalpoints": 2,
+            "attemptduring": 0,
+            "attemptimmediately": 1,
+            "attemptopen": 1,
+            "attemptclosed": 1,
+            "correctnessduring": 0,
+            "correctnessimmediately": 1,
+            "correctnessopen": 1,
+            "correctnessclosed": 1,
+            "maxmarksduring": 0,
+            "maxmarksimmediately": 1,
+            "maxmarksopen": 1,
+            "maxmarksclosed": 1,
+            "marksduring": 0,
+            "marksimmediately": 1,
+            "marksopen": 1,
+            "marksclosed": 1,
+            "specificfeedbackduring": 0,
+            "specificfeedbackimmediately": 1,
+            "specificfeedbackopen": 1,
+            "specificfeedbackclosed": 1,
+            "generalfeedbackduring": 0,
+            "generalfeedbackimmediately": 1,
+            "generalfeedbackopen": 1,
+            "generalfeedbackclosed": 1,
+            "rightanswerduring": 0,
+            "rightanswerimmediately": 0,
+            "rightansweropen": 0,
+            "rightanswerclosed": 0,
+            "overallfeedbackduring": 0,
+            "overallfeedbackimmediately": 1,
+            "overallfeedbackopen": 1,
+            "overallfeedbackclosed": 1
+        }
+    },
+    "write_route": "update_quiz_settings",
+    "checked_constants": [],
+    "learner_locks": {
+        "attempts": {
+            "op": "greater",
+            "value": 0,
+            "reason": "Once all attempts are used up, another try needs a user override by the teacher."
+        },
+        "navmethod": {
+            "op": "equals",
+            "value": "sequential",
+            "reason": "Learners cannot return to earlier questions to correct them."
+        },
+        "timeclose": {
+            "op": "nonzero",
+            "reason": "After the close date no attempt is possible unless the teacher grants an override."
+        },
+        "timelimit": {
+            "op": "nonzero",
+            "reason": "When the time runs out the attempt is submitted; another try needs a free attempt or an override."
+        },
+        "quizpassword": {
+            "op": "not_equals",
+            "value": "",
+            "reason": "Learners need the password from the teacher to start an attempt."
+        },
+        "subnet": {
+            "op": "not_equals",
+            "value": "",
+            "reason": "Attempts only work from the listed network; anywhere else the teacher has to step in."
+        },
+        "browsersecurity": {
+            "op": "not_equals",
+            "value": "-",
+            "reason": "Attempts need a special browser setup the teacher has to provide."
+        }
+    },
+    "reviewed_up_to_major": 500,
+    "grade_origin": "automatic"
+}

@@ -1,6 +1,8 @@
 # ADR 0029 — Qualitäts-Gate als Ratsche statt fester Schwellen
 
-Status: angenommen (05.10.2026)
+Status: angenommen (05.10.2026); geändert durch [ADR 0033](0033-mutation-als-trend-und-schlankes-pr-gate.md)
+(14.11.2026): Mutation ist Trend statt Merge-Bedingung, `pre-push` führt `fast` statt `full` aus,
+Gesamt-Coverage blockiert nur unter 95 %.
 
 ## Context
 
@@ -30,6 +32,12 @@ Gesamtwerte (Coverage, Methoden über CRAP 8, MSI) sind Trend, kein Gate. Das Zi
 
 Das Gate läuft zweistufig lokal (pre-commit schnell, pre-push voll) und verbindlich in CI.
 Die Git-Hooks liegen versioniert im Repo und wirken für Claude, Codex und Menschen gleich.
+
+Die Mutationsprüfung ist der teuerste Teil (Stunden bei großem Diff). Sie ist verbindlicher Teil des
+CI-Gates, das als vier parallele Teile läuft, und im pre-push-Hook nur auf Wunsch aktiv
+(`GATE_MUTATION=1`). Lokal prüft der Hook Suite, Ratsche und statische Regeln; ein doppelter
+Mutationslauf (Hook und CI) entfällt. Bei einer Änderung der Mutationsregeln gilt weiter: Überlebende
+Mutanten auf geänderten Zeilen blockieren in CI.
 
 ## Considered Options
 

@@ -32,16 +32,15 @@ use context_module;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class pseudofield_carry_forward {
-
     /**
      * Apply all six preparation steps for $modname.
      *
      * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $before Current state before writing, for editor pseudofields.
+     * @param mixed[] $before Current state before writing, for editor pseudofields.
      * @param \stdClass $cm
-     * @param array $patch Explicit caller fields, preserved here.
+     * @param mixed[] $patch Explicit caller fields, preserved here.
      * @return void
      */
     public static function apply(
@@ -69,9 +68,8 @@ final class pseudofield_carry_forward {
      * Accept strings as shorthand and wrap them in editor arrays. Reject
      * other values without text, naming the field instead of losing content.
      *
-     * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
-     * @param array $patch Wird in-place normalisiert.
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param mixed[] $patch Normalised in place.
      * @return void
      * @throws \moodle_exception invalideditorpseudofield
      */
@@ -113,7 +111,7 @@ final class pseudofield_carry_forward {
      * @param string $modname
      * @param \stdClass $moduleinfo Updated in place.
      * @param \stdClass $cm
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function carry_forward_assign_plugin_config(
@@ -173,7 +171,7 @@ final class pseudofield_carry_forward {
      * Shared by update_module_settings and the dedicated quiz write route.
      *
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     public static function sync_intro_editor_from_patch(\stdClass $moduleinfo, array $patch): void {
@@ -195,9 +193,9 @@ final class pseudofield_carry_forward {
      *
      * Skip null defaults, used for editor arrays, since null is no useful substitute.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function fill_pseudofield_defaults(string $catalogclass, \stdClass $moduleinfo, array $patch): void {
@@ -215,10 +213,12 @@ final class pseudofield_carry_forward {
      * Reconstruct editor arrays from the flat catalog contract. Moodle writes
      * content from the editor array rather than the instance columns.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $modname The modname.
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $before
-     * @param array $patch
+     * @param mixed[] $before
+     * @param \stdClass $cm The cm.
+     * @param mixed[] $patch
      * @return void
      */
     private static function prepare_editor_content_pseudofields(
@@ -245,22 +245,74 @@ final class pseudofield_carry_forward {
                 continue;
             }
             [$content, $format] = $columns;
-            $draftitemid = file_get_unused_draft_itemid();
-            $text = file_prepare_draft_area(
-                $draftitemid,
-                context_module::instance($cm->id)->id,
-                'mod_' . $modname,
-                $content,
-                0,
-                [],
-                (string) ($patch[$content] ?? $before[$content] ?? '')
+            $moduleinfo->{$pseudofield} = self::editor_draft(
+                $catalogclass,
+                $pseudofield,
+                $cm,
+                (string) ($patch[$content] ?? $before[$content] ?? ''),
+                (int) ($patch[$format] ?? $before[$format] ?? FORMAT_HTML)
             );
-            $moduleinfo->{$pseudofield} = [
-                'text' => $text,
-                'format' => (int) ($patch[$format] ?? $before[$format] ?? FORMAT_HTML),
-                'itemid' => $draftitemid,
-            ];
         }
+    }
+
+    /**
+     * Gives every editor pseudofield the caller named, without a draft, a draft that holds the
+     * stored files. Core saves the draft of such an editor over the file area, so an empty one
+     * would delete the files the new text still references.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param \stdClass $moduleinfo Updated in place.
+     * @param \stdClass $cm
+     * @return void
+     */
+    public static function draft_named_editors(string $catalogclass, \stdClass $moduleinfo, \stdClass $cm): void {
+        foreach (array_keys($catalogclass::write_options()['editor_content'] ?? []) as $pseudofield) {
+            $named = $moduleinfo->{$pseudofield} ?? null;
+            if (!is_array($named) || !array_key_exists('text', $named) || !empty($named['itemid'])) {
+                continue;
+            }
+            $moduleinfo->{$pseudofield} = self::editor_draft(
+                $catalogclass,
+                $pseudofield,
+                $cm,
+                (string) $named['text'],
+                (int) ($named['format'] ?? FORMAT_HTML)
+            );
+        }
+    }
+
+    /**
+     * Builds an editor array whose draft holds the files stored in the editor's file area.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
+     * @param string $pseudofield Editor pseudofield; its file area comes from the "editor_files" write option.
+     * @param \stdClass $cm
+     * @param string $text Stored text, with @@PLUGINFILE@@ references.
+     * @param int $format
+     * @return array{text: string, format: int, itemid: int}
+     */
+    private static function editor_draft(
+        string $catalogclass,
+        string $pseudofield,
+        \stdClass $cm,
+        string $text,
+        int $format
+    ): array {
+        $spec = $catalogclass::write_options()['editor_files'][$pseudofield];
+        // Itemid 0 makes file_prepare_draft_area() create the draft and copy the
+        // stored files into it; a pre-allocated id would leave the draft empty and
+        // the save would delete the files.
+        $draftitemid = 0;
+        $drafttext = file_prepare_draft_area(
+            $draftitemid,
+            context_module::instance($cm->id)->id,
+            'mod_' . $catalogclass::modname(),
+            $spec['filearea'],
+            0,
+            $spec['options'],
+            $text
+        );
+        return ['text' => $drafttext, 'format' => $format, 'itemid' => $draftitemid];
     }
 
     /**
@@ -272,7 +324,7 @@ final class pseudofield_carry_forward {
      *
      * @param string $modname
      * @param \stdClass $moduleinfo Updated in place.
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function carry_forward_draft_file_pseudofield(string $modname, \stdClass $moduleinfo, array $patch): void {
@@ -293,10 +345,15 @@ final class pseudofield_carry_forward {
      * @param string $modname
      * @param \stdClass $moduleinfo Updated in place.
      * @param \stdClass $cm
-     * @param array $patch
+     * @param mixed[] $patch
      * @return void
      */
-    private static function carry_forward_choice_options(string $modname, \stdClass $moduleinfo, \stdClass $cm, array $patch): void {
+    private static function carry_forward_choice_options(
+        string $modname,
+        \stdClass $moduleinfo,
+        \stdClass $cm,
+        array $patch
+    ): void {
         global $DB;
 
         if ($modname !== 'choice' || array_key_exists('option', $patch)) {

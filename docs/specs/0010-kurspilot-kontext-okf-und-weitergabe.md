@@ -53,6 +53,15 @@ kurspilot:
   weitergabe: offen | schulintern | nicht_weitergeben
 ```
 
+Die technische Erkennung der Personenbezug-Markierung akzeptiert eine optionale
+UTF-8-BOM und führende Leerzeilen vor dem Frontmatter, CRLF oder LF sowie den
+schließenden Trenner `---` direkt am Dateiende. Leerzeichen vor und nach dem
+Doppelpunkt sind erlaubt; der Wert darf wie bisher in der nächsten Zeile stehen. Verschachtelte und punktierte Schlüssel sowie der
+bisherige einfache Schlüssel `personenbezug` werden erkannt. Der markierende
+Wert bleibt das kleingeschriebene, unquotierte `true`; `false`, `True`, `"true"`
+und `yes` markieren nicht. Eine Erweiterung dieser Werte benötigt eine eigene
+Spec-Entscheidung. Inhalt außerhalb des Frontmatters setzt die Markierung nicht.
+
 `status` im Frontmatter beschreibt den Lebenszyklus der Datei und ist nicht
 der Umsetzungsstand in einer `status.md`. Kurspilot aktualisiert `updated` bei
 eigenen Schreibvorgängen; bei manuellen Änderungen bleibt es eine sichtbare

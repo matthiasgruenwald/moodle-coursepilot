@@ -23,8 +23,7 @@ namespace local_coursepilot;
  * path, operation, identifier and course ID are location-neutral; callers
  * supply the completed reason and target description.
  *
- * Used by {@see pointer_writer}, {@see webdav_storage_port} and
- * {@see context_area} for failures at external storage and Moodle Private
+ * Used on the domain side by {@see pointer_writer} for failures at external storage and Moodle Private
  * Files. WebDAV-specific reason wording remains in
  * {@see pointer_writer::reason_for()}.
  *
@@ -33,7 +32,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class pending_write_translation {
-
     /** @var string Create operation. */
     public const OP_CREATE = 'create';
 

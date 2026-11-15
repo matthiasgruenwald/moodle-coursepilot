@@ -1,0 +1,156 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "keepquestionbankentryids",
+                "type": "array",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the quiz",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "keep_questionbankentryids": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Question-bank-entry-IDs of the new quiz version",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Question identity that remains in the new quiz version",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "int"
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "quizname": {
+                "class": "core_external\\external_value",
+                "desc": "Quiz name",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "editurl": {
+                "class": "core_external\\external_value",
+                "desc": "Direct link to the quiz edit page in Moodle",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "url"
+            },
+            "removals": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Slots that Coursepilot does not delete",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "slot": {
+                            "class": "core_external\\external_value",
+                            "desc": "Quiz slot that can be manually removed from the quiz",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "questionbankentryid": {
+                            "class": "core_external\\external_value",
+                            "desc": "Reusable question identity",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "questionid": {
+                            "class": "core_external\\external_value",
+                            "desc": "Current question version",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "version": {
+                            "class": "core_external\\external_value",
+                            "desc": "Version number of the question",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "questionname": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "categoryid": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question category ID",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "categoryname": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question category",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "reason": {
+                            "class": "core_external\\external_value",
+                            "desc": "Manual, non-destructive instruction",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

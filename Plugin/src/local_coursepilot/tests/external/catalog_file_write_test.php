@@ -33,8 +33,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(write_target::class)]
 #[CoversClass(create_module::class)]
 #[CoversClass(update_module_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\module_settings::class)]
 final class catalog_file_write_test extends \advanced_testcase {
-
     /** @var \stdClass */
     private \stdClass $course;
 
@@ -99,15 +99,20 @@ final class catalog_file_write_test extends \advanced_testcase {
     /**
      * Every stored file, every activity row and every history version.
      *
-     * @return array
+     * @return mixed[]
      */
     private function snapshot(): array {
         global $DB;
         $files = array_map(
             static fn(\stdClass $f): string => implode('|', [$f->contextid, $f->component, $f->filearea,
                 $f->itemid, $f->filepath, $f->filename, $f->contenthash]),
-            $DB->get_records_select('files', "filename <> '.'", null, 'id',
-                'id, contextid, component, filearea, itemid, filepath, filename, contenthash')
+            $DB->get_records_select(
+                'files',
+                "filename <> '.'",
+                null,
+                'id',
+                'id, contextid, component, filearea, itemid, filepath, filename, contenthash'
+            )
         );
         return [
             'files' => array_values($files),
@@ -121,7 +126,7 @@ final class catalog_file_write_test extends \advanced_testcase {
     /**
      * Valid file input combined with one rejected rule.
      *
-     * @return array<string, array{0: array, 1: string}>
+     * @return array<string, array{0: array<string, mixed>, 1: string}>
      */
     public static function rejected_updates(): array {
         return [
@@ -132,6 +137,13 @@ final class catalog_file_write_test extends \advanced_testcase {
         ];
     }
 
+    /**
+     * Rejected changes preserve the stored activity and its files.
+     *
+     * @param mixed[] $invalid Rejected field values.
+     *        Type: array<string,mixed>.
+     * @param string $errorcode Expected rejection.
+     */
     #[DataProvider('rejected_updates')]
     public function test_rejected_update_mutates_neither_files_nor_activity(array $invalid, string $errorcode): void {
         $cmid = $this->assign_with_files();
@@ -178,7 +190,7 @@ final class catalog_file_write_test extends \advanced_testcase {
         $before = $this->snapshot();
 
         try {
-            // "blatt.pdf" is trashed and copied into a draft before "missing.pdf" fails.
+            // Note: "blatt.pdf" is trashed and copied into a draft before "missing.pdf" fails.
             update_module_settings::execute($cmid, json_encode([
                 'name' => 'Changed',
                 'introattachments' => ['blatt.pdf', 'missing.pdf'],
@@ -195,8 +207,13 @@ final class catalog_file_write_test extends \advanced_testcase {
         global $DB;
         $cmid = $this->assign_with_files();
         $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
-        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid,
-            \context_user::instance($this->teacher->id)->id, true);
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($this->teacher->id)->id,
+            true
+        );
         $before = $this->snapshot();
 
         try {
@@ -236,7 +253,9 @@ final class catalog_file_write_test extends \advanced_testcase {
     }
 
     /**
-     * @return array<string, array{0: array, 1: string}>
+     * Provides rejected creates.
+     *
+     * @return array<string, array{0: array<string, mixed>, 1: string}>
      */
     public static function rejected_creates(): array {
         return [
@@ -247,6 +266,13 @@ final class catalog_file_write_test extends \advanced_testcase {
         ];
     }
 
+    /**
+     * Rejected changes preserve the stored activity and its files.
+     *
+     * @param mixed[] $invalid Rejected field values.
+     *        Type: array<string,mixed>.
+     * @param string $errorcode Expected rejection.
+     */
     #[DataProvider('rejected_creates')]
     public function test_rejected_create_mutates_neither_files_nor_course(array $invalid, string $errorcode): void {
         $before = $this->snapshot();
@@ -321,8 +347,10 @@ final class catalog_file_write_test extends \advanced_testcase {
         $context = \context_module::instance($cmid);
         $fs = get_file_storage();
         $this->assertNotFalse($fs->get_file($context->id, 'mod_assign', 'intro', 0, '/', 'bild.png'));
-        $this->assertSame('First version',
-            $fs->get_file($context->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf')->get_content());
+        $this->assertSame(
+            'First version',
+            $fs->get_file($context->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf')->get_content()
+        );
         $instance = $DB->get_record('assign', ['id' => get_coursemodule_from_id('assign', $cmid)->instance]);
         $this->assertSame('<p>Do it</p>', $instance->activity);
         $defaultgrade = $instance->grade;
@@ -330,8 +358,10 @@ final class catalog_file_write_test extends \advanced_testcase {
         $this->store_material('blatt.pdf', 'Second version');
         update_module_settings::execute($cmid, json_encode(['introattachments' => ['blatt.pdf']]));
 
-        $this->assertSame('Second version',
-            $fs->get_file($context->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf')->get_content());
+        $this->assertSame(
+            'Second version',
+            $fs->get_file($context->id, 'mod_assign', 'introattachment', 0, '/', 'blatt.pdf')->get_content()
+        );
         $instance = $DB->get_record('assign', ['id' => $instance->id]);
         $this->assertSame('New', $instance->name);
         $this->assertSame('<p>Do it</p>', $instance->activity);
@@ -340,17 +370,27 @@ final class catalog_file_write_test extends \advanced_testcase {
     }
 
     /**
+     * Stores material.
+     *
      * @param string $path
      * @param string $content
      */
     private function store_material(string $path, string $content): void {
         $record = material_files::filerecord(material_files::own_context()->id, '/coursepilot-material/', $path);
-        $existing = get_file_storage()->get_file($record['contextid'], $record['component'], $record['filearea'],
-            $record['itemid'], $record['filepath'], $record['filename']);
+        $existing = get_file_storage()->get_file(
+            $record['contextid'],
+            $record['component'],
+            $record['filearea'],
+            $record['itemid'],
+            $record['filepath'],
+            $record['filename']
+        );
         material_files::replace($existing ?: null, $record, $content);
     }
 
     /**
+     * Returns PNG bytes.
+     *
      * @param int $size
      * @return string PNG bytes.
      */

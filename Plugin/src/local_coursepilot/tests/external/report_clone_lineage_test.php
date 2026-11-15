@@ -46,8 +46,9 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 #[CoversClass(report_clone_lineage::class)]
 #[CoversClass(\local_coursepilot\question_suspect_gate::class)]
 final class report_clone_lineage_test extends \advanced_testcase {
-
     /**
+     * Provides course with quiz and teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, quiz.
      */
     private function course_with_quiz_and_teacher(): array {
@@ -60,6 +61,8 @@ final class report_clone_lineage_test extends \advanced_testcase {
     }
 
     /**
+     * Returns question_categories row.
+     *
      * @param \stdClass $course Course whose module context carries the category.
      * @return \stdClass question_categories row
      */
@@ -70,6 +73,13 @@ final class report_clone_lineage_test extends \advanced_testcase {
             ->create_question_category(['contextid' => $qbankcontext->id]);
     }
 
+    /**
+     * Adds question to quiz.
+     *
+     * @param \stdClass $quiz The quiz.
+     * @param \stdClass $category The category.
+     * @param string $name The name.
+     */
     private function add_question_to_quiz(\stdClass $quiz, \stdClass $category, string $name): void {
         $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $question = $questiongenerator->create_question('truefalse', null, ['category' => $category->id, 'name' => $name]);
@@ -108,6 +118,40 @@ final class report_clone_lineage_test extends \advanced_testcase {
 
         $this->assertStringContainsString('created as their own copy', $result['message']);
         $this->assertStringContainsString('shared reference', $result['message']);
+    }
+
+    /**
+     * Only shared references (two questions of one foreign bank) are reported as such, with the source course.
+     */
+    public function test_reports_only_shared_references_from_one_foreign_bank(): void {
+        $this->resetAfterTest();
+        [, $quiz] = $this->course_with_quiz_and_teacher();
+        $foreigncourse = $this->getDataGenerator()->create_course();
+        $sharedcategory = $this->category_in_own_qbank($foreigncourse);
+        $this->add_question_to_quiz($quiz, $sharedcategory, 'Geteilt 1');
+        $this->add_question_to_quiz($quiz, $sharedcategory, 'Geteilt 2');
+
+        $result = report_clone_lineage::execute((int) $quiz->cmid);
+
+        $this->assertSame(['shared_reference', 'shared_reference'], array_column($result['questions'], 'status'));
+        $this->assertSame(
+            [(int) $foreigncourse->id, (int) $foreigncourse->id],
+            array_column($result['questions'], 'source_course_id')
+        );
+        $this->assertStringStartsWith('2 question(s) still point to the source course', $result['message']);
+    }
+
+    /**
+     * Only own copies are reported as such.
+     */
+    public function test_reports_only_own_copies(): void {
+        $this->resetAfterTest();
+        [$course, $quiz] = $this->course_with_quiz_and_teacher();
+        $this->add_question_to_quiz($quiz, $this->category_in_own_qbank($course), 'Eigene Kopie');
+
+        $result = report_clone_lineage::execute((int) $quiz->cmid);
+
+        $this->assertSame('1 question(s) created as their own copy.', $result['message']);
     }
 
     /**
@@ -183,5 +227,14 @@ final class report_clone_lineage_test extends \advanced_testcase {
 
         $this->expectException(\invalid_parameter_exception::class);
         report_clone_lineage::execute((int) $page->cmid);
+    }
+
+    public function test_collision_search_without_idnumber_finds_nothing(): void {
+        $this->resetAfterTest();
+        [, $quiz] = $this->course_with_quiz_and_teacher();
+        $category = $this->category_in_own_qbank($this->getDataGenerator()->create_course());
+        $this->add_question_to_quiz($quiz, $category, 'Ohne Kennung');
+
+        $this->assertNull(\local_coursepilot\question_suspect_gate::find_idnumber_collision((int) $category->id, '', 0));
     }
 }

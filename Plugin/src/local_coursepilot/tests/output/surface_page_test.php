@@ -27,7 +27,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(surface_page::class)]
 final class surface_page_test extends \advanced_testcase {
-
     public function test_no_violations_means_no_violation_rows(): void {
         $this->resetAfterTest();
 

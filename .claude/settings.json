@@ -6,18 +6,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // empty' | grep -E '\\.js$' | { read -r f; [ -n \"$f\" ] && node --check \"$f\" 2>&1 && echo \"✓ syntax ok: $f\"; } 2>/dev/null || true",
-            "statusMessage": "node --check..."
-          },
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path // empty' | grep -E '\\.php$' | { read -r f; [ -n \"$f\" ] && php -l \"$f\" 2>&1; } 2>/dev/null || true",
-            "statusMessage": "php -l..."
-          },
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path // empty' | grep -E '(^|/)(test/.*\\.test\\.js)$' | { read -r f; [ -n \"$f\" ] && npm test 2>&1 | grep -E '^(ℹ (tests|pass|fail)|not ok)'; } 2>/dev/null || true",
-            "statusMessage": "npm test..."
+            "command": "node \"$(git rev-parse --show-toplevel)/scripts/gate/gate.js\" edit",
+            "timeout": 900,
+            "statusMessage": "gate fast..."
           }
         ]
       }

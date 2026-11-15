@@ -1,0 +1,29 @@
+{
+  "images": [
+    {
+      "file": "626-chatgpt-report-01.png",
+      "sha256": "d8e21360ef395cfb36493ef2e384244442117c16bb96b91f3cd60def90b064c4",
+      "origin": "User attachment in T3 thread",
+      "modified": false
+    },
+    {
+      "file": "626-chatgpt-report-02.png",
+      "sha256": "480c60f36ceee142be81bd54107827b1a24a6b734f7a51e05afee400900e0d03",
+      "origin": "User attachment in T3 thread",
+      "modified": false
+    },
+    {
+      "file": "626-chatgpt-report-03.png",
+      "sha256": "9f8ab311609ba16d579f1edada8e074aafcccb3dedb8b35fb88fa8f87323cd82",
+      "origin": "User attachment in T3 thread",
+      "modified": false
+    },
+    {
+      "file": "626-chatgpt-report-04.png",
+      "sha256": "7d3012daf7e1bc0d7912e779f9e93ab2659effcf430bd8e2cc89bd31f2bb1e6e",
+      "origin": "User attachment in T3 thread",
+      "modified": false
+    }
+  ],
+  "kind": "Screenshots of the client report; not connection setup screenshots"
+}

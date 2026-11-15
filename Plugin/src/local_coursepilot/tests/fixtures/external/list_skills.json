@@ -1,0 +1,185 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": []
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": []
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "skills": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Skill identifier, for get_skill(name)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "trigger": {
+                            "class": "core_external\\external_value",
+                            "desc": "Trigger/description, English",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "kind": {
+                            "class": "core_external\\external_value",
+                            "desc": "\"adapter\" or \"reference\"",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "length": {
+                            "class": "core_external\\external_value",
+                            "desc": "Length of the content in characters",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        }
+                    }
+                }
+            },
+            "pending_entries": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Open pending entries, bundled per target file, oldest first (ADR 0023)",
+                "required": 0,
+                "default": [],
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "path": {
+                            "class": "core_external\\external_value",
+                            "desc": "Relative target file path in the context area",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "entries": {
+                            "class": "core_external\\external_multiple_structure",
+                            "desc": "",
+                            "required": 1,
+                            "default": null,
+                            "allownull": false,
+                            "content": {
+                                "class": "core_external\\external_single_structure",
+                                "desc": "",
+                                "required": 1,
+                                "default": null,
+                                "allownull": false,
+                                "keys": {
+                                    "identifier": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Identifier, for pending_entry=<identifier> or coursepilot_dismiss_pending_entry",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "alphanumext"
+                                    },
+                                    "timestamp": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Unix timestamp of the failed operation",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "int"
+                                    },
+                                    "operation": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "\"create\", \"overwrite\", \"append\" or \"unknown\" (pre-read failed)",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "text"
+                                    },
+                                    "error_class": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Named error class, never free text",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "text"
+                                    },
+                                    "course_id": {
+                                        "class": "core_external\\external_value",
+                                        "desc": "Course ID, 0 if the call was not tied to a course",
+                                        "required": 1,
+                                        "default": null,
+                                        "allownull": true,
+                                        "type": "int"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "notices": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Notices determined without network access, e.g. open location selection with existing enablement (Issue #494)",
+                "required": 0,
+                "default": [],
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "text": {
+                            "class": "core_external\\external_value",
+                            "desc": "Localized notice text",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "link": {
+                            "class": "core_external\\external_value",
+                            "desc": "Target page of the notice",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "url"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

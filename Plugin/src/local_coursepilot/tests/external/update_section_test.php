@@ -28,8 +28,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(update_section::class)]
 final class update_section_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -41,10 +42,12 @@ final class update_section_test extends \advanced_testcase {
     }
 
     /**
+     * Updates the update section test.
+     *
      * @param int $courseid
      * @param int $sectionnum
-     * @param array $fields
-     * @return array
+     * @param mixed[] $fields
+     * @return mixed[]
      */
     private function update(int $courseid, int $sectionnum, array $fields): array {
         return external_api::clean_returnvalue(
@@ -122,6 +125,33 @@ final class update_section_test extends \advanced_testcase {
         $this->update($course->id, 99, ['name' => 'x']);
     }
 
+    public function test_unparseable_patch_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $this->expectExceptionMessage(get_string('invalidpatchjson', 'local_coursepilot'));
+        update_section::execute((int) $course->id, 1, 'kein json');
+    }
+
+    public function test_patch_as_list_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $this->expectException(\coding_exception::class);
+        update_section::execute((int) $course->id, 1, '["name"]');
+    }
+
+    public function test_patch_matching_the_current_state_reports_no_change(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $this->update((int) $course->id, 1, ['name' => 'Gleich']);
+
+        $result = $this->update((int) $course->id, 1, ['name' => 'Gleich']);
+
+        $this->assertSame([], $result['changes']);
+        $this->assertStringContainsString('No change', $result['message']);
+    }
+
     public function test_requires_native_capability(): void {
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
@@ -134,6 +164,8 @@ final class update_section_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

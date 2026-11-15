@@ -20,8 +20,6 @@ use local_coursepilot\catalog\drift_check;
 use local_coursepilot\catalog\registry;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Self-approval of the field catalog in two stages (spec 0015 §11, ADR 0017,
  * ticket #399): because the catalog is largely transcribed, it silently
@@ -53,7 +51,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class write_gate {
-
     /** @var string Configuration component for get_config()/set_config(). */
     private const CONFIG_COMPONENT = 'local_coursepilot';
 
@@ -113,7 +110,7 @@ final class write_gate {
         $violations = self::cached_violations($modname);
         if ($violations) {
             $state = 'needs_work';
-        } elseif ((int) $CFG->branch > $catalogclass::reviewed_up_to_major()) {
+        } else if ((int) $CFG->branch > $catalogclass::reviewed_up_to_major()) {
             // Newer major version than the last manual review - machine-green,
             // but the residual risk that cannot be checked (value lists,
             // combination rules, side effects) has not yet been reviewed.
@@ -172,6 +169,8 @@ final class write_gate {
     }
 
     /**
+     * Provides cached violations.
+     *
      * @param string $modname
      * @return string[]
      */

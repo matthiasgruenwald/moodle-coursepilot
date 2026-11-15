@@ -32,7 +32,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(remote_access::class)]
 #[CoversClass(admin\remoteaccesscohorts_setting::class)]
 final class remote_access_test extends \advanced_testcase {
-
     public static function setUpBeforeClass(): void {
         global $CFG;
         parent::setUpBeforeClass();
@@ -57,6 +56,8 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
+     * Creates course teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course teacher without a global role, and their course.
      */
     private function create_course_teacher(): array {
@@ -67,13 +68,15 @@ final class remote_access_test extends \advanced_testcase {
     }
 
     /**
+     * Returns the access token.
+     *
      * @param int $userid
      * @return string The access token.
      */
     private function issue_access_token(int $userid): string {
         global $DB;
 
-        $accesstoken = oauth_lib::random_token(32);
+        $accesstoken = bin2hex(random_bytes(32));
         $connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
             'userid' => $userid, 'clientid' => 'test-client', 'revoked' => 0,
             'statehash' => bin2hex(random_bytes(32)), 'timecreated' => time(),
@@ -81,25 +84,43 @@ final class remote_access_test extends \advanced_testcase {
         $DB->insert_record('local_coursepilot_oauth_token', (object) [
             'connectionid' => $connectionid,
             'accesstokenhash' => hash('sha256', $accesstoken),
-            'refreshtokenhash' => hash('sha256', oauth_lib::random_token(32)),
+            'refreshtokenhash' => hash('sha256', bin2hex(random_bytes(32))),
             'clientid' => 'test-client',
             'userid' => $userid,
-            'expires' => time() + oauth_lib::ACCESS_TOKEN_TTL,
-            'refreshexpires' => time() + oauth_lib::REFRESH_TOKEN_TTL,
+            'expires' => time() + connection::ACCESS_TOKEN_TTL,
+            'refreshexpires' => time() + connection::REFRESH_TOKEN_TTL,
             'revoked' => 0,
             'timecreated' => time(),
         ]);
         return $accesstoken;
     }
 
+    /**
+     * Provides headers.
+     *
+     * @return mixed[]
+     */
     private function headers(): array {
         return ['origin' => null, 'pathinfo' => '', 'method' => 'POST'];
     }
 
+    /**
+     * Provides initialize.
+     *
+     * @param string $token The token.
+     * @return mixed[]
+     */
     private function initialize(string $token): array {
         return dispatcher::handle(['id' => 1, 'method' => 'initialize'], $token, $this->headers());
     }
 
+    /**
+     * Returns sections.
+     *
+     * @param string $token The token.
+     * @param int $courseid The courseid.
+     * @return mixed[]
+     */
     private function get_sections(string $token, int $courseid): array {
         return dispatcher::handle(
             [
@@ -316,4 +337,70 @@ final class remote_access_test extends \advanced_testcase {
         $plugin->unenrol_user($enrolinstance, $userid);
     }
 
+    public function test_member_counts_are_empty_without_selected_cohorts(): void {
+        $this->resetAfterTest();
+        set_config('remoteaccesscohorts', '', 'local_coursepilot');
+
+        $this->assertSame([], remote_access::selected_cohort_member_counts());
+    }
+
+    public function test_member_counts_list_every_selected_cohort_with_integer_values(): void {
+        $this->resetAfterTest();
+        $one = $this->getDataGenerator()->create_user();
+        $two = $this->getDataGenerator()->create_user();
+        $first = $this->create_selected_cohort($one->id, $two->id);
+        $second = $this->create_selected_cohort($one->id);
+        $empty = $this->create_selected_cohort();
+
+        $counts = remote_access::selected_cohort_member_counts();
+
+        $this->assertEqualsCanonicalizing([(int) $first->id, (int) $second->id, (int) $empty->id], array_keys($counts));
+        foreach ([[$first, 2], [$second, 1], [$empty, 0]] as [$cohort, $members]) {
+            $this->assertSame((int) $cohort->id, $counts[(int) $cohort->id]->id);
+            $this->assertSame($members, $counts[(int) $cohort->id]->members);
+            $this->assertSame($cohort->name, $counts[(int) $cohort->id]->name);
+        }
+    }
+
+    public function test_missing_cohort_ids_are_a_plain_list_of_the_vanished_ones(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $gone1 = $this->create_selected_cohort($user->id);
+        $kept = $this->create_selected_cohort($user->id);
+        $gone2 = $this->create_selected_cohort($user->id);
+        $DB->delete_records('cohort', ['id' => $gone1->id]);
+        $DB->delete_records('cohort', ['id' => $gone2->id]);
+
+        $this->assertSame([(int) $gone1->id, (int) $gone2->id], remote_access::missing_cohort_ids());
+        $this->assertNotContains((int) $kept->id, remote_access::missing_cohort_ids());
+    }
+
+    public function test_the_stored_selection_ignores_blanks_zeros_text_and_duplicates(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $kept = $this->create_selected_cohort($user->id);
+        $unknown = (int) $kept->id + 1000;
+
+        set_config('remoteaccesscohorts', '0,' . $kept->id . ',,abc,' . $kept->id, 'local_coursepilot');
+        $this->assertSame([], remote_access::missing_cohort_ids());
+        $this->assertTrue(remote_access::is_granted((int) $user->id));
+
+        set_config('remoteaccesscohorts', "{$unknown},{$unknown},0", 'local_coursepilot');
+        $this->assertSame([$unknown], remote_access::missing_cohort_ids());
+    }
+
+    public function test_the_current_user_is_used_when_no_user_is_given(): void {
+        $this->resetAfterTest();
+        $member = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $this->create_selected_cohort($member->id);
+
+        $this->setUser($member);
+        $this->assertTrue(remote_access::is_granted());
+        $this->setUser($other);
+        $this->assertFalse(remote_access::is_granted());
+        $this->setUser(0);
+        $this->assertFalse(remote_access::is_granted());
+    }
 }

@@ -63,8 +63,9 @@ require_once($CFG->dirroot . '/course/lib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class clone_activity extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -90,11 +91,13 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Runs the clone activity tool.
+     *
      * @param int $cmid
      * @param string $title
      * @param int $targetcourseid
      * @param bool $visible
-     * @return array
+     * @return mixed[]
      * @throws invalid_parameter_exception
      * @throws moodle_exception clonenobackupsupport
      */
@@ -232,38 +235,27 @@ final class clone_activity extends external_api {
      * only the flat tree from {@see set_restriction}. Remove groups emptied
      * by cleanup instead of leaving empty wrappers.
      *
-     * @param array $node
-     * @param array|null $sourcenode The same source-tree node before cloning, used for the message.
-     * @param array $removed By reference: message for each removed condition.
-     * @return array|null null if the node or entire tree became empty.
+     * @param mixed[] $node
+     * @param mixed[]|null $sourcenode The same source-tree node before cloning, used for the message.
+     * @param mixed[] $removed By reference: message for each removed condition.
+     * @return mixed[]|null null if the node or entire tree became empty.
      */
     private static function strip_dangling_completion(array $node, ?array $sourcenode, array &$removed): ?array {
-        if (!isset($node['c']) || !is_array($node['c'])) {
+        $children = $node['c'] ?? null;
+        if (!is_array($children)) {
             return $node;
         }
 
         $newc = [];
         $newshowc = [];
-        foreach ($node['c'] as $i => $child) {
-            $sourcechild = (is_array($sourcenode['c'] ?? null) && isset($sourcenode['c'][$i]) && is_array($sourcenode['c'][$i]))
-                ? $sourcenode['c'][$i]
-                : null;
-
-            if (is_array($child) && isset($child['op'])) {
-                $cleanedchild = self::strip_dangling_completion($child, $sourcechild, $removed);
-                if ($cleanedchild === null) {
+        foreach ($children as $i => $child) {
+            if (is_array($child)) {
+                $sourcechild = $sourcenode['c'][$i] ?? null;
+                $child = self::strip_child($child, is_array($sourcechild) ? $sourcechild : null, $removed);
+                if ($child === null) {
                     continue;
                 }
-                $newc[] = $cleanedchild;
-                $newshowc[] = $node['showc'][$i] ?? true;
-                continue;
             }
-
-            if (is_array($child) && \local_coursepilot\cm_references::is_dangling_completion($child)) {
-                $removed[] = self::describe_removed_condition($sourcechild);
-                continue;
-            }
-
             $newc[] = $child;
             $newshowc[] = $node['showc'][$i] ?? true;
         }
@@ -278,11 +270,31 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * One child of a condition group: nested groups are cleaned recursively, a dangling completion
+     * condition is dropped and described, everything else is kept.
+     *
+     * @param mixed[] $child
+     * @param mixed[]|null $sourcechild The same child before cloning, used for the message.
+     * @param mixed[] $removed By reference: message for each removed condition.
+     * @return mixed[]|null The child to keep, null if it was removed.
+     */
+    private static function strip_child(array $child, ?array $sourcechild, array &$removed): ?array {
+        if (isset($child['op'])) {
+            return self::strip_dangling_completion($child, $sourcechild, $removed);
+        }
+        if (\local_coursepilot\cm_references::is_dangling_completion($child)) {
+            $removed[] = self::describe_removed_condition($sourcechild);
+            return null;
+        }
+        return $child;
+    }
+
+    /**
      * Teacher-facing description of the removed condition, naming the originally
      * referenced activity when the source tree retains it. The new tree only
      * knows cm: 0.
      *
-     * @param array|null $sourcechild
+     * @param mixed[]|null $sourcechild
      * @return string
      */
     private static function describe_removed_condition(?array $sourcechild): string {
@@ -300,6 +312,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Provides completion label.
+     *
      * @param int $expectedcompletion COMPLETION_xx value from completionlib.php
      * @return string
      */
@@ -313,7 +327,9 @@ final class clone_activity extends external_api {
     }
 
     /**
-     * @param array $removed
+     * Builds removed message.
+     *
+     * @param mixed[] $removed
      * @return string
      */
     private static function build_removed_message(array $removed): string {
@@ -323,6 +339,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Builds message.
+     *
      * @param string $title
      * @param bool $crosscourse
      * @param string|null $removedmessage
@@ -337,6 +355,8 @@ final class clone_activity extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

@@ -24,8 +24,6 @@ use core_external\external_value;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Deletion endpoint for material cleanup (Spec 0018 §8.3, #438): removes
  * exactly the caller-provided material paths. No automatic or age-based
@@ -37,8 +35,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class delete_material_files extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -50,8 +49,10 @@ class delete_material_files extends external_api {
     }
 
     /**
+     * Runs the delete material files tool.
+     *
      * @param string[] $paths
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, materialdeletefilenotfound
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */
@@ -101,6 +102,8 @@ class delete_material_files extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

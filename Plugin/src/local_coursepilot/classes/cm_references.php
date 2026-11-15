@@ -16,8 +16,6 @@
 
 namespace local_coursepilot;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Reference finder (Spec 0026 module 6, ADR 0028): who points at a course module.
  * Read-only: nothing is resolved or changed. Text links are out of scope.
@@ -27,7 +25,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class cm_references {
-
     /** Reference kind: availability condition on another activity. */
     public const KIND_ACTIVITY_AVAILABILITY = 'activity_availability';
     /** Reference kind: availability condition on a section. */
@@ -36,6 +33,8 @@ final class cm_references {
     public const KIND_COURSE_COMPLETION = 'course_completion';
 
     /**
+     * Provides references to.
+     *
      * @param int $cmid
      * @return array<int, array{kind: string, location_id: int, location: string}> location_id is the
      *         cmid (activity), section id (section) or course id (course completion).
@@ -46,8 +45,13 @@ final class cm_references {
         $cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, course', MUST_EXIST);
         $found = [];
 
-        $activities = $DB->get_records_select('course_modules', 'course = ? AND id <> ? AND availability IS NOT NULL',
-            [$cm->course, $cmid], 'id', 'id, availability');
+        $activities = $DB->get_records_select(
+            'course_modules',
+            'course = ? AND id <> ? AND availability IS NOT NULL',
+            [$cm->course, $cmid],
+            'id',
+            'id, availability'
+        );
         foreach ($activities as $other) {
             if (self::tree_points_at((string) $other->availability, $cmid)) {
                 $found[] = [
@@ -58,8 +62,13 @@ final class cm_references {
             }
         }
 
-        $sections = $DB->get_records_select('course_sections', 'course = ? AND availability IS NOT NULL',
-            [$cm->course], 'section', 'id, section, availability');
+        $sections = $DB->get_records_select(
+            'course_sections',
+            'course = ? AND availability IS NOT NULL',
+            [$cm->course],
+            'section',
+            'id, section, availability'
+        );
         foreach ($sections as $section) {
             if (self::tree_points_at((string) $section->availability, $cmid)) {
                 $found[] = [
@@ -90,8 +99,8 @@ final class cm_references {
      * Shared tree walk: every completion condition node of an availability tree
      * (nested groups included), in document order.
      *
-     * @param array $tree Decoded availability JSON.
-     * @return array[] Condition nodes with type "completion".
+     * @param mixed[] $tree Decoded availability JSON.
+     * @return mixed[][] Condition nodes with type "completion".
      */
     private static function completion_conditions(array $tree): array {
         $nodes = [];
@@ -109,7 +118,7 @@ final class cm_references {
     /**
      * Every completion condition of a tree as "cm:e".
      *
-     * @param array $tree
+     * @param mixed[] $tree
      * @return string[]
      */
     public static function completion_pairs(array $tree): array {
@@ -125,13 +134,20 @@ final class cm_references {
     /**
      * Completion condition whose cm Moodle could not translate on restore (cm 0).
      *
-     * @param array $node
+     * @param mixed[] $node
      * @return bool
      */
     public static function is_dangling_completion(array $node): bool {
         return ($node['type'] ?? null) === 'completion' && (int) ($node['cm'] ?? -1) === 0;
     }
 
+    /**
+     * Provides tree points at.
+     *
+     * @param string $availability The availability.
+     * @param int $cmid The cmid.
+     * @return bool
+     */
     private static function tree_points_at(string $availability, int $cmid): bool {
         $tree = json_decode($availability, true);
         if (!is_array($tree)) {

@@ -28,8 +28,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(move_module::class)]
 final class move_module_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course (3 sections), teacher.
      */
     private function course_with_editing_teacher(): array {
@@ -41,10 +42,12 @@ final class move_module_test extends \advanced_testcase {
     }
 
     /**
+     * Moves the move module test.
+     *
      * @param int $cmid
      * @param int $sectionnum
      * @param int|null $position
-     * @return array
+     * @return mixed[]
      */
     private function move(int $cmid, int $sectionnum, ?int $position = null): array {
         return external_api::clean_returnvalue(
@@ -96,11 +99,26 @@ final class move_module_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
     private function get_role_id(string $shortname): int {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
+    }
+
+    public function test_unknown_target_section_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'section' => 0]);
+
+        try {
+            $this->move((int) $page->cmid, 99);
+            $this->fail('A missing target section must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('sectionnotfound', $e->errorcode);
+        }
     }
 }

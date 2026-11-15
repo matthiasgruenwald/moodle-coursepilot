@@ -17,27 +17,27 @@
 namespace local_coursepilot\event;
 
 /**
- * Failed Coursepilot MCP access (#339): authentication, permission,
+ * Failed Coursepilot MCP access: authentication, permission,
  * unknown tool/method, or failure during tool execution.
  *
  * Store a short fixed reason code/text, never the access token
  * (dispatcher::error()/handle_tools_call()). Emitted from errors-only
  * logging onward.
  *
- * @property-read array $other {
+ * @property-read array{reason: string, toolname?: ?string, path?: ?string, detail?: ?string} $other
  *      - string reason: Short error description, without secrets.
  *      - string|null toolname: Affected tool name, if known.
- *      - string|null path: Path touched by the failed access, if known (#501).
- *      - string|null detail: Internal diagnostic, only with full logging (#457).
- * }
+ *      - string|null path: Path touched by the failed access, if known.
+ *      - string|null detail: Internal diagnostic, only with full logging.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class tool_access_failed extends \core\event\base {
-
     /**
+     * Returns description.
+     *
      * @return string
      */
     public function get_description() {
@@ -47,6 +47,8 @@ class tool_access_failed extends \core\event\base {
     }
 
     /**
+     * Returns name.
+     *
      * @return string
      */
     public static function get_name() {
@@ -54,6 +56,8 @@ class tool_access_failed extends \core\event\base {
     }
 
     /**
+     * Initialises the tool access failed.
+     *
      * @return void
      */
     protected function init() {
@@ -63,6 +67,8 @@ class tool_access_failed extends \core\event\base {
     }
 
     /**
+     * Validates data.
+     *
      * @return void
      * @throws \coding_exception
      */
@@ -74,6 +80,8 @@ class tool_access_failed extends \core\event\base {
     }
 
     /**
+     * Returns other mapping.
+     *
      * @return false
      */
     public static function get_other_mapping() {

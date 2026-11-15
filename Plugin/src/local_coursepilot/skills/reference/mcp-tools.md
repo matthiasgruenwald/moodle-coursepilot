@@ -17,6 +17,7 @@ Read this to select the responsible read or write tool.
 | `coursepilot_update_section` | Set section name and an introduction only when planned |
 | `coursepilot_move_section` | Move an existing section without content changes |
 | `coursepilot_move_module` | Move an existing activity by cmid to a section or position within it |
+| `coursepilot_update_module_settings` field `indent` | Indent an activity one level (0 or 1; accepted by `coursepilot_create_module`, `coursepilot_create_quiz` and `coursepilot_update_quiz_settings` as well). Use it for an activity that belongs to the one above it, such as a chatbot link below its assignment. Course formats without indentation reject 1 |
 | `coursepilot_create_module` | Create cataloged activities; modname selects label, page, assign, url, resource, folder, choice or forum |
 | `coursepilot_update_module_settings` | Patch individual settings, with field names/values determined by modname |
 | `coursepilot_set_completion` | Set completion tracking: the only path for completion* fields, blocked by generic create/update tools |
@@ -32,7 +33,7 @@ Read this to select the responsible read or write tool.
 | `coursepilot_update_quiz_settings` | Apply Coursepilot settings presets to existing quizzes |
 | `coursepilot_list_courses` | List courses authorized for the current teacher; entry when course ID is unknown |
 | `coursepilot_ensure_section` | Idempotently create a missing sectionnum; existing sections receive only name reconciliation |
-| `coursepilot_get_module_settings` | Read complete current state by cmid before every patch; report existing learner_locks |
+| `coursepilot_get_module_settings` | Read current state by cmid before every patch; credential fields are omitted except the intentional quiz access password; report existing learner_locks |
 | `coursepilot_describe_module_fields` | Read fields, meanings, blocked fields and learner_lock values; modname and optional full |
 | `coursepilot_add_glossary_entries` | Add teacher-authored entries to fresh/existing glossary cmid; entries accept concept, definition/definitionformat, aliases, category names, usedynalink/casesensitive/fullmatch, optional approved, tags, attachment_files/definition_files and location (store/workbench). Explicit approval requires mod/glossary:approve; new categories require mod/glossary:managecategories. Returns per-entry index/success/entryid/approved/errorcode/message and gap_notice. Preserve successful entries on partial failure; retry failed entries only. No learner-content reads or entry history restoration. See activity-types |
 | `coursepilot_clone_activity` | Duplicate by cmid/title within a course or into optional targetcourseid |
@@ -77,7 +78,7 @@ for read-only inventory, or workbench for chat attachments/crops. See
 | Tool | Use |
 |---|---|
 | `coursepilot_list_material_files` | List optional path, empty for root, and optional location; sizes, contenthash and remaining quota |
-| `coursepilot_upload_material_file` | Create/replace path with content_base64, always on workbench; no location |
+| `coursepilot_upload_material_file` | Create/replace path with content_base64, always on workbench; no location. File names: ASCII only (A-Z, a-z, 0-9, `_`, `-`), no spaces or umlauts, exactly one extension from pdf, docx, doc, xlsx, xls, pptx, ppt, odt, ods, odp, odg, html, htm, png, jpg, jpeg, gif, svg, txt, csv, zip, webp; normalise the name first (e.g. `Lernjournal Vorlage.odt` becomes `Lernjournal_Vorlage.odt`). Same rule for crop/compose targetpath |
 | `coursepilot_preview_material_file` | View a reduced image preview by path/location to choose crops or alt text accurately |
 | `coursepilot_crop_material_file` | Crop sourcepath into targetpath using relative x0/y0/x1/y1 (0–1) on the preview; target is always workbench |
 | `coursepilot_compose_material_file` | Compose ordered parts with optional crops/source headers into a PNG; arrangement vertical/horizontal, targetpath; original resolution, fixed house style and workbench target |

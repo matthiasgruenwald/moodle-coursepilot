@@ -23,34 +23,21 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\catalog\learner_locks;
-use local_coursepilot\catalog\quiz;
-use local_coursepilot\catalog\quiz_write_bridge;
-use local_coursepilot\catalog\write_target;
+use local_coursepilot\catalog\quiz_write;
 use local_coursepilot\write_gate;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
- * Quiz counterpart to {@see create_module} (Spec 0015 §5, #398): quiz is
- * a justified exception to the generic tool, but its catalog (#383)
- * still declares write_path: update_quiz_settings.
- *
- * Like generic creation (Spec 0015 §3.4), missing fields use cataloged form
- * defaults. Required fields without defaults (name, intro, preferredbehaviour,
- * subnet, browsersecurity) must be provided. grade is blocked in fields_json:
- * it comes from its own parameter or quiz/maximumgrade form default.
- *
- * The three mode bundles come from {@see quiz::bundles()}. Bundle values
- * apply only to fields not explicitly supplied in fields_json (Spec §2.4).
+ * Public quiz creation adapter; the catalog owns the atomic native write.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class create_quiz extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -83,13 +70,15 @@ final class create_quiz extends external_api {
     }
 
     /**
+     * Runs the create quiz tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $fieldsjson
      * @param string $mode
      * @param float $grade
      * @param string[] $confirmlearnerlocks
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $courseid,
@@ -99,8 +88,6 @@ final class create_quiz extends external_api {
         float $grade = -1.0,
         array $confirmlearnerlocks = []
     ): array {
-        global $CFG;
-
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid' => $courseid,
             'sectionnum' => $sectionnum,
@@ -113,11 +100,8 @@ final class create_quiz extends external_api {
         $coursecontext = context_course::instance($params['courseid']);
         self::validate_context($coursecontext);
         require_capability('local/coursepilot:use', $coursecontext);
-        // Check native editing permission early, as in {@see create_module::execute()}.
         require_capability('moodle/course:manageactivities', $coursecontext);
 
-        // Cheap write self-check (Spec 0015 §11, ADR 0017, #399): same policy
-        // as generic creation applies to the quiz-specific tool. Reads are unaffected.
         write_gate::assert_writable('quiz');
 
         $patch = json_decode($params['fields_json'], true);
@@ -125,125 +109,19 @@ final class create_quiz extends external_api {
             throw new moodle_exception('invalidpatchjson', 'local_coursepilot');
         }
 
-        $bundle = self::bundle_fields($params['mode']);
-        $merged = array_merge($bundle, $patch);
-
-        // Catalog rules (fields, dates, stealth, required fields, learner
-        // locks) are decided once in the write target (#646); the locks of the
-        // chosen mode are confirmed by choosing it.
-        $target = write_target::create(
-            quiz::class,
-            $merged,
-            learner_locks::confirmed_with_mode($params[learner_locks::PARAMETER], $bundle, $patch)
+        return quiz_write::create(
+            $params['courseid'],
+            $params['sectionnum'],
+            $patch,
+            $params['mode'],
+            $params['grade'],
+            $params[learner_locks::PARAMETER]
         );
-        $newgrade = $params['grade'] >= 0 ? $params['grade'] : quiz_write_bridge::default_grade();
-        quiz_write_bridge::validate_combination_rules($target->state, $merged, $newgrade);
-
-        $course = get_course($params['courseid']);
-        require_once($CFG->dirroot . '/course/modlib.php');
-        [$module] = \can_add_moduleinfo($course, 'quiz', $params['sectionnum']);
-
-        $moduleinfo = new \stdClass();
-        $moduleinfo->modulename = 'quiz';
-        $moduleinfo->module = (int) $module->id;
-        $moduleinfo->section = $params['sectionnum'];
-        $moduleinfo->grade = $newgrade;
-
-        $feedbacktextpatch = $merged['feedbacktext'] ?? null;
-        $feedbackboundariespatch = $merged['feedbackboundaries'] ?? [];
-        $fieldstowrite = $merged;
-        unset($fieldstowrite['feedbacktext'], $fieldstowrite['feedbackboundaries']);
-
-        foreach ($target->defaults() as $fieldname => $value) {
-            $moduleinfo->{quiz_write_bridge::moduleinfo_property($fieldname)} = $value;
-        }
-        foreach ($fieldstowrite as $fieldname => $value) {
-            $moduleinfo->{quiz_write_bridge::moduleinfo_property($fieldname)} = $value;
-        }
-        if ($feedbacktextpatch !== null) {
-            quiz_write_bridge::apply_feedback_pseudofields($moduleinfo, $feedbacktextpatch, $feedbackboundariespatch);
-        }
-
-        $created = \add_moduleinfo($moduleinfo, $course);
-
-        $cmid = (int) $created->coursemodule;
-        [$createdfields, $sideeffects] = self::report_and_side_effects($merged, $newgrade);
-
-        return [
-            'cmid' => $cmid,
-            'message' => self::build_message($createdfields, $sideeffects),
-            'created_fields' => $createdfields,
-            'side_effects' => $sideeffects,
-        ];
     }
 
     /**
-     * Returns the catalog mode bundle, or an empty array without a mode.
+     * Describes the return value of execute.
      *
-     * @param string $mode
-     * @return array<string, mixed>
-     * @throws moodle_exception unknownmode
-     */
-    private static function bundle_fields(string $mode): array {
-        if ($mode === '') {
-            return [];
-        }
-        $bundles = quiz::bundles();
-        if (!array_key_exists($mode, $bundles)) {
-            throw new moodle_exception('unknownmode', 'local_coursepilot', '', [
-                'mode' => $mode,
-                'modes' => implode(', ', array_keys($bundles)),
-            ]);
-        }
-        return $bundles[$mode];
-    }
-
-    /**
-     * Reports fields actually set by patch/bundle with their values, plus
-     * grade (always set, never from fields_json), and side effects. Same
-     * principle as {@see create_module::report_and_side_effects()}.
-     *
-     * @param array $merged
-     * @param float $grade
-     * @return array{0: array, 1: string[]}
-     */
-    private static function report_and_side_effects(array $merged, float $grade): array {
-        $createdfields = [];
-        foreach ($merged as $fieldname => $value) {
-            $createdfields[] = ['field' => $fieldname, 'value_json' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
-        }
-        $createdfields[] = ['field' => 'grade', 'value_json' => json_encode($grade, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
-
-        $sideeffects = [];
-        if ((int) ($merged['timeopen'] ?? 0) > 0 || (int) ($merged['timeclose'] ?? 0) > 0) {
-            $sideeffects[] = 'The calendar entry for the quiz was created.';
-        }
-
-        return [$createdfields, $sideeffects];
-    }
-
-    /**
-     * Teacher-facing creation message (Spec 0015 §3.4/§5).
-     *
-     * @param array $createdfields
-     * @param string[] $sideeffects
-     * @return string
-     */
-    private static function build_message(array $createdfields, array $sideeffects): string {
-        $parts = [];
-        foreach ($createdfields as $field) {
-            $parts[] = '"' . $field['field'] . '" = ' . $field['value_json'];
-        }
-        $message = get_string('quizcreatedfields', 'local_coursepilot', implode(', ', $parts));
-
-        if ($sideeffects) {
-            $message .= ' ' . implode(' ', $sideeffects);
-        }
-
-        return $message;
-    }
-
-    /**
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

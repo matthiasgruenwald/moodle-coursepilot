@@ -43,6 +43,10 @@ require_once($CFG->libdir . '/questionlib.php');
  * exist, the whole call aborts, no partial success - the same principle
  * as {@see \local_coursepilot\quiz\arrangement::restore()}.
  *
+ * Side effects like the quiz editing page: before the first write every
+ * question and its capability is validated (all or nothing); after appending,
+ * preview attempts are deleted and quiz.sumgrades is recomputed.
+ *
  * Change history: quiz_add_quiz_question() triggers the native
  * slot_created event, which does NOT count among the 16 observed
  * mod_quiz structure events (db/events.php: new question = content,
@@ -56,8 +60,9 @@ require_once($CFG->libdir . '/questionlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class add_questions_to_quiz extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -71,9 +76,11 @@ final class add_questions_to_quiz extends external_api {
     }
 
     /**
+     * Runs the add questions to quiz tool.
+     *
      * @param int $cmid
-     * @param array $questionids
-     * @return array
+     * @param mixed[] $questionids
+     * @return mixed[]
      */
     public static function execute(int $cmid, array $questionids): array {
         global $DB, $USER;
@@ -103,13 +110,21 @@ final class add_questions_to_quiz extends external_api {
 
         $quiz->cmid = (int) $cm->id;
 
-        $appended = [];
-        $anyadded = false;
+        // Validate every question and its capability before the first write
+        // (all or nothing).
+        $questions = [];
         foreach ($params['questionids'] as $questionid) {
             $question = $DB->get_record('question', ['id' => (int) $questionid], '*', MUST_EXIST);
             question_require_capability_on($question, 'use');
+            $questions[(int) $questionid] = $question;
+        }
 
-            // quiz_add_quiz_question() returns an explicit false ONLY in the
+        $appended = [];
+        $anyadded = false;
+        foreach ($params['questionids'] as $questionid) {
+            $question = $questions[(int) $questionid];
+
+            // Note: quiz_add_quiz_question() returns an explicit false ONLY in the
             // duplicate case - on success the function falls through without
             // "return" (PHP then yields null, not true). "!== false"
             // is therefore the correct success check, not truthiness.
@@ -127,6 +142,11 @@ final class add_questions_to_quiz extends external_api {
         }
 
         if ($anyadded) {
+            // Note: quiz_add_quiz_question() does not maintain quiz.sumgrades; the
+            // editing page recomputes it after adding. Without it a
+            // quiz with grade > 0 and sumgrades = 0 cannot be attempted.
+            quiz_delete_previews($quiz);
+            \mod_quiz\quiz_settings::create((int) $quiz->id)->get_grade_calculator()->recompute_quiz_sumgrades();
             version_writer::capture_on_update((int) $cm->id, (int) $USER->id);
         }
 
@@ -141,16 +161,12 @@ final class add_questions_to_quiz extends external_api {
     /**
      * The teacher-facing message: what was appended, what was skipped.
      *
-     * @param array $appended
+     * @param mixed[] $appended
      * @return string
      */
     private static function build_message(array $appended): string {
         $added = array_filter($appended, static fn(array $item): bool => $item['added']);
         $skipped = array_filter($appended, static fn(array $item): bool => !$item['added']);
-
-        if (!$added && !$skipped) {
-            return 'No question appended.';
-        }
 
         $parts = [];
         if ($added) {
@@ -172,7 +188,7 @@ final class add_questions_to_quiz extends external_api {
      * so the quiz can be checked without opening it.
      *
      * @param int $quizid
-     * @return array
+     * @return mixed[]
      */
     private static function slot_state(int $quizid): array {
         global $DB;
@@ -206,6 +222,8 @@ final class add_questions_to_quiz extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

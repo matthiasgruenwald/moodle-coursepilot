@@ -30,7 +30,6 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 interface module_catalog {
-
     /**
      * Latest Moodle major branch reviewed jointly across all catalogs
      * (ADR 0017, Ticket #399). Shared by reviewed_up_to_major(); an individual
@@ -59,7 +58,7 @@ interface module_catalog {
      * @param int $instanceid
      * @param int $cmid
      * @param bool $fullcontent
-     * @return array{name: string, content: array, settings: array, quizslots: array}
+     * @return array{name: string, content: mixed[], settings: mixed[], quizslots: mixed[]}
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array;
 
@@ -90,7 +89,7 @@ interface module_catalog {
 
     /**
      * Category 3: module-specific blocklist, in addition to the cross-module
-     * {@see shared_block::BLOCKLIST} added by describe_module_fields.
+     * {@see shared_block::blocked_fields} added by describe_module_fields.
      *
      * @return string[] Field names.
      */

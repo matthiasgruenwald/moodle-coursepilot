@@ -28,9 +28,103 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(set_completion::class)]
+#[CoversClass(\local_coursepilot\catalog\completion_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\pseudofield_carry_forward::class)]
 final class set_completion_test extends \advanced_testcase {
+    /**
+     * Clients receive the complete field and patch instructions in the public schema.
+     */
+    public function test_parameter_schema_explains_every_supported_completion_field(): void {
+        $parameters = set_completion::execute_parameters();
+        $this->assertSame(
+            'JSON object with "completion" (0=off,1=manual,2=automatic), "completionview", '
+                . '"completionusegrade", "completionpassgrade", "completionexpected" and - for "assign" and '
+                . '"choice" - "completionsubmit" (1=submission/response required), for "quiz" - '
+                . '"completionminattempts" (0=off, positive minimum) - only the fields to change (patch)',
+            $parameters->keys['fields_json']->desc
+        );
+    }
 
     /**
+     * Minimum quiz attempts are written and readable through the public tools.
+     */
+    public function test_quiz_minimum_attempts_are_written(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $result = external_api::clean_returnvalue(
+            set_completion::execute_returns(),
+            set_completion::execute($quiz->cmid, json_encode([
+                'completion' => COMPLETION_TRACKING_AUTOMATIC,
+                'completionminattempts' => 2,
+            ]))
+        );
+
+        $this->assertSame(2, (int) $this->read($quiz->cmid)['completionminattempts']);
+        $this->assertContains([
+            'field' => 'completionminattempts', 'before_json' => '"0"', 'after_json' => '"2"',
+        ], $result['changes']);
+    }
+
+    /**
+     * A negative attempt requirement is refused without changing the activity.
+     */
+    public function test_quiz_negative_minimum_attempts_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        try {
+            set_completion::execute($quiz->cmid, json_encode([
+                'completion' => COMPLETION_TRACKING_AUTOMATIC,
+                'completionminattempts' => -1,
+            ]));
+            $this->fail('A negative minimum must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('completioninvalidfieldvalue', $e->errorcode);
+        }
+        $this->assertSame(0, (int) $this->read($quiz->cmid)['completionminattempts']);
+    }
+
+    /**
+     * A blocked quiz field keeps the published unknown-field error for every type.
+     */
+    public function test_blocked_quiz_field_keeps_unknown_completion_error(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        foreach (['page', 'quiz'] as $modname) {
+            $activity = $this->getDataGenerator()->create_module($modname, ['course' => $course->id]);
+            try {
+                set_completion::execute($activity->cmid, '{"completionview":1,"completionattemptsexhausted":1}');
+                $this->fail('Blocked fields must remain unknown to the completion write operation.');
+            } catch (\moodle_exception $e) {
+                $this->assertSame('completionunknownfield', $e->errorcode);
+            }
+            $this->assertSame(0, (int) $this->read($activity->cmid)['completionview']);
+        }
+    }
+
+    /**
+     * A patch that is not a JSON object is refused before anything is read or written.
+     */
+    public function test_patch_that_is_not_json_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        try {
+            set_completion::execute($page->cmid, 'not json');
+            $this->fail('Expected moodle_exception was not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidpatchjson', $e->errorcode);
+        }
+        $this->assertSame(COMPLETION_TRACKING_NONE, (int) $this->read($page->cmid)['completion']);
+    }
+
+    /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course (completion tracking on), teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -43,8 +137,10 @@ final class set_completion_test extends \advanced_testcase {
     }
 
     /**
+     * Returns current state, same shape as get_module_settings.
+     *
      * @param int $cmid
-     * @return array Current state, same shape as get_module_settings.
+     * @return mixed[] Current state, same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -83,8 +179,10 @@ final class set_completion_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
 
-        foreach (['completion', 'completionview', 'completionexpected', 'completionusegrade',
-                'completionpassgrade', 'completionunlocked'] as $field) {
+        foreach (
+            ['completion', 'completionview', 'completionexpected', 'completionusegrade',
+                'completionpassgrade', 'completionunlocked'] as $field
+        ) {
             try {
                 update_module_settings::execute($page->cmid, json_encode([$field => 1]));
                 $this->fail('Expected moodle_exception was not thrown for field "' . $field . '".');
@@ -208,7 +306,10 @@ final class set_completion_test extends \advanced_testcase {
 
         $result = external_api::clean_returnvalue(
             set_completion::execute_returns(),
-            set_completion::execute($page->cmid, json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC, 'completionview' => 1]))
+            set_completion::execute(
+                $page->cmid,
+                json_encode(['completion' => COMPLETION_TRACKING_AUTOMATIC, 'completionview' => 1])
+            )
         );
 
         $this->assertSame(COMPLETION_TRACKING_AUTOMATIC, $this->read($page->cmid)['completion']);

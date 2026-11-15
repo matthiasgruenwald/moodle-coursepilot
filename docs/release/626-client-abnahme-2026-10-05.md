@@ -1,5 +1,22 @@
 # #626 – Client-Abnahme, Zwischenstand 05.10.2026
 
+## Abschlussnachtrag vom 06.10.2026
+
+Der bisher nur im Worktree `issue-626` erhaltene Nachtrag ist beim Aufräumen am
+09.11.2026 übernommen worden: Der [Codex-Desktop-Bericht](626-codex-desktop-abnahme-2026-10-06.md)
+und der [ChatGPT-iOS-Bericht](626-chatgpt-ios-abnahme-2026-10-06.md) dokumentieren
+beide Schreibtests gegen `75f1308a3816ec626899e800062642d1165de5fa` einschließlich
+Rücklesen und nachfolgender Moodle-Sichtprüfung durch den Nutzer. Der Maintainer
+hat die iOS-Chatfunktion ausdrücklich für das Web-Kriterium dieses Auftrags
+akzeptiert und die DE/EN-Durchsicht sowie den Abschluss von #626 bestätigt.
+
+Die [Web-Vorprüfung](626-chatgpt-web-vorpruefung-2026-10-06.md) bleibt als
+historischer Abbruch vor dem Schreiben erhalten. Die vier unveränderten
+Berichtsbilder und der Quellenvergleich vom 06.10. sind mitübernommen. Diese
+Wiederherstellung ist keine neue Client-, Live- oder Versionsabnahme. Die
+folgenden offenen Punkte beschreiben den damaligen Stand vom 05.10.; der
+Nachtrag vom 06.10. schreibt ihn fort.
+
 ## Stand und Grenze der Belege
 
 Featurecommit `ea96c24c4cc337e3ace92ebb46f10bbd14b4de01` auf

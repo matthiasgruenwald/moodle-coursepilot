@@ -27,33 +27,77 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(oauth_cleanup::class)]
 #[CoversClass(task\oauth_cleanup::class)]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_oauth_cleanup_indexes')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_add_oauth_cleanup_indexes')]
 final class oauth_cleanup_test extends \advanced_testcase {
-
+    /**
+     * Code.
+     */
     private const CODE = 'local_coursepilot_oauth_code';
+    /**
+     * Token.
+     */
     private const TOKEN = 'local_coursepilot_oauth_token';
+    /**
+     * Grant.
+     */
     private const GRANT = 'local_coursepilot_oauth_grant';
+    /**
+     * Client.
+     */
     private const CLIENT = 'local_coursepilot_oauth_client';
+    /**
+     * Callback.
+     */
     private const CALLBACK = 'https://client.example/callback';
 
+    /**
+     * Provides tokens.
+     *
+     * @param string $clientid The clientid.
+     * @param int $userid The userid.
+     * @return mixed[]
+     */
     private function tokens(string $clientid, int $userid): array {
         $verifier = str_repeat('v', 43);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
-        $code = oauth_lib::issue_code($clientid, $userid, self::CALLBACK, $challenge);
-        return oauth_lib::exchange_code($code, $clientid, self::CALLBACK, $verifier);
+        $code = connection::issue_code($clientid, $userid, self::CALLBACK, $challenge);
+        return connection::exchange_code($code, $clientid, self::CALLBACK, $verifier);
     }
 
+    /**
+     * Provides connection.
+     *
+     * @param mixed[] $pair The pair.
+     * @return int
+     */
     private function connection(array $pair): int {
-        oauth_lib::authenticate_access_token($pair['access_token']);
-        return oauth_lib::current_connection_id();
+        connection::authenticate_access_token($pair['access_token']);
+        return connection::current_connection_id();
     }
 
+    /**
+     * Provides code.
+     *
+     * @param string $clientid The clientid.
+     * @param int $expires The expires.
+     * @param int $used The used.
+     * @return int
+     */
     private function code(string $clientid, int $expires, int $used = 0): int {
         global $DB;
-        return $DB->insert_record(self::CODE, (object) ['code' => oauth_lib::random_token(16),
+        return $DB->insert_record(self::CODE, (object) ['code' => bin2hex(random_bytes(16)),
             'clientid' => $clientid, 'userid' => 2, 'redirecturi' => self::CALLBACK,
             'codechallenge' => 'c', 'expires' => $expires, 'used' => $used]);
     }
 
+    /**
+     * Provides client.
+     *
+     * @param string $clientid The clientid.
+     * @param int $timecreated The timecreated.
+     * @param string $source The source.
+     */
     private function client(string $clientid, int $timecreated, string $source = 'dcr'): void {
         global $DB;
         $DB->insert_record(self::CLIENT, (object) ['clientid' => $clientid, 'redirecturis' => json_encode([self::CALLBACK]),
@@ -92,7 +136,7 @@ final class oauth_cleanup_test extends \advanced_testcase {
         $this->setAdminUser();
         $original = $this->tokens('client-a', (int) $USER->id);
         $active = $this->connection($original);
-        $rotated = oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a');
+        $rotated = connection::rotate_refresh_token($original['refresh_token'], 'client-a');
         [$directory, $filename] = material_files::resolve_file('synthetic.txt');
         get_file_storage()->create_file_from_string(['contextid' => material_files::own_context()->id,
             'component' => material_files::COMPONENT, 'filearea' => material_files::FILEAREA,
@@ -101,7 +145,7 @@ final class oauth_cleanup_test extends \advanced_testcase {
         parse_str(parse_url(workbench_ticket::issue('synthetic.txt')['url'], PHP_URL_QUERY), $query);
 
         $revoked = $this->connection($this->tokens('client-a', (int) $USER->id));
-        oauth_lib::revoke_token(oauth_lib::current_token_id());
+        connection::revoke_token((int) max(array_keys(connection::active_tokens_for_user((int) $USER->id))));
         $stale = $this->tokens('client-a', (int) $USER->id);
         $expired = $this->connection($stale);
         $staletokens = $DB->get_records(self::TOKEN, ['connectionid' => $expired]);
@@ -114,8 +158,11 @@ final class oauth_cleanup_test extends \advanced_testcase {
 
         oauth_cleanup::run(time());
 
-        $this->assertEquals($activebefore, $DB->get_records(self::TOKEN, ['connectionid' => $active], 'id'),
-            'Every generation of an active connection, including the consumed hash, stays unchanged.');
+        $this->assertEquals(
+            $activebefore,
+            $DB->get_records(self::TOKEN, ['connectionid' => $active], 'id'),
+            'Every generation of an active connection, including the consumed hash, stays unchanged.'
+        );
         $this->assertCount(2, $activebefore);
         $this->assertTrue($DB->record_exists(self::GRANT, ['id' => $active, 'revoked' => 0]));
         foreach ([$revoked, $expired] as $dead) {
@@ -127,11 +174,11 @@ final class oauth_cleanup_test extends \advanced_testcase {
 
         // The cleaned system keeps working: ticket, renewal, then replay revokes the whole connection.
         $this->assertSame('synthetic bytes', workbench_ticket::redeem($query['ticket'])['content']);
-        $renewed = oauth_lib::rotate_refresh_token($rotated['refresh_token'], 'client-a');
+        $renewed = connection::rotate_refresh_token($rotated['refresh_token'], 'client-a');
         $this->assertNotNull($renewed);
         oauth_cleanup::run(time());
-        $this->assertNull(oauth_lib::rotate_refresh_token($original['refresh_token'], 'client-a'));
-        $this->assertNull(oauth_lib::authenticate_access_token($renewed['access_token']));
+        $this->assertNull(connection::rotate_refresh_token($original['refresh_token'], 'client-a'));
+        $this->assertNull(connection::authenticate_access_token($renewed['access_token']));
         $this->assertTrue($DB->record_exists(self::GRANT, ['id' => $active, 'revoked' => 1]));
     }
 
@@ -151,7 +198,7 @@ final class oauth_cleanup_test extends \advanced_testcase {
         $this->tokens('foreign-active', (int) $other->id);
         $this->code('pending-code', $now + 60);
         $this->connection($this->tokens('revoked-only', (int) $other->id));
-        oauth_lib::revoke_token(oauth_lib::current_token_id());
+        connection::revoke_token((int) max(array_keys(connection::active_tokens_for_user((int) $other->id))));
         // Redeemed codes of the connections must not be what protects a client.
         $DB->set_field_select(self::CODE, 'expires', $now - 1, "clientid <> 'pending-code'");
 
@@ -160,6 +207,32 @@ final class oauth_cleanup_test extends \advanced_testcase {
         $kept = $DB->get_fieldset_select(self::CLIENT, 'clientid', '1 = 1');
         sort($kept);
         $this->assertSame(['boundary', 'foreign-active', 'pending-code', 'recent'], $kept);
+    }
+
+    public function test_run_counts_every_step_and_measures_against_the_given_reference_time(): void {
+        global $DB, $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $real = time();
+        $now = $real + 5;
+        // Expired only relative to the given reference time, not to the clock.
+        $this->code('c', $real + 2);
+        $DB->insert_record(workbench_ticket::TABLE, (object) ['userid' => 2, 'path' => 't.txt',
+            'contenthash' => sha1('t'), 'tickethash' => hash('sha256', 't'), 'expires' => $real + 2,
+            'timecreated' => $real - 900]);
+        $this->connection($this->tokens('client-a', (int) $USER->id));
+        connection::revoke_token((int) max(array_keys(connection::active_tokens_for_user((int) $USER->id))));
+        $DB->insert_record(self::TOKEN, (object) ['accesstokenhash' => hash('sha256', 'legacy-a'),
+            'refreshtokenhash' => hash('sha256', 'legacy-r'), 'clientid' => 'client-a', 'userid' => $USER->id,
+            'expires' => $real + 600, 'refreshexpires' => $real + 600, 'revoked' => 1, 'timecreated' => $real - 99]);
+        $this->client('unused', $now - oauth_cleanup::CLIENT_UNUSED_TTL - 1);
+
+        // One code, one ticket, one revoked connection with its one token, one legacy token row, one client.
+        $this->assertSame(6, oauth_cleanup::run($now));
+        $this->assertSame(0, $DB->count_records(self::GRANT));
+        $this->assertSame(0, $DB->count_records(self::TOKEN));
+        $this->assertSame(0, $DB->count_records(self::CLIENT));
+        $this->assertSame(0, $DB->count_records(workbench_ticket::TABLE));
     }
 
     public function test_task_is_registered_and_purges_budget_and_codes(): void {
@@ -194,5 +267,9 @@ final class oauth_cleanup_test extends \advanced_testcase {
         foreach ($indexes as $table => $index) {
             $this->assertTrue($dbman->index_exists(new \xmldb_table($table), $index), "$table upgrade");
         }
+    }
+
+    public function test_scheduled_tasks_are_named_for_the_admin_overview(): void {
+        $this->assertSame(get_string('taskoauthcleanup', 'local_coursepilot'), (new task\oauth_cleanup())->get_name());
     }
 }

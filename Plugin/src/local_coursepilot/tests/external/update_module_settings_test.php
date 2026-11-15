@@ -30,7 +30,20 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(update_module_settings::class)]
+#[CoversClass(\local_coursepilot\catalog\module_settings::class)]
 #[CoversClass(\local_coursepilot\activity_file_trash::class)]
+#[CoversClass(\local_coursepilot\catalog\catalog_fields::class)]
+#[CoversClass(\local_coursepilot\catalog\assign::class)]
+#[CoversClass(\local_coursepilot\catalog\shared_block::class)]
+#[CoversClass(\local_coursepilot\catalog\pseudofield_carry_forward::class)]
+#[CoversClass(\local_coursepilot\catalog\write_target::class)]
+#[CoversClass(\local_coursepilot\catalog\choice::class)]
+#[CoversClass(\local_coursepilot\catalog\folder::class)]
+#[CoversClass(\local_coursepilot\catalog\forum::class)]
+#[CoversClass(\local_coursepilot\catalog\label::class)]
+#[CoversClass(\local_coursepilot\catalog\page::class)]
+#[CoversClass(\local_coursepilot\catalog\resource::class)]
+#[CoversClass(\local_coursepilot\catalog\quiz::class)]
 final class update_module_settings_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -40,6 +53,25 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * A patch that is not a JSON object is refused and leaves the activity unchanged.
+     */
+    public function test_patch_that_is_not_json_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id, 'name' => 'Vorher']);
+
+        try {
+            update_module_settings::execute($page->cmid, 'not json');
+            $this->fail('Expected moodle_exception was not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidpatchjson', $e->errorcode);
+        }
+        $this->assertSame('Vorher', $this->read($page->cmid)['name']);
+    }
+
+    /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -51,8 +83,10 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Returns current state, with the same shape as get_module_settings.
+     *
      * @param int $cmid
-     * @return array Current state, with the same shape as get_module_settings.
+     * @return mixed[] Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -117,8 +151,10 @@ final class update_module_settings_test extends \advanced_testcase {
         }
         $before = $DB->get_record('assign', ['id' => $assignment->id], '*', MUST_EXIST);
 
-        $result = external_api::clean_returnvalue(update_module_settings::execute_returns(),
-            update_module_settings::execute($assignment->cmid, json_encode(['name' => 'Neuer Titel'])));
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($assignment->cmid, json_encode(['name' => 'Neuer Titel']))
+        );
 
         $this->assertCount(1, $result['changes']);
         $after = $DB->get_record('assign', ['id' => $assignment->id], '*', MUST_EXIST);
@@ -143,8 +179,10 @@ final class update_module_settings_test extends \advanced_testcase {
         $forum = $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_instance([
             'course' => $course->id, 'type' => 'qanda', 'showimmediately' => 0,
         ]);
-        $result = external_api::clean_returnvalue(update_module_settings::execute_returns(),
-            update_module_settings::execute($forum->cmid, json_encode(['showimmediately' => 1])));
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($forum->cmid, json_encode(['showimmediately' => 1]))
+        );
         $this->assertSame('showimmediately', $result['changes'][0]['field']);
         $this->assertEquals(1, $DB->get_field('forum', 'showimmediately', ['id' => $forum->id]));
     }
@@ -267,6 +305,8 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['coursepagevisibility' => 'stealth']));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
+            $this->assertSame('readonlyvocabularyfield', $e->errorcode);
+            $this->assertStringContainsString('Field "coursepagevisibility"', $e->getMessage());
             $this->assertStringContainsString('visibleoncoursepage', $e->getMessage());
             $this->assertStringNotContainsString('Unbekanntes Feld', $e->getMessage());
         }
@@ -353,7 +393,7 @@ final class update_module_settings_test extends \advanced_testcase {
         ]);
 
         try {
-            // cutoffdate before duedate violates the combination rule.
+            // Note: cutoffdate before duedate violates the combination rule.
             update_module_settings::execute($forum->cmid, json_encode(['cutoffdate' => 1000000000]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
@@ -406,6 +446,82 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * A text card name patch sets the title the course index shows.
+     */
+    public function test_label_name_patch_sets_the_course_index_title(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $label = $this->getDataGenerator()->create_module('label', [
+            'course' => $course->id,
+            'intro' => 'Willkommen im Kurs',
+        ]);
+
+        $result = external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($label->cmid, json_encode(['name' => 'Einführung']))
+        );
+
+        $this->assertSame('name', $result['changes'][0]['field']);
+        $this->assertSame('Einführung', $this->read($label->cmid)['name']);
+        $this->assertSame('Einführung', get_fast_modinfo($course->id)->get_cm($label->cmid)->name);
+    }
+
+    /**
+     * A later intro-only patch keeps a name that was set explicitly.
+     */
+    public function test_label_intro_patch_keeps_an_explicit_name(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $label = $this->getDataGenerator()->create_module('label', [
+            'course' => $course->id,
+            'intro' => 'Willkommen im Kurs',
+        ]);
+        update_module_settings::execute($label->cmid, json_encode(['name' => 'Einführung']));
+
+        external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($label->cmid, json_encode(['intro' => 'Ganz anderer Text']))
+        );
+
+        $settings = $this->read($label->cmid);
+        $this->assertSame('Ganz anderer Text', $settings['intro']);
+        $this->assertSame('Einführung', $settings['name']);
+        $this->assertSame('Einführung', get_fast_modinfo($course->id)->get_cm($label->cmid)->name);
+    }
+
+    /**
+     * An empty or null name patch derives the title again from the current intro.
+     *
+     * @param mixed $empty The empty name value sent by the client.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('empty_names')]
+    public function test_label_empty_name_patch_rederives_the_title_from_the_intro(mixed $empty): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        $label = $this->getDataGenerator()->create_module('label', [
+            'course' => $course->id,
+            'name' => 'Einführung',
+            'intro' => '<p>Neuer Anfang</p>',
+        ]);
+
+        external_api::clean_returnvalue(
+            update_module_settings::execute_returns(),
+            update_module_settings::execute($label->cmid, json_encode(['name' => $empty]))
+        );
+
+        $this->assertSame('Neuer Anfang', get_fast_modinfo($course->id)->get_cm($label->cmid)->name);
+    }
+
+    /**
+     * Empty name values a client may send.
+     *
+     * @return array<string, array{mixed}>
+     */
+    public static function empty_names(): array {
+        return ['empty string' => [''], 'null' => [null]];
+    }
+
+    /**
      * Reject completion fields on the course_modules completion* denylist.
      */
     public function test_completion_field_is_blocked(): void {
@@ -417,7 +533,9 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['completionview' => 1]));
             $this->fail('Erwartete moodle_exception blieb aus.');
         } catch (\moodle_exception $e) {
+            $this->assertSame('completionfieldviasetcompletion', $e->errorcode);
             $this->assertStringContainsString('completionview', $e->getMessage());
+            $this->assertStringContainsString('set_completion', $e->getMessage());
         }
     }
 
@@ -491,7 +609,7 @@ final class update_module_settings_test extends \advanced_testcase {
         [$course] = $this->course_with_editing_teacher();
         $page = $this->getDataGenerator()->get_plugin_generator('mod_page')->create_instance(['course' => $course->id]);
 
-        // course_module_created already recorded version 1 (#385); this write
+        // Note: course_module_created already recorded version 1 (#385); this write
         // must add another version.
         $before = $DB->count_records('local_coursepilot_cm_version', ['cmid' => $page->cmid]);
 
@@ -543,7 +661,9 @@ final class update_module_settings_test extends \advanced_testcase {
         $this->assertCount(8, $modnamesviaupdatemodulesettings, 'Expected eight activity types via this vehicle.');
 
         foreach ($modnamesviaupdatemodulesettings as $modname) {
-            $instance = $this->getDataGenerator()->get_plugin_generator('mod_' . $modname)->create_instance([
+            $generator = $this->getDataGenerator()->get_plugin_generator('mod_' . $modname);
+            $this->assertInstanceOf(\testing_module_generator::class, $generator);
+            $instance = $generator->create_instance([
                 'course' => $course->id,
             ]);
 
@@ -891,7 +1011,7 @@ final class update_module_settings_test extends \advanced_testcase {
         $this->create_material_file('arbeitsblatt.pdf', 'Arbeitsblattinhalt');
 
         try {
-            // cutoffdate before duedate violates the combination rule;
+            // Note: cutoffdate before duedate violates the combination rule;
             // validate_patch() fails before any material access.
             update_module_settings::execute($cmid, json_encode([
                 'introattachments' => ['arbeitsblatt.pdf'],
@@ -1030,6 +1150,8 @@ final class update_module_settings_test extends \advanced_testcase {
     }
 
     /**
+     * Stores material png.
+     *
      * @param string $filename
      * @param int $width
      * @param int $height
@@ -1251,7 +1373,7 @@ final class update_module_settings_test extends \advanced_testcase {
             update_module_settings::execute($page->cmid, json_encode(['name' => 'Neuer Titel']));
             $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
-            // write_gate_test.php checks the exact language-pack wording. The test
+            // Note: write_gate_test.php checks the exact language-pack wording. The test
             // instance has only plugin German strings, not a full German pack;
             // a language-independent error code suffices here.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
@@ -1339,8 +1461,12 @@ final class update_module_settings_test extends \advanced_testcase {
             $this->assertSame('learnerlocksunconfirmed', $e->errorcode);
         }
 
-        update_module_settings::execute($assign->cmid, $patch, \local_coursepilot\material_files::LOCATION_STORE,
-            ['attemptreopenmethod']);
+        update_module_settings::execute(
+            $assign->cmid,
+            $patch,
+            \local_coursepilot\material_files::LOCATION_STORE,
+            ['attemptreopenmethod']
+        );
         $settings = json_decode(get_module_settings::execute($assign->cmid)['settings_json'], true);
         $this->assertSame('manual', $settings['attemptreopenmethod']);
 

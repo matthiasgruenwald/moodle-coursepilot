@@ -17,24 +17,24 @@
 namespace local_coursepilot\event;
 
 /**
- * Successful Coursepilot tool call through MCP (#339).
+ * Successful Coursepilot tool call through MCP.
  *
  * Emitted through Moodle's event API for native admin log reports when
  * access_log is set to at least reads and errors.
  *
- * @property-read array $other {
+ * @property-read array{toolname: string, path?: ?string} $other
  *      - string toolname: Called MCP tool name.
  *      - string|null path: Context or material path touched by the tool
  *        (Spec 0018 §9.2), otherwise null.
- * }
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class tool_access_succeeded extends \core\event\base {
-
     /**
+     * Returns description.
+     *
      * @return string
      */
     public function get_description() {
@@ -42,6 +42,8 @@ class tool_access_succeeded extends \core\event\base {
     }
 
     /**
+     * Returns name.
+     *
      * @return string
      */
     public static function get_name() {
@@ -49,6 +51,8 @@ class tool_access_succeeded extends \core\event\base {
     }
 
     /**
+     * Initialises the tool access succeeded.
+     *
      * @return void
      */
     protected function init() {
@@ -58,6 +62,8 @@ class tool_access_succeeded extends \core\event\base {
     }
 
     /**
+     * Validates data.
+     *
      * @return void
      * @throws \coding_exception
      */
@@ -69,6 +75,8 @@ class tool_access_succeeded extends \core\event\base {
     }
 
     /**
+     * Returns other mapping.
+     *
      * @return false
      */
     public static function get_other_mapping() {

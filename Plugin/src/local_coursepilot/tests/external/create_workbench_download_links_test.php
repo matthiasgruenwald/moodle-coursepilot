@@ -18,6 +18,7 @@ namespace local_coursepilot\external;
 
 use local_coursepilot\material_files;
 use local_coursepilot\oauth_lib;
+use local_coursepilot\connection;
 use local_coursepilot\workbench_ticket;
 
 defined('MOODLE_INTERNAL') || die();
@@ -31,11 +32,12 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(create_workbench_download_links::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\oauth_lib::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\connection::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\workbench_ticket::class)]
 final class create_workbench_download_links_test extends \advanced_testcase {
-
     public function setUp(): void {
         parent::setUp();
-        oauth_lib::reset_current_token_id();
+        connection::authenticate_access_token('');
     }
 
     public function test_returns_url_name_size_and_sha1_per_file(): void {
@@ -44,7 +46,10 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         $this->store('blatt.pdf', 'inhalt eins');
         $this->store('ordner/blatt2.pdf', 'inhalt zwei');
 
-        $result = create_workbench_download_links::execute(['blatt.pdf', 'ordner/blatt2.pdf']);
+        $result = \core_external\external_api::clean_returnvalue(
+            create_workbench_download_links::execute_returns(),
+            create_workbench_download_links::execute(['blatt.pdf', 'ordner/blatt2.pdf'])
+        );
 
         $this->assertCount(2, $result['links']);
         $this->assertSame('blatt.pdf', $result['links'][0]['name']);
@@ -63,10 +68,10 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
         // Without a known connection, redemption requires another active user
-        // connection (#512). Like other tests, simulate the external function
+        // connection. Like other tests, simulate the external function
         // without MCP dispatch; the ticket’s oauthtokenid remains null.
         $this->issue_connection((int) $user->id);
-        oauth_lib::reset_current_token_id();
+        connection::authenticate_access_token('');
         $this->store('blatt.pdf', 'originalbytes');
 
         $link = create_workbench_download_links::execute(['blatt.pdf'])['links'][0];
@@ -95,6 +100,12 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         create_workbench_download_links::execute(['nichtvorhanden.pdf']);
     }
 
+    /**
+     * Provides issue connection.
+     *
+     * @param int $userid The userid.
+     * @return int
+     */
     private function issue_connection(int $userid): int {
         global $DB;
 
@@ -102,12 +113,12 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         assign_capability(\local_coursepilot\remote_access::CAPABILITY, CAP_ALLOW, $roleid, \context_system::instance()->id, true);
         role_assign($roleid, $userid, \context_system::instance()->id);
         $record = new \stdClass();
-        $record->accesstokenhash = hash('sha256', oauth_lib::random_token(32));
-        $record->refreshtokenhash = hash('sha256', oauth_lib::random_token(32));
+        $record->accesstokenhash = hash('sha256', bin2hex(random_bytes(32)));
+        $record->refreshtokenhash = hash('sha256', bin2hex(random_bytes(32)));
         $record->clientid = 'test-client';
         $record->userid = $userid;
-        $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
-        $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
+        $record->expires = time() + connection::ACCESS_TOKEN_TTL;
+        $record->refreshexpires = time() + connection::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
         $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
@@ -117,6 +128,12 @@ final class create_workbench_download_links_test extends \advanced_testcase {
         return (int) $DB->insert_record('local_coursepilot_oauth_token', $record);
     }
 
+    /**
+     * Stores the create workbench download links test.
+     *
+     * @param string $path The path.
+     * @param string $content The content.
+     */
     private function store(string $path, string $content): void {
         [$directory, $filename] = material_files::resolve_file($path);
         get_file_storage()->create_file_from_string([
@@ -127,5 +144,18 @@ final class create_workbench_download_links_test extends \advanced_testcase {
             'filepath' => $directory,
             'filename' => $filename,
         ], $content);
+    }
+
+    public function test_missing_file_is_reported_by_its_relative_path(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            create_workbench_download_links::execute(['ordner/fehlt.pdf']);
+            $this->fail('A missing file must not yield a download link.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialfilenotfound', $e->errorcode);
+            $this->assertStringContainsString('ordner/fehlt.pdf', $e->getMessage());
+        }
     }
 }

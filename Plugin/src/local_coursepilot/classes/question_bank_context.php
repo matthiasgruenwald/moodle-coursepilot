@@ -1,5 +1,18 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot;
 
@@ -7,8 +20,6 @@ use context_course;
 use context_module;
 use core_external\external_api;
 use core_question\local\bank\question_bank_helper;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Resolves a named question bank in its course and validates access.
@@ -19,6 +30,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class question_bank_context {
     /**
+     * Resolves the question bank context.
+     *
      * @param int $courseid Course ID
      * @param int $questionbankid Question bank course module ID
      * @return array{0: \stdClass, 1: context_module} Module row with bank name and validated context

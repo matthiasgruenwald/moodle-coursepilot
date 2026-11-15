@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once(__DIR__ . '/../lib.php');
 
 /**
@@ -24,9 +26,14 @@ require_once(__DIR__ . '/../lib.php');
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
-final class local_coursepilot_lib_test extends advanced_testcase {
-
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_extend_navigation_course')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_extend_navigation_user_settings')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_status_checks')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('local_coursepilot_myprofile_navigation')]
+final class lib_test extends advanced_testcase {
     /**
+     * Provides course.
+     *
      * @return array{0: stdClass, 1: context_course} Course, course context.
      */
     private function course(): array {
@@ -172,5 +179,23 @@ final class local_coursepilot_lib_test extends advanced_testcase {
         );
 
         $this->assertFalse($navigation->get('local_coursepilot_settings'));
+    }
+
+    /**
+     * Only the owner's own profile shows the connections and location-selection links.
+     */
+    public function test_profile_links_appear_only_in_the_own_profile(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $other = new \core_user\output\myprofile\tree();
+        $this->assertFalse(local_coursepilot_myprofile_navigation($other, $user, false, null));
+        $this->assertArrayNotHasKey('local_coursepilot_connections', $other->__get('nodes'));
+
+        $own = new \core_user\output\myprofile\tree();
+        $this->assertTrue(local_coursepilot_myprofile_navigation($own, $user, true, null));
+        $this->assertArrayHasKey('local_coursepilot_connections', $own->__get('nodes'));
+        $this->assertArrayHasKey('local_coursepilot_location_selection', $own->__get('nodes'));
     }
 }

@@ -4,6 +4,7 @@
 
 - `npm test` - `node --test`, Vertragstests der nativen Linie
 - `npm run build:native-release` - Release-ZIP aus `Plugin/src/local_coursepilot/`
+- `npm run gate -- fast|full` - Qualitäts-Gate (Messung, Gate-Container), siehe [`docs/gate.md`](../gate.md)
 
 ## Plugin-Quelle
 
@@ -43,7 +44,7 @@ set -a; source /opt/kurspilot-spike/docker/kurspilot-spike.env; set +a
 Die Mindestversion ist Moodle 5.1 (`$plugin->requires = 2025100600`); die
 Spike-Instanz läuft auf 5.1. Die verbindliche Matrix prüft Moodle 5.1/5.2/5.3
 mit PHP 8.3/8.4, MariaDB 11.4 und PostgreSQL 17. Die genauen Kombinationen
-und das 80%-Line-Coverage-Gate stehen in
+und das volle Qualitäts-Gate mit Ratsche stehen in
 [`docs/ci-native-server-mcp.md`](../ci-native-server-mcp.md) (#268).
 
 #### Der volle Lauf braucht einen abgekoppelten Prozess
@@ -100,6 +101,31 @@ auch die Laufzeit (`mcp.php`) und die Anzeige (`/local/coursepilot/surface.php`)
 Dieselbe Suite läuft zusätzlich in GitHub Actions, siehe
 [`docs/ci-native-server-mcp.md`](../ci-native-server-mcp.md).
 
+## Lange Läufe (>5 min)
+
+Läufe, die länger als die Harness-Befehlszeit dauern (Volllauf, `gate full`, Mutations-Volllauf, Shards),
+laufen als **systemd-Transienteneinheit**, nicht als Hintergrundtask der Shell. Getrackte Bash-Hintergrundtasks
+und `Monitor` sterben mit Exit 144, sobald der Harness den Turn beendet; systemd-run löst den Prozess davon.
+
+```bash
+systemd-run --unit=kurspilot-<name> --collect --working-directory=/opt/moodle-coursepilot \
+  -E HOME=/root -E PATH="$PATH" \
+  bash -c 'bash scripts/gate/<skript>.sh > /var/tmp/<name>.out 2>&1; echo $? > /var/tmp/<name>.exit'
+```
+
+- Für `git push` zusätzlich `-E GH_TOKEN="$(gh auth token)"`, sonst fehlen die Credentials in der Einheit.
+- Ausgabe und Exit-Code immer in Dateien schreiben (`<name>.out`, `<name>.exit`); die `.exit`-Datei ist das Ende.
+- Status: `systemctl is-active kurspilot-<name>`; Log: `journalctl -u kurspilot-<name>`.
+- Watchdog für hängende PHPUnit-Mutantenprozesse (Infection erzeugt sie mit `pcov`): Log-Datei im
+  Arbeitsverzeichnis prüfen; ist sie länger als 30 min nicht gewachsen, Infection-/`php`-Kindprozesse
+  beenden (`pkill -f 'infection'`) und den Lauf neu starten. Abgeschlossene Abschnitte bleiben erhalten.
+
+Mutations-Arbeit (überlebende Mutanten töten): [`mutation-brief.md`](mutation-brief.md).
+
+**Reihenfolge bei Mutations-Arbeit:** Erst `npm run gate -- fast` grün, dann `verify`, dann committen; nach jeder weiteren Änderung `verify` wiederholen (Details: [`mutation-brief.md`](mutation-brief.md)).
+
+**Gate-Lock:** Mutations-Volllauf nur auf der Haupt-Instanz `/opt/kurspilot-gate` ohne `FULL_MUTATION_INSTANCE`, wenn kein anderer Lauf aktiv ist. Parallel läuft jeder Lauf auf eigener Instanz (`mutation-full-instance.sh up <id>`, `FULL_MUTATION_INSTANCE=<id>`). Sperren liegen als `<abschnitt>.lock` mit Instanznamen im Ausgabeordner; fremde Sperren nie löschen. `run` und `verify` warnen auf stderr, wenn sie ohne eigene Instanz laufen.
+
 ## E2E-Tests (Playwright) gegen die Spike-Instanz
 
 Playwright-Specs liegen in `test/e2e/`, Config: `playwright.config.js`. Es gibt
@@ -131,7 +157,7 @@ KURSPILOT_E2E_PROFILE=spike npx playwright test test/e2e/quiz-local-questions.sp
 
 Das Servermodell-Plugin spricht kein Webservice-Token, sondern **OAuth**: der
 MCP-Endpunkt `/local/coursepilot/mcp.php` akzeptiert ausschließlich ein
-Zugriffstoken aus `oauth_lib`. Für Testläufe muss deshalb kein Browser-Flow
+Zugriffstoken aus `connection`. Für Testläufe muss deshalb kein Browser-Flow
 durchlaufen werden:
 
 ```bash
@@ -162,10 +188,124 @@ curl -s -X POST https://spike.gruenwald.fun/local/coursepilot/mcp.php \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-## Hook-Checks manuell spiegeln
+## Sicherheitsgrenze für externe Live-Proben
 
-Codex führt Claude-Hooks nicht zuverlässig automatisch aus. Nach passenden Änderungen manuell ausführen:
+Die WebDAV-Testinstanz NC-Zuhause (`nc.gruenwald.fun`, Konto `teacher_edit`) ist
+die private Cloud des Maintainers. Proben und Skripte dürfen ausschließlich unter
+`/spiketest/` lesen, schreiben, verschieben oder löschen. Die Wurzel wird nie
+gelistet; andere Ordner bleiben auch lesend unberührt. Material für den
+Merkzettel-Test liegt unter `/spiketest/material`.
 
-- `*.js` geändert -> `node --check <datei>`
-- `*.php` geändert -> `php -l <datei>`
-- `test/*.test.js` geändert -> `npm test`
+Diese bestehende Grenze wurde aus dem Worktree `t3/context-request` übernommen.
+
+## Hooks aktivieren
+
+Claude, Codex und Menschen nutzen dieselben Git-Hooks und dasselbe Gate-Kommando
+(`scripts/gate/gate.js`, siehe [`docs/gate.md`](../gate.md)). Einmal pro Klon:
+
+```bash
+npm run hooks:install   # git config core.hooksPath scripts/githooks
+```
+
+- `pre-commit` führt `npm run gate -- fast` aus und blockiert den Commit bei Befund.
+- `pre-push` führt `npm run gate -- matrix` und danach `npm run gate -- fast` aus (ADR 0033).
+  `full` (rund 25 Minuten) läuft verbindlich in CI und lokal nur auf Wunsch; dann abgekoppelt
+  starten, wenn der Harness lange Läufe abschießt (Exit 144), siehe oben. Der Hook blockiert, wenn ein gepushter
+  Branch nicht `HEAD` ist oder versionierte Dateien geändert sind: Geprüft wird der
+  Arbeitsbaum, er muss dem gepushten Stand entsprechen.
+- Die Edit-Hooks in `.claude/settings.json` und `.codex/hooks.json` rufen
+  `gate edit` auf (Plugin-PHP, `test/**/*.js`, `scripts/gate/**`). Codex führt
+  Hooks nicht in jeder Konfiguration automatisch aus; dann vor dem Commit
+  `npm run gate -- fast` selbst starten, der `pre-commit`-Hook greift in jedem Fall.
+
+## Verbindung testen
+
+`connection` kapselt Code-Tausch, Token-Rotation, Prüfung, Widerruf und die gemeinsame Zugriffsregel für MCP und Werkbank-Tickets. PHPUnit nutzt ihre öffentliche Schnittstelle mit der echten Testdatenbank; die Exchange-Race prüft zwei überlappende `exchange_code()`-Aufrufe. Discovery verbleibt in `oauth_lib`. Clientregistrierung, Client-Nachschlagen und exakte Redirect-Prüfung liegen in `client_registry`; `oauth_lib` delegiert seine bisherigen öffentlichen Einstiege. Registertests verwenden `cimd_fetch_port` mit einem speicherinternen Testadapter ohne Netz. `cimd_http_fetcher` erhält die bestehenden TLS-/Streaming-Regressionstests; sie schützen Moodle-Hostpolicy, CA-Vertrauen, Größenlimit und Deadline.
+
+`connection_event_test` prüft native Moodle-Ereignisse für Freigabe, Einzel-/Massenwiderruf und nachgewiesenes Refresh-Replay mit `redirectEvents()`. Normale Rotation, zurückgewiesene Zugriffe und fehlgeschlagene Code-Tausche erzeugen keine Ereignisse. Die bestehenden Prozess-Fixtures prüfen auch überlappenden Massenwiderruf und Rotation in beiden Reihenfolgen; ihre Named-Lock-Barriere erfordert MariaDB/MySQL.
+
+## Kontextablage und Ausstandsnotiz
+
+`context_area::write()` und `append()` lösen den aktuellen Ablageort auf und rufen die
+öffentlichen Port-Einstiege `write_to()` und `append_to()` auf. Die Kontext-Schutzregeln liegen in `context_files`; `storage_write` hält Vorab-Lesen,
+Schreibbedingung und Ausfallübersetzung gemeinsam für Kontext und Material zusammen.
+`material_area::write()` und `write_to()` nutzen denselben Ablauf. compose/crop erhalten
+ihre Provenienz über das typisierte `source`-Argument des Ablage-Ports.
+Der XML-Export nutzt denselben Schreiber mit einer eigenen Bereichspolitik, die
+seine bisher permissiven Datei- und Ordnernamen erhält; Traversal bleibt gesperrt. Tests
+ersetzen ausschließlich `storage_port` beziehungsweise den WebDAV-Transport; das Speichern
+der Ausstandsnotiz läuft gegen die echte Moodle-Testdatenbank. `storage_failure` trägt eine
+neutrale Fehlerklasse und interne Diagnostik. Adapter legen keine Ausstandsnotiz an; die
+Fachseite übersetzt Ausfälle einmal und erhält die bisherigen Werkzeugfehlercodes.
+
+## Ablageort-Anker und Datei-Grundfunktionen
+
+`storage_anchor` löst Ortszeiger und Pfade auf und wählt den Ablage-Port. Datei-I/O,
+Quota und sichere Ersetzung liegen in `private_files_storage_port`; bestehende
+Kontext-/Material-Fassaden delegieren dorthin. Die Ortswahl liest Kandidatenordner
+und legt Ordnerketten über `webdav_storage_port` an. Sie behält Bestätigung,
+Verlauf, Altdatenprüfung und ihre bisherigen Fehlercodes.
+
+Die Port-Vertragstests sowie `location_selection_test` prüfen das Verhalten gegen
+die echte Moodle-Testdatenbank; nur der externe WebDAV-Transport wird ersetzt.
+Die bisherigen Kontext-, Material- und Ausstandsnotiztests bleiben erhalten und decken die verlagerten
+Datei-Grundfunktionen ausdrücklich per `CoversClass` ab.
+
+`file_storage.stub` korrigiert für PHPStan den als `int` dokumentierten
+Verzeichnispfad von Moodles `get_directory_files()` zu `string`. Der Stub
+unterdrückt keine Befunde; die bisherige Ausnahme im Anker entfällt.
+
+`moodle_contracts.stub` beschreibt die geprüften Core-Verträge für boolesche XMLDB-Indexflags,
+nullable Auswahlfelder, konkrete Testgeneratoren, die ganzzahligen `VALUE_*`-Konstanten, globale `stdClass`-Rückgaben
+der Availability-Bedingungen, Privacy-Kontext-IDs und die Rückgabe `false` für unregistrierte
+Tasks. `cohort/lib.php` wird zusätzlich statisch eingelesen. `plugin_effects.stub` kennzeichnet
+die Konfigurations- und Pointer-Leser als zustandsabhängig: PHPStan muss sie nach Änderungen
+erneut auswerten. Die Effekt-Tags liegen dort, weil Moodle-CS sie im Plugin-PHPDoc nicht
+akzeptiert. `earlyTerminatingMethodCalls` bildet den garantierten Ausnahmeweg von
+`moodle_transaction::rollback()` ab. Der Budget-Zähler benennt den Transaktionstyp ausdrücklich,
+weil der globale `$DB` dort statisch `mixed` ist. Die Core-Implementierung delegiert an
+`rollback_delegated_transaction()`, das die übergebene Ausnahme erneut wirft.
+
+## Atomare Quiz-Einstellungen
+
+`catalog/quiz_write` übernimmt für `create_quiz` und `update_quiz_settings` die
+Modusauflösung, Zielprüfung und komplette native Schreibfolge in einer Moodle-Transaktion.
+Die Höchstbewertung wird vor dem Modulupdate skaliert, damit ausdrücklich gesetzte
+Feedbackgrenzen bereits für die neue Bewertung gelten. Quiz-Kombinationsprüfung und
+Formübersetzung bleiben im Katalog (`quiz_write_bridge`, `write_target`).
+Die öffentlichen Werkzeugtests prüfen einen späten Core-Hook-Fehler nach Bewertung und
+Einstellungen sowie die native Ablehnung nach dem Anlegen einer Kurssektion. Beides
+muss den vorherigen Datenbankstand erhalten; die Werkzeugverträge bleiben unverändert.
+
+## Abschlussbedingungen im Modulkatalog
+
+`catalog/completion_settings` besitzt die einzige Abschluss-Felddefinition sowie Lesen,
+Validierung und die native Schreibfolge. `set_completion` validiert nur die externen
+Parameter und delegiert. Blocklisten, Restore-Feldwahl und gemeinsame Abschlusswerte in
+Lesern und Verlaufssnapshots werden aus dieser Definition abgeleitet.
+
+Die öffentlichen Tests `set_completion_test` und `quiz_completion_test` prüfen weiterhin
+Werkzeugantworten und beide Bestätigungen. `completionminattempts` gilt nur für Quiz;
+0 schaltet die Bedingung aus, positive Werte dürfen das konfigurierte Versuchslimit nicht
+überschreiten. Der notwendige native Form-Schalter wird abgeleitet; ein unveränderter Wert
+setzt keinen Abschluss zurück. Die Regeln folgen ADR 0016 und Spec 0015 §8; die bestehende
+Restore-Abfolge bleibt bis zum eigenen Folgeticket erhalten.
+
+## Wiederherstellen über den Änderungsverlauf
+
+`history/version_restore::restore()` besitzt das Fortschreiben früherer Stände. Es nutzt
+`catalog/module_settings::write()`, dessen Material-Felddefinition und Pseudofeld-Entwürfe
+sowie `completion_settings::write()`. Die externen Werkzeuge validieren ihre veröffentlichten
+Parameter und delegieren. Beide Fachoperationen prüfen Kontext und Berechtigungen selbst.
+
+Die bisherige Reihenfolge bleibt bestehen: Einstellungen, Dateien, Abschlussbedingungen.
+Eine fehlende Abschlussbestätigung liefert weiterhin den bestehenden Warnhinweis nach den
+anderen Teiländerungen. Quiz stellt weiterhin ausschließlich die Fragenanordnung wieder her;
+Dateilücken und Lernendensperren behalten ihre bisherigen Regeln. Dies ist die Umsetzung
+von ADR 0016/0030 und #700, keine neue Atomaritäts- oder Produktentscheidung.
+Die vorhandenen Werkzeugtests bleiben erhalten und decken die neuen Eigentümer zusätzlich
+mit `CoversClass` ab; öffentliche Fachmodultests prüfen dieselben Schreib-/Restore-Ergebnisse.
+
+Die übernommenen Meldungen liegen wortgleich in englischen Moodle-Sprachstrings.
+Die öffentlichen Fachmodultests sichern auch den exakten bisherigen Meldungswortlaut;
+Parameter- und Rückgabeschemata bleiben unverändert.

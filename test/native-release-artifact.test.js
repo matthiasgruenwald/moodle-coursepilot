@@ -80,6 +80,12 @@ test('Release candidate contains native source and an installable ZIP', { timeou
   for (const entry of entries) {
     assert.doesNotMatch(entry, /\.DS_Store$/, 'keine macOS-Metadaten im Archiv');
   }
+
+  // Gate-Werkzeuge (Spec 0029) bleiben dev-only.
+  for (const entry of entries) {
+    assert.doesNotMatch(entry, /(^|\/)(composer\.(json|lock)|vendor|phpstan[^/]*|deptrac[^/]*|infection[^/]*|gate)(\/|$)/,
+      'keine Dev-Tools im Archiv');
+  }
 });
 
 test('Release candidate ships only English Moodle language strings', { timeout: 60000 }, t => {

@@ -45,7 +45,6 @@ use local_coursepilot\webdav\webdav_transport;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_storage_port implements storage_port {
-
     /**
      * Reads one level for the location selection. This stays with the WebDAV adapter:
      * the page only evaluates the returned entries as a selection.
@@ -56,16 +55,12 @@ final class webdav_storage_port implements storage_port {
      * @throws webdav_error
      */
     public static function browse_location(int $instanceid, string $path): array {
-        $instance = webdav_instance::resolve_owned($instanceid);
-        try {
-            $entries = $instance->client()->propfind($instance->directory_url($path), 1);
-        } catch (webdav_error $e) {
-            $entries = webdav_error::empty_when_missing($e, [], static fn (webdav_error $error): webdav_error => $error);
-        }
+        $entries = self::list_location($instanceid, $path);
         if ($path === '') {
             return ['entries' => $entries, 'iserv' => webdav_instance::is_iserv_listing($entries)];
         }
         try {
+            $instance = webdav_instance::resolve_owned($instanceid);
             $root = $instance->client()->propfind($instance->directory_url(''), 1);
             $iserv = webdav_instance::is_iserv_listing($root);
         } catch (webdav_error $e) {
@@ -73,6 +68,40 @@ final class webdav_storage_port implements storage_port {
             $iserv = false;
         }
         return ['entries' => $entries, 'iserv' => $iserv];
+    }
+
+    /**
+     * Lists a candidate location without pointer checks or IServ detection.
+     * Missing directories are empty; other transport failures remain explicit.
+     *
+     * @param int $instanceid Owned repository instance.
+     * @param string $path Validated instance-relative directory.
+     * @return array<int, array{name: string, type: string}>
+     * @throws webdav_error
+     */
+    public static function list_location(int $instanceid, string $path): array {
+        $instance = webdav_instance::resolve_owned($instanceid);
+        try {
+            return $instance->client()->propfind($instance->directory_url($path), 1);
+        } catch (webdav_error $e) {
+            return webdav_error::empty_when_missing($e, [], static fn (webdav_error $error): webdav_error => $error);
+        }
+    }
+
+    /**
+     * Creates missing folder levels for an explicit location selection.
+     * Existing directories remain untouched; no pointer is resolved here.
+     *
+     * @param int $instanceid Owned repository instance.
+     * @param string[] $segments Validated instance-relative folder segments.
+     * @throws webdav_error
+     */
+    public static function create_location_directory(int $instanceid, array $segments): void {
+        if (empty($segments)) {
+            return;
+        }
+        $instance = webdav_instance::resolve_owned($instanceid);
+        $instance->client()->mkcol_chain($instance->directory_url(''), $segments);
     }
 
     /**
@@ -92,23 +121,33 @@ final class webdav_storage_port implements storage_port {
     ];
 
     /**
+     * Creates the webdav storage port.
+     *
      * @param int $instanceid The WebDAV user instance, exclusively from
      *        a server-side source (never from client input) -
      *        instance ownership is checked by {@see webdav_instance::resolve_owned()}.
      * @param string $baserelativepath Base folder within the instance in
      *        which this adapter works. Empty means: the instance root.
+     * @param ?webdav_transport $transport The transport.
+     * @param ?pointer_location $location The location.
      */
     public function __construct(
+        /** @var int The WebDAV user instance, exclusively from */
         private readonly int $instanceid,
+        /** @var string Base folder within the instance in */
         private readonly string $baserelativepath = '',
+        /** @var ?webdav_transport The transport. */
         private readonly ?webdav_transport $transport = null,
+        /** @var ?pointer_location The location. */
         private readonly ?pointer_location $location = null,
-        private readonly int $courseid = 0,
     ) {
     }
 
     /**
-     * @inheritDoc
+     * Reads the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
      */
     public function read(storage_area $area, string $path): ?array {
         [$folders, $filename] = $this->split_file_path($area, $path);
@@ -119,7 +158,11 @@ final class webdav_storage_port implements storage_port {
         try {
             $meta = $client->propfind($fileurl, 0);
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, null, static fn (webdav_error $err): webdav_error => $err);
+            return webdav_error::empty_when_missing(
+                $e,
+                null,
+                static fn (webdav_error $err): storage_failure => new storage_failure($err->errorclass, $err)
+            );
         }
 
         $entry = $meta[0] ?? null;
@@ -129,7 +172,11 @@ final class webdav_storage_port implements storage_port {
             return null;
         }
 
-        $content = $client->get($fileurl);
+        try {
+            $content = $client->get($fileurl);
+        } catch (webdav_error $e) {
+            throw new storage_failure($e->errorclass, $e);
+        }
         $mimetype = $entry['mimetype'];
         if ($mimetype === 'document/unknown') {
             // Location neutrality (Issue #560): Moodle core also sniffs the
@@ -139,7 +186,7 @@ final class webdav_storage_port implements storage_port {
         }
         return [
             'content' => $content,
-            'checksum' => pointer_reader::external_checkvalue($entry['etag'] ?? null, $entry['timemodified'] ?? 0),
+            'checksum' => pointer_reader::external_checkvalue($entry['etag'] ?? null, $entry['timemodified']),
             'size' => $entry['size'],
             'mimetype' => $mimetype,
             'timemodified' => $entry['timemodified'],
@@ -147,7 +194,10 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * @inheritDoc
+     * Lists the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
      */
     public function list(storage_area $area, string $path): array {
         $clientdirectory = storage_anchor::normalise_client_path($area, $path);
@@ -158,7 +208,11 @@ final class webdav_storage_port implements storage_port {
         try {
             $raw = $resolved->client()->propfind($directoryurl, 1);
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, [], static fn (webdav_error $err): webdav_error => $err);
+            return webdav_error::empty_when_missing(
+                $e,
+                [],
+                static fn (webdav_error $err): storage_failure => new storage_failure($err->errorclass, $err)
+            );
         }
 
         return array_map(static fn (array $entry): array => [
@@ -175,12 +229,27 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * @inheritDoc
+     * Writes the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
+     * @param string $content The content.
+     * @param ?string $expectedchecksum The expectedchecksum.
+     * @param string $source Optional serialised provenance; supported by Private Files only.
      */
-    public function write(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
+    public function write(
+        storage_area $area,
+        string $path,
+        string $content,
+        ?string $expectedchecksum = null,
+        string $source = ''
+    ): array {
+        if ($source !== '') {
+            throw new \coding_exception('WebDAV does not support Private Files provenance.');
+        }
+
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
         $clientpath = implode('/', [...$folders, $filename]);
-        $operation = pending_write_translation::OP_CREATE;
 
         try {
             $resolved = $this->resolved_instance();
@@ -189,18 +258,14 @@ final class webdav_storage_port implements storage_port {
 
             $existing = $this->current_entry($client, $fileurl);
             $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
-            if ($existing !== null) {
-                $operation = pending_write_translation::OP_OVERWRITE;
-            }
-
             $this->ensure_directory($resolved, $folders);
             $this->put($client, $fileurl, $content, $existing, $clientpath);
 
             $written = $this->current_entry($client, $fileurl);
         } catch (webdav_error $e) {
-            throw $this->fail($e->errorclass, $e->getMessage(), $clientpath, $operation);
+            throw new storage_failure($e->errorclass, $e);
         } catch (\moodle_exception $e) {
-            throw $this->translate_location_failure($e, $clientpath, $operation);
+            throw $this->location_failure($e);
         }
 
         return [
@@ -212,7 +277,12 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * @inheritDoc
+     * Appends the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
+     * @param string $content The content.
+     * @param ?string $expectedchecksum The expectedchecksum.
      */
     public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
         [$folders, $filename] = storage_anchor::writable_segments($area, $path);
@@ -232,9 +302,9 @@ final class webdav_storage_port implements storage_port {
 
             $written = $this->current_entry($client, $fileurl);
         } catch (webdav_error $e) {
-            throw $this->fail($e->errorclass, $e->getMessage(), $clientpath, pending_write_translation::OP_APPEND);
+            throw new storage_failure($e->errorclass, $e);
         } catch (\moodle_exception $e) {
-            throw $this->translate_location_failure($e, $clientpath, pending_write_translation::OP_APPEND);
+            throw $this->location_failure($e);
         }
 
         return [
@@ -246,77 +316,23 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
-     * Translates a failure on write/append (Issue #540, ADR
-     * 0023) just like {@see pointer_writer}: records a pending write before
-     * the error is returned - never passed through raw. `Conflict` (412) is
-     * already on its way here as {@see storage_conflict_exception} (see
-     * {@see put()}), so it never reaches this method.
+     * Caller and conflict errors pass through; unavailable locations are outages.
      *
-     * @param string $errorclass
-     * @param string $rawmessage
-     * @param string $clientpath
-     * @param string $operation One of the {@see pending_write_translation} OP_* constants.
-     * @return \moodle_exception
+     * @param \moodle_exception $e Original location or caller error.
+     * @return \Throwable
      */
-    private function fail(string $errorclass, string $rawmessage, string $clientpath, string $operation): \moodle_exception {
-        return pending_write_translation::record_and_translate(
-            $errorclass,
-            'WebDAV ' . $errorclass . ': ' . $rawmessage,
-            $clientpath,
-            $operation,
-            pointer_writer::reason_for($errorclass),
-            pointer_writer::describe_target($this->resolve_host(), $this->instanceid),
-            $this->courseid
-        );
-    }
-
-    /**
-     * Location failures from {@see resolved_instance()} also create a
-     * pending write (Issue #540); every other moodle_exception error key
-     * - in particular {@see storage_conflict_exception} and the quota check
-     * of the area - continues unchanged, it does not belong to this
-     * branch.
-     *
-     * @param \moodle_exception $e
-     * @param string $clientpath
-     * @param string $operation
-     * @return \moodle_exception
-     */
-    private function translate_location_failure(\moodle_exception $e, string $clientpath, string $operation): \moodle_exception {
-        if ($e instanceof storage_conflict_exception || !in_array($e->errorcode, self::LOCATION_FAILURE_CODES, true)) {
+    private function location_failure(\moodle_exception $e): \Throwable {
+        if (!in_array($e->errorcode, self::LOCATION_FAILURE_CODES, true)) {
             return $e;
         }
-        return pending_write_translation::record_and_translate(
-            $e->errorcode,
-            'WebDAV ' . $e->errorcode . ': ' . $e->getMessage(),
-            $clientpath,
-            $operation,
-            pointer_writer::reason_for($e->errorcode),
-            // Instance no longer resolvable - no fresh host available,
-            // unlike pointer_writer, which knows the host from the pointer
-            // fingerprint (this adapter knows no pointer).
-            pointer_writer::describe_target('', $this->instanceid),
-            $this->courseid
-        );
+        return new storage_failure($e->errorcode, $e);
     }
 
     /**
-     * The host of the instance, best effort - for the target description of the
-     * failure response. Empty if the instance itself is no longer resolvable
-     * (then {@see translate_location_failure()} applies anyway, not this
-     * method).
-     * @return string
-     */
-    private function resolve_host(): string {
-        try {
-            return (string) (webdav_instance::fingerprint_of($this->instanceid)['server'] ?? '');
-        } catch (\Throwable $e) {
-            return '';
-        }
-    }
-
-    /**
-     * @inheritDoc
+     * Deletes the webdav storage port.
+     *
+     * @param storage_area $area The area.
+     * @param string $path The path.
      */
     public function delete(storage_area $area, string $path): bool {
         [$folders, $filename] = $this->split_file_path($area, $path);
@@ -327,7 +343,11 @@ final class webdav_storage_port implements storage_port {
             $resolved->client()->delete($fileurl);
             return true;
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, false, static fn (webdav_error $err): webdav_error => $err);
+            return webdav_error::empty_when_missing(
+                $e,
+                false,
+                static fn (webdav_error $err): storage_failure => new storage_failure($err->errorclass, $err)
+            );
         }
     }
 
@@ -369,6 +389,8 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
+     * Returns segments of the base folder, without empty parts.
+     *
      * @return string[] Segments of the base folder, without empty parts.
      */
     private function base_segments(): array {
@@ -379,6 +401,8 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
+     * Returns base folder segments followed by $extra.
+     *
      * @param string[] $extra
      * @return string[] Base folder segments followed by $extra.
      */
@@ -387,6 +411,8 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
+     * Returns full instance-relative path of a file.
+     *
      * @param string[] $folders
      * @param string $filename
      * @return string Full instance-relative path of a file.
@@ -419,6 +445,9 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
+     * Requires pointer root.
+     *
+     * @param resolved_webdav_instance $resolved The resolved.
      * @throws webdav_error
      * @throws \moodle_exception contextrootmissing
      */
@@ -445,7 +474,11 @@ final class webdav_storage_port implements storage_port {
         try {
             $meta = $client->propfind($fileurl, 0);
         } catch (webdav_error $e) {
-            return webdav_error::empty_when_missing($e, null, static fn (webdav_error $err): webdav_error => $err);
+            return webdav_error::empty_when_missing(
+                $e,
+                null,
+                static fn (webdav_error $err): storage_failure => new storage_failure($err->errorclass, $err)
+            );
         }
         $entry = $meta[0] ?? null;
         if ($entry === null) {
@@ -463,7 +496,8 @@ final class webdav_storage_port implements storage_port {
      * @param webdav_client $client
      * @param string $fileurl
      * @param string $content
-     * @param array{etag: ?string, timemodified: int, size: int}|null $existing
+     * @param mixed[]|null $existing
+     *        Type: array{etag:?string,timemodified:int,size:int}|null.
      * @param string $clientpath For the error message.
      * @throws storage_conflict_exception
      * @throws webdav_error every other error.
@@ -488,7 +522,8 @@ final class webdav_storage_port implements storage_port {
      * current state - even if the file is now missing entirely.
      * No comparison if no check value was passed (`null`).
      *
-     * @param array{etag: ?string, timemodified: int, size: int}|null $existing
+     * @param mixed[]|null $existing
+     *        Type: array{etag:?string,timemodified:int,size:int}|null.
      * @param string|null $expectedchecksum
      * @param string $clientpath For the error message.
      * @throws storage_conflict_exception

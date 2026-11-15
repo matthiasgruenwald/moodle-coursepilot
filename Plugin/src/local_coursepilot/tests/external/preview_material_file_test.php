@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\external;
 
+use core_external\external_api;
 use local_coursepilot\gd_support;
 use local_coursepilot\material_files;
 use local_coursepilot\storage_anchor;
@@ -36,6 +37,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(preview_material_file::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_reader::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\image_preview::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\gd_support::class)]
 final class preview_material_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -45,12 +51,58 @@ final class preview_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * A storage-port outage retains the material tool's public error code.
+     */
+    public function test_external_storage_outage_keeps_material_error_code(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_material();
+        $fake->deny_auth();
+        try {
+            preview_material_file::execute('image.png');
+            $this->fail('Unavailable storage must reject the request.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialexternalerror', $e->errorcode);
+            $this->assertStringNotContainsString($fake->secret(), $e->getMessage());
+        }
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Preview reads the current user's image even when private-file writes are prohibited.
+     */
+    public function test_own_files_remain_readable_with_manageownfiles_prohibited(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid, \context_system::instance()->id, true);
+
+        foreach ([100, 200] as $width) {
+            $user = $this->getDataGenerator()->create_user();
+            $this->setUser($user);
+            $this->assertFalse(has_capability('moodle/user:manageownfiles', \context_user::instance($user->id)));
+            $this->store_png('own.png', $width, 50);
+
+            $result = preview_material_file::execute('own.png');
+            $result = external_api::clean_returnvalue(preview_material_file::execute_returns(), $result);
+
+            $this->assertTrue($result['available']);
+            $this->assertSame('image/jpeg', $result['mimetype']);
+            $info = getimagesizefromstring(base64_decode($result['image_base64'], true));
+            $this->assertSame($width, $info[0]);
+            $this->assertSame(50, $info[1]);
+        }
+    }
+
+    /**
+     * Stores a PNG in the signed-in user's core context, independently of the material resolver.
+     *
      * @param string $filename
      * @param int $width
      * @param int $height
      * @return void
      */
     private function store_png(string $filename, int $width = 1600, int $height = 100): void {
+        global $USER;
         $image = imagecreatetruecolor($width, $height);
         imagefill($image, 0, 0, imagecolorallocate($image, 10, 120, 200));
         ob_start();
@@ -59,7 +111,7 @@ final class preview_material_file_test extends \advanced_testcase {
         imagedestroy($image);
 
         get_file_storage()->create_file_from_string([
-            'contextid' => material_files::own_context()->id,
+            'contextid' => \context_user::instance($USER->id)->id,
             'component' => material_files::COMPONENT,
             'filearea' => material_files::FILEAREA,
             'itemid' => material_files::ITEMID,
@@ -111,9 +163,17 @@ final class preview_material_file_test extends \advanced_testcase {
 
         $result = preview_material_file::execute('blatt.pdf');
 
+        $this->assertSame(
+            ['path', 'available', 'message', 'mimetype', 'image_base64', 'width', 'height'],
+            array_keys($result)
+        );
+        $this->assertSame('blatt.pdf', $result['path']);
         $this->assertFalse($result['available']);
         $this->assertNotEmpty($result['message']);
+        $this->assertNull($result['mimetype']);
         $this->assertNull($result['image_base64']);
+        $this->assertNull($result['width']);
+        $this->assertNull($result['height']);
     }
 
     public function test_missing_file_throws(): void {
@@ -222,5 +282,37 @@ final class preview_material_file_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('materialpathiscontext', $e->errorcode);
         }
+    }
+
+    public function test_an_upper_case_image_extension_is_previewed_like_a_lower_case_one(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->store_png('BILD.PNG', 40, 20);
+
+        $result = preview_material_file::execute('BILD.PNG');
+
+        $this->assertTrue($result['available']);
+        $this->assertSame([40, 20], [$result['width'], $result['height']]);
+    }
+
+    public function test_the_context_restriction_of_the_web_service_is_checked_first(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->store_png('bild.png', 40, 20);
+        $course = $this->getDataGenerator()->create_course();
+
+        external_api::set_context_restriction(\context_course::instance($course->id));
+        try {
+            $thrown = null;
+            try {
+                preview_material_file::execute('bild.png');
+            } catch (\Throwable $caught) {
+                $thrown = $caught;
+            }
+        } finally {
+            external_api::set_context_restriction(\context_system::instance());
+        }
+
+        $this->assertInstanceOf(\core_external\restricted_context_exception::class, $thrown);
     }
 }

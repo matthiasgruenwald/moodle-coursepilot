@@ -35,7 +35,6 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(get_quiz_cleanup_plan::class)]
 final class get_quiz_cleanup_plan_test extends \advanced_testcase {
-
     /**
      * A slot outside keep_questionbankentryids receives a manual,
      * non-destructive instruction with slot, question, category and Moodle
@@ -133,6 +132,8 @@ final class get_quiz_cleanup_plan_test extends \advanced_testcase {
     }
 
     /**
+     * Creates course with quiz.
+     *
      * @return array{0: \stdClass, 1: \stdClass, 2: \stdClass}
      */
     private function create_course_with_quiz(): array {
@@ -146,11 +147,26 @@ final class get_quiz_cleanup_plan_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
     private function get_role_id(string $shortname): int {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
+    }
+
+    public function test_the_plan_names_the_requested_quiz_and_not_another_one(): void {
+        $this->resetAfterTest();
+        [$course] = $this->create_course_with_quiz();
+        $second = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'name' => 'Zweites Quiz']);
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+
+        $result = get_quiz_cleanup_plan::execute((int) $second->cmid, []);
+
+        $this->assertSame('Zweites Quiz', $result['quizname']);
     }
 }

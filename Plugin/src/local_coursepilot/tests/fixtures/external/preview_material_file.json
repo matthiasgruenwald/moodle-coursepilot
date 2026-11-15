@@ -1,0 +1,109 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "path",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "location",
+                "type": "string",
+                "default": "store"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "path": {
+                "class": "core_external\\external_value",
+                "desc": "File path relative to the material store, e.g. \"screenshot.png\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "path"
+            },
+            "location": {
+                "class": "core_external\\external_value",
+                "desc": "\"store\" (default, the teacher's grown material store, read-only) or \"workbench\" (Coursepilot's own staging area)",
+                "required": 0,
+                "default": "store",
+                "allownull": true,
+                "type": "alpha"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "path": {
+                "class": "core_external\\external_value",
+                "desc": "Resolved file path relative to the material store",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "available": {
+                "class": "core_external\\external_value",
+                "desc": "true if an image preview was generated",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Explanation when preview is unavailable (e.g. a non-image file), otherwise null",
+                "required": 0,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "mimetype": {
+                "class": "core_external\\external_value",
+                "desc": "Preview MIME type (\"image/jpeg\"), null when unavailable",
+                "required": 0,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "image_base64": {
+                "class": "core_external\\external_value",
+                "desc": "Base64-encoded JPEG preview; the dispatcher adds an MCP image block from it, null when unavailable",
+                "required": 0,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "width": {
+                "class": "core_external\\external_value",
+                "desc": "Preview width in pixels, null when unavailable",
+                "required": 0,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "height": {
+                "class": "core_external\\external_value",
+                "desc": "Preview height in pixels, null when unavailable",
+                "required": 0,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            }
+        }
+    }
+}

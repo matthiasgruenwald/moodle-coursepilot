@@ -31,7 +31,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class personal_data {
-
     /**
      * Whether the instance delivers context files marked as personal data
      * to the AI. Default: off (see `settings.php`).
@@ -50,9 +49,10 @@ final class personal_data {
      * @return bool
      */
     public static function is_marked(string $content): bool {
-        if (!preg_match('/^---\s*\n(.*?)\n---\s*\n/s', $content, $matches)) {
+        $frontmatter = '/\A(?:\xEF\xBB\xBF)?(?:[ \t]*\r?\n)*---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\z)/s';
+        if (!preg_match($frontmatter, $content, $matches)) {
             return false;
         }
-        return (bool) preg_match('/personenbezug:\s*true\b/', $matches[1]);
+        return (bool) preg_match('/personenbezug[ \t]*:\s*true\b/', $matches[1]);
     }
 }

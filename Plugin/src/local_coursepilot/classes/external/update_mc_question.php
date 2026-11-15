@@ -22,6 +22,8 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\material_files;
 use local_coursepilot\question_suspect_gate;
+use local_coursepilot\question_import;
+use local_coursepilot\question_xml;
 use moodle_exception;
 
 defined('MOODLE_INTERNAL') || die();
@@ -29,42 +31,17 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/questionlib.php');
 
 /**
- * Read-modify-write for a multiple-choice question (Spec 0017 §7.1, ticket
- * #419): "fields_json" is a PATCH, not a full record (same vocabulary as
- * {@see update_module_settings}/{@see update_quiz_settings}) - fields that
- * are not sent must NOT get lost.
- *
- * Unlike a simple text-based XML template (like
- * {@see create_mc_question::build_xml()}, which deliberately sets fixed
- * values for penalty/shuffleanswers/answernumbering/combined feedback for a
- * NEW question), this endpoint reads the question via
- * {@see export_questions_xml::resolve_native_question()} as a NATIVE
- * object - exactly the form {@see \qformat_xml::writequestion()} also uses
- * for the real export. Only the properties named in the patch are
- * overwritten (name, questiontext, generalfeedback, defaultmark,
- * options->single, options->answers); everything else (penalty, hidden,
- * shuffleanswers, answernumbering, combined feedback, tags, hints, ...) stays
- * untouched because it is never touched - no reconstruction or guessing
- * risk. The FULL record is then written back through the same XML core as
- * {@see import_questions_xml} (including round-trip check and rollback).
- *
- * idnumber backfill (exactly ONE question, no bulk run): if the question
- * found carries no idnumber yet - e.g. from foreign content -, one is
- * generated exactly for THIS bank entry on the first write and written
- * directly to question_bank_entries BEFORE the XML is built. Only this way
- * does import_questions_xml recognise the written XML as a new version of
- * the SAME entry (match via idnumber in the category, ADR 0015) instead of
- * as a new entry. Backfill + write run in a shared transaction (same
- * pattern as import_questions_xml itself) - if the round trip fails, the
- * freshly assigned idnumber is rolled back as well (see the comment at
- * $transaction below).
+ * Patch selected native multiple-choice fields without reconstructing untouched values.
+ * Creation retains its fixed template; updates serialize the complete native object
+ * through question_xml and write through question_import's round-trip transaction.
+ * A missing idnumber is backfilled only for this bank entry in the same transaction,
+ * so a failed write also rolls back the new identity (ADR 0015).
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class update_mc_question extends external_api {
-
     /** @var string[] Allowed patch fields - everything else is an error (trust boundary). */
     private const PATCHABLE_FIELDS = [
         'name', 'questiontext', 'selectionmode', 'answers', 'defaultmark', 'generalfeedback',
@@ -76,6 +53,8 @@ final class update_mc_question extends external_api {
     ];
 
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -103,11 +82,13 @@ final class update_mc_question extends external_api {
     }
 
     /**
+     * Runs the update mc question tool.
+     *
      * @param int $questionid
      * @param string $fieldsjson
      * @param bool $confirmed
      * @param string $location
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $questionid,
@@ -151,8 +132,8 @@ final class update_mc_question extends external_api {
      * same bank entry (the idnumber just assigned matches by construction) -
      * same response format as create_mc_question.
      *
-     * @param array $result
-     * @return array
+     * @param mixed[] $result
+     * @return mixed[]
      */
     private static function build_suspect_response(array $result): array {
         return [
@@ -180,7 +161,7 @@ final class update_mc_question extends external_api {
      * @return array{0: \stdClass, 1: \stdClass, 2: \context}
      */
     private static function resolve_and_authorise(int $questionid): array {
-        [$question, $category, $context] = export_questions_xml::resolve_native_question($questionid);
+        [$question, $category, $context] = question_xml::resolve_native_question($questionid);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
         // Same capability as for a new version in import_questions_xml/
@@ -191,7 +172,8 @@ final class update_mc_question extends external_api {
         if ($question->qtype !== 'multichoice') {
             throw new \invalid_parameter_exception(
                 'update_mc_question only works for multiple-choice questions (qtype "multichoice"); '
-                    . 'this question is "' . $question->qtype . '".');
+                . 'this question is "' . $question->qtype . '".'
+            );
         }
 
         return [$question, $category, $context];
@@ -204,11 +186,8 @@ final class update_mc_question extends external_api {
      *
      * @param \stdClass $question
      * @param \context $context
-     * @param array $params Validated parameters of execute().
-     * @param \stdClass $question
-     * @param \context $context
-     * @param array $params Validierte Parameter von execute().
-     * @return array{0: array, 1: ?int, 2: array<int, int>}
+     * @param mixed[] $params Validated parameters of execute().
+     * @return array{0: mixed[], 1: ?int, 2: array<int, int>}
      */
     private static function apply_field_patch(\stdClass $question, \context $context, array $params): array {
         $patch = self::decode_patch($params['fields_json']);
@@ -236,14 +215,14 @@ final class update_mc_question extends external_api {
 
     /**
      * Writes the new question version in a transaction, with optional
-     * idnumber backfill (issue #523: extracted from execute()).
+     * idnumber backfill.
      * @param \stdClass $question
      * @param \stdClass $category
      * @param \context $context
      * @param int $categoryid
      * @param \stdClass $entry
      * @param bool $confirmed
-     * @return array{result: array, backfilled: bool, idnumber: string, missingfiles: string[]}
+     * @return array{result: mixed[], backfilled: bool, idnumber: string, missingfiles: string[]}
      */
     private static function persist_new_version(
         \stdClass $question,
@@ -255,20 +234,20 @@ final class update_mc_question extends external_api {
     ): array {
         global $DB;
 
-        // No try/catch+rollback of our own here: import_questions_xml::execute()
+        // No try/catch+rollback of our own here: question_import::import()
         // already rolls back its OWN (nested) transaction itself on a
         // round-trip failure and rethrows the exception - a second rollback()
         // call on this (by then already ended) transaction would itself throw
         // a dml_transaction_exception. If THIS transaction is left without
         // allow_commit() (because the exception is passed through unhandled),
         // Moodle rolls it back automatically (pattern documented in
-        // import_questions_xml) - including the backfill just assigned.
+        // question_import) - including the backfill just assigned.
         $transaction = $DB->start_delegated_transaction();
         $backfilled = false;
 
         $idnumber = trim((string) ($entry->idnumber ?? ''));
         if ($idnumber === '') {
-            // Backfill ONLY for this one bank entry (ticket #419) -
+            // Backfill ONLY for this one bank entry -
             // no bulk run over the category/question bank.
             $idnumber = self::generate_idnumber();
             $DB->set_field('question_bank_entries', 'idnumber', $idnumber, ['id' => $entry->id]);
@@ -276,11 +255,10 @@ final class update_mc_question extends external_api {
         }
         $question->idnumber = $idnumber;
 
-        [$xml, $missingfiles] = export_questions_xml::question_to_xml($question, $category, $context);
+        [$xml, $missingfiles] = question_xml::question_to_xml($question, $category, $context);
         $wrapped = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<quiz>\n" . $xml . "\n</quiz>\n";
 
-        $imported = import_questions_xml::execute($categoryid, $wrapped, $confirmed);
-        $imported = external_api::clean_returnvalue(import_questions_xml::execute_returns(), $imported);
+        $imported = question_import::import($categoryid, $wrapped, $confirmed);
 
         $transaction->allow_commit();
 
@@ -297,11 +275,11 @@ final class update_mc_question extends external_api {
      * builds the success response (issue #523: extracted from execute()).
      * @param \stdClass $entry
      * @param \context $context
-     * @param array{result: array, backfilled: bool, idnumber: string, missingfiles: string[]} $write
+     * @param mixed[] $write Type: array{result:array,backfilled:bool,idnumber:string,missingfiles:string[]}.
      * @param ?int $questiontextdraftitemid
-     * @param array<int, int> $answerfeedbackdraftitemids
+     * @param int[] $answerfeedbackdraftitemids
      * @param \stdClass $question
-     * @return array
+     * @return mixed[]
      */
     private static function build_success_response(
         \stdClass $entry,
@@ -362,7 +340,8 @@ final class update_mc_question extends external_api {
             if (!in_array($fieldname, self::PATCHABLE_FIELDS, true)) {
                 throw new \invalid_parameter_exception(
                     'Unknown field "' . $fieldname . '" in fields_json. Allowed: '
-                        . implode(', ', self::PATCHABLE_FIELDS) . '.');
+                    . implode(', ', self::PATCHABLE_FIELDS) . '.'
+                );
             }
         }
 
@@ -371,25 +350,17 @@ final class update_mc_question extends external_api {
 
     /**
      * Overwrites only the properties named in the patch on the NATIVE
-     * question object (see {@see export_questions_xml::resolve_native_question()})
-     * - everything else stays exactly preserved (core test of this ticket)
+     * question object (see {@see question_xml::resolve_native_question()})
+     * - everything else stays exactly preserved
      * because it is never touched. Afterwards validates the (patched or
      * unchanged) answers/selection mode state with the same rules as a new
-     * creation ({@see create_mc_question::validate_answers()}).
+     * creation ({@see question_xml::validate_answers()}).
      * @param \stdClass $question Is modified in place.
-     * @param array<string, mixed> $patch
+     * @param mixed[] $patch
      * @return void
      */
     private static function apply_patch(\stdClass $question, array $patch): void {
-        if (array_key_exists('name', $patch)) {
-            $question->name = (string) $patch['name'];
-        }
-        if (array_key_exists('questiontext', $patch)) {
-            $question->questiontext = (string) $patch['questiontext'];
-        }
-        if (array_key_exists('generalfeedback', $patch)) {
-            $question->generalfeedback = (string) $patch['generalfeedback'];
-        }
+        self::apply_text_fields($question, $patch);
         if (array_key_exists('defaultmark', $patch)) {
             $question->defaultmark = (float) $patch['defaultmark'];
         }
@@ -404,6 +375,37 @@ final class update_mc_question extends external_api {
             $question->options->answers = self::build_answer_objects($patch['answers']);
         }
 
+        self::validate_patched_answers($question, $patch);
+    }
+
+    /**
+     * Overwrites the plain text properties named in the patch.
+     *
+     * @param \stdClass $question Is modified in place.
+     * @param mixed[] $patch
+     * @return void
+     * @throws \invalid_parameter_exception a text value is an array
+     */
+    private static function apply_text_fields(\stdClass $question, array $patch): void {
+        foreach (['name', 'questiontext', 'generalfeedback'] as $field) {
+            if (!array_key_exists($field, $patch)) {
+                continue;
+            }
+            if (is_array($patch[$field])) {
+                throw new \invalid_parameter_exception('"' . $field . '" must be a scalar text value or null.');
+            }
+            $question->{$field} = (string) $patch[$field];
+        }
+    }
+
+    /**
+     * Validate answer rules only when the patch changes answers or selection mode.
+     *
+     * @param \stdClass $question
+     * @param mixed[] $patch
+     * @return void
+     */
+    private static function validate_patched_answers(\stdClass $question, array $patch): void {
         // Validate only if answers/selectionmode ACTUALLY appear in the patch:
         // a foreign question found whose answers do not meet Coursepilot's
         // stricter creation rules (validate_answers) may still be patched in
@@ -417,7 +419,7 @@ final class update_mc_question extends external_api {
                 'feedback' => $a->feedback,
             ], array_values((array) $question->options->answers));
             $selectionmode = empty($question->options->single) ? 'multiple' : 'single';
-            create_mc_question::validate_answers($answersforvalidation, $selectionmode);
+            question_xml::validate_answers($answersforvalidation, $selectionmode);
         }
     }
 
@@ -438,7 +440,8 @@ final class update_mc_question extends external_api {
         foreach (array_values($answers) as $i => $answer) {
             if (!is_array($answer) || !array_key_exists('answer', $answer) || !array_key_exists('fraction', $answer)) {
                 throw new \invalid_parameter_exception(
-                    'Every answer option in "answers" needs "answer" and "fraction".');
+                    'Every answer option in "answers" needs "answer" and "fraction".'
+                );
             }
             $object = new \stdClass();
             $object->id = -($i + 1);
@@ -461,7 +464,7 @@ final class update_mc_question extends external_api {
      * newly written question_answers rows in this order (see
      * {@see self::embed_images()}).
      *
-     * @param array<string, mixed> $patch
+     * @param mixed[] $patch
      * @return array<int, string[]> Index => list of material folder paths
      */
     private static function extract_answer_feedback_images(array $patch): array {
@@ -493,7 +496,7 @@ final class update_mc_question extends external_api {
      *
      * @param \context $context Category context (target of the file storage).
      * @param string[] $questiontextimages Material folder paths for questiontext.
-     * @param array<int, string[]> $answerfeedbackimages Answer index => material folder paths.
+     * @param mixed[] $answerfeedbackimages Answer index => material folder paths. Type: array<int,string[]>.
      * @param string $location {@see material_files::LOCATION_STORE}/{@see material_files::LOCATION_WORKBENCH} -
      *        source of the paths (issue #496).
      * @return array{0: int|null, 1: array<int, int>} [draft itemid for questiontext (null without request),
@@ -532,7 +535,9 @@ final class update_mc_question extends external_api {
     }
 
     /**
-     * @param string[] $paths
+     * Asserts allowed embed extensions.
+     *
+     * @param mixed[] $paths
      * @return void
      * @throws moodle_exception materialfiledisallowedtype
      */
@@ -554,7 +559,7 @@ final class update_mc_question extends external_api {
      * AFTER writing, because question/questiontext and
      * question/answerfeedback are addressed by Moodle convention via the
      * question/answer id, which does not exist before
-     * import_questions_xml::execute(). The caller has already sent the text
+     * question_import::import(). The caller has already sent the text
      * (with "@@PLUGINFILE@@/<filename>" plus alt text) in the
      * questiontext/feedback patch - file_save_draft_area_files() only
      * resolves the placeholder against the real pluginfile URL, exactly the
@@ -563,7 +568,7 @@ final class update_mc_question extends external_api {
      * @param \context $context
      * @param int $questionid New question.id of the written version.
      * @param int|null $questiontextdraftitemid
-     * @param array<int, int> $answerfeedbackdraftitemids Answer index => draft itemid.
+     * @param int[] $answerfeedbackdraftitemids Answer index => draft itemid.
      * @return void
      */
     private static function embed_images(
@@ -579,7 +584,14 @@ final class update_mc_question extends external_api {
         if ($questiontextdraftitemid !== null) {
             $current = $DB->get_field('question', 'questiontext', ['id' => $questionid], MUST_EXIST);
             $new = file_save_draft_area_files(
-                $questiontextdraftitemid, $context->id, 'question', 'questiontext', $questionid, $fileoptions, $current);
+                $questiontextdraftitemid,
+                $context->id,
+                'question',
+                'questiontext',
+                $questionid,
+                $fileoptions,
+                $current
+            );
             file_clear_draft_area($questiontextdraftitemid);
             $DB->set_field('question', 'questiontext', $new, ['id' => $questionid]);
         }
@@ -590,24 +602,35 @@ final class update_mc_question extends external_api {
                 if (!isset($answers[$index])) {
                     throw new \invalid_parameter_exception(
                         'feedback_images refers to answer option ' . $index . ', but "answers" has only '
-                            . count($answers) . ' entries.');
+                        . count($answers) . ' entries.'
+                    );
                 }
                 $answer = $answers[$index];
                 $new = file_save_draft_area_files(
-                    $draftitemid, $context->id, 'question', 'answerfeedback', (int) $answer->id,
-                    $fileoptions, (string) $answer->feedback);
+                    $draftitemid,
+                    $context->id,
+                    'question',
+                    'answerfeedback',
+                    (int) $answer->id,
+                    $fileoptions,
+                    (string) $answer->feedback
+                );
                 file_clear_draft_area($draftitemid);
                 $DB->set_field('question_answers', 'feedback', $new, ['id' => $answer->id]);
             }
         }
     }
 
-    /** Generates a new, unique idnumber (same scheme as import_questions_xml). */
+    /**
+     * Generates a new, unique idnumber (same scheme as import_questions_xml).
+     */
     private static function generate_idnumber(): string {
         return 'kp-' . bin2hex(random_bytes(8));
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

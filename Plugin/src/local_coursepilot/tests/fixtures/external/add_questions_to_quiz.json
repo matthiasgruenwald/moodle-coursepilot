@@ -1,0 +1,180 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "questionids",
+                "type": "array",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the quiz",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "questionids": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Questions in the order they should be appended, at least one",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "questionid of any version of the question to append",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "int"
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the quiz",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing message: appended vs. skipped",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "appended": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Result per requested question, in the given order",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "questionid": {
+                            "class": "core_external\\external_value",
+                            "desc": "Requested questionid",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "questionbankentryid": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question identity (bank entry)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "added": {
+                            "class": "core_external\\external_value",
+                            "desc": "true = newly appended, false = already in the quiz, skipped",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        }
+                    }
+                }
+            },
+            "slots": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Slot state of the quiz after appending, ascending by slot",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "slot": {
+                            "class": "core_external\\external_value",
+                            "desc": "Slot number",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "questionbankentryid": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question identity (bank entry)",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "questionid": {
+                            "class": "core_external\\external_value",
+                            "desc": "ID of the latest question version",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "version": {
+                            "class": "core_external\\external_value",
+                            "desc": "Version number of the latest question version",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Question name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

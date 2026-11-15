@@ -28,7 +28,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(list_courses::class)]
 final class list_courses_test extends \advanced_testcase {
-
     /**
      * Teachers see their own courses.
      */
@@ -113,6 +112,8 @@ final class list_courses_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

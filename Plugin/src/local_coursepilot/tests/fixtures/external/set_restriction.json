@@ -1,0 +1,97 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "conditionsjson",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "confirmlearnerlocks",
+                "type": "array",
+                "default": []
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "conditions_json": {
+                "class": "core_external\\external_value",
+                "desc": "JSON array of conditions (empty array removes all conditions). Each entry is an object with \"type\": \"completion\" (fields \"activity_cmid\", \"status\": complete|incomplete|pass|fail), \"date\" (fields \"direction\": from|until, \"timestamp\": Unix time) or \"group\" (field \"group_id\", 0 or omitted = any group). All entries must be satisfied at the same time (AND).",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "confirm_learner_locks": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Learner locks this call sets on purpose. A learner lock is a setting after which a learner needs an action by the teacher to continue or resubmit. A call that would set an unconfirmed lock is rejected with each lock and its reason, and nothing is written. Name a lock here only when the teacher explicitly asked for it; otherwise leave the field out or choose an open value.",
+                "required": 0,
+                "default": [],
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Lock id as named in a rejection: a field name, or \"teacher_grade:<cmid>\"",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing change message",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

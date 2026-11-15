@@ -1,0 +1,77 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "courseid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "modname",
+                "type": "string",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID (the activity is created there temporarily and removed again)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Developed activity type, e.g. \"book\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "alphanumext"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID the default activity was created in temporarily",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type, e.g. \"book\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "alphanumext"
+            },
+            "xml": {
+                "class": "core_external\\external_value",
+                "desc": "Activity XML (<module>.xml of the backup) with Moodle default values",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

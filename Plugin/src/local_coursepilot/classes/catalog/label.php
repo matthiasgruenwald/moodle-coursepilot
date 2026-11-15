@@ -17,32 +17,55 @@
 namespace local_coursepilot\catalog;
 
 /**
- * Field catalog for mod_label (Spec 0015 §4.1: green, no special handling
- * except the blocked "name" column). First catalogued activity kind -
- * proves the design (#379).
+ * Field catalog for mod_label (Spec 0015 §4.1: green, no special handling).
+ * First catalogued activity kind - proves the design (#379).
  *
  * mod_label/db/install.xml only knows id, course, name, intro, introformat,
  * timemodified. course/timemodified are already in
- * {@see shared_block::BLOCKLIST}; "name" is added here because Moodle derives it
- * itself from the intro (mod/label/lib.php: get_label_name()) - a
- * patch would be overwritten immediately.
+ * {@see shared_block::blocked_fields()}. "name" is the one title the course
+ * index shows: mod/label/lib.php get_label_name() keeps a non-empty name and
+ * derives one from the intro only when the name is empty, so the field is
+ * writable and the derivation is the fallback.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class label implements module_catalog {
-
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'label';
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return mixed[]
+     */
     public static function fields(): array {
         return [
             new field(
+                'name',
+                'PARAM_TEXT',
+                'Title of the text card as shown in the course index and navigation. Optional: '
+                    . 'Moodle derives it from the start of the intro once, when the card is created '
+                    . 'without a name. Afterwards the name never follows the intro, also not a derived '
+                    . 'one. To derive it again from the current intro, set name to an empty string.',
+                false,
+                null,
+                null,
+                null,
+                'mod/label/mod_form.php:41-49 (text element "name", PARAM_TEXT or PARAM_CLEANHTML); '
+                    . 'mod/label/lib.php:36-40 (get_label_name() keeps a non-empty name)'
+            ),
+            new field(
                 'intro',
                 'PARAM_RAW',
-                'The text content of the text card (HTML). Moodle derives the display name from it.',
+                'The text content of the text card (HTML). Shown on the course page.',
                 true,
                 null,
                 null,
@@ -62,6 +85,14 @@ final class label implements module_catalog {
         ];
     }
 
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return mixed[]
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         global $DB;
 
@@ -74,38 +105,85 @@ final class label implements module_catalog {
         return $details;
     }
 
+    /**
+     * Writes options.
+     *
+     * @return mixed[]
+     */
     public static function write_options(): array {
-        return [];
+        // Moodle's form sends an empty name, which makes get_label_name() derive the title
+        // from the intro; without the key add_moduleinfo() would store the module name "label".
+        return ['missing_form_values' => ['name' => '']];
     }
 
+    /**
+     * Provides common field names.
+     *
+     * @return mixed[]
+     */
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return mixed[]
+     */
     public static function pseudofields(): array {
         return [];
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return mixed[]
+     */
     public static function blocklist(): array {
-        return ['name'];
+        return [];
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return mixed[]
+     */
     public static function combination_rules(): array {
         return [];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return mixed[]
+     */
     public static function side_effects(): array {
         return [];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return mixed[]
+     */
     public static function bundles(): array {
         return [];
     }
 
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return mixed[]
+     */
     public static function checked_constants(): array {
         // The group mode constants (NOGROUPS/SEPARATEGROUPS/VISIBLEGROUPS)
         // belong to the shared block, not to label itself - see
@@ -113,14 +191,30 @@ final class label implements module_catalog {
         return [];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return mixed[]
+     */
     public static function learner_locks(): array {
         return [];
     }
 
+    /**
+     * Provides grade origin.
+     *
+     * @param int $instanceid The instanceid.
+     * @return string
+     */
     public static function grade_origin(int $instanceid = 0): string {
         return learner_locks::GRADE_NONE;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

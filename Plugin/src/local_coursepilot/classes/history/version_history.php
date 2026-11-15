@@ -16,7 +16,7 @@
 
 namespace local_coursepilot\history;
 
-defined('MOODLE_INTERNAL') || die();
+use local_coursepilot\catalog\activity_credentials;
 
 /**
  * Read interface of the change history (#394, Spec 0015 §10.6):
@@ -30,14 +30,13 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class version_history {
-
     /**
      * All versions of an activity, ascending, each with a one-line summary
      * against its predecessor (Spec 0015 §10.6, acceptance criterion 1+2).
      *
      * @param int $cmid
      * @param string $lang UI language; tool callers keep the English default.
-     * @return array{cmid: int, modname: string, versions: array, gap_notice: string}
+     * @return array{cmid: int, modname: string, versions: mixed[], gap_notice: string}
      */
     public static function list_versions(int $cmid, string $lang = 'en'): array {
         global $DB;
@@ -67,7 +66,7 @@ final class version_history {
      * @param int $cmid
      * @param int $fromversion
      * @param int $toversion
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception versionnotfound
      */
     public static function compare(int $cmid, int $fromversion, int $toversion): array {
@@ -80,7 +79,7 @@ final class version_history {
             'modname' => (string) $cm->modname,
             'before' => self::describe_meta($fromstate),
             'after' => self::describe_meta($tostate),
-            'changes' => self::diff_fields(self::public_state($fromstate), self::public_state($tostate)),
+            'changes' => self::diff_fields((string) $cm->modname, self::public_state($fromstate), self::public_state($tostate)),
             'files' => self::diff_files((int) $fromstate->id, (int) $tostate->id),
             'gap_notice' => get_string_manager()->get_string('historygapnotice', 'local_coursepilot', null, 'en'),
         ];
@@ -96,7 +95,7 @@ final class version_history {
      *
      * @param int $cmid
      * @param int $version
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception versionnotfound
      */
     public static function state_at(int $cmid, int $version): array {
@@ -150,7 +149,7 @@ final class version_history {
      *
      * @param int $cmid
      * @param int $version
-     * @return array|null
+     * @return mixed[]|null
      * @throws \moodle_exception versionnotfound
      */
     public static function arrangement_at(int $cmid, int $version): ?array {
@@ -201,6 +200,8 @@ final class version_history {
     }
 
     /**
+     * Loads version.
+     *
      * @param int $cmid
      * @param int $version
      * @return \stdClass
@@ -220,10 +221,12 @@ final class version_history {
     }
 
     /**
+     * Describes version.
+     *
      * @param \stdClass $record
      * @param \stdClass|null $previous
      * @param string $lang
-     * @return array
+     * @return mixed[]
      */
     private static function describe_version(\stdClass $record, ?\stdClass $previous, string $lang): array {
         $meta = self::describe_meta($record, $lang);
@@ -237,7 +240,7 @@ final class version_history {
      *
      * @param \stdClass $record
      * @param string $lang
-     * @return array{version: int, source: string, discovered: bool, source_cmid: int|null, userid: int, user: string, timestamp: int}
+     * @return array{version:int,source:string,discovered:bool,source_cmid:int|null,userid:int,user:string,timestamp:int}
      */
     private static function describe_meta(\stdClass $record, string $lang = 'en'): array {
         $source = version_source::from_record($record);
@@ -253,9 +256,11 @@ final class version_history {
     }
 
     /**
+     * Provides summary line.
+     *
      * @param \stdClass|null $previous
      * @param \stdClass $record
-     * @param array $meta
+     * @param mixed[] $meta
      * @param string $lang
      * @return string
      */
@@ -274,6 +279,26 @@ final class version_history {
     }
 
     /**
+     * The first four changed field names, followed by the number of the remaining ones.
+     *
+     * @param string[] $fields
+     * @param string $lang
+     * @return string
+     */
+    private static function field_names(array $fields, string $lang): string {
+        $names = implode(', ', array_slice($fields, 0, 4));
+        if (count($fields) > 4) {
+            $names .= get_string_manager()->get_string(
+                'historymorefields',
+                'local_coursepilot',
+                sprintf('%d', count($fields) - 4),
+                $lang
+            );
+        }
+        return $names;
+    }
+
+    /**
      * Localized summary of field and file changes compared with the predecessor.
      *
      * @param \stdClass $before
@@ -287,23 +312,31 @@ final class version_history {
 
         $parts = [];
         if ($fields) {
-            $fieldnames = implode(', ', array_slice($fields, 0, 4));
-            if (count($fields) > 4) {
-                $fieldnames .= get_string_manager()->get_string(
-                    'historymorefields', 'local_coursepilot', count($fields) - 4, $lang);
-            }
-            $parts[] = get_string_manager()->get_string('historyfieldschanged', 'local_coursepilot', $fieldnames, $lang);
+            $parts[] = get_string_manager()->get_string(
+                'historyfieldschanged',
+                'local_coursepilot',
+                self::field_names($fields, $lang),
+                $lang
+            );
         }
 
         $added = count(array_filter($filechanges, static fn(array $c): bool => $c['change_type'] === 'added'));
         $removed = count($filechanges) - $added;
         if ($added) {
             $parts[] = get_string_manager()->get_string(
-                $added === 1 ? 'historyfileadded' : 'historyfilesadded', 'local_coursepilot', $added, $lang);
+                $added === 1 ? 'historyfileadded' : 'historyfilesadded',
+                'local_coursepilot',
+                sprintf('%d', $added),
+                $lang
+            );
         }
         if ($removed) {
             $parts[] = get_string_manager()->get_string(
-                $removed === 1 ? 'historyfileremoved' : 'historyfilesremoved', 'local_coursepilot', $removed, $lang);
+                $removed === 1 ? 'historyfileremoved' : 'historyfilesremoved',
+                'local_coursepilot',
+                sprintf('%d', $removed),
+                $lang
+            );
         }
 
         return $parts ? implode(', ', $parts)
@@ -316,7 +349,7 @@ final class version_history {
      * source (tags, availability, instance fields).
      *
      * @param \stdClass $record
-     * @return array
+     * @return mixed[]
      */
     private static function state(\stdClass $record): array {
         $coursemodule = json_decode($record->coursemodule_json, true) ?: [];
@@ -324,7 +357,12 @@ final class version_history {
         return array_merge($coursemodule, $moduleinfo);
     }
 
-    /** Safe comparison projection; raw state_at remains exclusively for native restoration. */
+    /**
+     * Safe comparison projection; raw state_at remains exclusively for native restoration.
+     *
+     * @param \stdClass $record The record.
+     * @return mixed[]
+     */
     private static function public_state(\stdClass $record): array {
         $state = self::state($record);
         foreach (['availability', 'availabilityconditionsjson'] as $field) {
@@ -341,8 +379,8 @@ final class version_history {
      * so that equivalent but differently encoded values do not falsely
      * appear as a change.
      *
-     * @param array $before
-     * @param array $after
+     * @param mixed[] $before
+     * @param mixed[] $after
      * @return string[] sorted
      */
     private static function changed_fields(array $before, array $after): array {
@@ -358,19 +396,27 @@ final class version_history {
 
     /**
      * Complete field diff with before/after value per changed field,
-     * for compare_activity_versions.
+     * for compare_activity_versions. Credential changes expose names only.
      *
-     * @param array $before
-     * @param array $after
-     * @return array
+     * @param string $modname
+     * @param mixed[] $before
+     * @param mixed[] $after
+     * @return mixed[]
      */
-    private static function diff_fields(array $before, array $after): array {
+    private static function diff_fields(string $modname, array $before, array $after): array {
         $changes = [];
         foreach (self::changed_fields($before, $after) as $field) {
+            $hidden = activity_credentials::hidden($modname, $field);
             $changes[] = [
                 'field' => $field,
-                'before_json' => json_encode($before[$field] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'after_json' => json_encode($after[$field] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'before_json' => json_encode(
+                    $hidden ? '[redacted]' : ($before[$field] ?? null),
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                ),
+                'after_json' => json_encode(
+                    $hidden ? '[redacted]' : ($after[$field] ?? null),
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                ),
             ];
         }
         return $changes;
@@ -402,7 +448,7 @@ final class version_history {
      *
      * @param int $beforeversionid
      * @param int $afterversionid
-     * @return array
+     * @return mixed[]
      */
     private static function diff_files(int $beforeversionid, int $afterversionid): array {
         $before = self::file_map($beforeversionid);
@@ -423,6 +469,8 @@ final class version_history {
     }
 
     /**
+     * Provides fullname.
+     *
      * @param int $userid
      * @param string $lang
      * @return string
@@ -435,6 +483,6 @@ final class version_history {
         // even if they remain unused for display.
         $user = $DB->get_record('user', ['id' => $userid]);
         return $user ? fullname($user)
-            : get_string_manager()->get_string('historyunknownuser', 'local_coursepilot', $userid, $lang);
+            : get_string_manager()->get_string('historyunknownuser', 'local_coursepilot', sprintf('%d', $userid), $lang);
     }
 }

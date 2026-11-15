@@ -65,7 +65,6 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class quiz implements module_catalog {
-
     /**
      * Eight review types (column name without the review prefix => short
      * English description) times four timings (during/immediately/open/closed)
@@ -98,10 +97,20 @@ final class quiz implements module_catalog {
         'closed' => 'after the quiz has closed',
     ];
 
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'quiz';
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return mixed[]
+     */
     public static function fields(): array {
         global $CFG;
 
@@ -407,9 +416,16 @@ final class quiz implements module_catalog {
             ),
         ];
         if ((int) $CFG->branch >= 503) {
-            $fields[] = new field('duedate', 'PARAM_INT',
+            $fields[] = new field(
+                'duedate',
+                'PARAM_INT',
                 'Unix timestamp: expected completion date, informational only. 0 = no due date.',
-                false, 0, null, null, 'mod/quiz/mod_form.php (duedate); mod/quiz/db/install.xml (quiz.duedate)');
+                false,
+                0,
+                null,
+                null,
+                'mod/quiz/mod_form.php (duedate); mod/quiz/db/install.xml (quiz.duedate)'
+            );
         }
         return $fields;
     }
@@ -417,12 +433,22 @@ final class quiz implements module_catalog {
     /**
      * Quiz remains the ADR 0016 exception: grading and question arrangement
      * sit outside the generic form path and are therefore read here.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return mixed[]
      */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         global $DB;
 
         $details = module_state::empty($fullcontent);
-        $quiz = $DB->get_record('quiz', ['id' => $instanceid], 'id, name, intro, preferredbehaviour, attempts, grademethod, timelimit, grade', IGNORE_MISSING);
+        $quiz = $DB->get_record(
+            'quiz',
+            ['id' => $instanceid],
+            'id, name, intro, preferredbehaviour, attempts, grademethod, timelimit, grade',
+            IGNORE_MISSING
+        );
         if (!$quiz) {
             return $details;
         }
@@ -444,17 +470,44 @@ final class quiz implements module_catalog {
      * Arrangement changes use the core structure API (ADR 0016).
      *
      * @param int $quizid
-     * @return array
+     * @return mixed[]
      */
     private static function quiz_slots(int $quizid): array {
         global $DB;
-        $rows = $DB->get_records_sql('SELECT qs.id AS slotid, qs.slot, qr.questionbankentryid, qbe.questioncategoryid FROM {quiz_slots} qs LEFT JOIN {question_references} qr ON qr.itemid = qs.id AND qr.component = :component AND qr.questionarea = :area LEFT JOIN {question_bank_entries} qbe ON qbe.id = qr.questionbankentryid WHERE qs.quizid = :quizid ORDER BY qs.slot', ['component' => 'mod_quiz', 'area' => 'slot', 'quizid' => $quizid]);
-        $slots = [];
-        foreach ($rows as $row) {
-            $latest = empty($row->questionbankentryid) ? null : $DB->get_record_sql('SELECT qv.questionid, qv.version, q.name, q.qtype FROM {question_versions} qv JOIN {question} q ON q.id = qv.questionid WHERE qv.questionbankentryid = ? ORDER BY qv.version DESC', [$row->questionbankentryid], IGNORE_MULTIPLE);
-            $slots[] = ['slot' => (int) $row->slot, 'categoryid' => empty($row->questioncategoryid) ? 0 : (int) $row->questioncategoryid, 'questionbankentryid' => empty($row->questionbankentryid) ? 0 : (int) $row->questionbankentryid, 'questionid' => $latest ? (int) $latest->questionid : 0, 'version' => $latest ? (int) $latest->version : 0, 'questionname' => $latest ? (string) $latest->name : '', 'qtype' => $latest ? (string) $latest->qtype : ''];
-        }
-        return $slots;
+        $rows = $DB->get_records_sql(
+            'SELECT qs.id AS slotid, qs.slot, qr.questionbankentryid, qbe.questioncategoryid FROM {quiz_slots} qs LEFT JOIN '
+                . '{question_references} qr ON qr.itemid = qs.id AND qr.component = :component AND qr.questionarea = :area LEFT '
+                    . 'JOIN '
+                . '{question_bank_entries} qbe ON qbe.id = qr.questionbankentryid WHERE qs.quizid = :quizid ORDER BY qs.slot',
+            ['component' => 'mod_quiz', 'area' => 'slot', 'quizid' => $quizid]
+        );
+        return array_values(array_map(static fn(\stdClass $row): array => self::slot_row($row), $rows));
+    }
+
+    /**
+     * One slot in catalog vocabulary, with the newest version of its referenced question.
+     *
+     * @param \stdClass $row Slot joined with its question reference and category.
+     * @return mixed[]
+     */
+    private static function slot_row(\stdClass $row): array {
+        global $DB;
+        $entryid = (int) ($row->questionbankentryid ?? 0);
+        $latest = $entryid ? $DB->get_record_sql(
+            'SELECT qv.questionid, qv.version, q.name, q.qtype FROM {question_versions} qv JOIN {question} q ON q.id = '
+                . 'qv.questionid WHERE qv.questionbankentryid = ? ORDER BY qv.version DESC',
+            [$entryid],
+            IGNORE_MULTIPLE
+        ) : null;
+        return [
+            'slot' => (int) $row->slot,
+            'categoryid' => (int) ($row->questioncategoryid ?? 0),
+            'questionbankentryid' => $entryid,
+            'questionid' => (int) ($latest->questionid ?? 0),
+            'version' => (int) ($latest->version ?? 0),
+            'questionname' => $latest->name ?? '',
+            'qtype' => $latest->qtype ?? '',
+        ];
     }
 
     /**
@@ -463,7 +516,7 @@ final class quiz implements module_catalog {
      *
      * @param \stdClass $cm
      * @param \stdClass $instance
-     * @return array
+     * @return mixed[]
      */
     public static function effective_state(\stdClass $cm, \stdClass $instance): array {
         return array_merge(
@@ -476,6 +529,7 @@ final class quiz implements module_catalog {
                 'groupmode' => (int) groups_get_activity_groupmode($cm),
                 'groupingid' => (int) $cm->groupingid,
                 'idnumber' => (string) $cm->idnumber,
+                'indent' => (int) $cm->indent,
             ],
             quiz_write_bridge::decompose_review_bitmasks($instance),
             quiz_write_bridge::read_feedback((int) $instance->id)
@@ -499,6 +553,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Writes options.
+     *
+     * @return mixed[]
+     */
     public static function write_options(): array {
         global $CFG;
 
@@ -516,6 +575,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Provides common field names.
+     *
+     * @return mixed[]
+     */
     public static function common_field_names(): array {
         return [
             'name',
@@ -531,6 +595,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return mixed[]
+     */
     public static function pseudofields(): array {
         $fields = [
             new field(
@@ -603,8 +672,13 @@ final class quiz implements module_catalog {
         return $fields;
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return mixed[]
+     */
     public static function blocklist(): array {
-        return [
+        return array_merge([
             'grade',
             'sumgrades',
             'password',
@@ -616,11 +690,14 @@ final class quiz implements module_catalog {
             'reviewgeneralfeedback',
             'reviewrightanswer',
             'reviewoverallfeedback',
-            'completionattemptsexhausted',
-            'completionminattempts',
-        ];
+        ], completion_settings::module_fields('quiz'));
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return mixed[]
+     */
     public static function combination_rules(): array {
         return [
             '"timeclose" must not precede "timeopen" when both are set (mod/quiz/mod_form.php: '
@@ -633,6 +710,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return mixed[]
+     */
     public static function side_effects(): array {
         return [
             '"timeopen"/"timeclose" each create or update a calendar event '
@@ -640,6 +722,11 @@ final class quiz implements module_catalog {
         ];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return mixed[]
+     */
     public static function bundles(): array {
         return [
             'mini-check' => array_merge([
@@ -655,9 +742,9 @@ final class quiz implements module_catalog {
                 'delay2' => 0,
                 'decimalpoints' => 2,
             ], self::review_bundle_fields(
-                // attempt, correctness, maxmarks, marks, specificfeedback, generalfeedback: immer sichtbar.
+                // Note: attempt, correctness, maxmarks, marks, specificfeedback, generalfeedback: always visible.
                 ['attempt', 'correctness', 'maxmarks', 'marks', 'specificfeedback', 'generalfeedback'],
-                // overallfeedback: after the attempt, not during. rightanswer stays 0 in all three modes.
+                // Note: overallfeedback: after the attempt, not during. rightanswer stays 0 in all three modes.
                 ['overallfeedback']
             )),
             'progress-check' => array_merge([
@@ -718,14 +805,29 @@ final class quiz implements module_catalog {
         return $result;
     }
 
-    public static function write_route(): ?string {
+    /**
+     * Writes route.
+     *
+     * @return string
+     */
+    public static function write_route(): string {
         return 'update_quiz_settings';
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return mixed[]
+     */
     public static function checked_constants(): array {
         return [];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return mixed[]
+     */
     public static function learner_locks(): array {
         return [
             'attempts' => ['op' => 'greater', 'value' => 0,
@@ -748,6 +850,8 @@ final class quiz implements module_catalog {
     /**
      * Automatically graded unless an instance contains a manually graded
      * question (e.g. essay); then the teacher determines the grade (#583).
+     *
+     * @param int $instanceid The instanceid.
      */
     public static function grade_origin(int $instanceid = 0): string {
         global $CFG;
@@ -763,6 +867,11 @@ final class quiz implements module_catalog {
         return learner_locks::GRADE_AUTOMATIC;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

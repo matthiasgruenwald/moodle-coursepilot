@@ -58,10 +58,11 @@ use local_coursepilot\history\version_history;
  */
 final class provider implements
     \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\plugin\provider,
-    \core_privacy\local\request\core_userlist_provider {
-
+    \core_privacy\local\request\core_userlist_provider,
+    \core_privacy\local\request\plugin\provider {
     /**
+     * Returns metadata.
+     *
      * @param collection $collection
      * @return collection
      */
@@ -180,6 +181,8 @@ final class provider implements
     }
 
     /**
+     * Returns contexts for userid.
+     *
      * @param int $userid
      * @return contextlist
      */
@@ -212,6 +215,8 @@ final class provider implements
     }
 
     /**
+     * Returns users in context.
+     *
      * @param userlist $userlist
      */
     public static function get_users_in_context(userlist $userlist): void {
@@ -230,8 +235,11 @@ final class provider implements
         }
 
         if ($context instanceof \context_module) {
-            $userlist->add_from_sql('userid', 'SELECT userid FROM {local_coursepilot_cm_version} WHERE cmid = :cmid',
-                ['cmid' => $context->instanceid]);
+            $userlist->add_from_sql(
+                'userid',
+                'SELECT userid FROM {local_coursepilot_cm_version} WHERE cmid = :cmid',
+                ['cmid' => $context->instanceid]
+            );
         }
     }
 
@@ -266,6 +274,8 @@ final class provider implements
     }
 
     /**
+     * Exports user data.
+     *
      * @param approved_contextlist $contextlist
      */
     public static function export_user_data(approved_contextlist $contextlist): void {
@@ -297,8 +307,11 @@ final class provider implements
     private static function export_history(\context_module $context, int $userid): void {
         global $DB;
 
-        $records = $DB->get_records('local_coursepilot_cm_version',
-            ['cmid' => $context->instanceid, 'userid' => $userid], 'version ASC');
+        $records = $DB->get_records(
+            'local_coursepilot_cm_version',
+            ['cmid' => $context->instanceid, 'userid' => $userid],
+            'version ASC'
+        );
         if (!$records) {
             return;
         }
@@ -336,7 +349,7 @@ final class provider implements
             [get_string('pluginname', 'local_coursepilot')],
             context_files::LEGACY_COMPONENT,
             context_files::LEGACY_FILEAREA,
-            context_files::ITEMID
+            sprintf('%d', context_files::ITEMID)
         );
 
         $markrecords = $DB->get_records('local_coursepilot_context_mark', ['userid' => $userid]);
@@ -362,7 +375,7 @@ final class provider implements
     private static function export_system_context(\context_system $context, int $userid): void {
         global $DB;
 
-        $codes = $DB->get_records('local_coursepilot_oauth_code', ['userid' => $userid]);
+        $codes = $DB->get_records('local_coursepilot_oauth_code', ['userid' => $userid], 'id ASC');
         $exportedcodes = array_map(static fn($record): \stdClass => (object) [
             'clientid' => $record->clientid,
             'redirecturi' => $record->redirecturi,
@@ -370,7 +383,7 @@ final class provider implements
             'used' => transform::yesno($record->used),
         ], array_values($codes));
 
-        $tokens = $DB->get_records('local_coursepilot_oauth_token', ['userid' => $userid]);
+        $tokens = $DB->get_records('local_coursepilot_oauth_token', ['userid' => $userid], 'id ASC');
         $exportedtokens = array_map(static fn($record): \stdClass => (object) [
             'clientid' => $record->clientid,
             'expires' => transform::datetime($record->expires),
@@ -379,14 +392,14 @@ final class provider implements
             'timecreated' => transform::datetime($record->timecreated),
         ], array_values($tokens));
 
-        $grants = $DB->get_records('local_coursepilot_oauth_grant', ['userid' => $userid]);
+        $grants = $DB->get_records('local_coursepilot_oauth_grant', ['userid' => $userid], 'id ASC');
         $exportedgrants = array_map(static fn($record): \stdClass => (object) [
             'id' => $record->id, 'clientid' => $record->clientid,
             'revoked' => transform::yesno($record->revoked),
             'timecreated' => transform::datetime($record->timecreated),
         ], array_values($grants));
 
-        $tickets = $DB->get_records('local_coursepilot_workbench_ticket', ['userid' => $userid]);
+        $tickets = $DB->get_records('local_coursepilot_workbench_ticket', ['userid' => $userid], 'id ASC');
         $exportedtickets = array_map(static fn($record): \stdClass => (object) [
             'path' => $record->path,
             'expires' => transform::datetime($record->expires),
@@ -405,6 +418,8 @@ final class provider implements
     }
 
     /**
+     * Deletes data for all users in context.
+     *
      * @param \context $context
      */
     public static function delete_data_for_all_users_in_context(\context $context): void {
@@ -450,6 +465,8 @@ final class provider implements
     }
 
     /**
+     * Deletes data for user.
+     *
      * @param approved_contextlist $contextlist
      */
     public static function delete_data_for_user(approved_contextlist $contextlist): void {
@@ -479,6 +496,8 @@ final class provider implements
     }
 
     /**
+     * Deletes data for users.
+     *
      * @param approved_userlist $userlist
      */
     public static function delete_data_for_users(approved_userlist $userlist): void {

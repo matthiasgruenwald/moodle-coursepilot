@@ -17,6 +17,7 @@
 namespace local_coursepilot\external;
 
 use local_coursepilot\material_files;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -29,8 +30,10 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(upload_material_file::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class upload_material_file_test extends \advanced_testcase {
-
     public function test_creates_new_file(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
@@ -65,6 +68,66 @@ final class upload_material_file_test extends \advanced_testcase {
 
         $this->expectException(\moodle_exception::class);
         $this->upload('programm.exe', 'Inhalt');
+    }
+
+    /**
+     * Provides the OpenDocument extensions teachers' LibreOffice files carry.
+     *
+     * @return string[][]
+     */
+    public static function opendocument_names(): array {
+        return [
+            'text' => ['lernjournal.odt'],
+            'spreadsheet' => ['auswertung.ods'],
+            'presentation' => ['vortrag.odp'],
+            'drawing' => ['skizze.odg'],
+        ];
+    }
+
+    #[DataProvider('opendocument_names')]
+    public function test_opendocument_files_are_stored_in_the_material_area(string $name): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $result = \core_external\external_api::clean_returnvalue(
+            upload_material_file::execute_returns(),
+            upload_material_file::execute($name, base64_encode('PK-odf'))
+        );
+
+        $this->assertTrue($result['created']);
+        $this->assertSame($name, $result['path']);
+        $this->assertSame('PK-odf', $this->read_stored($user, '/coursepilot-material/', $name));
+    }
+
+    public function test_refusal_lists_the_opendocument_extensions_as_allowed(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            $this->upload('programm.exe', 'Inhalt');
+            $this->fail('A disallowed extension must be refused.');
+        } catch (\moodle_exception $e) {
+            $message = $e->getMessage();
+        }
+
+        foreach (['odt', 'ods', 'odp', 'odg'] as $extension) {
+            $this->assertStringContainsString($extension, $message);
+        }
+    }
+
+    public function test_a_name_with_spaces_is_refused_with_a_normalised_proposal(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        try {
+            $this->upload('Lernjournal Algorithmik – Vorlage.odt', 'Inhalt');
+            $this->fail('A name outside the naming rule must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialfileinvalidname', $e->errorcode);
+            $this->assertStringContainsString('Lernjournal_Algorithmik_Vorlage.odt', $e->getMessage());
+            $this->assertStringNotContainsString('File type not allowed', $e->getMessage());
+        }
     }
 
     public function test_svg_stays_allowed(): void {
@@ -103,7 +166,10 @@ final class upload_material_file_test extends \advanced_testcase {
         $first = $this->upload('blatt.pdf', 'alt');
         $stored = $this->read_file_object(material_files::own_context()->id, '/coursepilot-material/', 'blatt.pdf');
 
-        $result = upload_material_file::execute('blatt.pdf', base64_encode('neu'), $stored->get_contenthash());
+        $result = \core_external\external_api::clean_returnvalue(
+            upload_material_file::execute_returns(),
+            upload_material_file::execute('blatt.pdf', base64_encode('neu'), $stored->get_contenthash())
+        );
 
         $this->assertFalse($result['created']);
     }
@@ -162,16 +228,20 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides upload.
+     *
      * @param string $path
      * @param string $content
      * @param string $expectedcontenthash
-     * @return array
+     * @return mixed[]
      */
     private function upload(string $path, string $content, string $expectedcontenthash = ''): array {
         return upload_material_file::execute($path, base64_encode($content), $expectedcontenthash);
     }
 
     /**
+     * Reads stored.
+     *
      * @param \stdClass $user
      * @param string $filepath
      * @param string $filename
@@ -190,6 +260,8 @@ final class upload_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Reads file object.
+     *
      * @param int $contextid
      * @param string $filepath
      * @param string $filename

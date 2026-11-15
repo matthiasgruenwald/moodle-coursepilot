@@ -30,14 +30,18 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(report_loose_material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 final class report_loose_material_files_test extends \advanced_testcase {
-
     public function test_lists_unused_file_as_loose(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
         $this->store_material_file('screenshot.png', 'Inhalt A');
 
-        $result = report_loose_material_files::execute();
+        $result = \core_external\external_api::clean_returnvalue(
+            report_loose_material_files::execute_returns(),
+            report_loose_material_files::execute()
+        );
 
         $this->assertCount(1, $result['files']);
         $this->assertSame('screenshot.png', $result['files'][0]['path']);
@@ -141,6 +145,12 @@ final class report_loose_material_files_test extends \advanced_testcase {
         $this->assertNotNull($result['remaining_quota_mb']);
     }
 
+    /**
+     * Stores material file.
+     *
+     * @param string $filename The filename.
+     * @param string $content The content.
+     */
     private function store_material_file(string $filename, string $content): void {
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,

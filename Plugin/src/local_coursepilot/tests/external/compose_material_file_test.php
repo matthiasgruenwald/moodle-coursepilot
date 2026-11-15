@@ -1,8 +1,22 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
+use core_external\external_api;
 use local_coursepilot\material_area;
 use local_coursepilot\material_files;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
@@ -19,6 +33,9 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(compose_material_file::class)]
 #[CoversClass(\local_coursepilot\material_composition::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
 final class compose_material_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -27,6 +44,13 @@ final class compose_material_file_test extends \advanced_testcase {
         parent::tearDown();
     }
 
+    /**
+     * Provides png.
+     *
+     * @param int $width The width.
+     * @param int $height The height.
+     * @return string
+     */
     private function png(int $width, int $height): string {
         $image = imagecreatetruecolor($width, $height);
         for ($y = 0; $y < $height; $y++) {
@@ -39,6 +63,12 @@ final class compose_material_file_test extends \advanced_testcase {
         return $content;
     }
 
+    /**
+     * Stores the compose material file test.
+     *
+     * @param string $filename The filename.
+     * @param string $content The content.
+     */
     private function store(string $filename, string $content): void {
         get_file_storage()->create_file_from_string([
             'contextid' => material_files::own_context()->id,
@@ -50,6 +80,12 @@ final class compose_material_file_test extends \advanced_testcase {
         ], $content);
     }
 
+    /**
+     * Provides result image.
+     *
+     * @param string $path The path.
+     * @return \GdImage
+     */
     private function result_image(string $path): \GdImage {
         $stored = material_area::read_for_location('workbench', $path);
         $this->assertNotNull($stored);
@@ -57,6 +93,14 @@ final class compose_material_file_test extends \advanced_testcase {
         return imagecreatefromstring($stored['content']);
     }
 
+    /**
+     * Asserts pixels.
+     *
+     * @param \GdImage $source The source.
+     * @param \GdImage $target The target.
+     * @param int $x The x.
+     * @param int $y The y.
+     */
     private function assert_pixels(\GdImage $source, \GdImage $target, int $x, int $y): void {
         for ($sy = 0; $sy < imagesy($source); $sy++) {
             for ($sx = 0; $sx < imagesx($source); $sx++) {
@@ -77,6 +121,8 @@ final class compose_material_file_test extends \advanced_testcase {
             'source_header_text' => 'ML S. 36',
         ]], 'vertical', 'composed.png');
 
+        $result = external_api::clean_returnvalue(compose_material_file::execute_returns(), $result);
+
         $this->assertSame('composed.png', $result['path']);
         $this->assertTrue($result['created']);
         $this->assertSame(250, $result['width']);
@@ -84,6 +130,21 @@ final class compose_material_file_test extends \advanced_testcase {
         $stored = material_area::read_for_location('workbench', $result['path']);
         $this->assertSame($stored['contenthash'], $result['contenthash']);
         $this->assertStringStartsWith('workbench:page.png', $result['sources'][0]);
+        $file = get_file_storage()->get_file(
+            material_files::own_context()->id,
+            material_files::COMPONENT,
+            material_files::FILEAREA,
+            material_files::ITEMID,
+            '/coursepilot-material/',
+            'composed.png'
+        );
+        $this->assertSame(
+            serialize((object) ['original' => implode('; ', $result['sources'])]),
+            $file->get_source(),
+            'Provenance is stored as a serialized stdClass, not an array.'
+        );
+        $provenance = unserialize_object($file->get_source());
+        $this->assertSame(implode('; ', $result['sources']), $provenance->original);
         $image = $this->result_image('composed.png');
         $blue = 0;
         for ($y = 0; $y < 48; $y++) {
@@ -124,8 +185,11 @@ final class compose_material_file_test extends \advanced_testcase {
             imagedestroy($original);
             $original = imagecreatefromstring($second);
             $this->assert_pixels($original, $image, $expected[2], $expected[3]);
-            $this->assertSame(0xffffff, imagecolorat($image, $layout === 'vertical' ? 0 : 210,
-                $layout === 'vertical' ? 140 : 0));
+            $this->assertSame(0xffffff, imagecolorat(
+                $image,
+                $layout === 'vertical' ? 0 : 210,
+                $layout === 'vertical' ? 140 : 0
+            ));
             imagedestroy($original);
             imagedestroy($image);
         }
@@ -153,6 +217,11 @@ final class compose_material_file_test extends \advanced_testcase {
         imagedestroy($image);
     }
 
+    /**
+     * Provides failure cases.
+     *
+     * @return mixed[]
+     */
     public static function failure_cases(): array {
         $valid = ['sourcepath' => 'page.png'];
         return [
@@ -175,9 +244,21 @@ final class compose_material_file_test extends \advanced_testcase {
         ];
     }
 
+    /**
+     * Composition failures preserve the existing target.
+     *
+     * @param mixed[][] $parts Composition sources.
+     *        Type: array<int,array<string,mixed>>.
+     * @param string $arrangement Requested layout.
+     * @param string $target Target filename.
+     * @param string $errorcode Expected rejection.
+     */
     #[\PHPUnit\Framework\Attributes\DataProvider('failure_cases')]
     public function test_failures_leave_no_new_file_and_preserve_existing_target(
-        array $parts, string $arrangement, string $target, string $errorcode
+        array $parts,
+        string $arrangement,
+        string $target,
+        string $errorcode
     ): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
@@ -217,8 +298,11 @@ final class compose_material_file_test extends \advanced_testcase {
         $this->store('page.png', $this->png(300, 40));
         $images = [];
         foreach (['umlaut' => 'Ökologie S. 12', 'plain' => 'Okologie S. 12'] as $name => $text) {
-            compose_material_file::execute([['sourcepath' => 'page.png', 'source_header_text' => $text]],
-                'vertical', $name . '.png');
+            compose_material_file::execute(
+                [['sourcepath' => 'page.png', 'source_header_text' => $text]],
+                'vertical',
+                $name . '.png'
+            );
             $images[$name] = $this->result_image($name . '.png');
         }
         // Independent visual signature of Ö: two separated ink runs above its round body.
@@ -234,8 +318,10 @@ final class compose_material_file_test extends \advanced_testcase {
             $dotrows += (int) ($runs === 2);
         }
         $this->assertGreaterThanOrEqual(2, $dotrows);
-        $this->assertNotSame(material_area::read_for_location('workbench', 'plain.png')['contenthash'],
-            material_area::read_for_location('workbench', 'umlaut.png')['contenthash']);
+        $this->assertNotSame(
+            material_area::read_for_location('workbench', 'plain.png')['contenthash'],
+            material_area::read_for_location('workbench', 'umlaut.png')['contenthash']
+        );
         foreach ($images as $image) {
             imagedestroy($image);
         }
@@ -243,8 +329,13 @@ final class compose_material_file_test extends \advanced_testcase {
 
     public function test_tool_is_registered_as_writing(): void {
         $this->assertTrue(\local_coursepilot\tool_registry::is_write('coursepilot_compose_material_file'));
-        $this->assertSame('local_coursepilot_compose_material_file',
-            \local_coursepilot\privacy_surface::function_for_tool('coursepilot_compose_material_file'));
-        $this->assertSame('write', \local_coursepilot\tool_registry::service_functions()['local_coursepilot_compose_material_file']['type']);
+        $this->assertSame(
+            'local_coursepilot_compose_material_file',
+            \local_coursepilot\privacy_surface::function_for_tool('coursepilot_compose_material_file')
+        );
+        $this->assertSame(
+            'write',
+            \local_coursepilot\tool_registry::service_functions()['local_coursepilot_compose_material_file']['type']
+        );
     }
 }

@@ -31,22 +31,40 @@ use local_coursepilot\webdav\webdav_transport;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class stale_read_transport implements webdav_transport {
-
+    /**
+     * Triggered.
+     *
+     * @var bool
+     */
     private bool $triggered = false;
 
     /**
+     * Creates the stale read transport.
+     *
      * @param fake_webdav_transport $fake Underlying storage, also modified by the simulated concurrent edit.
      * @param string $urlsubstring URL substring identifying the watched file.
      * @param fake_webdav_transport $inner Production would use another transport; the test intentionally
      *        uses the same instance and edits its storage directly.
      */
     public function __construct(
+        /** @var fake_webdav_transport Underlying storage, also modified by the simulated concurrent edit. */
         private readonly fake_webdav_transport $fake,
+        /** @var string URL substring identifying the watched file. */
         private readonly string $urlsubstring,
+        /** @var fake_webdav_transport Production would use another transport; the test intentionally */
         private readonly fake_webdav_transport $inner,
     ) {
     }
 
+    /**
+     * Provides request.
+     *
+     * @param string $method The method.
+     * @param string $url The url.
+     * @param mixed[] $headers The headers.
+     * @param ?string $body The body.
+     * @return webdav_response
+     */
     public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
         $response = $this->inner->request($method, $url, $headers, $body);
         if (!$this->triggered && $method === 'PROPFIND' && str_contains($url, $this->urlsubstring)) {

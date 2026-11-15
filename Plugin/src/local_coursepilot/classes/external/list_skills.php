@@ -28,8 +28,6 @@ use local_coursepilot\remote_access;
 use local_coursepilot\skill_corpus;
 use local_coursepilot\webdav\webdav_setup_steps;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Skill catalog (Spec 0020 §4, Issue #450): name, trigger, kind and length
  * per entry. get_skill supplies content. Course-independent; requires
@@ -45,8 +43,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class list_skills extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -54,7 +53,9 @@ final class list_skills extends external_api {
     }
 
     /**
-     * @return array
+     * Runs the list skills tool.
+     *
+     * @return mixed[]
      */
     public static function execute(): array {
         self::validate_parameters(self::execute_parameters(), []);
@@ -115,6 +116,8 @@ final class list_skills extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
@@ -132,7 +135,10 @@ final class list_skills extends external_api {
                     'path' => new external_value(PARAM_TEXT, 'Relative target file path in the context area'),
                     'entries' => new external_multiple_structure(
                         new external_single_structure([
-                            'identifier' => new external_value(PARAM_ALPHANUMEXT, 'Identifier, for pending_entry=<identifier> or coursepilot_dismiss_pending_entry'),
+                            'identifier' => new external_value(
+                                PARAM_ALPHANUMEXT,
+                                'Identifier, for pending_entry=<identifier> or coursepilot_dismiss_pending_entry'
+                            ),
                             'timestamp' => new external_value(PARAM_INT, 'Unix timestamp of the failed operation'),
                             'operation' => new external_value(
                                 PARAM_TEXT,

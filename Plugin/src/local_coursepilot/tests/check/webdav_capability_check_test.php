@@ -17,7 +17,7 @@
 namespace local_coursepilot\check;
 
 use core\check\result;
-use local_coursepilot\oauth_lib;
+use local_coursepilot\connection;
 use local_coursepilot\tests\webdav\webdav_instance_fixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -34,6 +34,11 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class webdav_capability_check_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
+    /**
+     * Provides issue token.
+     *
+     * @param int $userid The userid.
+     */
     private function issue_token(int $userid): void {
         global $DB;
 
@@ -43,12 +48,12 @@ final class webdav_capability_check_test extends \advanced_testcase {
         ]);
         $DB->insert_record('local_coursepilot_oauth_token', (object) [
             'connectionid' => $connectionid,
-            'accesstokenhash' => hash('sha256', oauth_lib::random_token(32)),
-            'refreshtokenhash' => hash('sha256', oauth_lib::random_token(32)),
+            'accesstokenhash' => hash('sha256', bin2hex(random_bytes(32))),
+            'refreshtokenhash' => hash('sha256', bin2hex(random_bytes(32))),
             'clientid' => 'test-client',
             'userid' => $userid,
-            'expires' => time() + oauth_lib::ACCESS_TOKEN_TTL,
-            'refreshexpires' => time() + oauth_lib::REFRESH_TOKEN_TTL,
+            'expires' => time() + connection::ACCESS_TOKEN_TTL,
+            'refreshexpires' => time() + connection::REFRESH_TOKEN_TTL,
             'revoked' => 0,
             'timecreated' => time(),
         ]);
@@ -104,5 +109,24 @@ final class webdav_capability_check_test extends \advanced_testcase {
         $this->assertStringContainsString('2', $result->get_summary());
         $this->assertStringContainsString('Ohne Recht', $result->get_details());
         $this->assertStringNotContainsString('Hat Recht', $result->get_details());
+    }
+
+    public function test_identifies_itself_for_the_status_report(): void {
+        $this->resetAfterTest();
+        $check = new webdav_capability_check();
+
+        $this->assertSame('webdav_capability', $check->get_id());
+        $this->assertSame(get_string('webdavcheck3name', 'local_coursepilot'), $check->get_name());
+    }
+
+    public function test_check_links_to_the_relevant_admin_page(): void {
+        $this->resetAfterTest();
+
+        $link = (new webdav_capability_check())->get_action_link();
+        $this->assertSame(
+            (new \moodle_url('/admin/roles/assign.php', ['contextid' => \context_system::instance()->id]))->out(false),
+            $link->url->out(false)
+        );
+        $this->assertSame(get_string('webdavcheckactionlink', 'local_coursepilot'), $link->text);
     }
 }

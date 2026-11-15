@@ -17,7 +17,6 @@
 namespace local_coursepilot;
 
 use core_external\external_value;
-use local_coursepilot\webdav\webdav_error;
 
 /**
  * Material folder anchor (Spec 0018 §2, #428). A sibling of context_files
@@ -43,7 +42,6 @@ use local_coursepilot\webdav\webdav_error;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class material_files {
-
     /** @var string Read-only, pointer-aware material store location (default, #495). */
     public const LOCATION_STORE = 'store';
 
@@ -85,13 +83,15 @@ final class material_files {
 
     /**
      * General upload allowlist (Spec 0018 §6), retained from the local 1.x
-     * UPLOAD_MIME_TYPES policy.
+     * UPLOAD_MIME_TYPES policy, plus the OpenDocument document types
+     * (text, spreadsheet, presentation, drawing) of LibreOffice and Collabora.
      *
      * @var string[]
      */
     private const ALLOWED_UPLOAD_EXTENSIONS = [
         'pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'html', 'htm',
         'png', 'jpg', 'jpeg', 'gif', 'svg', 'txt', 'csv', 'zip',
+        'odt', 'ods', 'odp', 'odg',
     ];
 
     /**
@@ -144,10 +144,18 @@ final class material_files {
             invalidpathkey: 'invalidmaterialpath',
             quotaerrorkey: 'materialquotaexceeded',
             checkwritablename: static function (string $filename): void {
-                if (!preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/', $filename) || !self::is_allowed_extension($filename)) {
+                $allowed = implode(', ', self::allowed_extensions());
+                if (!preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/', $filename)) {
+                    throw new \moodle_exception('materialfileinvalidname', 'local_coursepilot', '', (object) [
+                        'filename' => $filename,
+                        'allowed' => $allowed,
+                        'suggestion' => self::suggest_name($filename),
+                    ]);
+                }
+                if (!self::is_allowed_extension($filename)) {
                     throw new \moodle_exception('materialfiledisallowedtype', 'local_coursepilot', '', (object) [
                         'filename' => $filename,
-                        'allowed' => implode(', ', self::allowed_extensions()),
+                        'allowed' => $allowed,
                     ]);
                 }
             },
@@ -180,6 +188,28 @@ final class material_files {
             checkwritablename: $area->checkwritablename,
             pointerkey: $area->pointerkey,
             externalfallback: true,
+        );
+    }
+
+    /**
+     * Workbench policy for generated exports, retaining their existing permissive names.
+     * Traversal and area isolation remain enforced by the anchor and port.
+     *
+     * @return storage_area
+     */
+    public static function export_area(): storage_area {
+        $area = self::workbench_area();
+        return new storage_area(
+            rootsetting: $area->rootsetting,
+            defaultroot: $area->defaultroot,
+            invalidpathkey: $area->invalidpathkey,
+            quotaerrorkey: $area->quotaerrorkey,
+            checkwritablename: static function (string $filename): void {
+                // Generated XML has always used read-path names without the upload extension allowlist.
+            },
+            pointerkey: $area->pointerkey,
+            externalfallback: $area->externalfallback,
+            strictwritefolders: false,
         );
     }
 
@@ -239,18 +269,18 @@ final class material_files {
 
     /**
      * Recursively list material files, without directories, regardless of
-     * location (#488), for external\report_loose_material_files.
+     * location, for external\report_loose_material_files.
      *
      * @param string $directory Result of {@see resolve_directory()}.
      * @return array<int, array{directory: string, name: string, size: int,
      *         contenthash: string, timecreated: int}>
      */
     public static function list_entries_recursive(string $directory): array {
-        return storage_anchor::list_entries_recursive($directory);
+        return private_files_storage_port::list_entries_recursive($directory);
     }
 
     /**
-     * Read material content regardless of location (#488).
+     * Read material content regardless of location.
      *
      * @param string $directory Result of {@see resolve_directory()}.
      * @param string $filename
@@ -258,7 +288,7 @@ final class material_files {
      *         timemodified: int}|null null if the file is missing or is a directory.
      */
     public static function read_content(string $directory, string $filename): ?array {
-        return storage_anchor::read_content($directory, $filename);
+        return private_files_storage_port::read_content($directory, $filename);
     }
 
     /**
@@ -268,6 +298,27 @@ final class material_files {
      */
     public static function allowed_extensions(): array {
         return array_values(array_unique(array_merge(self::ALLOWED_UPLOAD_EXTENSIONS, self::ALLOWED_IMAGE_EXTENSIONS)));
+    }
+
+    /**
+     * A name that follows the naming rule, derived from a refused one: umlauts
+     * transliterated, every other disallowed character run turned into one
+     * underscore, the last dot kept as the extension separator. Only a hint
+     * for the message; nothing is renamed.
+     *
+     * @param string $filename
+     * @return string
+     */
+    public static function suggest_name(string $filename): string {
+        $dot = strrpos($filename, '.');
+        $base = $dot === false ? $filename : substr($filename, 0, $dot);
+        $extension = $dot === false ? '' : preg_replace('/[^A-Za-z0-9]/', '', substr($filename, $dot + 1));
+        $base = strtr($base, [
+            'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'Ä' => 'Ae', 'Ö' => 'Oe', 'Ü' => 'Ue', 'ß' => 'ss',
+        ]);
+        $base = trim(preg_replace('/[^A-Za-z0-9_-]+/', '_', \core_text::specialtoascii($base)), '_');
+        $base = $base === '' ? 'datei' : preg_replace('/[_-]*_[_-]*/', '_', $base);
+        return $extension === '' ? $base : $base . '.' . $extension;
     }
 
     /**
@@ -326,7 +377,7 @@ final class material_files {
      *
      * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH}.
      * @param string $path
-     * @return array{directory: string, entries: array}
+     * @return array{directory: string, entries: mixed[]}
      * @throws \moodle_exception invalidmateriallocation, materialpathiscontext,
      *         materialexternalerror, plus location/pointer errors from the anchor.
      */
@@ -334,10 +385,10 @@ final class material_files {
         [$area, $location, $contextlocation, $normalisedpath] = self::guarded_location($locationkey, $path);
         try {
             $entries = storage_anchor::port($area)->list($area, $path);
-        } catch (webdav_error $e) {
+        } catch (storage_failure $e) {
             // Use material-specific failure text instead of the AI-directed
-            // context-gap message (#526, Spec #486 §8).
-            throw pointer_reader::webdav_exception($e, 'materialexternalerror');
+            // context-gap message.
+            throw pointer_reader::storage_exception($e, 'materialexternalerror');
         }
 
         return [
@@ -368,8 +419,8 @@ final class material_files {
         [$area, $location, , $normalisedpath] = self::guarded_location($locationkey, $path);
         try {
             $file = storage_anchor::port($area)->read($area, $path);
-        } catch (webdav_error $e) {
-            throw pointer_reader::webdav_exception($e, 'materialexternalerror');
+        } catch (storage_failure $e) {
+            throw pointer_reader::storage_exception($e, 'materialexternalerror');
         }
         return $file === null ? null : self::with_contenthash($file, $location) + ['path' => $normalisedpath];
     }
@@ -397,9 +448,9 @@ final class material_files {
      * locations. Directories and external material have none (Spec #486 §7):
      * an ETag/modification-time substitute is not presented as a content checksum.
      *
-     * @param array $entry Entry or file from {@see storage_port}.
+     * @param mixed[] $entry Entry or file from {@see storage_port}.
      * @param pointer_location $location Location containing the entry.
-     * @return array
+     * @return mixed[]
      */
     private static function with_contenthash(array $entry, pointer_location $location): array {
         $hascontenthash = $location->kind === pointer_location::MOODLE && ($entry['type'] ?? 'file') !== 'folder';
@@ -421,6 +472,8 @@ final class material_files {
     }
 
     /**
+     * Provides location for value.
+     *
      * @param string $locationkey
      * @return pointer_location
      * @throws \moodle_exception invalidmateriallocation
@@ -443,7 +496,11 @@ final class material_files {
      * @param string $subpath Already segment-validated; see normalise_path().
      * @throws \moodle_exception materialpathiscontext
      */
-    private static function guard_not_context_area(pointer_location $location, pointer_location $contextlocation, string $subpath): void {
+    private static function guard_not_context_area(
+        pointer_location $location,
+        pointer_location $contextlocation,
+        string $subpath
+    ): void {
         if (str_starts_with($location->comparison_key($subpath), $contextlocation->comparison_key())) {
             throw new \moodle_exception('materialpathiscontext', 'local_coursepilot');
         }
@@ -454,11 +511,11 @@ final class material_files {
      * (#495, Spec #486 §2/§7). It is listed visibly but guard_not_context_area()
      * blocks subsequent access through material tools.
      *
-     * @param array $entry
+     * @param mixed[] $entry
      * @param pointer_location $location Location containing parentpath.
      * @param pointer_location $contextlocation Resolved context area.
      * @param string $parentpath Resolved, segment-validated parent path.
-     * @return array
+     * @return mixed[]
      */
     private static function mark_context_area_entry(
         array $entry,
@@ -483,18 +540,18 @@ final class material_files {
      * @throws \required_capability_exception
      */
     public static function require_manage_own_files(): void {
-        storage_anchor::require_manage_own_files();
+        private_files_storage_port::require_manage_own_files();
     }
 
     /**
      * Remaining user quota in bytes, independent of root, as in
-     * context_files::remaining_quota(). Reuse storage_anchor because the quota
+     * context_files::remaining_quota(). Reuse private_files_storage_port because the quota
      * covers the whole user rather than a subdirectory.
      *
      * @return int|null Remaining bytes, or null when unlimited.
      */
     public static function remaining_quota(): ?int {
-        return storage_anchor::remaining_quota();
+        return private_files_storage_port::remaining_quota();
     }
 
     /**
@@ -505,7 +562,7 @@ final class material_files {
      * @throws \moodle_exception materialquotaexceeded
      */
     public static function require_quota(int $additionalbytes): void {
-        storage_anchor::require_quota(self::area(), $additionalbytes);
+        private_files_storage_port::require_quota(self::area(), $additionalbytes);
     }
 
     /**
@@ -560,10 +617,10 @@ final class material_files {
      * @param int $contextid
      * @param string $directory
      * @param string $filename
-     * @return array
+     * @return mixed[]
      */
     public static function filerecord(int $contextid, string $directory, string $filename): array {
-        return storage_anchor::filerecord($contextid, $directory, $filename);
+        return private_files_storage_port::filerecord($contextid, $directory, $filename);
     }
 
     /**
@@ -591,7 +648,7 @@ final class material_files {
      * @param string $component e.g. "mod_assign".
      * @param string $filearea e.g. "introattachment".
      * @param int $itemid
-     * @param array $paths Material paths, e.g. ["worksheet.pdf"], or
+     * @param mixed[] $paths Material paths, e.g. ["worksheet.pdf"], or
      *        `['path' => ..., 'target_folder' => ...]` objects.
      * @param string $locationkey {@see LOCATION_STORE}/{@see LOCATION_WORKBENCH} - Source of paths (#496).
      * @return int Draft item ID, usable as a *_update_instance() field value.
@@ -619,13 +676,13 @@ final class material_files {
     }
 
     /**
-     * Resolve one list entry and copy it into the draft (#523: extracted from
-     * resolve_into_draft() to keep the function below 50 lines).
+     * Resolve one material reference and copy its content into the draft.
      *
      * @param \file_storage $fs
      * @param int $usercontextid
      * @param int $draftitemid
-     * @param string|array $entry
+     * @param string|mixed[] $entry
+     *        Type: string|array{path:string,target_folder?:string}.
      * @param string $locationkey
      */
     private static function embed_draft_entry(
@@ -655,8 +712,8 @@ final class material_files {
             // The same filename was referenced again: newest content wins.
             $existing->delete();
         }
-        // ponytail: read_content() intentionally returns no stored_file (#487/#488;
-        // see storage_anchor::read_content()). Copy only MIME type explicitly,
+        // Deliberate shortcut - ponytail: read_content() intentionally returns no stored_file;
+        // see private_files_storage_port::read_content(). Copy only MIME type explicitly,
         // leaving license/author to draft defaults. Material uploads through these
         // tools already use default metadata. Upgrade to stored_file copies with
         // full metadata when a real case demonstrates the difference.
@@ -751,51 +808,15 @@ final class material_files {
     }
 
     /**
-     * Replace material content through storage_anchor::replace(), avoiding
+     * Replace material content through private_files_storage_port::replace(), avoiding
      * duplicated file-system logic. It stages a temporary file before deleting
      * the old file (Spec 0016 §5.3), regardless of context/material roots.
      *
      * @param \stored_file|null $existing Previous file, if any.
-     * @param array $filerecord Target record from filerecord().
+     * @param mixed[] $filerecord Target record from filerecord().
      * @param string $content Complete new content.
      */
     public static function replace(?\stored_file $existing, array $filerecord, string $content): void {
-        storage_anchor::replace($existing, $filerecord, $content);
-    }
-
-    /**
-     * Quota-checked material write shared by upload_material_file (chat
-     * attachments with preceding extension/concurrency checks) and
-     * export_questions_xml (complete XML export without the upload allowlist,
-     * which deliberately excludes .xml; see resolve_writable_file()).
-     * Previously these endpoints duplicated size/quota/write orchestration
-     * (#437 standards review).
-     *
-     * @param string $directory Result of resolve_file()/resolve_writable_file().
-     * @param string $filename
-     * @param string $content Complete new content.
-     * @param int $oldsize Previous file size in bytes, zero if absent
-     *        (usually already known by the caller, e.g. from its own concurrency or
-     *        created check through read_content()).
-     * @param array $recordoverrides Additional/overriding file record fields; see
-     *        storage_anchor::write(), e.g. a crop's source field.
-     * @return string|null Quota warning, or null when no warning is needed.
-     * @throws \moodle_exception materialquotaexceeded
-     */
-    public static function write(
-        string $directory,
-        string $filename,
-        string $content,
-        int $oldsize,
-        array $recordoverrides = []
-    ): ?string {
-        $additionalbytes = strlen($content) - $oldsize;
-
-        self::require_quota($additionalbytes);
-        $warning = self::quota_warning($additionalbytes);
-
-        storage_anchor::write($directory, $filename, $content, $recordoverrides);
-
-        return $warning;
+        private_files_storage_port::replace($existing, $filerecord, $content);
     }
 }

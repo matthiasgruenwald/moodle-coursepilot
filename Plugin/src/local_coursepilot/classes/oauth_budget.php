@@ -29,7 +29,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class oauth_budget {
-
     /** @var string Budget counters, one per scope/source/window. */
     private const TABLE = 'local_coursepilot_oauth_budget';
 
@@ -60,6 +59,7 @@ final class oauth_budget {
         self::purge_expired($now);
         $siteid = self::site_row($scope, $expires);
 
+        /** @var \moodle_transaction $transaction */
         $transaction = $DB->start_delegated_transaction();
         try {
             $allowed = self::consume_locked($scope, $siteid, $source, $expires, $sitelimit, $sourcelimit);
@@ -84,8 +84,14 @@ final class oauth_budget {
      * @param int $sourcelimit
      * @return bool
      */
-    private static function consume_locked(string $scope, int $siteid, string $source, int $expires,
-            int $sitelimit, int $sourcelimit): bool {
+    private static function consume_locked(
+        string $scope,
+        int $siteid,
+        string $source,
+        int $expires,
+        int $sitelimit,
+        int $sourcelimit
+    ): bool {
         global $DB;
 
         $DB->execute('UPDATE {' . self::TABLE . '} SET hits = hits + 1 WHERE id = ?', [$siteid]);
@@ -119,8 +125,11 @@ final class oauth_budget {
      */
     public static function active(string $scope, string $source): bool {
         global $DB;
-        return $DB->record_exists_select(self::TABLE, 'scope = ? AND sourcekey = ? AND expires > ?',
-            [$scope, self::key($source), time()]);
+        return $DB->record_exists_select(
+            self::TABLE,
+            'scope = ? AND sourcekey = ? AND expires > ?',
+            [$scope, self::key($source), time()]
+        );
     }
 
     /**

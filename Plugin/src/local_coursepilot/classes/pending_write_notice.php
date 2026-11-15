@@ -35,7 +35,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class pending_write_notice {
-
     /**
      * Records a failed write operation and returns the newly
      * assigned identifier.
@@ -128,7 +127,7 @@ final class pending_write_notice {
      * it is written plugin-internally, a defective state is the
      * rare edge case, not the normal case).
      *
-     * @return array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id: int}>
+     * @return array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id?: int}>
      */
     private static function all(): array {
         global $USER;
@@ -154,7 +153,10 @@ final class pending_write_notice {
     }
 
     /**
-     * @param array<string, array{timestamp: int, path: string, operation: string, error_class: string, course_id: int}> $entries
+     * Saves the pending write notice.
+     *
+     * @param mixed[] $entries
+     *        Type: array<string,array{timestamp:int,path:string,operation:string,error_class:string,course_id:int}>.
      * @throws \moodle_exception pendingnotequotaexceeded
      */
     private static function save(array $entries): void {
@@ -172,20 +174,22 @@ final class pending_write_notice {
         );
 
         $oldsize = $existing ? $existing->get_filesize() : 0;
-        $remaining = storage_anchor::remaining_quota();
+        $remaining = private_files_storage_port::remaining_quota();
         if ($remaining !== null && (strlen($content) - $oldsize) > $remaining) {
             throw new \moodle_exception('pendingnotequotaexceeded', 'local_coursepilot');
         }
 
-        storage_anchor::replace(
+        private_files_storage_port::replace(
             $existing ?: null,
-            storage_anchor::filerecord($contextid, $directory, storage_anchor::PENDING_FILENAME),
+            private_files_storage_port::filerecord($contextid, $directory, storage_anchor::PENDING_FILENAME),
             $content
         );
     }
 
     /**
-     * @param array<string, mixed> $existing Already assigned identifiers (keys).
+     * Generates identifier.
+     *
+     * @param mixed[] $existing Already assigned identifiers (keys).
      * @return string
      */
     private static function generate_identifier(array $existing): string {

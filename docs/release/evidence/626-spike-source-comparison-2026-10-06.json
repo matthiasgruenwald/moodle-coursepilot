@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-10-06T05:37:13.949953+00:00",
+  "commit": "75f1308a3816ec626899e800062642d1165de5fa",
+  "installedSource": "/opt/plugins/local_coursepilot",
+  "container": "moodle-kurspilot-spike-webserver-1",
+  "containerMount": "/var/www/html/public/local/coursepilot",
+  "trackedFilesCompared": 391,
+  "missing": [],
+  "different": [],
+  "method": "Read-only byte comparison against git archive; mount confirmed by docker inspect",
+  "courseid": 27,
+  "section": 4,
+  "courseAuthorizationSource": "Coordinator result 626.json; no Moodle course read or write performed",
+  "otherClientEndpointVerified": false
+}

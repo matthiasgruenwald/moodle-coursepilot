@@ -25,8 +25,6 @@ use core_external\external_value;
 use local_coursepilot\remote_access;
 use local_coursepilot\skill_corpus;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Delivery of a single skill corpus entry (Spec 0020 §4, issue
  * #450): content, names of the referenced parts, corpus version.
@@ -48,8 +46,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class get_skill extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -59,8 +58,10 @@ final class get_skill extends external_api {
     }
 
     /**
+     * Runs the get skill tool.
+     *
      * @param string $name
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception unknownskillname, if $name is not in the corpus directory.
      */
     public static function execute(string $name): array {
@@ -74,6 +75,8 @@ final class get_skill extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

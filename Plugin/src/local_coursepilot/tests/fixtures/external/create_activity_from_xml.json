@@ -1,0 +1,258 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "courseid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "modname",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "section",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "activityxml",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "hidden",
+                "type": "bool",
+                "default": false
+            },
+            {
+                "name": "replacescmid",
+                "type": "int",
+                "default": 0
+            },
+            {
+                "name": "dryrun",
+                "type": "bool",
+                "default": false
+            },
+            {
+                "name": "files",
+                "type": "array",
+                "default": []
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "courseid": {
+                "class": "core_external\\external_value",
+                "desc": "Course ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Developed activity type, e.g. \"book\"",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "alphanumext"
+            },
+            "section": {
+                "class": "core_external\\external_value",
+                "desc": "Section number (0 = general section)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "activity_xml": {
+                "class": "core_external\\external_value",
+                "desc": "Activity XML (<module>.xml of a backup), e.g. from coursepilot_export_default_activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "hidden": {
+                "class": "core_external\\external_value",
+                "desc": "Leave the activity hidden after the check",
+                "required": 0,
+                "default": false,
+                "allownull": true,
+                "type": "bool"
+            },
+            "replaces_cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only hidden. 0 = create only",
+                "required": 0,
+                "default": 0,
+                "allownull": true,
+                "type": "int"
+            },
+            "dry_run": {
+                "class": "core_external\\external_value",
+                "desc": "Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)",
+                "required": 0,
+                "default": false,
+                "allownull": true,
+                "type": "bool"
+            },
+            "files": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Files copied after the XML round trip and before visibility; only declared activity file areas are allowed",
+                "required": 0,
+                "default": [],
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "path": {
+                            "class": "core_external\\external_value",
+                            "desc": "Path in the material store; binary contents stay on the server",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "filearea": {
+                            "class": "core_external\\external_value",
+                            "desc": "Declared activity file area; lightboxgallery: gallery_images",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "alphanumext"
+                        },
+                        "caption": {
+                            "class": "core_external\\external_value",
+                            "desc": "Image caption (plain text), empty if omitted",
+                            "required": 0,
+                            "default": "",
+                            "allownull": true,
+                            "type": "notags"
+                        },
+                        "location": {
+                            "class": "core_external\\external_value",
+                            "desc": "\"store\" (default, the teacher's grown material store, read-only) or \"workbench\" (Coursepilot's own staging area)",
+                            "required": 0,
+                            "default": "store",
+                            "allownull": true,
+                            "type": "alpha"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the new activity (0 for a dry run)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "presets": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Moodle presets",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Path of a field Moodle filled in that was not in the XML",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "raw"
+                }
+            },
+            "references": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Places that still point at the superseded activity (only with replaces_cmid); not resolved",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "kind": {
+                            "class": "core_external\\external_value",
+                            "desc": "activity_availability, section_availability or course_completion",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "alphanumext"
+                        },
+                        "location_id": {
+                            "class": "core_external\\external_value",
+                            "desc": "cmid, section id or course id of the referencing place",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "location": {
+                            "class": "core_external\\external_value",
+                            "desc": "Readable place",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            },
+            "successor_cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Newest activity that already supersedes replaces_cmid (ask the teacher whether to supersede that one instead), 0 if none",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "hidden_predecessors": {
+                "class": "core_external\\external_value",
+                "desc": "Hidden earlier versions in the chain behind the new activity: replaces_cmid (hidden by superseding) plus its hidden predecessors; 0 without replaces_cmid",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Hints about Moodle presets, unresolved references and the superseding chain, empty if there are none",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

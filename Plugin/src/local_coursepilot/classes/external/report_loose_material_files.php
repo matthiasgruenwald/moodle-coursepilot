@@ -23,8 +23,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\material_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Reports loose material files (Spec 0018 §8.2/§8.3, #438): material-store
  * files whose contenthash appears in no activity file area of an owned course.
@@ -41,8 +39,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class report_loose_material_files extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -50,7 +49,9 @@ class report_loose_material_files extends external_api {
     }
 
     /**
-     * @return array
+     * Runs the report loose material files tool.
+     *
+     * @return mixed[]
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(): array {
@@ -89,6 +90,8 @@ class report_loose_material_files extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

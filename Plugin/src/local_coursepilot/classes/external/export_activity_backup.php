@@ -24,8 +24,6 @@ use core_external\external_value;
 use local_coursepilot\activity_backup;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Activity XML of an existing activity (Spec 0026, #588): thin adapter over
  * {@see activity_backup::export()}. Read-only despite the "export_" prefix
@@ -36,8 +34,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class export_activity_backup extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -47,8 +46,10 @@ final class export_activity_backup extends external_api {
     }
 
     /**
+     * Runs the export activity backup tool.
+     *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      * @throws moodle_exception clonenobackupsupport
      */
     public static function execute(int $cmid): array {
@@ -71,6 +72,8 @@ final class export_activity_backup extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

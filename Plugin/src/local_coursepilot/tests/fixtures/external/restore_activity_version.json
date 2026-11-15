@@ -1,0 +1,130 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "targetversion",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "confirmed",
+                "type": "bool",
+                "default": false
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "target_version": {
+                "class": "core_external\\external_value",
+                "desc": "Version number to write back to",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "confirmed": {
+                "class": "core_external\\external_value",
+                "desc": "true explicitly confirms deleting existing completion data of learners, if writing back the completion fields would trigger that (two-step confirmation of set_completion). Without data-loss risk this parameter has no effect. Omit or false on the first call.",
+                "required": 0,
+                "default": false,
+                "allownull": true,
+                "type": "bool"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing change message",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "changes": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "One entry per field that actually changed",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "field": {
+                            "class": "core_external\\external_value",
+                            "desc": "Field name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "before_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded value before the write",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "after_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded value after the write",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -38,9 +38,10 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(folder::class)]
 #[CoversClass(resource::class)]
 final class learner_locks_test extends \advanced_testcase {
-
     /**
-     * @param class-string<module_catalog> $catalogclass
+     * Provides fields by name.
+     *
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return array<string, field>
      */
     private function fields_by_name(string $catalogclass): array {
@@ -61,8 +62,8 @@ final class learner_locks_test extends \advanced_testcase {
             foreach ($catalogclass::learner_locks() as $fieldname => $condition) {
                 $where = $modname . '.' . $fieldname;
                 $this->assertArrayHasKey($fieldname, $fields, $where . ': Feld fehlt im Katalog.');
-                $this->assertContains($condition['op'] ?? null, learner_locks::OPS, $where . ': unbekannter Operator.');
-                $this->assertNotSame('', trim((string) ($condition['reason'] ?? '')), $where . ': Grund fehlt.');
+                $this->assertContains($condition['op'], learner_locks::OPS, $where . ': unbekannter Operator.');
+                $this->assertNotSame('', trim((string) ($condition['reason'])), $where . ': Grund fehlt.');
 
                 $field = $fields[$fieldname];
                 if ($condition['op'] === 'nonzero' || $condition['op'] === 'greater') {

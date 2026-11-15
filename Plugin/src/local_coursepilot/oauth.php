@@ -41,9 +41,4 @@ use local_coursepilot\oauth_lib;
 $pathinfo = trim($_SERVER['PATH_INFO'] ?? '', '/');
 $response = oauth_lib::handle_discovery($CFG->wwwroot, $pathinfo);
 
-http_response_code($response['status']);
-foreach ($response['headers'] as $name => $value) {
-    header($name . ': ' . $value);
-}
-header('Content-Type: application/json');
-echo json_encode($response['body'], JSON_UNESCAPED_SLASHES);
+\local_coursepilot\output\http_response::json($response)->send();

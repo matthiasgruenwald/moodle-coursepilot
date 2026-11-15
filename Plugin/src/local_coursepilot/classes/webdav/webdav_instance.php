@@ -42,7 +42,6 @@ use local_coursepilot\storage_anchor;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_instance {
-
     /** @var string Repository type name. */
     private const REPOSITORY_TYPE = 'webdav';
 
@@ -59,10 +58,16 @@ final class webdav_instance {
     /** @var string The only IServ area under which a choice is allowed for IServ (Issue #497, Spec §5). */
     public const ISERV_FILES_AREA = 'Files';
 
+    /**
+     * Iserv areas.
+     */
     private const ISERV_AREAS = [self::ISERV_FILES_AREA, 'Groups', 'Print', 'Temp', 'Windows'];
 
     /**
+     * Resolves the webdav instance.
+     *
      * @param pointer_location $location Must be {@see pointer_location::EXTERNAL}.
+     * @param ?webdav_transport $transport The transport.
      * @return resolved_webdav_instance
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/
      *         webdavauthunsupported/webdavfingerprintchanged
@@ -72,7 +77,12 @@ final class webdav_instance {
 
         $options = self::fresh_options((int) $location->instanceid);
         if (self::fingerprint($options) !== self::normalised_fingerprint($location->fingerprint ?? [])) {
-            throw new \moodle_exception('webdavfingerprintchanged', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'webdavfingerprintchanged',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
 
         return $resolved;
@@ -89,6 +99,7 @@ final class webdav_instance {
      * writes into the pointer on completion ({@see fingerprint_of()}).
      *
      * @param int $instanceid
+     * @param ?webdav_transport $transport The transport.
      * @return resolved_webdav_instance
      * @throws \moodle_exception webdavinstancemissing/webdavinstanceforeign/webdavnotenabled/webdavauthunsupported
      */
@@ -103,12 +114,22 @@ final class webdav_instance {
             ['id' => $instanceid, 'type' => self::REPOSITORY_TYPE]
         );
         if (!$record) {
-            throw new \moodle_exception('webdavinstancemissing', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'webdavinstancemissing',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
 
         $owncontextid = storage_anchor::own_context()->id;
         if ((int) $record->contextid !== (int) $owncontextid || \core\session\manager::is_loggedinas()) {
-            throw new \moodle_exception('webdavinstanceforeign', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'webdavinstanceforeign',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
 
         if (!webdav_setup_steps::enabled_for_user((int) $USER->id)) {
@@ -118,10 +139,15 @@ final class webdav_instance {
         $options = self::fresh_options($instanceid);
 
         if (!self::auth_supported($options)) {
-            throw new \moodle_exception('webdavauthunsupported', 'local_coursepilot', '', webdav_setup_steps::LOCATION_SELECTION_PAGE);
+            throw new \moodle_exception(
+                'webdavauthunsupported',
+                'local_coursepilot',
+                '',
+                webdav_setup_steps::LOCATION_SELECTION_PAGE
+            );
         }
 
-        // \curl (lib/filelib.php) is not autoloaded - plain pages like
+        // Note: \curl (lib/filelib.php) is not autoloaded - plain pages like
         // location_selection_browse.php would fail with "Class curl not found".
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
@@ -134,16 +160,17 @@ final class webdav_instance {
      * fake through Moodle's request-local DI container; production receives
      * the regular cURL transport.
      *
-     * @param array<string, string|null> $options
+     * @param mixed[] $options Type: array<string,string|null>.
      */
     private static function transport(array $options): webdav_transport {
         try {
             $transport = \core\di::get(webdav_transport::class);
-            if ($transport instanceof webdav_transport) {
-                return $transport;
-            }
         } catch (\Throwable $e) {
             // No binding exists in production.
+            $transport = null;
+        }
+        if ($transport instanceof webdav_transport) {
+            return $transport;
         }
         return new curl_transport(
             new \curl(),
@@ -182,7 +209,7 @@ final class webdav_instance {
      * (throws) and {@see has_supported_auth()} (does not throw) - Issue #497
      * standards review: both previously knew the condition once each, inverted.
      *
-     * @param array<string, string|null> $options
+     * @param mixed[] $options Type: array<string,string|null>.
      * @return bool
      */
     private static function auth_supported(array $options): bool {
@@ -197,6 +224,7 @@ final class webdav_instance {
      * resolution checks without network (§2, check 8).
      *
      * @param int $instanceid
+     * @param ?webdav_transport $transport The transport.
      * @return bool
      * @throws \moodle_exception wie {@see resolve_owned()}.
      * @throws \local_coursepilot\webdav\webdav_error on a network error - to be handled by the caller.
@@ -207,7 +235,9 @@ final class webdav_instance {
     }
 
     /**
-     * @param array<int, array{name: string, type: string}> $entries Root level, {@see webdav_client::propfind()}.
+     * Tells whether the webdav instance is iserv listing.
+     *
+     * @param mixed[] $entries Root level, {@see webdav_client::propfind()}. Type: array<int,array{name:string,type:string}>.
      * @return bool
      */
     public static function is_iserv_listing(array $entries): bool {
@@ -239,7 +269,9 @@ final class webdav_instance {
     }
 
     /**
-     * @param array<string, string|null> $options
+     * Provides fingerprint.
+     *
+     * @param mixed[] $options Type: array<string,string|null>.
      * @return array{server: string, basepath: string, account: string}
      */
     private static function fingerprint(array $options): array {
@@ -251,7 +283,9 @@ final class webdav_instance {
     }
 
     /**
-     * @param array $fingerprint Raw from the pointer.
+     * Provides normalised fingerprint.
+     *
+     * @param mixed[] $fingerprint Raw from the pointer.
      * @return array{server: string, basepath: string, account: string}
      */
     private static function normalised_fingerprint(array $fingerprint): array {
@@ -263,7 +297,9 @@ final class webdav_instance {
     }
 
     /**
-     * @param array<string, string|null> $options
+     * Returns https address of the instance incl. base path, with trailing "/".
+     *
+     * @param mixed[] $options Type: array<string,string|null>.
      * @return string https address of the instance incl. base path, with trailing "/".
      */
     private static function base_url(array $options): string {

@@ -18,7 +18,9 @@ namespace local_coursepilot\admin;
 
 use local_coursepilot\remote_access;
 
-// admin_setting_configmultiselect is a legacy global class from
+defined('MOODLE_INTERNAL') || die();
+
+// Note: admin_setting_configmultiselect is a legacy global class from
 // lib/adminlib.php - see personaldatahosts_setting.
 global $CFG;
 require_once($CFG->libdir . '/adminlib.php');
@@ -34,7 +36,9 @@ require_once($CFG->libdir . '/adminlib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class remoteaccesscohorts_setting extends \admin_setting_configmultiselect {
-
+    /**
+     * Creates the remoteaccesscohorts setting.
+     */
     public function __construct() {
         parent::__construct(
             'local_coursepilot/remoteaccesscohorts',
@@ -46,6 +50,8 @@ final class remoteaccesscohorts_setting extends \admin_setting_configmultiselect
     }
 
     /**
+     * Loads choices.
+     *
      * @return bool
      */
     public function load_choices() {
@@ -64,6 +70,8 @@ final class remoteaccesscohorts_setting extends \admin_setting_configmultiselect
     }
 
     /**
+     * Provides output html.
+     *
      * @param mixed $data
      * @param string $query
      * @return string

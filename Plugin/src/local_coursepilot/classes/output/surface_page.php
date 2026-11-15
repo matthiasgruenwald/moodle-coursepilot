@@ -31,11 +31,12 @@ use local_coursepilot\privacy_surface;
  * Prepares display-neutral state for the surface.php (status) template.
  */
 final class surface_page {
-
     /**
-     * @param array<int, array{type: string, name: string, detail: string}> $violations
+     * Provides page data.
+     *
+     * @param mixed[] $violations Type: array<int,array{type:string,name:string,detail:string}>.
      * @param string[] $registered
-     * @param array{ok: bool, detail: string, url: string, httpcode: ?int} $selfcheck
+     * @param mixed[] $selfcheck Type: array{ok:bool,detail:string,url:string,httpcode:?int}.
      * @return array<string, mixed>
      */
     public static function page_data(array $violations, array $registered, array $selfcheck): array {
@@ -65,6 +66,8 @@ final class surface_page {
     }
 
     /**
+     * Provides allowed tools rows.
+     *
      * @return list<array{tool: string, function: string}>
      */
     private static function allowed_tools_rows(): array {
@@ -76,6 +79,8 @@ final class surface_page {
     }
 
     /**
+     * Lists items.
+     *
      * @param string[] $items
      * @return list<array{text: string}>
      */

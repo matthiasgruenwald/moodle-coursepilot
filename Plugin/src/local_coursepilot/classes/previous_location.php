@@ -36,13 +36,12 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class previous_location {
-
     /**
      * The raw value of the field "previous_location" in the context pointer document,
      * or null if no legacy files are open (no pointer, pointer of the
      * first version, or the field is missing/invalid).
      *
-     * @return array|null
+     * @return mixed[]|null
      */
     public static function current(): ?array {
         $document = storage_anchor::read_raw_pointer();

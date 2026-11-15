@@ -1,0 +1,380 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "modname",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "full",
+                "type": "bool",
+                "default": false
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type, e.g. label. Empty returns the list of activity types Coursepilot knows.",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "alphanumext"
+            },
+            "full": {
+                "class": "core_external\\external_value",
+                "desc": "true for all five categories (fields, pseudo fields, blocked fields, combination rules, side effects); otherwise only the commonly set fields plus field bundles.",
+                "required": 0,
+                "default": false,
+                "allownull": true,
+                "type": "bool"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "known_modnames": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Activity types Coursepilot knows",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Modname",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            },
+            "notice": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing notice text",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "module": {
+                "class": "core_external\\external_single_structure",
+                "desc": "The requested module catalog, null when modname was empty",
+                "required": 0,
+                "default": null,
+                "allownull": true,
+                "keys": {
+                    "modname": {
+                        "class": "core_external\\external_value",
+                        "desc": "Activity type",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "text"
+                    },
+                    "write_route": {
+                        "class": "core_external\\external_value",
+                        "desc": "Vehicle notice, or the name of the single tool that writes instead",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "text"
+                    },
+                    "grade_origin": {
+                        "class": "core_external\\external_value",
+                        "desc": "Who produces the grade: \"teacher\", \"automatic\" or \"none\". A quiz containing a manually graded question counts as \"teacher\" in the write tools.",
+                        "required": 1,
+                        "default": null,
+                        "allownull": true,
+                        "type": "alpha"
+                    },
+                    "fields": {
+                        "class": "core_external\\external_multiple_structure",
+                        "desc": "Category 1: fields (incl. shared block)",
+                        "required": 1,
+                        "default": null,
+                        "allownull": false,
+                        "content": {
+                            "class": "core_external\\external_single_structure",
+                            "desc": "",
+                            "required": 1,
+                            "default": null,
+                            "allownull": false,
+                            "keys": {
+                                "name": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "Moodle field name (form-path contract)",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "text"
+                                },
+                                "type": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "PARAM_* constant or short type description",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "text"
+                                },
+                                "meaning": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "Teacher-facing meaning of the field",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "text"
+                                },
+                                "required": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "Required field without a default?",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "bool"
+                                },
+                                "default_json": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "JSON-encoded form default, \"null\" if none",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "raw"
+                                },
+                                "value_range": {
+                                    "class": "core_external\\external_single_structure",
+                                    "desc": "",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": false,
+                                    "keys": {
+                                        "values_json": {
+                                            "class": "core_external\\external_value",
+                                            "desc": "JSON-encoded list of allowed values, \"null\" if only determinable via source_callable",
+                                            "required": 1,
+                                            "default": null,
+                                            "allownull": true,
+                                            "type": "raw"
+                                        },
+                                        "source_callable": {
+                                            "class": "core_external\\external_value",
+                                            "desc": "Callable Moodle source of the value range, e.g. \"format_text_menu()\", otherwise null",
+                                            "required": 1,
+                                            "default": null,
+                                            "allownull": true,
+                                            "type": "text"
+                                        },
+                                        "source": {
+                                            "class": "core_external\\external_value",
+                                            "desc": "File:line reference",
+                                            "required": 1,
+                                            "default": null,
+                                            "allownull": true,
+                                            "type": "text"
+                                        }
+                                    }
+                                },
+                                "learner_lock": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "JSON-encoded learner lock condition {op, value, reason}: when the written value meets it, learners need an action by the teacher to continue or resubmit, and write tools reject the call unless confirm_learner_locks names the field. \"null\" if the field cannot be a lock.",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "raw"
+                                }
+                            }
+                        }
+                    },
+                    "field_bundles": {
+                        "class": "core_external\\external_multiple_structure",
+                        "desc": "Field bundles (presets)",
+                        "required": 1,
+                        "default": null,
+                        "allownull": false,
+                        "content": {
+                            "class": "core_external\\external_single_structure",
+                            "desc": "",
+                            "required": 1,
+                            "default": null,
+                            "allownull": false,
+                            "keys": {
+                                "name": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "Bundle name",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "text"
+                                },
+                                "fields_json": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "JSON-encoded field=>value preset",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "raw"
+                                }
+                            }
+                        }
+                    },
+                    "pseudo_fields": {
+                        "class": "core_external\\external_multiple_structure",
+                        "desc": "Category 2: only with full:true",
+                        "required": 1,
+                        "default": null,
+                        "allownull": false,
+                        "content": {
+                            "class": "core_external\\external_single_structure",
+                            "desc": "",
+                            "required": 1,
+                            "default": null,
+                            "allownull": false,
+                            "keys": {
+                                "name": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "Moodle field name (form-path contract)",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "text"
+                                },
+                                "type": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "PARAM_* constant or short type description",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "text"
+                                },
+                                "meaning": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "Teacher-facing meaning of the field",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "text"
+                                },
+                                "required": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "Required field without a default?",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "bool"
+                                },
+                                "default_json": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "JSON-encoded form default, \"null\" if none",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "raw"
+                                },
+                                "value_range": {
+                                    "class": "core_external\\external_single_structure",
+                                    "desc": "",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": false,
+                                    "keys": {
+                                        "values_json": {
+                                            "class": "core_external\\external_value",
+                                            "desc": "JSON-encoded list of allowed values, \"null\" if only determinable via source_callable",
+                                            "required": 1,
+                                            "default": null,
+                                            "allownull": true,
+                                            "type": "raw"
+                                        },
+                                        "source_callable": {
+                                            "class": "core_external\\external_value",
+                                            "desc": "Callable Moodle source of the value range, e.g. \"format_text_menu()\", otherwise null",
+                                            "required": 1,
+                                            "default": null,
+                                            "allownull": true,
+                                            "type": "text"
+                                        },
+                                        "source": {
+                                            "class": "core_external\\external_value",
+                                            "desc": "File:line reference",
+                                            "required": 1,
+                                            "default": null,
+                                            "allownull": true,
+                                            "type": "text"
+                                        }
+                                    }
+                                },
+                                "learner_lock": {
+                                    "class": "core_external\\external_value",
+                                    "desc": "JSON-encoded learner lock condition {op, value, reason}: when the written value meets it, learners need an action by the teacher to continue or resubmit, and write tools reject the call unless confirm_learner_locks names the field. \"null\" if the field cannot be a lock.",
+                                    "required": 1,
+                                    "default": null,
+                                    "allownull": true,
+                                    "type": "raw"
+                                }
+                            }
+                        }
+                    },
+                    "blocked_fields": {
+                        "class": "core_external\\external_multiple_structure",
+                        "desc": "Category 3: only with full:true",
+                        "required": 1,
+                        "default": null,
+                        "allownull": false,
+                        "content": {
+                            "class": "core_external\\external_value",
+                            "desc": "Field name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    },
+                    "combination_rules": {
+                        "class": "core_external\\external_multiple_structure",
+                        "desc": "Category 4: only with full:true",
+                        "required": 1,
+                        "default": null,
+                        "allownull": false,
+                        "content": {
+                            "class": "core_external\\external_value",
+                            "desc": "Teacher-facing combination rule",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    },
+                    "side_effects": {
+                        "class": "core_external\\external_multiple_structure",
+                        "desc": "Category 5: only with full:true",
+                        "required": 1,
+                        "default": null,
+                        "allownull": false,
+                        "content": {
+                            "class": "core_external\\external_value",
+                            "desc": "Teacher-facing side-effect note",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

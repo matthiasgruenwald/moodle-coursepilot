@@ -18,8 +18,6 @@ namespace local_coursepilot;
 
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Skill corpus (Spec 0020 §3.1, Issue #450): Markdown files under
  * skills/adapter and skills/reference. The directory is the source;
@@ -35,7 +33,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class skill_corpus {
-
     /** @var string[] The two corpus subdirectories and kinds. */
     private const KINDS = ['adapter', 'reference'];
 
@@ -89,6 +86,8 @@ final class skill_corpus {
     }
 
     /**
+     * Provides dir.
+     *
      * @param string $kind
      * @return string
      */
@@ -120,6 +119,8 @@ final class skill_corpus {
     }
 
     /**
+     * Provides frontmatter description.
+     *
      * @param string $content
      * @return string|null
      */

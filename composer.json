@@ -1,0 +1,20 @@
+{
+    "name": "matthiasgruenwald/coursepilot-dev-tools",
+    "description": "Nur Entwicklungswerkzeuge fuer das Qualitaets-Gate (Spec 0029). Gehoert nicht zum Plugin und nicht ins Release-ZIP.",
+    "type": "project",
+    "license": "AGPL-3.0-or-later",
+    "require-dev": {
+        "phpstan/phpstan": "^2.1",
+        "deptrac/deptrac": "^3.0",
+        "infection/infection": "^0.29"
+    },
+    "config": {
+        "platform": {
+            "php": "8.4.0"
+        },
+        "sort-packages": true,
+        "allow-plugins": {
+            "infection/extension-installer": true
+        }
+    }
+}

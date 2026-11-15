@@ -31,7 +31,6 @@ namespace local_coursepilot\webdav;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_client {
-
     /**
      * @var float Maximum retry duration for `unclear/throttled` (spec
      *      §4, issue #529). Deliberately kept short: a measurement against a
@@ -53,19 +52,31 @@ final class webdav_client {
     /** @var int[] HTTP statuses that count as success unless specified otherwise. */
     private const DEFAULT_SUCCESS = [200, 201, 204, 207];
 
+    /** @var string[] Error class of the statuses that map one-to-one. */
+    private const STATUS_ERRORS = [
+        401 => webdav_error::AUTH_REJECTED,
+        403 => webdav_error::AUTH_REJECTED,
+        507 => webdav_error::STORAGE_FULL,
+        409 => webdav_error::CONFLICT,
+        412 => webdav_error::CONFLICT,
+    ];
+
     /** @var string Minimal PROPFIND body: all properties. */
     private const PROPFIND_BODY = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><allprop/></propfind>';
 
     /**
+     * Creates the webdav client.
+     *
      * @param webdav_transport $transport The swappable transport seam.
      *        In production {@see curl_transport}, in tests the reusable
      *        in-memory fake.
-     * @param callable $clock () => float, seconds since some fixed
+     * @param ?callable $clock () => float, seconds since some fixed Type: callable.
      *        zero point. Only needed for the retry clock - replaceable in
      *        tests so nothing is actually waited for.
-     * @param callable $sleeper (float $seconds) => void.
+     * @param ?callable $sleeper (float $seconds) => void. Type: callable.
      */
     public function __construct(
+        /** @var webdav_transport The swappable transport seam. */
         private readonly webdav_transport $transport,
         ?callable $clock = null,
         ?callable $sleeper = null,
@@ -104,6 +115,8 @@ final class webdav_client {
     }
 
     /**
+     * Returns file body.
+     *
      * @param string $url
      * @return string File body.
      * @throws webdav_error
@@ -143,7 +156,7 @@ final class webdav_client {
         $headers = [];
         if ($etag !== null) {
             $headers['If-Match'] = $etag;
-        } elseif ($expectedlastmodified !== null) {
+        } else if ($expectedlastmodified !== null) {
             $current = $this->propfind($url, 0);
             $actual = $current[0]['timemodified'] ?? null;
             if ($actual !== $expectedlastmodified) {
@@ -181,6 +194,8 @@ final class webdav_client {
     }
 
     /**
+     * Moves the webdav client.
+     *
      * @param string $sourceurl
      * @param string $destinationurl Full destination address.
      * @throws webdav_error
@@ -190,6 +205,8 @@ final class webdav_client {
     }
 
     /**
+     * Deletes the webdav client.
+     *
      * @param string $url
      * @throws webdav_error
      */
@@ -204,7 +221,7 @@ final class webdav_client {
      *
      * @param string $method
      * @param string $url
-     * @param array<string, string> $headers
+     * @param string[] $headers
      * @param string|null $body
      * @param int[] $successcodes
      * @return webdav_response
@@ -244,6 +261,8 @@ final class webdav_client {
     }
 
     /**
+     * Asserts https.
+     *
      * @param string $url
      * @throws \InvalidArgumentException
      */
@@ -254,6 +273,8 @@ final class webdav_client {
     }
 
     /**
+     * Provides classify.
+     *
      * @param webdav_response $response
      * @param int[] $successcodes
      * @return string|null A {@see webdav_error} constant, or null on success.
@@ -263,14 +284,8 @@ final class webdav_client {
         if (in_array($code, $successcodes, true)) {
             return null;
         }
-        if ($code === 401 || $code === 403) {
-            return webdav_error::AUTH_REJECTED;
-        }
-        if ($code === 507) {
-            return webdav_error::STORAGE_FULL;
-        }
-        if ($code === 409 || $code === 412) {
-            return webdav_error::CONFLICT;
+        if (isset(self::STATUS_ERRORS[$code])) {
+            return self::STATUS_ERRORS[$code];
         }
         if ($code === 404) {
             return $this->is_dav_xml_body($response) ? webdav_error::NOT_FOUND : webdav_error::UNCLEAR;
@@ -302,6 +317,8 @@ final class webdav_client {
     }
 
     /**
+     * Returns decoded path part, without trailing slash.
+     *
      * @param string $url
      * @return string Decoded path part, without trailing slash.
      */
@@ -316,7 +333,8 @@ final class webdav_client {
      * present. The MIME type comes purely from the extension ({@see mimeinfo()}) -
      * no content sniffing here, that would force an additional GET for every file
      * with an unknown extension when listing and thereby violate the
-     * existing zero-GET contract of {@see \local_coursepilot\external\list_context_files_test::test_switch_on_never_fetches_marked_file_content()}
+     * existing zero-GET contract of
+     * {@see \local_coursepilot\external\list_context_files_test::test_switch_on_never_fetches_marked_file_content()}
      * (issue #560 - sniffing instead sits in {@see webdav_storage_port::read()},
      * where the content is fetched anyway).
      *
@@ -342,37 +360,59 @@ final class webdav_client {
         $requestpath = $this->normalised_path($requesturl);
         $entries = [];
         foreach ($sxe->children('DAV:')->response as $responsenode) {
-            $davresponse = $responsenode->children('DAV:');
-            $path = $this->normalised_path((string) $davresponse->href);
-            if ($depth === 1 && $path === $requestpath) {
-                // The resolved level itself, not its content.
-                continue;
+            $entry = $this->entry_of($responsenode->children('DAV:'), $requestpath, $depth);
+            if ($entry !== null) {
+                $entries[] = $entry;
             }
-
-            $prop = $this->successful_prop($davresponse);
-            if ($prop === null) {
-                continue;
-            }
-
-            $name = basename($path);
-            if ($name === '') {
-                continue;
-            }
-
-            $iscollection = isset($prop->resourcetype->children('DAV:')->collection);
-            $lastmodifiedraw = (string) $prop->getlastmodified;
-            $etagraw = (string) $prop->getetag;
-
-            $entries[] = [
-                'name' => $name,
-                'type' => $iscollection ? 'folder' : 'file',
-                'size' => $iscollection ? 0 : (int) (string) $prop->getcontentlength,
-                'timemodified' => $lastmodifiedraw !== '' ? (int) strtotime($lastmodifiedraw) : 0,
-                'etag' => $etagraw !== '' ? $etagraw : null,
-                'mimetype' => $iscollection ? '' : mimeinfo('type', $name),
-            ];
         }
         return $entries;
+    }
+
+    /**
+     * One PROPFIND entry from a `response` node, or null for the requested
+     * level itself (depth 1), an entry without successful properties and
+     * the unnamed root.
+     *
+     * @param \SimpleXMLElement $davresponse The `response` node in the DAV namespace.
+     * @param string $requestpath Normalised path of the request URL.
+     * @param int $depth
+     * @return array{name: string, type: string, size: int, timemodified: int, etag: ?string, mimetype: string}|null
+     */
+    private function entry_of(\SimpleXMLElement $davresponse, string $requestpath, int $depth): ?array {
+        $path = $this->normalised_path((string) $davresponse->href);
+        if ($depth === 1 && $path === $requestpath) {
+            // The resolved level itself, not its content.
+            return null;
+        }
+
+        $prop = $this->successful_prop($davresponse);
+        $name = basename($path);
+        if ($prop === null || $name === '') {
+            return null;
+        }
+        return $this->entry_from_prop($prop, $name);
+    }
+
+    /**
+     * The listing fields of one entry from its successful property set.
+     *
+     * @param \SimpleXMLElement $prop The `prop` node with status 200.
+     * @param string $name Decoded entry name.
+     * @return array{name: string, type: string, size: int, timemodified: int, etag: ?string, mimetype: string}
+     */
+    private function entry_from_prop(\SimpleXMLElement $prop, string $name): array {
+        $iscollection = isset($prop->resourcetype->children('DAV:')->collection);
+        $lastmodifiedraw = (string) $prop->getlastmodified;
+        $etagraw = (string) $prop->getetag;
+
+        return [
+            'name' => $name,
+            'type' => $iscollection ? 'folder' : 'file',
+            'size' => $iscollection ? 0 : (int) (string) $prop->getcontentlength,
+            'timemodified' => $lastmodifiedraw !== '' ? (int) strtotime($lastmodifiedraw) : 0,
+            'etag' => $etagraw !== '' ? $etagraw : null,
+            'mimetype' => $iscollection ? '' : mimeinfo('type', $name),
+        ];
     }
 
     /**

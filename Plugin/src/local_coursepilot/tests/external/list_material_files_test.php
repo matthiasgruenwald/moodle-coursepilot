@@ -37,12 +37,62 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(list_material_files::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_anchor::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\webdav_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_failure::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_reader::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
 final class list_material_files_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
         \core\di::reset_container();
         parent::tearDown();
+    }
+
+    /**
+     * A storage-port outage retains the material tool's public error code.
+     */
+    public function test_external_storage_outage_keeps_material_error_code(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_material();
+        $fake->deny_auth();
+        try {
+            list_material_files::execute();
+            $this->fail('Unavailable storage must reject the request.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('materialexternalerror', $e->errorcode);
+            $this->assertStringNotContainsString($fake->secret(), $e->getMessage());
+        }
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Prohibiting writes leaves each user's own material listing readable.
+     */
+    public function test_own_files_remain_readable_with_manageownfiles_prohibited(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
+        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid, \context_system::instance()->id, true);
+
+        foreach (['teacher-a.txt', 'teacher-b.txt'] as $filename) {
+            $user = $this->getDataGenerator()->create_user();
+            $this->setUser($user);
+            $this->assertFalse(has_capability('moodle/user:manageownfiles', \context_user::instance($user->id)));
+            get_file_storage()->create_file_from_string([
+                'contextid' => \context_user::instance($user->id)->id,
+                'component' => material_files::COMPONENT,
+                'filearea' => material_files::FILEAREA,
+                'itemid' => material_files::ITEMID,
+                'filepath' => '/coursepilot-material/',
+                'filename' => $filename,
+            ], 'Own teaching material');
+
+            $result = list_material_files::execute();
+            $result = external_api::clean_returnvalue(list_material_files::execute_returns(), $result);
+
+            $this->assertSame([$filename], array_column($result['entries'], 'name'));
+        }
     }
 
     public function test_lists_empty_root(): void {
@@ -402,9 +452,11 @@ final class list_material_files_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $entries
+     * Finds entry.
+     *
+     * @param mixed[] $entries
      * @param string $name
-     * @return array|null
+     * @return mixed[]|null
      */
     private function find_entry(array $entries, string $name): ?array {
         foreach ($entries as $entry) {

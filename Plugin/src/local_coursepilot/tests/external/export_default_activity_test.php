@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
-
 namespace local_coursepilot\external;
 
 use core_external\external_api;
@@ -33,8 +32,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[CoversClass(export_default_activity::class)]
 final class export_default_activity_test extends \advanced_testcase {
-
-    /** @return array{0: \stdClass, 1: \stdClass} course and teacher (logged in) */
+    /**
+     * Sets up teacher.
+     *
+     * @return array{0: \stdClass, 1: \stdClass} course and teacher (logged in)
+     */
     private function setup_teacher(): array {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
@@ -44,7 +46,12 @@ final class export_default_activity_test extends \advanced_testcase {
         return [$course, $teacher];
     }
 
-    /** Everything a leftover activity could touch. */
+    /**
+     * Everything a leftover activity could touch.
+     *
+     * @param int $courseid The courseid.
+     * @return mixed[]
+     */
     private function footprint(int $courseid): array {
         global $DB;
         return [
@@ -156,7 +163,12 @@ final class export_default_activity_test extends \advanced_testcase {
                 stream_set_blocking($pipes[2], false);
                 $this->fail('Export barrier: ' . stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]));
             }
-            $own = $DB->get_record('course_modules', ['course' => $course->id, 'module' => $DB->get_field('modules', 'id', ['name' => 'book'])], '*', MUST_EXIST);
+            $own = $DB->get_record(
+                'course_modules',
+                ['course' => $course->id, 'module' => $DB->get_field('modules', 'id', ['name' => 'book'])],
+                '*',
+                MUST_EXIST
+            );
             $this->assertSame(0, (int) $own->visible);
             $this->assertSame(0, (int) $own->visibleoncoursepage);
             // Spec 0028 story 33 protects learners; teachers retain native hidden-activity access.
@@ -226,10 +238,14 @@ final class export_default_activity_test extends \advanced_testcase {
         $sink = $this->redirectEvents();
         $result = export_default_activity::execute($course->id, 'book');
         $events = $sink->get_events();
-        $created = array_values(array_filter($events,
-            fn($event) => $event instanceof \core\event\course_module_created));
-        $deleted = array_values(array_filter($events,
-            fn($event) => $event instanceof \core\event\course_module_deleted));
+        $created = array_values(array_filter(
+            $events,
+            fn($event) => $event instanceof \core\event\course_module_created
+        ));
+        $deleted = array_values(array_filter(
+            $events,
+            fn($event) => $event instanceof \core\event\course_module_deleted
+        ));
         $this->assertStringContainsString('<book id=', $result['xml']);
         $this->assertCount(1, $created);
         $this->assertCount(1, $deleted);
@@ -247,5 +263,61 @@ final class export_default_activity_test extends \advanced_testcase {
 
     public function test_is_registered_as_write_tool(): void {
         $this->assertTrue(tool_registry::is_write('coursepilot_export_default_activity'));
+    }
+
+    /** @var string[] Visibility columns of the temporary activity as seen by an observer while it exists. */
+    private static array $seen = [];
+
+    /**
+     * Records the stored visibility of a newly created course module.
+     *
+     * @param \core\event\course_module_created $event
+     */
+    public static function record_visibility(\core\event\course_module_created $event): void {
+        global $DB;
+        $cm = $DB->get_record('course_modules', ['id' => $event->objectid], 'visible, visibleoncoursepage, visibleold');
+        self::$seen[] = $cm->visible . '/' . $cm->visibleoncoursepage;
+    }
+
+    public function test_the_temporary_activity_is_created_hidden_on_the_course_page_too(): void {
+        [$course] = $this->setup_teacher();
+        self::$seen = [];
+        \core\event\manager::phpunit_replace_observers([[
+            'eventname' => '\core\event\course_module_created',
+            'callback' => [self::class, 'record_visibility'],
+            'internal' => true,
+            'priority' => 0,
+            'includefile' => null,
+        ]]);
+
+        try {
+            export_default_activity::execute($course->id, 'book');
+
+            $this->assertSame(['0/0'], self::$seen);
+        } finally {
+            // Replacing observers makes core keep them across the next reset; the
+            // second reset reloads the real ones so later tests see this plugin's observers.
+            \core\event\manager::phpunit_reset();
+            \core\event\manager::phpunit_reset();
+        }
+    }
+
+    public function test_requires_the_native_add_right_of_the_activity_type(): void {
+        global $DB;
+        [$course] = $this->setup_teacher();
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        assign_capability('mod/book:addinstance', CAP_PROHIBIT, $roleid, \context_course::instance($course->id)->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+        $before = $this->footprint($course->id);
+
+        $thrown = null;
+        try {
+            export_default_activity::execute($course->id, 'book');
+        } catch (\Throwable $caught) {
+            $thrown = $caught;
+        }
+
+        $this->assertInstanceOf(\required_capability_exception::class, $thrown);
+        $this->assertSame($before, $this->footprint($course->id));
     }
 }

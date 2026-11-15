@@ -1,0 +1,207 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "questionid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "fieldsjson",
+                "type": "string",
+                "default": "(none)"
+            },
+            {
+                "name": "confirmed",
+                "type": "bool",
+                "default": false
+            },
+            {
+                "name": "location",
+                "type": "string",
+                "default": "store"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "questionid": {
+                "class": "core_external\\external_value",
+                "desc": "questionid of any version of the question to change",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "fields_json": {
+                "class": "core_external\\external_value",
+                "desc": "JSON object field name => new value - only the fields to change (a patch, not a full record). Allowed: name, questiontext, selectionmode, answers, defaultmark, generalfeedback, questiontext_images. Fields not named stay unchanged. An image from the material folder is embedded by having questiontext (or an answer's feedback in answers) contain an \"<img src=\\\"@@PLUGINFILE@@/<filename>\\\" alt=\\\"...\\\">\" AND the filename additionally named in questiontext_images (or, in the answers entry, under \"feedback_images\") as a list of material folder paths.",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "confirmed": {
+                "class": "core_external\\external_value",
+                "desc": "true explicitly confirms a previously reported suspect case from the XML core. Omit or false on the first call.",
+                "required": 0,
+                "default": false,
+                "allownull": true,
+                "type": "bool"
+            },
+            "location": {
+                "class": "core_external\\external_value",
+                "desc": "\"store\" (default, the teacher's grown material store, read-only) or \"workbench\" (Coursepilot's own staging area)",
+                "required": 0,
+                "default": "store",
+                "allownull": true,
+                "type": "alpha"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "name": {
+                "class": "core_external\\external_value",
+                "desc": "Name of the question",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "questionid": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the new question row (0 for \"suspect\")",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "questionbankentryid": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the question_bank_entries row (question identity, unchanged; 0 for \"suspect\")",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "version": {
+                "class": "core_external\\external_value",
+                "desc": "New version number (0 for \"suspect\")",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "status": {
+                "class": "core_external\\external_value",
+                "desc": "\"updated\" (updated) | \"suspect\" (suspect case)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "alpha"
+            },
+            "idnumber_added": {
+                "class": "core_external\\external_value",
+                "desc": "true if this question previously had no idnumber and was assigned exactly one on write",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing message with bank entry and version",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "idnumber": {
+                "class": "core_external\\external_value",
+                "desc": "Supplied idnumber for a suspected collision; empty otherwise",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "text"
+            },
+            "categoryid": {
+                "class": "core_external\\external_value",
+                "desc": "Target category for a suspected collision; 0 otherwise",
+                "required": 0,
+                "default": 0,
+                "allownull": true,
+                "type": "int"
+            },
+            "candidates": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Nearby candidates in the target category; empty without suspicion",
+                "required": 0,
+                "default": [],
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "questionid": {
+                            "class": "core_external\\external_value",
+                            "desc": "questionid of the candidate's latest version",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "name": {
+                            "class": "core_external\\external_value",
+                            "desc": "Candidate question name",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "idnumber": {
+                            "class": "core_external\\external_value",
+                            "desc": "Candidate idnumber",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            },
+            "questiontext_old": {
+                "class": "core_external\\external_value",
+                "desc": "Existing candidate question text, when available",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "raw"
+            },
+            "questiontext_new": {
+                "class": "core_external\\external_value",
+                "desc": "Question text to write or move, when available",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

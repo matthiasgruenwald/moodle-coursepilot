@@ -34,6 +34,14 @@ use PHPUnit\Framework\Attributes\CoversClass;
 final class webdav_instance_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
+    /**
+     * Provides location.
+     *
+     * @param int $instanceid The instanceid.
+     * @param mixed[]|null $fingerprint The fingerprint.
+     *        Type: array{server:string,basepath:string,account:string,iserv?:bool}|null.
+     * @return pointer_location
+     */
     private function location(int $instanceid, ?array $fingerprint = null): pointer_location {
         return pointer_location::external($instanceid, 'Coursepilot-Kontext', $fingerprint ?? $this->fixture_fingerprint());
     }
@@ -51,6 +59,41 @@ final class webdav_instance_test extends \advanced_testcase {
             'https://cloud.example.test/Coursepilot/Coursepilot-Kontext',
             $resolved->file_url('Coursepilot-Kontext')
         );
+    }
+
+    /**
+     * A transport bound in the container (tests) is used instead of a real connection.
+     */
+    public function test_transport_bound_in_the_container_serves_the_requests(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+        $fake = new fake_webdav_transport();
+        $fake->seed_file('/Coursepilot/notiz.md', 'Inhalt');
+        \core\di::set(webdav_transport::class, $fake);
+
+        try {
+            $resolved = webdav_instance::resolve_owned($instanceid);
+
+            $this->assertSame('Inhalt', $resolved->client()->get($resolved->file_url('notiz.md')));
+        } finally {
+            \core\di::reset_container();
+        }
+    }
+
+    /**
+     * The fingerprint names server, base path and account of the stored instance.
+     */
+    public function test_fingerprint_of_names_server_basepath_and_account(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->grant_webdav_capability($user);
+        $instanceid = $this->create_webdav_instance($user);
+
+        $this->assertSame($this->fixture_fingerprint(), webdav_instance::fingerprint_of($instanceid));
     }
 
     /**
@@ -78,7 +121,10 @@ final class webdav_instance_test extends \advanced_testcase {
 
         $resolved = webdav_instance::resolve($this->location($instanceid));
 
-        $this->assertSame('https://cloud.example.test:8443/Coursepilot/Coursepilot-Kontext', $resolved->file_url('Coursepilot-Kontext'));
+        $this->assertSame(
+            'https://cloud.example.test:8443/Coursepilot/Coursepilot-Kontext',
+            $resolved->file_url('Coursepilot-Kontext')
+        );
     }
 
     public function test_missing_instance_throws_named_error(): void {
@@ -291,7 +337,7 @@ final class webdav_instance_test extends \advanced_testcase {
         }
     }
 
-    // --- Issue #497: has_supported_auth(), IServ-Erkennung ---
+    // Has_supported_auth(), IServ detection.
 
     public function test_has_supported_auth_is_true_for_https_basic_instance(): void {
         $this->resetAfterTest();

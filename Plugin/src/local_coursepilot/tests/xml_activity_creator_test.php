@@ -28,8 +28,11 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(xml_activity_creator::class)]
 final class xml_activity_creator_test extends \advanced_testcase {
-
-    /** @return array{0: \stdClass, 1: string} course and a book activity XML named "Created" */
+    /**
+     * Sets up course.
+     *
+     * @return array{0: \stdClass, 1: string} course and a book activity XML named "Created"
+     */
     private function setup_course(): array {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course(['numsections' => 3]);
@@ -41,6 +44,12 @@ final class xml_activity_creator_test extends \advanced_testcase {
         return [$course, $xml];
     }
 
+    /**
+     * Provides footprint.
+     *
+     * @param int $courseid The courseid.
+     * @return mixed[]
+     */
     private function footprint(int $courseid): array {
         global $DB;
         return [
@@ -107,9 +116,14 @@ final class xml_activity_creator_test extends \advanced_testcase {
         }
         $cfg = $DB->export_dbconfig();
         $options = (array) ($cfg->dboptions ?? []);
-        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        $ddl = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
         $trigger = 'cpcleanup' . bin2hex(random_bytes(8));
         $table = $DB->get_prefix() . 'book';
         $ddl->query("CREATE TRIGGER $trigger BEFORE DELETE ON $table FOR EACH ROW BEGIN
@@ -148,7 +162,11 @@ final class xml_activity_creator_test extends \advanced_testcase {
         }
     }
 
-    /** Old book in section 2 between two page neighbours; returns [course, xml, old cmid, neighbour cmid]. */
+    /**
+     * Old book in section 2 between two page neighbours; returns [course, xml, old cmid, neighbour cmid].
+     *
+     * @return mixed[]
+     */
     private function setup_old(): array {
         [$course, $xml] = $this->setup_course();
         $old = xml_activity_creator::create($course->id, 'book', 2, $xml)['cmid'];
@@ -237,9 +255,14 @@ final class xml_activity_creator_test extends \advanced_testcase {
         $before = $this->footprint($course->id)['cm'];
         $cfg = $DB->export_dbconfig();
         $options = (array) ($cfg->dboptions ?? []);
-        $ddl = new \mysqli($cfg->dbhost, $cfg->dbuser, $cfg->dbpass, $cfg->dbname,
+        $ddl = new \mysqli(
+            $cfg->dbhost,
+            $cfg->dbuser,
+            $cfg->dbpass,
+            $cfg->dbname,
             (int) ($options['dbport'] ?? ini_get('mysqli.default_port')),
-            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null);
+            is_string($options['dbsocket'] ?? null) ? $options['dbsocket'] : null
+        );
         $key = 'cpreset' . bin2hex(random_bytes(8));
         $historytable = $DB->get_prefix() . 'local_coursepilot_cm_version';
         $cmtable = $DB->get_prefix() . 'course_modules';

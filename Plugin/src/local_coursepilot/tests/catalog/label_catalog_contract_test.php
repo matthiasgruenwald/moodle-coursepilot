@@ -31,7 +31,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(label::class)]
 #[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class label_catalog_contract_test extends \advanced_testcase {
-
     /**
      * Catalog fields, module and shared blocklist columns, and id exactly
      * match the label table, without missing or extra columns.
@@ -48,7 +47,7 @@ final class label_catalog_contract_test extends \advanced_testcase {
             ['id'],
             array_map(static fn (field $f): string => $f->name, label::fields()),
             label::blocklist(),
-            array_intersect(shared_block::BLOCKLIST, $realcolumns)
+            array_intersect(shared_block::blocked_fields(), $realcolumns)
         );
         sort($known);
 
@@ -71,7 +70,7 @@ final class label_catalog_contract_test extends \advanced_testcase {
         $realcolumns = array_keys($DB->get_columns('course_modules'));
         $blockfields = array_map(static fn (field $f): string => $f->name, shared_block::fields());
 
-        // sectionnum maps to the section column (course/modlib.php:799).
+        // Note: sectionnum maps to the section column (course/modlib.php:799).
         // Check it separately rather than as a matching column name.
         $expecteddbcolumns = array_diff($blockfields, ['sectionnum']);
 

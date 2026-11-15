@@ -140,7 +140,6 @@ final class dismiss_previous_location_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('previouslocationclosed', $e->errorcode);
         }
-        $this->assertTrue(true);
 
         $this->setUser($teachera);
         $this->assertTrue(previous_location::open(), "Person A's legacy items must stay untouched.");

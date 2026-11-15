@@ -25,8 +25,9 @@ namespace local_coursepilot\task;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class oauth_cleanup extends \core\task\scheduled_task {
-
     /**
+     * Returns name.
+     *
      * @return string
      */
     public function get_name(): string {

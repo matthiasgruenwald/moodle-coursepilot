@@ -19,10 +19,8 @@ namespace local_coursepilot\check;
 use core\check\check;
 use core\check\result;
 use core\output\action_link;
-use local_coursepilot\oauth_lib;
+use local_coursepilot\connection;
 use local_coursepilot\webdav\webdav_setup_steps;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * WebDAV setup check 3 (Issue #499, Spec #486 §12): effective WebDAV
@@ -38,21 +36,45 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class webdav_capability_check extends check {
-
+    /**
+     * Returns id.
+     *
+     * @return string
+     */
     public function get_id(): string {
         return 'webdav_capability';
     }
 
+    /**
+     * Returns name.
+     *
+     * @return string
+     */
     public function get_name(): string {
         return get_string('webdavcheck3name', 'local_coursepilot');
     }
 
+    /**
+     * Settings action shown by Moodle's check renderer.
+     *
+     * @return action_link
+     */
+    public function get_action_link(): action_link {
+        global $USER;
+
+        $step = webdav_setup_steps::catalog($USER->id)[webdav_setup_steps::STEP_CAPABILITY];
+        return new action_link($step['targeturl'], get_string('webdavcheckactionlink', 'local_coursepilot'));
+    }
+
+    /**
+     * Returns result.
+     *
+     * @return result
+     */
     public function get_result(): result {
         global $USER, $DB;
 
-        $steps = webdav_setup_steps::catalog((int) $USER->id);
-        $step = $steps[webdav_setup_steps::STEP_CAPABILITY];
-        $actionlink = new action_link($step['targeturl'], get_string('webdavcheckactionlink', 'local_coursepilot'));
+        $steps = webdav_setup_steps::catalog($USER->id);
 
         if (!$steps[webdav_setup_steps::STEP_REPOSITORY_ACTIVE]['ok']) {
             return new result(result::NA, get_string('webdavcheck3na', 'local_coursepilot'));
@@ -60,7 +82,7 @@ final class webdav_capability_check extends check {
 
         $connecteduserids = array_unique(array_map(
             static fn (\stdClass $token): int => (int) $token->userid,
-            oauth_lib::active_tokens()
+            connection::active_tokens()
         ));
         if (empty($connecteduserids)) {
             return new result(result::NA, get_string('webdavcheck3na', 'local_coursepilot'));
@@ -86,8 +108,7 @@ final class webdav_capability_check extends check {
                 'missing' => count($missing),
                 'total' => count($connecteduserids),
             ]),
-            implode("\n", $missing),
-            $actionlink
+            implode("\n", $missing)
         );
     }
 }

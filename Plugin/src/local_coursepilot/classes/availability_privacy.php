@@ -16,8 +16,6 @@
 
 namespace local_coursepilot;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Masks the personal data in Moodle availability conditions before
  * output to an AI (#341).
@@ -38,15 +36,18 @@ defined('MOODLE_INTERNAL') || die();
  *   "sf"/"cf" and "op" are kept so the AI knows that a
  *   personal-data restriction exists (omitting would be worse than
  *   masking).
- * - All other types/fields remain unchanged.
+ * - completion, date, grade, group and grouping remain unchanged.
+ * - Unknown condition types retain only their type and a masked value: plugin payloads
+ *   may contain personal data under arbitrary keys.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class availability_privacy {
-
     /**
+     * Returns masked JSON, or empty string.
+     *
      * @param string $availability Raw Moodle availability JSON.
      * @return string Masked JSON, or empty string.
      */
@@ -58,32 +59,28 @@ class availability_privacy {
         if ($data === null) {
             return '';
         }
-        $data = self::sanitize_node($data);
+        $data = self::sanitize_condition($data);
         return json_encode($data);
     }
 
     /**
-     * @param array $node
-     * @return array
-     */
-    private static function sanitize_node(array $node): array {
-        if (!isset($node['c']) || !is_array($node['c'])) {
-            return $node;
-        }
-        $node['c'] = array_map([self::class, 'sanitize_condition'], $node['c']);
-        return $node;
-    }
-
-    /**
-     * @param array $condition
-     * @return array
+     * Provides sanitize condition.
+     *
+     * @param mixed[] $condition
+     * @return mixed[]
      */
     private static function sanitize_condition(array $condition): array {
-        if (isset($condition['c']) && is_array($condition['c'])) {
-            return self::sanitize_node($condition);
+        $type = $condition['type'] ?? null;
+        if ($type === null) {
+            if (isset($condition['c']) && is_array($condition['c'])) {
+                $condition['c'] = array_map([self::class, 'sanitize_condition'], $condition['c']);
+            }
+            return $condition;
         }
-        if (($condition['type'] ?? '') === 'profile') {
+        if ($type === 'profile') {
             $condition['v'] = '***';
+        } else if (!in_array($type, ['completion', 'date', 'grade', 'group', 'grouping'], true)) {
+            return ['type' => $type, 'v' => '***'];
         }
         return $condition;
     }

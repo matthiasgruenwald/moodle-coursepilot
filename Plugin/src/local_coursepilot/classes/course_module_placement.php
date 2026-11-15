@@ -30,10 +30,13 @@ require_once($CFG->dirroot . '/course/lib.php');
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class course_module_placement {
-
     /**
      * Moves a cm into a section, before $beforecmid (null = section end).
      * Capability moodle/course:manageactivities is checked by cm_move itself.
+     *
+     * @param int $cmid The cmid.
+     * @param int $sectionid The sectionid.
+     * @param ?int $beforecmid The beforecmid.
      */
     public static function move_to(int $cmid, int $sectionid, ?int $beforecmid): void {
         $courseid = self::course_of($cmid);
@@ -50,6 +53,9 @@ final class course_module_placement {
 
     /**
      * Places a cm directly behind another one (the same section as $aftercmid).
+     *
+     * @param int $cmid The cmid.
+     * @param int $aftercmid The aftercmid.
      */
     public static function place_after(int $cmid, int $aftercmid): void {
         $courseid = self::course_of($cmid);
@@ -61,9 +67,15 @@ final class course_module_placement {
             throw new \coding_exception('place_after: the target cm is not in its section');
         }
         $successor = $siblings[$position + 1] ?? null;
-        self::move_to($cmid, (int) $after->section, $successor === null ? null : (int) $successor);
+        self::move_to($cmid, $after->sectionid, $successor);
     }
 
+    /**
+     * Provides course of.
+     *
+     * @param int $cmid The cmid.
+     * @return int
+     */
     private static function course_of(int $cmid): int {
         global $DB;
         return (int) $DB->get_field('course_modules', 'course', ['id' => $cmid], MUST_EXIST);
@@ -71,6 +83,9 @@ final class course_module_placement {
 
     /**
      * Shows or hides a cm (cmactions::set_visibility).
+     *
+     * @param int $cmid The cmid.
+     * @param bool $visible The visible.
      */
     public static function set_visible(int $cmid, bool $visible): void {
         $courseid = self::course_of($cmid);
@@ -91,6 +106,9 @@ final class course_module_placement {
      * the native cm link when a restore failed between instance creation and linking.
      * A half-made row (instance = 0) is removed by hand, the regular delete cannot take it.
      * An unknown cmid is a no-op (idempotent).
+     *
+     * @param int $cmid The cmid.
+     * @param ?int $instanceid The instanceid.
      */
     public static function discard_failed(int $cmid, ?int $instanceid = null): void {
         global $DB, $CFG;
@@ -104,20 +122,21 @@ final class course_module_placement {
             $cm->instance = $instanceid;
         }
         if ((int) $cm->instance === 0) {
-            $context = \context_module::instance($cmid, IGNORE_MISSING);
-            if ($context) {
-                $context->delete();
-            }
-            delete_mod_from_section($cm->id, $cm->section);
-            $DB->delete_records('course_modules', ['id' => $cm->id]);
-            rebuild_course_cache($cm->course, true);
+            self::remove_half_made_row($cm);
             return;
         }
-        rebuild_course_cache($cm->course, true);
-        $info = get_fast_modinfo($cm->course)->get_cm($cmid);
+        // A cm that creation never placed (failure before the section link) is in no section sequence, so the
+        // course cache does not know it and the regular delete cannot find it. Placing it first lets the
+        // delete run through completely, with its events and cache purge.
+        $section = $DB->get_record('course_sections', ['id' => $cm->section]);
+        if (!$section || !in_array((string) $cmid, explode(',', (string) $section->sequence), true)) {
+            course_add_cm_to_section($cm->course, $cmid, 0);
+        }
         $forced = $CFG->forced_plugin_settings['tool_recyclebin'] ?? null;
         $CFG->forced_plugin_settings['tool_recyclebin']['coursebinenable'] = 0;
         try {
+            rebuild_course_cache($cm->course, true);
+            $info = get_fast_modinfo($cm->course)->get_cm($cmid);
             course_get_format($cm->course)->delete_module($info, false);
         } finally {
             if ($forced === null) {
@@ -127,5 +146,21 @@ final class course_module_placement {
             }
             rebuild_course_cache($cm->course, true);
         }
+    }
+
+    /**
+     * Removes a cm row that never got an instance. The regular delete cannot take it.
+     *
+     * @param \stdClass $cm The course_modules row.
+     */
+    private static function remove_half_made_row(\stdClass $cm): void {
+        global $DB;
+        $context = \context_module::instance($cm->id, IGNORE_MISSING);
+        if ($context) {
+            $context->delete();
+        }
+        delete_mod_from_section($cm->id, $cm->section);
+        $DB->delete_records('course_modules', ['id' => $cm->id]);
+        rebuild_course_cache($cm->course, true);
     }
 }

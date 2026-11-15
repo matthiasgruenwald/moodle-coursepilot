@@ -1,0 +1,35 @@
+#!/bin/sh
+# Versionierter Git-Hook (ADR 0029, ADR 0033): Matrix und schnelles Gate vor jedem Push.
+# Das Gate prueft den Arbeitsbaum. Damit das gepruefte dem gepushten Stand entspricht, blockiert der
+# Hook, wenn ein Branch-Ref nicht HEAD ist oder versionierte Dateien geaendert sind.
+# Loeschen und Tags (kein neuer Code) brauchen kein Gate. Reine docs/- und .md-Pushes auch nicht.
+# Mehrere Refs: das Gate laeuft einmal.
+# Aktivierung: npm run hooks:install
+cd "$(git rev-parse --show-toplevel)" || exit 1
+head=$(git rev-parse HEAD)
+run=0
+docs_only=1
+while read -r _lref sha ref _rsha; do
+  case "$sha" in *[!0]*) ;; *) continue ;; esac
+  case "$ref" in refs/heads/*) ;; *) continue ;; esac
+  if [ "$sha" != "$head" ]; then
+    echo "pre-push: Push nach $ref zeigt nicht auf HEAD; das Gate prueft den ausgecheckten Stand. Branch auschecken oder --no-verify." >&2
+    exit 1
+  fi
+  run=1
+  # Reine docs/- und .md-Aenderungen gegen den Remote-Stand brauchen kein Gate. Neuer Branch oder Fehler: Gate laeuft.
+  case "$_rsha" in *[!0]*) ;; *) docs_only=0; continue ;; esac
+  if ! files=$(git diff --name-only "$_rsha" "$sha" 2>/dev/null); then docs_only=0
+  elif printf '%s\n' "$files" | grep -qvE '^docs/|\.md$|^$'; then docs_only=0
+  fi
+done
+[ "$run" = 1 ] || exit 0
+if ! git diff --quiet HEAD --; then
+  echo "pre-push: versionierte Dateien sind geaendert; erst committen oder stashen, sonst prueft das Gate nicht den gepushten Stand." >&2
+  exit 1
+fi
+[ "$docs_only" = 1 ] && exit 0
+# ADR 0033: a push waits for the new tests on another Moodle version/database and the fast gate only.
+# The full suite with coverage and ratchet is binding in CI; locally on demand: npm run gate -- full.
+node scripts/gate/gate.js matrix || exit 1
+exec node scripts/gate/gate.js fast

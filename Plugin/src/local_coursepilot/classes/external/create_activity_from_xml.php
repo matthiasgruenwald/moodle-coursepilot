@@ -24,8 +24,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\xml_activity_creator;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Creates a developed (not catalogued) activity from an activity XML (Spec 0026, #590,
  * ADR 0028). Thin adapter: checks parameters and rights, calls
@@ -36,8 +34,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class create_activity_from_xml extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -45,22 +44,46 @@ final class create_activity_from_xml extends external_api {
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
             'modname' => new external_value(PARAM_ALPHANUMEXT, 'Developed activity type, e.g. "book"'),
             'section' => new external_value(PARAM_INT, 'Section number (0 = general section)'),
-            'activity_xml' => new external_value(PARAM_RAW, 'Activity XML (<module>.xml of a backup), e.g. from coursepilot_export_default_activity'),
+            'activity_xml' => new external_value(
+                PARAM_RAW,
+                'Activity XML (<module>.xml of a backup), e.g. from coursepilot_export_default_activity'
+            ),
             'hidden' => new external_value(PARAM_BOOL, 'Leave the activity hidden after the check', VALUE_DEFAULT, false),
-            'replaces_cmid' => new external_value(PARAM_INT, 'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only hidden. 0 = create only', VALUE_DEFAULT, 0),
-            'dry_run' => new external_value(PARAM_BOOL, 'Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)', VALUE_DEFAULT, false),
-            'files' => new external_multiple_structure(new external_single_structure([
+            'replaces_cmid' => new external_value(
+                PARAM_INT,
+                'Supersede this activity (same type, same course): the new one is placed directly behind it, the old one is only '
+                    . 'hidden. 0 = create only',
+                VALUE_DEFAULT,
+                0
+            ),
+            'dry_run' => new external_value(
+                PARAM_BOOL,
+                'Only with replaces_cmid: write nothing, return the references to the old activity (plan preview)',
+                VALUE_DEFAULT,
+                false
+            ),
+            'files' => new external_multiple_structure(
+                new external_single_structure([
                 'path' => new external_value(PARAM_RAW, 'Path in the material store; binary contents stay on the server'),
                 'filearea' => new external_value(PARAM_ALPHANUMEXT, 'Declared activity file area; lightboxgallery: gallery_images'),
                 'caption' => new external_value(PARAM_NOTAGS, 'Image caption (plain text), empty if omitted', VALUE_DEFAULT, ''),
-                'location' => new external_value(PARAM_ALPHA, \local_coursepilot\material_files::LOCATION_DESCRIPTION,
-                    VALUE_DEFAULT, \local_coursepilot\material_files::LOCATION_STORE),
-            ]), 'Files copied after the XML round trip and before visibility; only declared activity file areas are allowed',
-                VALUE_DEFAULT, []),
+                'location' => new external_value(
+                    PARAM_ALPHA,
+                    \local_coursepilot\material_files::LOCATION_DESCRIPTION,
+                    VALUE_DEFAULT,
+                    \local_coursepilot\material_files::LOCATION_STORE
+                ),
+                ]),
+                'Files copied after the XML round trip and before visibility; only declared activity file areas are allowed',
+                VALUE_DEFAULT,
+                []
+            ),
         ]);
     }
 
     /**
+     * Runs the create activity from xml tool.
+     *
      * @param int $courseid
      * @param string $modname
      * @param int $section
@@ -68,8 +91,8 @@ final class create_activity_from_xml extends external_api {
      * @param bool $hidden
      * @param int $replacescmid
      * @param bool $dryrun
-     * @param array $files Material paths, file areas and optional captions.
-     * @return array
+     * @param mixed[] $files Material paths, file areas and optional captions.
+     * @return mixed[]
      */
     public static function execute(
         int $courseid,
@@ -112,7 +135,11 @@ final class create_activity_from_xml extends external_api {
                 throw new \invalid_parameter_exception('dry_run needs replaces_cmid.');
             }
             $preview = xml_activity_creator::preview_supersede(
-                $params['courseid'], $params['modname'], $params['activity_xml'], $params['replaces_cmid']);
+                $params['courseid'],
+                $params['modname'],
+                $params['activity_xml'],
+                $params['replaces_cmid']
+            );
             return self::shape(['cmid' => 0, 'presets' => []] + $preview);
         }
         $result = xml_activity_creator::create(
@@ -128,8 +155,10 @@ final class create_activity_from_xml extends external_api {
     }
 
     /**
-     * @param array{cmid: int, presets: string[], references: array, successor_cmid: int, hidden_predecessors: int} $result
-     * @return array
+     * Provides shape.
+     *
+     * @param mixed[] $result Type: array{cmid:int,presets:string[],references:array,successor_cmid:int,hidden_predecessors:int}.
+     * @return mixed[]
      */
     private static function shape(array $result): array {
         $messages = [];
@@ -157,6 +186,8 @@ final class create_activity_from_xml extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
@@ -168,20 +199,29 @@ final class create_activity_from_xml extends external_api {
             ),
             'references' => new external_multiple_structure(
                 new external_single_structure([
-                    'kind' => new external_value(PARAM_ALPHANUMEXT, 'activity_availability, section_availability or course_completion'),
+                    'kind' => new external_value(
+                        PARAM_ALPHANUMEXT,
+                        'activity_availability, section_availability or course_completion'
+                    ),
                     'location_id' => new external_value(PARAM_INT, 'cmid, section id or course id of the referencing place'),
                     'location' => new external_value(PARAM_TEXT, 'Readable place'),
                 ]),
                 'Places that still point at the superseded activity (only with replaces_cmid); not resolved'
             ),
-            'successor_cmid' => new external_value(PARAM_INT,
+            'successor_cmid' => new external_value(
+                PARAM_INT,
                 'Newest activity that already supersedes replaces_cmid (ask the teacher whether to supersede that one instead), '
-                . '0 if none'),
-            'hidden_predecessors' => new external_value(PARAM_INT,
+                . '0 if none'
+            ),
+            'hidden_predecessors' => new external_value(
+                PARAM_INT,
                 'Hidden earlier versions in the chain behind the new activity: replaces_cmid (hidden by superseding) '
-                . 'plus its hidden predecessors; 0 without replaces_cmid'),
-            'message' => new external_value(PARAM_RAW,
-                'Hints about Moodle presets, unresolved references and the superseding chain, empty if there are none'),
+                . 'plus its hidden predecessors; 0 without replaces_cmid'
+            ),
+            'message' => new external_value(
+                PARAM_RAW,
+                'Hints about Moodle presets, unresolved references and the superseding chain, empty if there are none'
+            ),
         ]);
     }
 }

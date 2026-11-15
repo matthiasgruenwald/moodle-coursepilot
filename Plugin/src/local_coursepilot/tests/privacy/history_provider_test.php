@@ -32,8 +32,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(provider::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\history\retention::class)]
 final class history_provider_test extends \core_privacy\tests\provider_testcase {
-
     /** @var \stdClass */
     private \stdClass $author;
 
@@ -80,6 +80,8 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
+     * Adds file.
+     *
      * @param string $component
      * @param string $filearea
      * @param string $filename
@@ -95,6 +97,8 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
+     * Adds version.
+     *
      * @param \stdClass $cm
      * @param int $version
      * @param int $userid
@@ -117,6 +121,8 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
+     * Counts versions.
+     *
      * @param int $userid
      * @param \stdClass $cm
      * @return int
@@ -126,7 +132,9 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         return $DB->count_records('local_coursepilot_cm_version', ['userid' => $userid, 'cmid' => $cm->id]);
     }
 
-    /** Count of version_file links pointing at no existing state. */
+    /**
+     * Count of version_file links pointing at no existing state.
+     */
     private function dangling_links(): int {
         global $DB;
         return $DB->count_records_sql('SELECT COUNT(1) FROM {local_coursepilot_cm_version_file} vf
@@ -166,7 +174,9 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
 
         $this->export_context_data_for_user($this->author->id, $ctx, 'local_coursepilot');
 
-        $data = writer::with_context($ctx)->get_data([
+        $exported = writer::with_context($ctx);
+        $this->assertInstanceOf(\core_privacy\tests\request\content_writer::class, $exported);
+        $data = $exported->get_data([
             get_string('pluginname', 'local_coursepilot'), get_string('historytitle', 'local_coursepilot'),
         ]);
         $this->assertCount(1, $data->versions);
@@ -177,6 +187,39 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         $encoded = json_encode($data);
         $this->assertStringNotContainsString('student.pdf', $encoded);
         $this->assertStringNotContainsString('secret design text', $encoded);
+    }
+
+    public function test_export_describes_each_own_state_with_its_exact_metadata(): void {
+        $ctx = \context_module::instance($this->cm->id);
+
+        $this->export_context_data_for_user($this->author->id, $ctx, 'local_coursepilot');
+
+        /** @var \core_privacy\tests\request\content_writer $exported */
+        $exported = writer::with_context($ctx);
+        $data = $exported->get_data([
+            get_string('pluginname', 'local_coursepilot'), get_string('historytitle', 'local_coursepilot'),
+        ]);
+        $this->assertEquals((object) ['versions' => [(object) [
+            'version' => 1,
+            'source' => 'moodle',
+            'sourcecmid' => null,
+            'timecreated' => \core_privacy\local\request\transform::datetime(1001),
+            'files' => [
+                (object) ['filearea' => 'intro', 'filename' => 'shared.png', 'gap' => get_string('no')],
+                (object) ['filearea' => 'intro', 'filename' => 'author.png', 'gap' => get_string('no')],
+            ],
+        ]]], $data);
+    }
+
+    public function test_export_of_a_context_without_own_states_writes_nothing(): void {
+        $bystander = $this->getDataGenerator()->create_user();
+        $ctx = \context_module::instance($this->cm->id);
+
+        $this->export_context_data_for_user($bystander->id, $ctx, 'local_coursepilot');
+
+        /** @var \core_privacy\tests\request\content_writer $exported */
+        $exported = writer::with_context($ctx);
+        $this->assertFalse($exported->has_any_data());
     }
 
     public function test_delete_for_user_removes_own_states_in_approved_context_only(): void {
@@ -204,8 +247,11 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         $this->assertSame(1, $this->count_versions($this->other->id, $this->cm));
         $this->assertSame(1, $this->count_versions($this->author->id, $this->othercm));
 
-        provider::delete_data_for_users(new approved_userlist($ctx, 'local_coursepilot',
-            [$this->author->id, $this->other->id]));
+        provider::delete_data_for_users(new approved_userlist(
+            $ctx,
+            'local_coursepilot',
+            [$this->author->id, $this->other->id]
+        ));
 
         $this->assertSame(0, $this->count_versions($this->other->id, $this->cm));
         $this->assertSame(1, $this->count_versions($this->author->id, $this->othercm));
@@ -229,11 +275,17 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
         global $DB;
         $before = $DB->count_records('local_coursepilot_cm_version');
 
-        provider::delete_data_for_user(new approved_contextlist($this->author, 'local_coursepilot',
-            [\context_system::instance()->id, \context_user::instance($this->author->id)->id]));
+        provider::delete_data_for_user(new approved_contextlist(
+            $this->author,
+            'local_coursepilot',
+            [\context_system::instance()->id, \context_user::instance($this->author->id)->id]
+        ));
         provider::delete_data_for_all_users_in_context(\context_course::instance($this->cm->course));
-        provider::delete_data_for_users(new approved_userlist(\context_system::instance(), 'local_coursepilot',
-            [$this->author->id]));
+        provider::delete_data_for_users(new approved_userlist(
+            \context_system::instance(),
+            'local_coursepilot',
+            [$this->author->id]
+        ));
 
         $this->assertSame($before, $DB->count_records('local_coursepilot_cm_version'));
     }
@@ -259,8 +311,10 @@ final class history_provider_test extends \core_privacy\tests\provider_testcase 
             }
         }
         $fields = array_keys($tables['local_coursepilot_cm_version']->get_privacy_fields());
-        foreach (['userid', 'version', 'source', 'sourcecmid', 'moduleinfo_json', 'coursemodule_json',
-                'arrangement_json'] as $field) {
+        foreach (
+            ['userid', 'version', 'source', 'sourcecmid', 'moduleinfo_json', 'coursemodule_json',
+                'arrangement_json'] as $field
+        ) {
             $this->assertContains($field, $fields);
         }
         $summary = get_string('privacy:metadata:cm_version', 'local_coursepilot');

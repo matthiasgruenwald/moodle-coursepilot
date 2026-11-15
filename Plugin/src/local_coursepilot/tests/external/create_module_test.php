@@ -31,6 +31,16 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[CoversClass(create_module::class)]
+#[CoversClass(\local_coursepilot\catalog\catalog_fields::class)]
+#[CoversClass(\local_coursepilot\catalog\assign::class)]
+#[CoversClass(\local_coursepilot\catalog\label::class)]
+#[CoversClass(\local_coursepilot\catalog\write_target::class)]
+#[CoversClass(\local_coursepilot\catalog\choice::class)]
+#[CoversClass(\local_coursepilot\catalog\folder::class)]
+#[CoversClass(\local_coursepilot\catalog\forum::class)]
+#[CoversClass(\local_coursepilot\catalog\page::class)]
+#[CoversClass(\local_coursepilot\catalog\resource::class)]
+#[CoversClass(\local_coursepilot\catalog\url::class)]
 final class create_module_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -40,6 +50,8 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course, teacher (editingteacher).
      */
     private function course_with_editing_teacher(): array {
@@ -69,14 +81,17 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
+     * Creates the create module test.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $modname
-     * @param array $felder
-     * @param string $ort {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
+     * @param mixed[] $felder
+     * @param string $ort
+     * {@see \local_coursepilot\material_files::LOCATION_STORE}/{@see \local_coursepilot\material_files::LOCATION_WORKBENCH}
      *        (Issue #496).
      * @param string[] $confirmlearnerlocks Explicitly confirmed learner restrictions (#583).
-     * @return array
+     * @return mixed[]
      */
     private function create(
         int $courseid,
@@ -96,17 +111,19 @@ final class create_module_test extends \advanced_testcase {
      * Simulate AI preparation: apply bundle values first, then explicit
      * fields. Bundles are not endpoint parameters (Spec 0015 §2.4).
      *
-     * @param array $bundle
-     * @param array $felder
-     * @return array
+     * @param mixed[] $bundle
+     * @param mixed[] $felder
+     * @return mixed[]
      */
     private function merge_bundle(array $bundle, array $felder): array {
         return array_merge($bundle, $felder);
     }
 
     /**
+     * Returns current state, with the same shape as get_module_settings.
+     *
      * @param int $cmid
-     * @return array Current state, with the same shape as get_module_settings.
+     * @return mixed[] Current state, with the same shape as get_module_settings.
      */
     private function read(int $cmid): array {
         $result = external_api::clean_returnvalue(
@@ -149,7 +166,13 @@ final class create_module_test extends \advanced_testcase {
         $this->assertEquals(0, $after['nosubmissions'], 'nosubmissions must be 0 - at least one submission type active.');
         $this->assertSame('Beschreibung', $after['intro']);
         $this->assertSame([], get_file_storage()->get_area_files(
-            \context_module::instance($result['cmid'])->id, 'mod_assign', 'intro', 0, 'filename', false));
+            \context_module::instance($result['cmid'])->id,
+            'mod_assign',
+            'intro',
+            0,
+            'filename',
+            false
+        ));
         $this->assertNotContains('introimages', array_column($result['created_fields'], 'field'));
     }
 
@@ -215,8 +238,14 @@ final class create_module_test extends \advanced_testcase {
         $this->assertSame('Bildinhalt 581', $file->get_content());
         $this->assertSame(sha1('Bildinhalt 581'), $file->get_contenthash());
         $this->assertStringContainsString('@@PLUGINFILE@@/diagramm.png', $this->read($result['cmid'])['intro']);
-        $rendered = file_rewrite_pluginfile_urls($this->read($result['cmid'])['intro'], 'pluginfile.php',
-            $context->id, 'mod_assign', 'intro', 0);
+        $rendered = file_rewrite_pluginfile_urls(
+            $this->read($result['cmid'])['intro'],
+            'pluginfile.php',
+            $context->id,
+            'mod_assign',
+            'intro',
+            0
+        );
         $this->assertStringContainsString('/pluginfile.php/' . $context->id . '/mod_assign/intro/0/diagramm.png', $rendered);
         $this->assertStringNotContainsString('draftfile.php', $rendered);
         $fields = array_column($result['created_fields'], 'value_json', 'field');
@@ -249,6 +278,11 @@ final class create_module_test extends \advanced_testcase {
         $this->assertSame('["diagramm.png"]', $fields['introimages']);
     }
 
+    /**
+     * Provides invalid intro images.
+     *
+     * @return mixed[]
+     */
     public static function invalid_intro_images(): array {
         return [
             'missing file' => [['missing.png'], 'materialfilenotfound'],
@@ -262,7 +296,7 @@ final class create_module_test extends \advanced_testcase {
     }
 
     #[DataProvider('invalid_intro_images')]
-    public function test_assign_create_rejects_invalid_intro_images_without_activity($paths, string $errorcode): void {
+    public function test_assign_create_rejects_invalid_intro_images_without_activity(mixed $paths, string $errorcode): void {
         global $DB;
         $this->resetAfterTest();
         [$course] = $this->course_with_editing_teacher();
@@ -287,8 +321,13 @@ final class create_module_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$course, $teacher] = $this->course_with_editing_teacher();
         $roleid = $DB->get_field('role', 'id', ['shortname' => 'user'], MUST_EXIST);
-        assign_capability('moodle/user:manageownfiles', CAP_PROHIBIT, $roleid,
-            \context_user::instance($teacher->id)->id, true);
+        assign_capability(
+            'moodle/user:manageownfiles',
+            CAP_PROHIBIT,
+            $roleid,
+            \context_user::instance($teacher->id)->id,
+            true
+        );
 
         try {
             $this->create($course->id, 0, 'assign', [
@@ -322,6 +361,25 @@ final class create_module_test extends \advanced_testcase {
         $stored = get_file_storage()->get_file($modulecontext->id, 'mod_resource', 'content', 0, '/', 'arbeitsblatt.pdf');
         $this->assertNotFalse($stored, 'The main file must be under mod_resource/content.');
         $this->assertSame('Arbeitsblattinhalt', $stored->get_content());
+    }
+
+    public function test_resource_accepts_an_uploaded_opendocument_file(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+        \core_external\external_api::clean_returnvalue(
+            \local_coursepilot\external\upload_material_file::execute_returns(),
+            \local_coursepilot\external\upload_material_file::execute('lernjournal.odt', base64_encode('PK-odf'))
+        );
+
+        $result = $this->create($course->id, 0, 'resource', [
+            'name' => 'Lernjournal',
+            'files' => ['lernjournal.odt'],
+        ]);
+
+        $modulecontext = \context_module::instance($result['cmid']);
+        $stored = get_file_storage()->get_file($modulecontext->id, 'mod_resource', 'content', 0, '/', 'lernjournal.odt');
+        $this->assertNotFalse($stored, 'The ODT must be under mod_resource/content.');
+        $this->assertSame('PK-odf', $stored->get_content());
     }
 
     /**
@@ -725,7 +783,7 @@ final class create_module_test extends \advanced_testcase {
             $this->create($course->id, 0, 'forum', [
                 'name' => 'Ankuendigungen',
                 'intro' => 'Wichtige Hinweise',
-                // cutoffdate before duedate violates the combination rule.
+                // Note: cutoffdate before duedate violates the combination rule.
                 'duedate' => 2000000000,
                 'cutoffdate' => 1000000000,
             ]);
@@ -823,6 +881,42 @@ final class create_module_test extends \advanced_testcase {
     }
 
     /**
+     * A text card created with a name shows that name in the course index.
+     */
+    public function test_label_created_with_name_uses_it_as_course_index_title(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->create($course->id, 0, 'label', ['name' => 'Praxis: KI-Sekretär', 'intro' => 'Aufgabe']);
+
+        $this->assertSame('Praxis: KI-Sekretär', get_fast_modinfo($course->id)->get_cm($result['cmid'])->name);
+    }
+
+    /**
+     * Without a name a text card is titled from the start of its intro.
+     */
+    public function test_label_created_without_name_derives_it_from_the_intro(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->create($course->id, 0, 'label', ['intro' => '<p>Textfeld-Inhalt</p>']);
+
+        $this->assertSame('Textfeld-Inhalt', get_fast_modinfo($course->id)->get_cm($result['cmid'])->name);
+    }
+
+    /**
+     * A null name counts as not named: the title comes from the intro.
+     */
+    public function test_label_created_with_null_name_derives_it_from_the_intro(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->create($course->id, 0, 'label', ['name' => null, 'intro' => '<p>Textfeld-Inhalt</p>']);
+
+        $this->assertSame('Textfeld-Inhalt', get_fast_modinfo($course->id)->get_cm($result['cmid'])->name);
+    }
+
+    /**
      * Every creation records history version 1 through add_moduleinfo()’s
      * native course_module_created event (#385).
      */
@@ -912,11 +1006,11 @@ final class create_module_test extends \advanced_testcase {
             ]);
             $this->fail('execute() should have thrown because of drift.');
         } catch (\moodle_exception $e) {
-            // write_gate_test.php checks exact wording against the language pack.
+            // Note: write_gate_test.php checks exact wording against the language pack.
             $this->assertSame('modnamedriftlocked', $e->errorcode);
         }
 
-        // folder remains creatable; only page is blocked.
+        // Note: folder remains creatable; only page is blocked.
         $this->create($course->id, 0, 'folder', ['name' => 'x']);
         $this->addToAssertionCount(1);
     }
@@ -944,8 +1038,14 @@ final class create_module_test extends \advanced_testcase {
 
         $result = external_api::clean_returnvalue(
             create_module::execute_returns(),
-            create_module::execute($course->id, 0, 'assign', json_encode($felder),
-                \local_coursepilot\material_files::LOCATION_STORE, ['attemptreopenmethod'])
+            create_module::execute(
+                $course->id,
+                0,
+                'assign',
+                json_encode($felder),
+                \local_coursepilot\material_files::LOCATION_STORE,
+                ['attemptreopenmethod']
+            )
         );
         $this->assertSame('manual', $this->read($result['cmid'])['attemptreopenmethod']);
     }
@@ -969,5 +1069,25 @@ final class create_module_test extends \advanced_testcase {
 
         $result = $this->create($course->id, 0, 'choice', $felder + ['allowupdate' => 1]);
         $this->assertSame(1, (int) $this->read($result['cmid'])['allowupdate']);
+    }
+
+    public function test_unparseable_field_json_is_rejected(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $this->expectExceptionMessage(get_string('invalidpatchjson', 'local_coursepilot'));
+        create_module::execute((int) $course->id, 0, 'label', 'kein json');
+    }
+
+    public function test_activity_types_with_their_own_write_route_are_refused(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        try {
+            create_module::execute((int) $course->id, 0, 'quiz', '{}');
+            $this->fail('Quiz creation must use its own tool.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('writevehicleblocked', $e->errorcode);
+        }
     }
 }

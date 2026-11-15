@@ -1,0 +1,104 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "cmid",
+                "type": "int",
+                "default": "(none)"
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID of the activity",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "cmid": {
+                "class": "core_external\\external_value",
+                "desc": "Course module ID",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "modname": {
+                "class": "core_external\\external_value",
+                "desc": "Activity type",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "settings_json": {
+                "class": "core_external\\external_value",
+                "desc": "Current activity settings as JSON, including coursepagevisibility/availability_status; profile conditions in availabilityconditionsjson are masked (ADR 0011). For quizzes, gradepass and grademax are persisted gradebook values in grade points, not percent; null means the primary grade item is missing.",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "learner_locks": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Existing learner locks of this activity (describe_module_fields: learner_lock), empty when none",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "field": {
+                            "class": "core_external\\external_value",
+                            "desc": "Field name in the catalog vocabulary",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "value_json": {
+                            "class": "core_external\\external_value",
+                            "desc": "JSON-encoded current value",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "reason": {
+                            "class": "core_external\\external_value",
+                            "desc": "Why this value makes learners wait for the teacher",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

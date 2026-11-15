@@ -30,7 +30,6 @@
 
 require(__DIR__ . '/../../../config.php');
 
-use local_coursepilot\oauth_lib;
 use local_coursepilot\output\authorize_page;
 
 require_login(null, false);
@@ -56,52 +55,4 @@ $params = [
 $state = optional_param('state', '', PARAM_RAW_TRIMMED);
 $action = optional_param('action', '', PARAM_ALPHA);
 
-$validation = oauth_lib::validate_authorize_request($params);
-if (isset($validation['error'])) {
-    // Invalid requests (unknown client, missing PKCE, unregistered redirect)
-    // have no verified redirect_uri. Show a Moodle error instead of an unsafe
-    // redirect; RFC 6749 §4.1.2.1 applies only after verifying the target.
-    throw new moodle_exception('authorizeerror', 'local_coursepilot', '', $validation['error_description']);
-}
-$client = $validation['client'];
-$clientname = $client->clientname ?: $client->clientid;
-$title = get_string('authorizetitleclient', 'local_coursepilot', $clientname);
-$PAGE->set_title($title);
-
-if ($action === 'deny') {
-    require_sesskey();
-    redirect(oauth_lib::denial_redirect_url($params['redirect_uri'], $state !== '' ? $state : null));
-}
-
-if ($action === 'allow') {
-    require_sesskey();
-
-    global $USER;
-    $code = oauth_lib::issue_code(
-        $params['client_id'],
-        (int) $USER->id,
-        $params['redirect_uri'],
-        $params['code_challenge']
-    );
-    redirect(oauth_lib::build_redirect_url($params['redirect_uri'], [
-        'code' => $code,
-        'state' => $state !== '' ? $state : null,
-    ]));
-}
-
-// Location-selection link with return (#563, resolves the #558 dead end):
-// OAuth parameters travel in the query string. Location selection validates
-// them again and returns here on completion, instead of redirecting to Claude.
-$locationselectionurl = new moodle_url('/local/coursepilot/location_selection.php', array_merge($params, [
-    'state' => $state,
-    'oauthflow' => 1,
-]));
-$formurl = new moodle_url('/local/coursepilot/oauth/authorize.php');
-
-echo $OUTPUT->header();
-echo $OUTPUT->heading($title);
-echo $OUTPUT->render_from_template(
-    'local_coursepilot/authorize',
-    authorize_page::page_data($clientname, $params, $state, $formurl, $locationselectionurl)
-);
-echo $OUTPUT->footer();
+authorize_page::response($params, $state, $action)->send();

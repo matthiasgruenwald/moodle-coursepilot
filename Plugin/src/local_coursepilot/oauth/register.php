@@ -41,12 +41,10 @@ use local_coursepilot\oauth_lib;
 
 $rawbody = file_get_contents('php://input', false, null, 0, oauth_lib::REGISTRATION_MAX_BODY_BYTES + 1);
 
-$response = oauth_lib::handle_registration($_SERVER['REQUEST_METHOD'] ?? 'POST',
-    $rawbody === false ? '' : $rawbody, oauth_budget::request_source());
+$response = oauth_lib::handle_registration(
+    $_SERVER['REQUEST_METHOD'] ?? 'POST',
+    (string) $rawbody,
+    oauth_budget::request_source()
+);
 
-http_response_code($response['status']);
-foreach ($response['headers'] as $name => $value) {
-    header($name . ': ' . $value);
-}
-header('Content-Type: application/json');
-echo json_encode($response['body'], JSON_UNESCAPED_SLASHES);
+\local_coursepilot\output\http_response::json($response)->send();

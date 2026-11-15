@@ -27,8 +27,6 @@ use local_coursepilot\catalog\module_state;
 use local_coursepilot\catalog\registry;
 use local_coursepilot\catalog\shared_block;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Course catalog server-side (#341): compact, filterable read view of a
  * course - sections, visible content, quiz structure, visibility, completion
@@ -48,25 +46,33 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class get_course_catalog extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'courseid'   => new external_value(PARAM_INT, 'Course ID'),
             'sectionnum' => new external_value(PARAM_INT, 'Section number (0-based, -1 = all sections)', VALUE_DEFAULT, -1),
-            'modname'    => new external_value(PARAM_TEXT, 'Optional module type filter: page, label, assign, quiz, url', VALUE_DEFAULT, ''),
+            'modname'    => new external_value(
+                PARAM_TEXT,
+                'Optional module type filter: page, label, assign, quiz, url',
+                VALUE_DEFAULT,
+                ''
+            ),
             'detail'     => new external_value(PARAM_ALPHA, 'compact or full content detail', VALUE_DEFAULT, 'compact'),
         ]);
     }
 
     /**
+     * Runs the get course catalog tool.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $modname
      * @param string $detail
-     * @return array
+     * @return mixed[]
      */
     public static function execute(
         int $courseid,
@@ -106,11 +112,13 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides sections.
+     *
      * @param int $courseid
      * @param int $sectionnum
      * @param string $modulefilter
      * @param bool $fullcontent
-     * @return array
+     * @return mixed[]
      */
     private static function sections(int $courseid, int $sectionnum, string $modulefilter, bool $fullcontent): array {
         global $DB;
@@ -146,10 +154,12 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides modules.
+     *
      * @param int $sectionid
      * @param string $modulefilter
      * @param bool $fullcontent
-     * @return array
+     * @return mixed[]
      */
     private static function modules(int $sectionid, string $modulefilter, bool $fullcontent): array {
         global $DB;
@@ -173,7 +183,7 @@ class get_course_catalog extends external_api {
             $params
         );
         $rows = array_values($rows);
-        usort($rows, function($a, $b) use ($section) {
+        usort($rows, function ($a, $b) use ($section) {
             return self::sequence_index((string) $section->sequence, (int) $a->cmid)
                 <=> self::sequence_index((string) $section->sequence, (int) $b->cmid);
         });
@@ -203,6 +213,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides sequence index.
+     *
      * @param string $sequence
      * @param int $cmid
      * @return int
@@ -214,11 +226,13 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides module details.
+     *
      * @param string $modname
      * @param int $instanceid
      * @param int $cmid
      * @param bool $fullcontent
-     * @return array
+     * @return mixed[]
      */
     private static function module_details(string $modname, int $instanceid, int $cmid, bool $fullcontent): array {
         $catalogclass = registry::for($modname);
@@ -229,9 +243,11 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Provides content field.
+     *
      * @param string $html
      * @param bool $fullcontent
-     * @return array
+     * @return mixed[]
      */
     private static function content_field(string $html, bool $fullcontent): array {
         return [
@@ -242,6 +258,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Previews the get course catalog.
+     *
      * @param string $html
      * @param bool $fullcontent
      * @return string
@@ -255,6 +273,8 @@ class get_course_catalog extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
@@ -294,7 +314,10 @@ class get_course_catalog extends external_api {
                             'modname' => new external_value(PARAM_TEXT, 'Module type'),
                             'name' => new external_value(PARAM_TEXT, 'Module display name'),
                             'visible' => new external_value(PARAM_INT, 'Visible flag'),
-                            'visibleoncoursepage' => new external_value(PARAM_INT, 'Stealth: 1 = shown on course page, 0 = stealth'),
+                            'visibleoncoursepage' => new external_value(
+                                PARAM_INT,
+                                'Stealth: 1 = shown on course page, 0 = stealth'
+                            ),
                             'coursepagevisibility' => new external_value(PARAM_TEXT, 'shown | stealth'),
                             'availability_status' => new external_value(PARAM_TEXT, 'shown | stealth | hidden'),
                             'groupmode' => new external_value(PARAM_INT, 'Group mode: 0 = none, 1 = separate, 2 = visible'),

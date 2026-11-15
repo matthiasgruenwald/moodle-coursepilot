@@ -27,7 +27,6 @@ use core_external\external_api;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(ensure_question_bank::class)]
 final class ensure_question_bank_test extends \advanced_testcase {
-
     /**
      * Create when the course has no question bank with this name.
      */
@@ -110,6 +109,8 @@ final class ensure_question_bank_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */

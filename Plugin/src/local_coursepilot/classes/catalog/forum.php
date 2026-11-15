@@ -43,11 +43,20 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class forum implements module_catalog {
-
+    /**
+     * Provides modname.
+     *
+     * @return string
+     */
     public static function modname(): string {
         return 'forum';
     }
 
+    /**
+     * Provides fields.
+     *
+     * @return mixed[]
+     */
     public static function fields(): array {
         global $CFG;
 
@@ -137,7 +146,8 @@ final class forum implements module_catalog {
                 0,
                 null,
                 null,
-                'course/moodleform_mod.php:743-746 (add_rating_settings(), modgrade element; scale value = grademax/scaleid); column '
+                'course/moodleform_mod.php:743-746 (add_rating_settings(), modgrade element; scale value = grademax/scaleid); '
+                    . 'column '
                     . 'mod/forum/db/install.xml (forum.scale)'
             ),
             new field(
@@ -318,17 +328,37 @@ final class forum implements module_catalog {
             ),
         ];
         if ((int) $CFG->branch >= 502) {
-            $fields[] = new field('showimmediately', 'PARAM_BOOL',
+            $fields[] = new field(
+                'showimmediately',
+                'PARAM_BOOL',
                 'In a Q&A forum, show other answers immediately after posting instead of waiting for the editing period.',
-                false, 0, [0, 1], null, 'mod/forum/mod_form.php (showimmediately)');
+                false,
+                0,
+                [0, 1],
+                null,
+                'mod/forum/mod_form.php (showimmediately)'
+            );
         }
         return $fields;
     }
 
+    /**
+     * Provides state.
+     *
+     * @param int $instanceid The instanceid.
+     * @param int $cmid The cmid.
+     * @param bool $fullcontent The fullcontent.
+     * @return mixed[]
+     */
     public static function state(int $instanceid, int $cmid, bool $fullcontent): array {
         return module_state::unknown(self::modname(), $instanceid, $fullcontent);
     }
 
+    /**
+     * Writes options.
+     *
+     * @return mixed[]
+     */
     public static function write_options(): array {
         return [
             'date_order_rules' => [['reference' => 'duedate', 'field' => 'cutoffdate', 'mode' => 'not_before']],
@@ -336,10 +366,20 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Provides common field names.
+     *
+     * @return mixed[]
+     */
     public static function common_field_names(): array {
         return array_map(static fn (field $f): string => $f->name, self::fields());
     }
 
+    /**
+     * Provides pseudofields.
+     *
+     * @return mixed[]
+     */
     public static function pseudofields(): array {
         return [
             new field(
@@ -353,11 +393,17 @@ final class forum implements module_catalog {
                 [0, 1],
                 null,
                 'course/moodleform_mod.php:751-760 (add_rating_settings()); mod/forum/lib.php:178-181 '
+                    // phpcs:ignore moodle.Strings.ForbiddenStrings.Found -- Source citation keeps its code span.
                     . '(forum_update_instance(): `if (empty($forum->ratingtime) or empty($forum->assessed))`)'
             ),
         ];
     }
 
+    /**
+     * Provides blocklist.
+     *
+     * @return mixed[]
+     */
     public static function blocklist(): array {
         return [
             'assesstimestart',
@@ -365,6 +411,11 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Provides combination rules.
+     *
+     * @return mixed[]
+     */
     public static function combination_rules(): array {
         return [
             '"cutoffdate" must not be before "duedate" (mod/forum/mod_form.php: validation()).',
@@ -373,6 +424,11 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Provides side effects.
+     *
+     * @return mixed[]
+     */
     public static function side_effects(): array {
         return [
             '"forcesubscribe"=2 (auto-subscription) immediately subscribes all potential course participants '
@@ -383,18 +439,38 @@ final class forum implements module_catalog {
         ];
     }
 
+    /**
+     * Provides bundles.
+     *
+     * @return mixed[]
+     */
     public static function bundles(): array {
         return [];
     }
 
+    /**
+     * Writes route.
+     *
+     * @return ?string
+     */
     public static function write_route(): ?string {
         return null;
     }
 
+    /**
+     * Provides checked constants.
+     *
+     * @return mixed[]
+     */
     public static function checked_constants(): array {
         return ['FORUM_INITIALSUBSCRIBE'];
     }
 
+    /**
+     * Provides learner locks.
+     *
+     * @return mixed[]
+     */
     public static function learner_locks(): array {
         return [
             'cutoffdate' => ['op' => 'nonzero',
@@ -409,6 +485,8 @@ final class forum implements module_catalog {
     /**
      * The teacher grades - unless an instance has neither post rating nor
      * overall grade.
+     *
+     * @param int $instanceid The instanceid.
      */
     public static function grade_origin(int $instanceid = 0): string {
         global $DB;
@@ -422,6 +500,11 @@ final class forum implements module_catalog {
         return learner_locks::GRADE_TEACHER;
     }
 
+    /**
+     * Provides reviewed up to major.
+     *
+     * @return int
+     */
     public static function reviewed_up_to_major(): int {
         return self::LAST_JOINT_REVIEW_MAJOR;
     }

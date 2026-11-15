@@ -24,8 +24,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Lists the courses in which the calling teacher may use Coursepilot.
  *
@@ -38,8 +36,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class list_courses extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -47,7 +46,9 @@ class list_courses extends external_api {
     }
 
     /**
-     * @return array
+     * Runs the list courses tool.
+     *
+     * @return mixed[]
      * @throws moodle_exception CAPABILITY_MISSING if no course is authorized.
      */
     public static function execute(): array {
@@ -76,6 +77,8 @@ class list_courses extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

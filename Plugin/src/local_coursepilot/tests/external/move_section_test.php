@@ -28,8 +28,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(move_section::class)]
 final class move_section_test extends \advanced_testcase {
-
     /**
+     * Provides course with editing teacher.
+     *
      * @return array{0: \stdClass, 1: \stdClass} Course (4 sections), teacher.
      */
     private function course_with_editing_teacher(): array {
@@ -46,6 +47,8 @@ final class move_section_test extends \advanced_testcase {
     }
 
     /**
+     * Provides names by sectionnum.
+     *
      * @param \stdClass $course
      * @return array<int, string> sectionnum => name, sortiert
      */
@@ -60,10 +63,12 @@ final class move_section_test extends \advanced_testcase {
     }
 
     /**
+     * Moves the move section test.
+     *
      * @param int $courseid
      * @param int $von
      * @param int $nach
-     * @return array
+     * @return mixed[]
      */
     private function move(int $courseid, int $von, int $nach): array {
         return external_api::clean_returnvalue(
@@ -122,11 +127,25 @@ final class move_section_test extends \advanced_testcase {
     }
 
     /**
+     * Returns role id.
+     *
      * @param string $shortname
      * @return int
      */
     private function get_role_id(string $shortname): int {
         global $DB;
         return (int) $DB->get_field('role', 'id', ['shortname' => $shortname], MUST_EXIST);
+    }
+
+    public function test_moving_a_section_onto_its_own_position_changes_nothing(): void {
+        $this->resetAfterTest();
+        [$course] = $this->course_with_editing_teacher();
+
+        $result = $this->move($course->id, 2, 2);
+
+        $this->assertSame(2, $result['sectionnum']);
+        $this->assertStringContainsString('is already at position 2', $result['message']);
+        $names = $this->names_by_sectionnum($course);
+        $this->assertSame(['LS 1', 'LS 2', 'LS 3', 'LS 4'], [$names[1], $names[2], $names[3], $names[4]]);
     }
 }

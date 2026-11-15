@@ -35,7 +35,6 @@ use core_external\external_api;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class dispatcher {
-
     /** @var string Legacy protocol revision (initialize handshake). */
     public const LEGACY_VERSION = '2025-06-18';
 
@@ -64,12 +63,12 @@ final class dispatcher {
     /**
      * Handles a complete MCP request, returning a value instead of emitting output.
      *
-     * @param array|null $request The already decoded JSON body, or
+     * @param mixed[]|null $request The already decoded JSON body, or
      *        null if decoding failed (parse-error case).
      * @param string|null $token The Bearer token already extracted from
      *        the Authorization header.
-     * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     public static function handle(?array $request, ?string $token, array $headers): array {
         global $CFG;
@@ -79,7 +78,7 @@ final class dispatcher {
         if ($origin !== null) {
             $allowed = array_merge([rtrim($CFG->wwwroot, '/')], self::EXTRA_ALLOWED_ORIGINS);
             if (!in_array(rtrim($origin, '/'), $allowed, true)) {
-                // #339: log separately, before handle_authorized(); this response
+                // Log separately, before handle_authorized(); this response
                 // does not use the JSON-RPC error format.
                 access_log::log_failure('Origin not allowed');
                 return self::result(403, [], ['error' => 'Origin not allowed']);
@@ -105,26 +104,26 @@ final class dispatcher {
     }
 
     /**
-     * Request flow after origin validation and CORS preflight (#337 addendum).
+     * Request flow after origin validation and CORS preflight.
      * Extracted from handle() so one place adds CORS headers to every response.
      *
-     * @param array|null $request
+     * @param mixed[]|null $request
      * @param string|null $token
-     * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function handle_authorized(?array $request, ?string $token, array $headers): array {
         global $CFG;
 
-        // Global emergency switch (#338): deny all MCP access immediately, before
+        // Global emergency switch: deny all MCP access immediately, before
         // token or capability checks. Issued tokens survive, unlike bulk revocation
-        // in oauth_lib::revoke_all_tokens(). This endpoint setting does not affect
+        // in connection::revoke_all_tokens(). This endpoint setting does not affect
         // normal Moodle login. Enabled by default, hence comparison to explicit 0.
-        if ((string) get_config('local_coursepilot', 'remoteaccessenabled') === '0') {
+        if (!connection::remote_access_enabled()) {
             return self::error(403, $request['id'] ?? null, -32003, get_string('remoteaccessdisabled', 'local_coursepilot'));
         }
 
-        // Protected-resource metadata on the resource path itself (RFC 9728 §3, #312).
+        // Protected-resource metadata on the resource path itself (RFC 9728 §3).
         $pathinfo = trim($headers['pathinfo'] ?? '', '/');
         if ($pathinfo === '.well-known/oauth-protected-resource') {
             return self::result(
@@ -136,7 +135,7 @@ final class dispatcher {
 
         $method = $headers['method'] ?? 'POST';
         if ($method !== 'POST') {
-            // #339: deliberately unlogged; this is a misconfigured HTTP client,
+            // Deliberately unlogged; this is a misconfigured HTTP client,
             // without a parsed JSON-RPC request or tool reference.
             return self::result(405, ['Allow' => 'POST'], ['error' => 'Method Not Allowed - MCP over HTTP is POST only']);
         }
@@ -145,87 +144,73 @@ final class dispatcher {
             return self::error(400, null, -32700, 'Parse error');
         }
 
+        return self::handle_authenticated($request, $token, $headers);
+    }
+
+    /**
+     * Authenticate a parsed request before any protocol or tool response.
+     *
+     * @param mixed[] $request JSON-RPC request.
+     * @param string|null $token Bearer token.
+     * @param mixed[] $headers Request transport metadata.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
+     */
+    private static function handle_authenticated(array $request, ?string $token, array $headers): array {
+        global $CFG;
+
         $id = $request['id'] ?? null;
-        $rpcmethod = $request['method'] ?? '';
-        $params = $request['params'] ?? [];
 
         // Authenticate before handshake: 401 with resource_metadata prompts
-        // clients to start the discovery chain (RFC 9728, #302).
-        if (!self::authenticate($token)) {
+        // clients to start the discovery chain (RFC 9728).
+        $accesserror = self::authenticate($token);
+        if ($accesserror === 'AUTHENTICATION_FAILED') {
             return self::error(401, $id, -32001, 'AUTHENTICATION_FAILED', [
                 'WWW-Authenticate' => 'Bearer resource_metadata="'
                     . $CFG->wwwroot . '/local/coursepilot/oauth/protected-resource.php"',
             ]);
         }
 
-        // Remote access (#296, #337, #579) is separate from local/coursepilot:use,
-        // so admins can revoke it per person without changing courses. Checked
-        // on every call, including existing connections. The specific error names
-        // both grant methods (cohort or capability), unlike the generic auth error.
-        if (!remote_access::is_granted()) {
-            return self::error(403, $id, -32002, get_string('remoteaccessnotgranted', 'local_coursepilot'));
+        if ($accesserror !== null) {
+            return self::error(403, $id, -32002, get_string($accesserror, 'local_coursepilot'));
         }
 
-        $serverinfo = ['name' => 'local_coursepilot', 'version' => self::plugin_release()];
+        return self::dispatch_rpc($request, $headers);
+    }
+
+    /**
+     * Route authenticated JSON-RPC requests to protocol or resource responses.
+     *
+     * @param mixed[] $request JSON-RPC request.
+     * @param mixed[] $headers Request transport metadata.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
+     */
+    private static function dispatch_rpc(array $request, array $headers): array {
+        $id = $request['id'] ?? null;
+        $rpcmethod = $request['method'] ?? '';
+        $params = $request['params'] ?? [];
+
+        if (
+            in_array($rpcmethod, ['initialize', 'notifications/initialized', 'notifications/cancelled', 'ping', 'server/discover'])
+        ) {
+            return self::handle_protocol($request, $headers);
+        }
 
         switch ($rpcmethod) {
-            // Legacy protocol: handshake.
-            case 'initialize':
-                return self::result(200, [], [
-                    'jsonrpc' => '2.0',
-                    'id' => $id,
-                    'result' => [
-                        'protocolVersion' => $params['protocolVersion'] ?? self::LEGACY_VERSION,
-                        'capabilities' => ['tools' => new \stdClass()],
-                        'serverInfo' => $serverinfo,
-                        'instructions' => self::HANDSHAKE_INSTRUCTIONS,
-                    ] + self::resultmeta($headers, 'complete'),
-                ]);
-
-            case 'notifications/initialized':
-            case 'notifications/cancelled':
-                return self::result(202, [], null);
-
-            case 'ping':
-                // The legacy ping result is an empty object. json_encode() would encode
-                // an empty PHP array as [] instead of the required {}.
-                $pingresult = self::resultmeta($headers, 'complete');
-                return self::result(200, [], [
-                    'jsonrpc' => '2.0',
-                    'id' => $id,
-                    'result' => $pingresult === [] ? new \stdClass() : $pingresult,
-                ]);
-
-            // Modern protocol: discovery replaces handshake.
-            case 'server/discover':
-                return self::result(200, [], [
-                    'jsonrpc' => '2.0',
-                    'id' => $id,
-                    'result' => [
-                        'supportedVersions' => [self::MODERN_VERSION, self::LEGACY_VERSION],
-                        'capabilities' => ['tools' => new \stdClass()],
-                        'serverInfo' => $serverinfo,
-                        'instructions' => self::HANDSHAKE_INSTRUCTIONS,
-                    ] + self::resultmeta($headers, 'complete'),
-                ]);
-
             case 'tools/list':
                 return self::result(200, [], [
                     'jsonrpc' => '2.0',
                     'id' => $id,
                     'result' => [
                         'tools' => self::tools(),
-                        // data is invalid for tools/list ("Unsupported result type data for
-                        // tools/list"). The full list is not paginated, so use complete.
+                        // The full tool list is not paginated, so use complete.
                     ] + self::resultmeta($headers, 'complete', self::LIST_TTL_MS),
                 ]);
 
             case 'tools/call':
                 return self::handle_tools_call($id, $params, $headers);
 
-            // #401: empty responses instead of 404. We expose no resources or
-            // prompts and advertise neither capability, but Codex requests these
-            // three discovery methods after every handshake.
+            // We expose no resources or prompts, but clients request these
+            // discovery methods after a handshake. Empty responses avoid a 404.
             case 'resources/list':
                 return self::result(200, [], [
                     'jsonrpc' => '2.0',
@@ -253,13 +238,68 @@ final class dispatcher {
     }
 
     /**
+     * Respond to handshake, discovery, ping and protocol notifications.
+     *
+     * @param mixed[] $request JSON-RPC request.
+     * @param mixed[] $headers Request transport metadata.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
+     */
+    private static function handle_protocol(array $request, array $headers): array {
+        $id = $request['id'] ?? null;
+        $rpcmethod = $request['method'] ?? '';
+        $params = $request['params'] ?? [];
+        $serverinfo = ['name' => 'local_coursepilot', 'version' => self::plugin_release()];
+
+        switch ($rpcmethod) {
+            // Legacy protocol: handshake.
+            case 'initialize':
+                return self::result(200, [], [
+                    'jsonrpc' => '2.0',
+                    'id' => $id,
+                    'result' => [
+                        'protocolVersion' => $params['protocolVersion'] ?? self::LEGACY_VERSION,
+                        'capabilities' => ['tools' => new \stdClass()],
+                        'serverInfo' => $serverinfo,
+                        'instructions' => self::HANDSHAKE_INSTRUCTIONS,
+                    ] + self::resultmeta($headers, 'complete'),
+                ]);
+
+            case 'ping':
+                // The legacy ping result is an empty object. json_encode() would encode
+                // an empty PHP array as [] instead of the required {}.
+                $pingresult = self::resultmeta($headers, 'complete');
+                return self::result(200, [], [
+                    'jsonrpc' => '2.0',
+                    'id' => $id,
+                    'result' => $pingresult === [] ? new \stdClass() : $pingresult,
+                ]);
+
+            // Modern protocol: discovery replaces handshake.
+            case 'server/discover':
+                return self::result(200, [], [
+                    'jsonrpc' => '2.0',
+                    'id' => $id,
+                    'result' => [
+                        'supportedVersions' => [self::MODERN_VERSION, self::LEGACY_VERSION],
+                        'capabilities' => ['tools' => new \stdClass()],
+                        'serverInfo' => $serverinfo,
+                        'instructions' => self::HANDSHAKE_INSTRUCTIONS,
+                    ] + self::resultmeta($headers, 'complete'),
+                ]);
+
+            default:
+                return self::result(202, [], null);
+        }
+    }
+
+    /**
      * tools/call: validate the runtime contract and invoke Moodle
      * webservices (#295, item 1).
      *
      * @param mixed $id
-     * @param array $params
-     * @param array{origin: ?string, pathinfo: ?string, method: ?string, protocolversion?: ?string} $headers
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @param mixed[] $params
+     * @param mixed[] $headers Type: array{origin:?string,pathinfo:?string,method:?string,protocolversion?:?string}.
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function handle_tools_call($id, array $params, array $headers): array {
         $toolname = (string) ($params['name'] ?? '');
@@ -268,7 +308,7 @@ final class dispatcher {
             return self::error(404, $id, -32601, 'Unknown tool: ' . $toolname);
         }
 
-        // #573 (Spec 0025 §A): every tool declares English inputs directly.
+        // Spec 0025 §A: every tool declares English inputs directly.
         // The #568 input translation is removed; Moodle parameter declarations
         // are the single contract.
         $response = external_api::call_external_function($function, $params['arguments'] ?? []);
@@ -397,7 +437,7 @@ final class dispatcher {
      * forgotten tools/call error branch made all tool messages unreadable.
      * initialize/server/discover precede negotiation; absent headers select legacy.
      *
-     * @param array{protocolversion?: ?string} $headers
+     * @param mixed[] $headers Type: array{protocolversion?:?string}.
      * @param string $resulttype 'complete', the revision's only success value
      *        for every result.
      * @param int|null $ttlms Freshness in milliseconds for list results only.
@@ -417,33 +457,34 @@ final class dispatcher {
     }
 
     /**
-     * Maps a Bearer token to a Moodle user and sets $USER (#337).
+     * Maps a Bearer token to a Moodle user and sets $USER.
      *
-     * Only OAuth access tokens from {@see oauth_lib::authenticate_access_token()}
-     * are accepted. The prototype external_tokens workaround is removed;
-     * the OAuth 2.1 authorization server (#335/#336) is its sole replacement.
+     * Only OAuth access tokens from {@see connection::authenticate_access_token()}
+     * are accepted. Moodle web service tokens cannot grant MCP access;
+     * the OAuth 2.1 authorization server is the sole token issuer.
      *
      * @param string|null $token
-     * @return bool
+     * @return string|null Authentication or access refusal, otherwise null.
      */
-    private static function authenticate(?string $token): bool {
+    private static function authenticate(?string $token): ?string {
         global $DB, $USER;
 
         if ($token === null) {
-            return false;
+            return 'AUTHENTICATION_FAILED';
         }
-        $userid = oauth_lib::authenticate_access_token($token);
+        $userid = connection::authenticate_access_token($token);
         if ($userid === null) {
-            return false;
+            return 'AUTHENTICATION_FAILED';
         }
-        $usr = $DB->get_record('user', ['id' => $userid, 'deleted' => 0, 'suspended' => 0]);
-        if (!$usr) {
-            return false;
+        $error = connection::access_error($userid, connection::current_connection_id());
+        if ($error !== null && $error !== 'remoteaccessnotgranted') {
+            return 'AUTHENTICATION_FAILED';
         }
+        $usr = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
 
         \core\session\manager::set_user($usr);
         // Bearer authentication is stateless: each POST validates its token
-        // without trusting cookies/sessions (#337, Spec 0012 §3). sesskey guards
+        // without trusting cookies/sessions (Spec 0012 §3). sesskey guards
         // ambient browser-cookie authority, which is absent here: attackers cannot
         // forge the Authorization header through a cross-site request.
         // external_api::call_external_function() skips sesskey only with WS_SERVER=true
@@ -451,7 +492,7 @@ final class dispatcher {
         // constant to false, requiring this override. See dispatcher_test.php.
         $USER->ignoresesskey = true;
         external_api::set_context_restriction(\context_system::instance());
-        return true;
+        return $error;
     }
 
     /**
@@ -468,11 +509,12 @@ final class dispatcher {
     /**
      * Derives the tool list from the allowlist, keeping listed and callable tools identical.
      *
-     * @return array
+     * @return mixed[]
      */
     private static function tools(): array {
         $descriptions = tool_registry::descriptions();
         $schemas = tool_registry::schemas();
+        $annotations = tool_registry::annotations();
         $tools = [];
         foreach (array_keys(privacy_surface::allowed_tools()) as $name) {
             $schema = $schemas[$name] ?? null;
@@ -488,15 +530,21 @@ final class dispatcher {
                 'name' => $name,
                 'description' => $descriptions[$name] ?? '',
                 'inputSchema' => $inputschema,
+                'annotations' => $annotations[$name],
             ];
         }
         return $tools;
     }
 
     /**
+     * Provides error.
+     *
+     * @param int $status The status.
      * @param mixed $id
-     * @param array<string, string> $extraheaders
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * @param int $code The code.
+     * @param string $message The message.
+     * @param string[] $extraheaders
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function error(int $status, $id, int $code, string $message, array $extraheaders = []): array {
         // Single funnel for JSON-RPC errors (#339): authentication, capability,
@@ -513,9 +561,12 @@ final class dispatcher {
     }
 
     /**
-     * @param array<string, string> $headers
-     * @param array|null $body
-     * @return array{status: int, headers: array<string, string>, body: array|null}
+     * Provides result.
+     *
+     * @param int $status The status.
+     * @param string[] $headers
+     * @param mixed[]|null $body
+     * @return array{status: int, headers: array<string, string>, body: mixed[]|null}
      */
     private static function result(int $status, array $headers, ?array $body): array {
         return ['status' => $status, 'headers' => $headers, 'body' => $body];

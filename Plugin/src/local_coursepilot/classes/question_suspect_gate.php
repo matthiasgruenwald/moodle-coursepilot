@@ -20,8 +20,6 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Shared suspected-question collision response (ADR 0015, Spec 0017 §7.1,
  * #414): endpoint-specific gates would be four separate gates. Started
@@ -38,7 +36,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class question_suspect_gate {
-
     /**
      * Gate declarations merged into each endpoint's execute_returns() through
      * array_merge. Always present, with empty defaults outside a suspected
@@ -89,7 +86,7 @@ final class question_suspect_gate {
      * Empty fields for the non-collision case, using the same keys as
      * {@see response_fields()} for a stable response shape.
      *
-     * @return array{idnumber: string, categoryid: int, candidates: array, questiontext_old: string, questiontext_new: string}
+     * @return array{idnumber: string, categoryid: int, candidates: mixed[], questiontext_old: string, questiontext_new: string}
      */
     public static function empty_result(): array {
         return [
@@ -143,7 +140,7 @@ final class question_suspect_gate {
      * @param \stdClass $collision Result of {@see find_idnumber_collision()}
      * @param int $categoryid Target category
      * @param string $newquestiontext Question text to write or move
-     * @return array{idnumber: string, categoryid: int, candidates: array, questiontext_old: string, questiontext_new: string}
+     * @return array{idnumber: string, categoryid: int, candidates: mixed[], questiontext_old: string, questiontext_new: string}
      */
     public static function response(\stdClass $collision, int $categoryid, string $newquestiontext): array {
         return [
@@ -167,7 +164,7 @@ final class question_suspect_gate {
      *
      * @param int $categoryid
      * @param string $name
-     * @return array
+     * @return mixed[]
      */
     public static function find_name_candidates(int $categoryid, string $name): array {
         global $DB;

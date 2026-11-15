@@ -31,7 +31,6 @@ namespace local_coursepilot\catalog;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class drift_check {
-
     /**
      * Libraries defining catalog callable sources that core does not load
      * for every request. weblib.php and moodlelib.php are already loaded by
@@ -75,25 +74,59 @@ final class drift_check {
 
     /**
      * Like check(), taking the catalog class directly instead of resolving
-     * through registry::for(). Tests can inject a divergent catalog without
-     * changing the registry.
+     * through registry::for(). Required Moodle symbols are loaded before the
+     * catalog data is resolved and validated.
      *
      * @param string $modname Table/module name to check.
-     * @param class-string<module_catalog> $catalogclass
+     * @param string $catalogclass Type: class-string<module_catalog>.
      * @return string[]
      */
     public static function check_catalog(string $modname, string $catalogclass): array {
         self::require_known_libraries($modname);
 
-        return array_merge(
-            self::column_violations($modname, $catalogclass),
-            self::callable_violations($catalogclass),
-            self::constant_violations($catalogclass),
-            self::write_option_violations($catalogclass)
+        return self::check_definition(
+            $modname,
+            $catalogclass::fields(),
+            $catalogclass::pseudofields(),
+            $catalogclass::blocklist(),
+            $catalogclass::checked_constants(),
+            $catalogclass::write_options(),
+            $catalogclass::learner_locks()
         );
     }
 
     /**
+     * Validates resolved catalog data against the database and loaded Moodle symbols.
+     *
+     * @param string $modname Module table name.
+     * @param field[] $fields Real fields.
+     * @param field[] $pseudofields Derived fields.
+     * @param string[] $blocklist Fields excluded from writes.
+     * @param string[] $constants Required constant names.
+     * @param mixed[] $options Native write configuration.
+     * @param mixed[] $locks Learner lock definitions keyed by field name.
+     * @return string[] Violations, empty for a matching definition.
+     */
+    public static function check_definition(
+        string $modname,
+        array $fields,
+        array $pseudofields,
+        array $blocklist,
+        array $constants,
+        array $options,
+        array $locks
+    ): array {
+        return array_merge(
+            self::column_violations($modname, $fields, $pseudofields, $blocklist),
+            self::callable_violations($fields, $pseudofields),
+            self::constant_violations($constants),
+            self::write_option_violations($fields, $pseudofields, $options, $locks)
+        );
+    }
+
+    /**
+     * Requires known libraries.
+     *
      * @param string $modname
      * @return void
      */
@@ -115,23 +148,25 @@ final class drift_check {
      * contract tests (e.g. files, blocked until Spec 0018).
      *
      * @param string $modname
-     * @param class-string<module_catalog> $catalogclass
+     * @param field[] $fields
+     * @param field[] $pseudofields
+     * @param string[] $blocklist
      * @return string[]
      */
-    private static function column_violations(string $modname, string $catalogclass): array {
+    private static function column_violations(string $modname, array $fields, array $pseudofields, array $blocklist): array {
         global $DB;
 
         $realcolumns = array_keys($DB->get_columns($modname));
         sort($realcolumns);
 
-        $pseudofieldnames = array_map(static fn (field $f): string => $f->name, $catalogclass::pseudofields());
-        $blockedrealcolumns = array_diff($catalogclass::blocklist(), $pseudofieldnames);
+        $pseudofieldnames = array_map(static fn (field $f): string => $f->name, $pseudofields);
+        $blockedrealcolumns = array_diff($blocklist, $pseudofieldnames);
 
         $known = array_merge(
             ['id'],
-            array_map(static fn (field $f): string => $f->name, $catalogclass::fields()),
+            array_map(static fn (field $f): string => $f->name, $fields),
             $blockedrealcolumns,
-            array_intersect(shared_block::BLOCKLIST, $realcolumns)
+            array_intersect(shared_block::blocked_fields(), $realcolumns)
         );
         $known = array_values(array_unique($known));
         sort($known);
@@ -156,16 +191,12 @@ final class drift_check {
      * Check callable sources referenced by fields and pseudofields,
      * including functions and static methods.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param field[] $fields
+     * @param field[] $pseudofields
      * @return string[]
      */
-    private static function callable_violations(string $catalogclass): array {
-        $fields = array_merge(
-            shared_block::fields(),
-            shared_block::pseudofields(),
-            $catalogclass::fields(),
-            $catalogclass::pseudofields()
-        );
+    private static function callable_violations(array $fields, array $pseudofields): array {
+        $fields = array_merge(shared_block::fields(), shared_block::pseudofields(), $fields, $pseudofields);
 
         $callables = array_unique(array_filter(array_map(
             static fn (field $f): ?string => $f->sourcecallable,
@@ -189,14 +220,11 @@ final class drift_check {
      * Check constants referenced by module_catalog::checked_constants()
      * and shared_block::checked_constants().
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param string[] $constants
      * @return string[]
      */
-    private static function constant_violations(string $catalogclass): array {
-        $constants = array_unique(array_merge(
-            shared_block::checked_constants(),
-            $catalogclass::checked_constants()
-        ));
+    private static function constant_violations(array $constants): array {
+        $constants = array_unique(array_merge(shared_block::checked_constants(), $constants));
 
         $violations = [];
         foreach ($constants as $constname) {
@@ -211,16 +239,14 @@ final class drift_check {
      * Each field-related write option must name a catalog field. This also
      * catches newly read or written fields that would bypass the catalog.
      *
-     * @param class-string<module_catalog> $catalogclass
+     * @param field[] $fields
+     * @param field[] $pseudofields
+     * @param mixed[] $options
+     * @param mixed[] $locks
      * @return string[]
      */
-    private static function write_option_violations(string $catalogclass): array {
-        $known = array_column(array_merge(
-            shared_block::fields(),
-            $catalogclass::fields(),
-            $catalogclass::pseudofields()
-        ), 'name');
-        $options = $catalogclass::write_options();
+    private static function write_option_violations(array $fields, array $pseudofields, array $options, array $locks): array {
+        $known = array_column(array_merge(shared_block::fields(), $fields, $pseudofields), 'name');
         $referenced = array_merge(
             array_keys($options['material_reference_fields'] ?? []),
             array_keys($options['missing_form_values'] ?? []),
@@ -228,12 +254,13 @@ final class drift_check {
             array_keys($options['scalar_to_repeated'] ?? []),
             array_values($options['scalar_to_repeated'] ?? []),
             array_keys($options['editor_content'] ?? []),
+            array_keys($options['editor_files'] ?? []),
             array_merge(...array_values($options['editor_content'] ?? [[]])),
             $options['read_fields'] ?? [],
             $options['patch_blocked_fields'] ?? [],
             isset($options['intro_image_field']) ? [$options['intro_image_field']] : [],
             array_keys($options['settings_aliases'] ?? []),
-            array_keys($catalogclass::learner_locks())
+            array_keys($locks)
         );
         foreach (array_merge($options['parallel_array_lengths'] ?? [], $options['date_order_rules'] ?? []) as $rule) {
             $referenced[] = $rule['reference'];
@@ -244,9 +271,16 @@ final class drift_check {
             $referenced = array_merge($referenced, array_keys($spec['fields'] ?? []));
         }
         $unknown = array_values(array_diff(array_unique($referenced), $known));
-        return array_map(
-            static fn(string $field): string => 'Field "' . $field . '" is referenced outside the catalog.',
-            $unknown
+        $nofilearea = array_diff_key($options['editor_content'] ?? [], $options['editor_files'] ?? []);
+        return array_merge(
+            array_map(
+                static fn(string $field): string => 'Field "' . $field . '" is referenced outside the catalog.',
+                $unknown
+            ),
+            array_map(
+                static fn(string $editor): string => 'Editor "' . $editor . '" has no file area in the write options.',
+                array_keys($nofilearea)
+            )
         );
     }
 }

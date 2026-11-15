@@ -29,6 +29,13 @@ final class lightboxgallery {
     /** @var string Native permission to add gallery images. */
     public const CAPABILITY = 'mod/lightboxgallery:addimage';
 
+    /**
+     * Provides complete.
+     *
+     * @param \stdClass $cm The cm.
+     * @param \stored_file $file The file.
+     * @param string $caption The caption.
+     */
     public static function complete(\stdClass $cm, \stored_file $file, string $caption): void {
         global $CFG, $DB;
         if (!$file->is_valid_image()) {

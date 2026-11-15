@@ -33,7 +33,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 #[CoversClass(privacy_surface::class)]
 final class privacy_surface_test extends \advanced_testcase {
-
     /**
      * The registered service surface matches the contract.
      */
@@ -91,6 +90,8 @@ final class privacy_surface_test extends \advanced_testcase {
     }
 
     /**
+     * Provides cases for forbidden name provider.
+     *
      * @return array<string, string[]>
      */
     public static function forbidden_name_provider(): array {
@@ -127,12 +128,38 @@ final class privacy_surface_test extends \advanced_testcase {
     }
 
     /**
-     * @param array $violations
+     * Describes the privacy surface test.
+     *
+     * @param mixed[] $violations
      * @return string
      */
     private static function describe(array $violations): string {
         return implode("\n", array_map(static function (array $violation): string {
             return $violation['type'] . ': ' . $violation['name'] . ' - ' . $violation['detail'];
         }, $violations));
+    }
+
+    /**
+     * Approved tool names resolve to their web service function; anything else is refused.
+     */
+    public function test_tool_allowlist_resolves_approved_names_only(): void {
+        $this->assertTrue(privacy_surface::is_allowed_tool('coursepilot_list_courses'));
+        $this->assertSame(
+            privacy_surface::allowed_tools()['coursepilot_list_courses'],
+            privacy_surface::function_for_tool('coursepilot_list_courses')
+        );
+        $this->assertFalse(privacy_surface::is_allowed_tool('coursepilot_read_all_grades'));
+        $this->assertNull(privacy_surface::function_for_tool('coursepilot_read_all_grades'));
+    }
+
+    /**
+     * Without the Coursepilot service no function is registered.
+     */
+    public function test_missing_service_registers_no_functions(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $DB->delete_records('external_services', ['shortname' => privacy_surface::SERVICE_SHORTNAME]);
+
+        $this->assertSame([], privacy_surface::registered_functions());
     }
 }

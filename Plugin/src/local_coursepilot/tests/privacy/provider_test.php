@@ -22,7 +22,7 @@ use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use local_coursepilot\context_files;
-use local_coursepilot\oauth_lib;
+use local_coursepilot\connection;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -37,7 +37,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(provider::class)]
 final class provider_test extends \core_privacy\tests\provider_testcase {
-
     /**
      * Declare external storage using add_external_location_link (#500,
      * ADR 0021, Spec #486 §11), even though Coursepilot cannot export
@@ -68,15 +67,15 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     private function issue_token(int $userid, string $clientid = 'test-client'): \stdClass {
         global $DB;
 
-        $accesstoken = oauth_lib::random_token(32);
-        $refreshtoken = oauth_lib::random_token(32);
+        $accesstoken = bin2hex(random_bytes(32));
+        $refreshtoken = bin2hex(random_bytes(32));
         $record = new \stdClass();
         $record->accesstokenhash = hash('sha256', $accesstoken);
         $record->refreshtokenhash = hash('sha256', $refreshtoken);
         $record->clientid = $clientid;
         $record->userid = $userid;
-        $record->expires = time() + oauth_lib::ACCESS_TOKEN_TTL;
-        $record->refreshexpires = time() + oauth_lib::REFRESH_TOKEN_TTL;
+        $record->expires = time() + connection::ACCESS_TOKEN_TTL;
+        $record->refreshexpires = time() + connection::REFRESH_TOKEN_TTL;
         $record->revoked = 0;
         $record->timecreated = time();
         $record->connectionid = $DB->insert_record('local_coursepilot_oauth_grant', (object) [
@@ -121,7 +120,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $user = $this->getDataGenerator()->create_user();
 
         $DB->insert_record('local_coursepilot_oauth_code', (object) [
-            'code' => 'code-'.$user->id,
+            'code' => 'code-' . $user->id,
             'clientid' => 'test-client',
             'userid' => $user->id,
             'redirecturi' => 'https://example.test/callback',
@@ -133,7 +132,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $this->export_context_data_for_user($user->id, \context_system::instance(), 'local_coursepilot');
 
-        $data = writer::with_context(\context_system::instance())->get_data([get_string('pluginname', 'local_coursepilot')]);
+        $exported = writer::with_context(\context_system::instance());
+        $this->assertInstanceOf(\core_privacy\tests\request\content_writer::class, $exported);
+        $data = $exported->get_data([get_string('pluginname', 'local_coursepilot')]);
         $this->assertNotEmpty($data->oauth_codes);
         $this->assertNotEmpty($data->oauth_tokens);
         $this->assertSame('test-client', $data->oauth_tokens[0]->clientid);
@@ -182,7 +183,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $this->export_context_data_for_user($user->id, $context, 'local_coursepilot');
 
-        $files = writer::with_context($context)->get_files([get_string('pluginname', 'local_coursepilot')]);
+        $exported = writer::with_context($context);
+        $this->assertInstanceOf(\core_privacy\tests\request\content_writer::class, $exported);
+        $files = $exported->get_files([get_string('pluginname', 'local_coursepilot')]);
         $this->assertCount(1, $files);
         $this->assertSame('vorlagen.md', reset($files)->get_filename());
     }
@@ -246,7 +249,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $this->export_context_data_for_user($user->id, $context, 'local_coursepilot');
 
-        $data = writer::with_context($context)->get_data(
+        $exported = writer::with_context($context);
+        $this->assertInstanceOf(\core_privacy\tests\request\content_writer::class, $exported);
+        $data = $exported->get_data(
             [get_string('pluginname', 'local_coursepilot'), get_string('privacy:metadata:context_mark', 'local_coursepilot')]
         );
         $this->assertNotEmpty($data->entries);
@@ -386,5 +391,56 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->assertSame(\context_system::instance()->id, $event->contextid);
         $this->assertSame('local_coursepilot', $event->component);
         $sink->close();
+    }
+
+    /**
+     * The system context lists every user holding OAuth codes, tokens, grants or tickets.
+     */
+    public function test_get_users_in_context_lists_oauth_users_in_system_context(): void {
+        $this->resetAfterTest();
+        $holder = $this->getDataGenerator()->create_user();
+        $bystander = $this->getDataGenerator()->create_user();
+        $this->issue_token($holder->id);
+
+        $userlist = new \core_privacy\local\request\userlist(\context_system::instance(), 'local_coursepilot');
+        provider::get_users_in_context($userlist);
+
+        $this->assertContains((int) $holder->id, array_map('intval', $userlist->get_userids()));
+        $this->assertNotContains((int) $bystander->id, array_map('intval', $userlist->get_userids()));
+    }
+
+    /**
+     * Deleting all data in the system context empties the OAuth stores for every user.
+     */
+    public function test_delete_data_for_all_users_in_system_context_removes_oauth_stores(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $first = $this->getDataGenerator()->create_user();
+        $second = $this->getDataGenerator()->create_user();
+        $this->issue_token($first->id);
+        $this->issue_token($second->id);
+
+        provider::delete_data_for_all_users_in_context(\context_system::instance());
+
+        $this->assertSame(0, $DB->count_records('local_coursepilot_oauth_token'));
+        $this->assertSame(0, $DB->count_records('local_coursepilot_oauth_grant'));
+    }
+
+    /**
+     * Contexts the plugin stores nothing in are left alone.
+     */
+    public function test_delete_data_for_all_users_ignores_foreign_contexts(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->issue_token($user->id);
+        $course = $this->getDataGenerator()->create_course();
+
+        provider::delete_data_for_all_users_in_context(\context_course::instance($course->id));
+        provider::delete_data_for_users(
+            new approved_userlist(\context_course::instance($course->id), 'local_coursepilot', [$user->id])
+        );
+
+        $this->assertTrue($DB->record_exists('local_coursepilot_oauth_token', ['userid' => $user->id]));
     }
 }

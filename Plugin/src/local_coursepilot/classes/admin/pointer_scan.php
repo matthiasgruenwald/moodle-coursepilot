@@ -22,8 +22,8 @@ use local_coursepilot\storage_anchor;
 
 /**
  * Read arbitrary users' context pointers and pending notes without network
- * access or the current-$USER dependency of storage_anchor (Issue #499,
- * Spec #486 §12). Supports the four status checks and the storage-location
+ * access or the current-$USER dependency of storage_anchor. Supports the four
+ * status checks and the storage-location
  * column in the connections overview.
  *
  * @package    local_coursepilot
@@ -31,7 +31,6 @@ use local_coursepilot\storage_anchor;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class pointer_scan {
-
     /** @var string[] The two pointer targets, as in location_selection::TARGETS. */
     public const TARGETS = context_pointer::TARGETS;
 
@@ -85,12 +84,14 @@ final class pointer_scan {
     }
 
     /**
-     * Raw context pointer for any user, or null if the file is missing or
-     * contains no valid JSON object. Same tolerance as storage_anchor::read_raw_pointer(),
-     * without depending on the current user.
+     * Raw, key-normalised context pointer for any user. Missing files, invalid JSON,
+     * empty objects, lists and scalars yield null. Like storage_anchor::read_raw_pointer(),
+     * this does not validate targets: legacy path strings, nested location arrays,
+     * wrong-typed values and unknown keys remain available to the scanners and resolver.
+     * Reading does not depend on the current user.
      *
      * @param int $userid
-     * @return array|null
+     * @return mixed[]|null
      */
     public static function raw_pointer_for(int $userid): ?array {
         $file = get_file_storage()->get_file(
@@ -128,14 +129,14 @@ final class pointer_scan {
             return false;
         }
         $decoded = json_decode($file->get_content(), true);
-        return is_array($decoded) && !array_is_list($decoded) && !empty($decoded);
+        return is_array($decoded) && !array_is_list($decoded);
     }
 
     /**
      * Whether the decoded context pointer has a previous location
      * (previous_location::current()).
      *
-     * @param array|null $decoded
+     * @param mixed[]|null $decoded
      * @return bool
      */
     public static function has_open_previous_location(?array $decoded): bool {
@@ -143,12 +144,11 @@ final class pointer_scan {
     }
 
     /**
-     * Whether either target is external, checked directly in "location"
-     * without full resolution. The raw field is sufficient for setup check 1
-     * (Spec §12). Structurally broken pointers appear as defects in the
-     * connections overview instead of counting as external targets.
+     * Whether either raw target declares an external location, for setup check 1.
+     * Paths, instance IDs and fingerprints are not validated here, so incomplete
+     * external targets still count. target_state() reports resolution defects separately.
      *
-     * @param array|null $decoded
+     * @param mixed[]|null $decoded
      * @return bool
      */
     public static function has_external_target(?array $decoded): bool {
@@ -181,12 +181,12 @@ final class pointer_scan {
     }
 
     /**
-     * Resolved target state for the connections overview (Spec #486 §12).
+     * Resolved target state for the connections overview.
      * Structural defects become states rather than thrown errors. Read only
      * the pointer and database, without network or target-path access.
      *
      * @param int $userid
-     * @param array|null $decoded Result of {@see raw_pointer_for()}.
+     * @param mixed[]|null $decoded Result of {@see raw_pointer_for()}.
      * @param string $target "context_area" or "material_store".
      * @return array{state: string, host: ?string, defect: ?string}
      *         state: "open"|"moodle"|"external"|"broken".

@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversClass(registry::class)]
 #[CoversClass(activity_kind::class)]
 final class registry_test extends \advanced_testcase {
-
     public function test_catalogued_type_carries_its_catalog(): void {
         $kind = registry::kind('page');
 
@@ -50,6 +49,11 @@ final class registry_test extends \advanced_testcase {
         $this->assertNull($kind->reasonkey);
     }
 
+    /**
+     * Provides cases for excluded provider.
+     *
+     * @return mixed[]
+     */
     public static function excluded_provider(): array {
         return [
             'lesson' => ['lesson', 'kindexcludedquestions'],
@@ -90,6 +94,40 @@ final class registry_test extends \advanced_testcase {
                 $this->assertSame('unknownmodname', $e->errorcode);
                 $this->assertStringContainsString($modname, $e->getMessage());
             }
+        }
+    }
+
+    /**
+     * A developed type passes the XML-path gate without being refused.
+     */
+    public function test_require_developed_does_not_refuse_a_developed_type(): void {
+        registry::require_developed('book', 'createfromxmlcatalogued');
+
+        $this->assertSame(activity_kind::DEVELOPED, registry::kind('book')->kind);
+    }
+
+    /**
+     * A catalogued type is sent to its catalogue tool under the caller's language key.
+     */
+    public function test_require_developed_sends_a_catalogued_type_to_its_catalogue_tool(): void {
+        try {
+            registry::require_developed('page', 'createfromxmlcatalogued');
+            $this->fail('A catalogued type must not take the XML path.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('createfromxmlcatalogued', $e->errorcode);
+            $this->assertSame('page', $e->a['modname']);
+        }
+    }
+
+    /**
+     * An excluded type reports why it is excluded.
+     */
+    public function test_require_developed_names_the_exclusion_reason(): void {
+        try {
+            registry::require_developed('lesson', 'createfromxmlcatalogued');
+            $this->fail('An excluded type must not take the XML path.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('kindexcludedquestions', $e->errorcode);
         }
     }
 }

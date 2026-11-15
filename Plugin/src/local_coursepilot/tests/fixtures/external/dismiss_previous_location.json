@@ -1,0 +1,33 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": []
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": []
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing confirmation",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

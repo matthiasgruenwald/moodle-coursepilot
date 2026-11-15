@@ -28,7 +28,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class gd_support {
-
     /**
      * Raster extensions GD can read/write; SVG excluded (§3.3/§5).
      * Shared by preview_material_file and crop_material_file so a future
@@ -42,6 +41,8 @@ final class gd_support {
     private static ?bool $overridefortests = null;
 
     /**
+     * Provides available.
+     *
      * @return bool
      */
     public static function available(): bool {

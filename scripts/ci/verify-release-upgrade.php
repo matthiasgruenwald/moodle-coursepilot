@@ -200,16 +200,16 @@ foreach (array_slice($fixture['ticketrows'], 0, 2) as $old) {
         'Ticket migrated without extending its deadline');
 }
 $original = $fixture['pairs'][0];
-check_release_upgrade(local_coursepilot\oauth_lib::authenticate_access_token($original['access_token']) === $userid,
+check_release_upgrade(local_coursepilot\connection::authenticate_access_token($original['access_token']) === $userid,
     'Migrated access token works');
-$rotated = local_coursepilot\oauth_lib::rotate_refresh_token($original['refresh_token'], $fixture['clientid']);
+$rotated = local_coursepilot\connection::rotate_refresh_token($original['refresh_token'], $fixture['clientid']);
 check_release_upgrade($rotated !== null, 'Migrated refresh token rotates');
 check_release_upgrade(local_coursepilot\workbench_ticket::redeem($fixture['tickets'][0])['content'] === 'synthetic download bytes',
     'Migrated ticket survives normal rotation');
 require_once($CFG->dirroot . '/cohort/lib.php');
 cohort_remove_member($fixture['cohortid'], $userid);
 check_release_upgrade(!local_coursepilot\remote_access::is_granted($userid), 'Remote grant withdrawal after migration');
-check_release_upgrade(local_coursepilot\oauth_lib::authenticate_access_token($rotated['access_token']) === $userid,
+check_release_upgrade(local_coursepilot\connection::authenticate_access_token($rotated['access_token']) === $userid,
     'Token remains active while remote grant is withdrawn');
 try {
     local_coursepilot\workbench_ticket::redeem($fixture['tickets'][1]);
@@ -219,17 +219,17 @@ try {
 }
 cohort_add_member($fixture['cohortid'], $userid);
 local_coursepilot\oauth_cleanup::run(time());
-check_release_upgrade(local_coursepilot\oauth_lib::rotate_refresh_token($original['refresh_token'], $fixture['clientid']) === null,
+check_release_upgrade(local_coursepilot\connection::rotate_refresh_token($original['refresh_token'], $fixture['clientid']) === null,
     'Cleanup preserves migrated consumed-refresh replay evidence');
-check_release_upgrade(local_coursepilot\oauth_lib::authenticate_access_token($rotated['access_token']) === null,
+check_release_upgrade(local_coursepilot\connection::authenticate_access_token($rotated['access_token']) === null,
     'Replay blocks migrated successor');
-check_release_upgrade(local_coursepilot\oauth_lib::authenticate_access_token($fixture['pairs'][1]['access_token']) === $userid,
+check_release_upgrade(local_coursepilot\connection::authenticate_access_token($fixture['pairs'][1]['access_token']) === $userid,
     'Replay leaves other migrated connection active');
 $other = $DB->get_record('local_coursepilot_oauth_token', [
     'accesstokenhash' => hash('sha256', $fixture['pairs'][1]['access_token']),
 ], '*', MUST_EXIST);
-check_release_upgrade(local_coursepilot\oauth_lib::revoke_token((int) $other->id, $userid) &&
-    local_coursepilot\oauth_lib::authenticate_access_token($fixture['pairs'][1]['access_token']) === null,
+check_release_upgrade(local_coursepilot\connection::revoke_token((int) $other->id, $userid) &&
+    local_coursepilot\connection::authenticate_access_token($fixture['pairs'][1]['access_token']) === null,
     'Explicit revocation works for the other migrated connection');
 $comparison = local_coursepilot\external\compare_activity_versions::execute($fixture['cmid'], 1, 2);
 $encoded = json_encode($comparison);

@@ -73,8 +73,26 @@ _Avoid_: „Ausstand“ oder „offene Nacharbeit“ für einen Punkt, eigene Au
 Der Zustand, in dem eine Lehrkraft einen externen Ort überhaupt wählen kann. Die Schule hat dafür drei Dinge getan: den Repository-Typ WebDAV aktiviert, Nutzerinstanzen erlaubt und der Lehrkraft das WebDAV-Recht im eigenen Nutzerkontext gegeben. Weil das Recht je Person wirkt, ist die Freischaltung ein Zustand **je Lehrkraft**, nicht der ganzen Schule. Coursepilot sieht bei jedem Zugriff nach, statt ihn zu speichern. Nimmt die Schule sie zurück, gilt das sofort: Ein externer Ort ist dann nicht mehr erreichbar, und was nicht geschrieben werden konnte, wird zum **Ausstand** ([#480](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/480)). Der **zugelassene Speicher** gehört nicht dazu: Er regelt, wohin markierte Dateien dürfen, nicht, ob extern gearbeitet werden kann.
 _Avoid_: „Freigabe“ (mehrfach belegt), „Repository-Freischaltung“ (zu breit, Repositories sind mehr als WebDAV), „Freischaltung“ ohne Zusatz, Freischaltung als schulweiten Schalter lesen, einen externen Ort nach dem Entzug weiter benutzen
 
+**MCP-Zugang**:
+Der Weg, auf dem ein KI-Client außerhalb von Moodle über die MCP-Schnittstelle eines Plugins mit Moodle arbeitet. Welches Modell, welcher Client oder welche Laufzeitumgebung dahintersteht und wer das bezahlt, spielt für das Plugin keine Rolle; es sieht nur die MCP-Schnittstelle. Coursepilot arbeitet ausschließlich über den MCP-Zugang; die Erlaubnis dafür ist die **Fernzugriffsfreigabe**.
+_Avoid_: „Abo-Anbindung“ (die Abrechnung ist nicht das Unterscheidungsmerkmal), MCP-Zugang und **Moodle-KI-Zugang** vermischen, Modell oder Client als Teil des Plugins behandeln
+
+**Moodle-KI-Zugang**:
+Der Weg, auf dem Moodle selbst KI aufruft, über einen serverseitig eingerichteten Anbieter: Moodles KI-Subsystem mit Anbietern und Platzierungen oder Erweiterungen darauf wie der bayerische KI-Manager mit Einsatzzwecken und Kontingenten. Schlüssel und Nutzungsregeln verwaltet die Schule. Gegenstück zum **MCP-Zugang**.
+_Avoid_: „API-Anbindung“ (die Abrechnung ist nicht das Unterscheidungsmerkmal), den KI-Anbieter selbst mit dem Zugang gleichsetzen
+
+**Client-Register**:
+Das Modul, das OAuth-Clients registriert, gespeicherte Clients oder CIMD-Metadaten auflöst und Redirect-URIs exakt mit den registrierten Werten vergleicht. Der CIMD-Abruf erfolgt über einen Abrufport; positive und negative Caches sowie Abrufbudgets gehören zum Register. Das Register enthält keine Verbindungen oder Tokens.
+Code: `client_registry`
+_Avoid_: Client und Verbindung gleichsetzen, Netzabruf mit dem OAuth-Ablauf vermischen
+
+**Verbindung**:
+Die nach Einwilligung der Lehrkraft bestehende OAuth-Verbindung zu einem KI-Client. Sie behält ihre Identität beim Erneuern der Zugriffstokens. Ein Widerruf beendet alle Token-Generationen und die daran gebundenen Werkbank-Downloads; eine neue Einwilligung erzeugt eine unabhängige Verbindung. Die **Fernzugriffsfreigabe** und das aktive Moodle-Konto werden bei jedem Zugriff zusätzlich geprüft. Freigabe und tatsächlicher Widerruf erscheinen als native Moodle-Ereignisse; normale Token-Rotation erzeugt kein Ereignis.
+Code: `connection`
+_Avoid_: Token und Verbindung gleichsetzen, Fernzugriffsfreigabe mit Einwilligung verwechseln
+
 **Fernzugriffsfreigabe**:
-Die gezielte, entziehbare Erlaubnis der Administration, dass eine Lehrkraft einen KI-Chat mit Moodle verbindet. Die Administration erteilt sie auf zwei Wegen: Sie wählt eine oder mehrere bestehende Systemkohorten aus, deren Mitglieder freigegeben sind, oder sie erlaubt das Fernzugriffsrecht in einer Rolle, die die Schule systemweit ohnehin vergibt. Coursepilot legt dafür weder Kohorte noch Rolle an. Die Freigabe ist ein Zustand **je Lehrkraft** und wird bei jedem Aufruf geprüft: Wer aus der Kohorte fällt, ist beim nächsten Aufruf abgewiesen, auch über eine schon bestehende Verbindung. Sie gibt keine Kursrechte; was die Lehrkraft in einem Kurs tun darf, regelt weiter allein ihre Kursrolle ([#579](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/579)).
+Die gezielte, entziehbare Erlaubnis der Administration, dass eine Lehrkraft einen KI-Chat mit Moodle verbindet, also den **MCP-Zugang** nutzt. Die Administration erteilt sie auf zwei Wegen: Sie wählt eine oder mehrere bestehende Systemkohorten aus, deren Mitglieder freigegeben sind, oder sie erlaubt das Fernzugriffsrecht in einer Rolle, die die Schule systemweit ohnehin vergibt. Coursepilot legt dafür weder Kohorte noch Rolle an. Die Freigabe ist ein Zustand **je Lehrkraft** und wird bei jedem Aufruf geprüft: Wer aus der Kohorte fällt, ist beim nächsten Aufruf abgewiesen, auch über eine schon bestehende Verbindung. Sie gibt keine Kursrechte; was die Lehrkraft in einem Kurs tun darf, regelt weiter allein ihre Kursrolle ([#579](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/579)).
 _Avoid_: „Freigabe“ oder „Freischaltung“ ohne Zusatz (mehrfach belegt), eine eigene Coursepilot-Rolle im Systemkontext, eine systemweite Lehrkraftrolle als Einrichtungsweg, Fernzugriffsfreigabe als Kursrecht lesen
 
 **Notbremse**:
@@ -101,8 +119,13 @@ _Avoid_: Umzugswerkzeug im Plugin, Kopieren ohne Bestätigung, am neuen Ort übe
 Der Nachweis im **Kontextpointer**, wann **Kontextbereich** oder **Materialbestand** von wo nach wo gewechselt sind. Jede **Ortswahl**, die einen Ort ändert, fügt eine Zeile hinzu; die Ortswahlseite zeigt sie als „Bisherige Orte“. Nur die Ortswahl schreibt ihn, die KI liest ihn, und er wird nie gekürzt. Er gibt keinen Zugriff: Lesen darf Coursepilot nur den einen vorherigen Ort des **Altbestands** ([#477](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/477)).
 _Avoid_: Ortsverlauf als Weg zu älteren Orten, Verlauf von der KI fortschreiben lassen, Verlauf nach Frist oder Länge kürzen
 
+**Bedingtes Schreiben**:
+Ein Schreiben für **Kontextbereich** und **Werkbank**, das den vorab gelesenen Stand bis zum Speichern voraussetzt. Ändert sich dieser Stand, bleibt die fremde Änderung erhalten und der Aufruf meldet einen Konflikt. Scheitert das Schreiben am Speicher, entsteht eine **Ausstandsnotiz**.
+Code: `storage_write`
+_Avoid_: blindes Überschreiben nach einem Vorab-Lesen, Konflikte als Speicherausfall behandeln
+
 **Ausstand**:
-Gültiger Inhalt für den **Kontextbereich**, der am Speicher gescheitert ist: Er hat jede Prüfung bestanden und wäre geschrieben worden, wenn Speicher, Verbindung oder Ort funktioniert hätten. Ob die Ursache vorübergehend ist (Speicher antwortet nicht) oder bleibt (Instanz gelöscht, Anmeldung abgelehnt), spielt keine Rolle. Verloren ist verloren. Kein Ausstand ist ein Aufruffehler, den die KI sofort selbst behebt, und kein Konflikt, bei dem sie neu liest und zusammenführt: In beiden Fällen liegt der Inhalt noch im Gespräch und der Ablauf geht weiter ([#475](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/475)).
+Gültiger Inhalt für den **Kontextbereich** oder die **Werkbank**, der am Speicher gescheitert ist: Er hat jede Prüfung bestanden und wäre geschrieben worden, wenn Speicher, Verbindung oder Ort funktioniert hätten. Ob die Ursache vorübergehend ist (Speicher antwortet nicht) oder bleibt (Instanz gelöscht, Anmeldung abgelehnt), spielt keine Rolle. Verloren ist verloren. Kein Ausstand ist ein Aufruffehler, den die KI sofort selbst behebt, und kein Konflikt, bei dem sie neu liest und zusammenführt: In beiden Fällen liegt der Inhalt noch im Gespräch und der Ablauf geht weiter ([#475](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/475)).
 _Avoid_: Rückfall in einen zweiten Ablageort, Leseausfall als Ausstand zählen (beim Lesen geht nichts verloren), Konflikt oder Aufruffehler als Ausstand vermerken, „Ausstand“ als Wort zur Lehrkraft (im Kollegium heißt es Abschiedsrunde oder Streik; zur Lehrkraft heißt es „noch nicht gespeichert“)
 
 **Ausstandsnotiz**:

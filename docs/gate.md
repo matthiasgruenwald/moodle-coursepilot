@@ -1,0 +1,543 @@
+# Gate-Container und Gate-Kommando
+
+Stand: Spec 0029, Gate scharf, mit den Änderungen aus
+[ADR 0033](adr/0033-mutation-als-trend-und-schlankes-pr-gate.md): Mutation ist ein Trend nach dem
+Merge, `pre-push` führt `matrix` und `fast` aus, die Gesamt-Coverage blockiert nur unter 95 %.
+Wo ältere Abschnitte unten etwas anderes sagen, gilt ADR 0033. Das Gate misst Coverage und CRAP, führt die
+statischen Prüfungen aus und **blockiert** nach der Ratschenregel aus ADR 0029
+(Abschnitt [Ratsche](#ratsche)). Git-Hooks und Edit-Hooks rufen dasselbe
+Kommando auf (Abschnitt [Hooks](#hooks)).
+
+## Gate-Container
+
+Dauerhafter Docker-Stack `kurspilot-gate`, getrennt von Spike, Devstack-Instanzen
+und `coursepilot-afk-*`:
+
+| Teil | Wert |
+|---|---|
+| Moodle | 5.1 (`origin/MOODLE_501_STABLE`, fester Worktree-Stand) |
+| PHP | 8.4 mit pcov (Coverage-Treiber, nur per `-d pcov.enabled=1` aktiv) |
+| Datenbank | eigene MariaDB 11.4, Datenbank `moodle_gate`, PHPUnit-Präfix `t_` |
+| Ablage | `/opt/kurspilot-gate` (nicht `/tmp`) |
+
+Einrichtung, wiederholbar (jeder Schritt überspringt, was schon steht):
+
+```bash
+bash scripts/gate/setup-container.sh
+```
+
+Das Skript legt `/opt/kurspilot-gate` an, erzeugt das DB-Passwort einmalig in
+`/opt/kurspilot-gate/.env` (0600, wird nie ausgegeben), legt Moodle 5.1 als
+Worktree aus `/opt/moodle` an, schreibt `config.php`, installiert die
+Core-Abhängigkeiten inkl. PHPUnit per `composer:2` (Wegwerf-Container), startet
+den Stack und initialisiert die PHPUnit-Umgebung. Abweichungen über
+`GATE_DIR`, `GATE_MOODLE_REPO`, `GATE_MOODLE_REF`.
+
+Nach einem Moodle-Upgrade des Worktrees die Initialisierung neu auslösen:
+`rm /opt/kurspilot-gate/phpunitdata/phpunit/.gate-initialised` und das Skript
+erneut starten. Komplett neu: `docker compose -f scripts/gate/compose.yml down`,
+`git -C /opt/moodle worktree remove --force /opt/kurspilot-gate/moodle`,
+`/opt/kurspilot-gate` löschen, Skript starten.
+
+Die Test-DB läuft ohne Dauerhaftigkeit (`innodb_flush_log_at_trx_commit=0`,
+`innodb_doublewrite=0`): ein Absturz darf die Testdaten verlieren, sie sind
+wiederherstellbar (`init.php`). Gemessen am festen Ausschnitt (clone/restore/create_quiz/
+import_questions, 86 Tests): 68,1 s → 50,7 s (Median aus 3); Infection auf zwei kleinen
+Dateien (28 Mutanten): 59,0 s → 54,3 s. Gilt über `compose.yml` auch für CI und die privaten Instanzen.
+
+## Gate-Kommando
+
+Node-Skript ohne Laufzeit-Abhängigkeiten, ruft PHP per `docker exec` im
+Container auf:
+
+```bash
+npm run gate -- fast               # Node-Tests + PHPUnit der Tests zu geänderten Klassen
+npm run gate -- matrix             # neue/geänderte Tests auf Moodle 5.3 + PostgreSQL (private Instanz, vor dem Push)
+npm run gate -- full               # Node-Tests + volle Suite mit pcov, danach Bericht (rund 25 Minuten); Mutation nur mit GATE_MUTATION=1
+npm run gate -- report <clover.xml> # nur Bericht aus vorhandenem Clover-Bericht
+npm run gate -- ratchet [clover.xml] # Ratsche; ohne Clover nur die Baselines
+npm run gate -- baseline [clover.xml] # Coverage-Baseline anheben (nie senken)
+npm run gate -- edit               # Edit-Hook: Hook-JSON von stdin, ruft fast
+npm run gate -- static             # alle statischen Prüfungen (rund 1 Minute)
+npm run gate -- phpstan-baseline   # PHPStan-Baseline neu erzeugen
+npm run gate -- ranking [n]        # Fehlschlags-Rangliste nach Datei und Prüfung
+npm run gate -- mutation           # echte Infection-Prüfung geänderter Produktionszeilen
+npm run gate -- mutation-pilot classes/check # Verzeichnis-Pilot, Überlebende nur als Trend
+npm run gate -- mutation-report <infection.json> # Originalbericht gegen aktuellen Git-Diff prüfen
+```
+
+`full` führt zuerst die Node-Vertragstests aus. Ihr Fehler blockiert den Lauf auch bei
+grünen PHP- und Statikprüfungen. Danach spiegelt es `Plugin/src/local_coursepilot` in den Container, baut die
+PHPUnit-Konfiguration, schreibt den Clover-Bericht nach
+`/opt/kurspilot-gate/reports/clover.xml` und wertet ihn aus. Der volle Lauf
+braucht einen abgekoppelten Prozess, siehe [`agents/testing.md`](agents/testing.md).
+
+`full` und `mutation` starten nur auf einem Host mit Platz: unter `GATE_MIN_MEM_MB` (Standard 4096)
+verfügbarem Speicher oder bei laufenden fremden PHPUnit-/Infection-Containern endet der Lauf sofort
+mit `gate-error: host overloaded` (`scripts/gate/host-load.js`). Fremde Läufe abwarten, nicht umgehen.
+
+`fast` führt zusätzlich die Baseline-Ratsche aus (ohne Messwert). `full` wertet nach der
+Suite die Ratsche mit dem Clover-Bericht aus. Exitcode 1 bei jedem blockierenden Befund.
+
+`fast` ordnet geänderte Dateien (`git diff HEAD` plus neue Dateien) Tests zu:
+Produktionsklasse `classes/…/foo.php` gehört zu Tests mit
+`#[CoversClass(…foo::class)]`, eine geänderte `*_test.php` steht für sich.
+Ohne Zuordnung meldet das Gate `no-test-mapped`.
+
+### Mutationsprüfung
+
+Wo sie läuft (ADR 0033): `gate full` mutiert nur mit `GATE_MUTATION=1`. CI setzt das **nach dem Merge**
+(Push auf `dev`/`main`, manueller Lauf), nie im Pull Request, zusammen mit `GATE_MUTATION_ADVISORY=1`:
+Befunde stehen im Log, in den Berichten und als Warnung am Lauf, färben ihn aber nicht rot. Der CI-Job
+`quality` läuft dann als Matrix aus vier Teilen (`GATE_MUTATION_PART=i/4`): Jeder Teil führt Suite und
+Ratsche vollständig aus und mutiert sein Viertel der geänderten Dateien (Aufteilung nach
+Zeilenzahl, `mutation-shard.js`). Lokal auf Wunsch: `npm run gate -- mutation` (blockierend für den
+Aufrufer) oder `GATE_MUTATION=1 npm run gate -- full`. Die Cast-Mutatoren (Infection-Profil `@cast`)
+sind abgeschaltet: Ohne `strict_types` sind sie fast immer äquivalent.
+
+`full` erzeugt neben Clover auch PHPUnit-XML-Coverage und JUnit unter
+`reports/infection-coverage/`. Infection 0.29 aus dem versionierten Composer-Lockfile
+verwendet diese Messung desselben Quellstands; ein zweiter vollständiger Testlauf entfällt.
+Es läuft im Gate-Container mit `--threads=1` und `--only-covering-test-cases`:
+Nur Testfälle, die die mutierte Zeile abdecken, werden pro Mutant ausgeführt.
+Es gibt keine MSI-Gesamtschwelle. Ein überlebender Mutant auf einer geänderten
+Produktionszeile ergibt den Befund `mutation-survived`; `npm run gate -- mutation` endet damit
+mit Exit 1, der CI-Trendlauf meldet ihn nur.
+Nicht abgedeckte Mutanten blockiert die Mutationsprüfung nicht selbst: Sie sind
+Bereich der Coverage-Ratsche. Zeitüberschreitende Mutanten zählen wie in Infection als
+getötet; vorab übersprungene Mutanten machen den Report dagegen rot.
+
+Der Vergleich verwendet dieselbe vollständige Host-Git-Historie und denselben
+Vergleichsstand wie die Coverage-Ratsche. Im Plugin-Mount liegt keine Git-Historie.
+`infection-git.sh` liefert deshalb nur die auf Mount-Pfade übersetzten Dateiüberschriften
+und unveränderten Zeilenbereiche des Host-Diffs an Infection. Unbekannte Git-Anfragen
+sind Fehler. Infection verwendet sein natives `--git-diff-lines` zur Auswahl der
+Mutationen **vor** der Testausführung. Neue unversionierte PHP-Dateien zählen vollständig.
+Tests und die bereits begründeten Coverage-Ausschlüsse werden nicht mutiert.
+
+Der Infection-Parent lädt Moodles PHPUnit-Utility-Bootstrap für die Klassenreflexion.
+Er hält keinen PHPUnit-Testlock; jeder echte PHPUnit-Kindprozess verwendet den regulären
+Bootstrap und Lock. Gemeinsame Testdatenbanken werden weiterhin ausschließlich seriell benutzt.
+
+Die Ausführungsgrenze pro Mutant beträgt 1.800 Sekunden: Die reale breite Initialsuite
+benötigte bereits rund 1.031 Sekunden. Infection verwendet diese Grenze auch, um
+Mutanten mit längerer nominaler Testdauer vorab auszulassen. Solche ausgelassenen
+Kandidaten machen den Report ausdrücklich rot. Der CI-Qualitätsjob erhält 360 Minuten;
+der erste unvollständige PR-Difflauf benötigte bereits 165 Minuten. Diese Zeitbudgets
+ändern keine Qualitätsgrenze und machen abgebrochene oder unvollständige Läufe nicht grün.
+
+`scripts/gate/mutation-ignore.json` ist die versionierte Liste äquivalenter Mutanten,
+mit einzeln nachgewiesener Äquivalenz. Jeder Eintrag braucht `file` (Repo-Pfad), `line`, `mutator`, `hash`
+und eine konkrete `reason`. Der SHA-256 bezieht sich auf das JSON-Quellpaar
+`[originalSourceCode, mutatedSourceCode]` des Infection-Originalreports. Die Diagnose
+zeigt die Identität. Änderungen am Quellpaar lassen den Ignore nicht mehr passen;
+Wildcards und pauschale Mutator-Ausnahmen gibt es nicht. Ein fehlender/leer begründeter,
+doppelter oder ungültiger Eintrag ist rot. Äquivalenz muss im Review nachgewiesen werden.
+
+Eine ausschließlich für einen geprüften installierten Fragetypbestand belegte
+Äquivalenz trägt zusätzlich `qtypeSourceHash`. Der Gate-Prozess misst dafür die
+tatsächlichen Fragetyp-/Importquellen sowie XML-Parser, Datenbankschema und PHP-Präzisionssetup
+im Container und speichert das vollständige
+Pfad-/SHA256-Manifest in `infection-environment.json`. Nur derselbe Quellenhash
+aktiviert diesen einzelnen Ignore. Neue/geänderte Fragetypquellen oder fehlende
+Metadaten lassen den Survivor blockieren; ungültige Bedingungen und beschädigte
+Manifeste sind rot. Auch `mutation-report` benötigt die passende Original-Sidecar-
+Datei neben dem Report. Der [begrenzte Suffixnachweis](checks/672-infection-equivalence.md)
+behauptet keine allgemeine Äquivalenz für dynamische Drittanbieter-Fragetypen.
+
+Originale: `reports/infection.json`, `.log`, `.exit`, `infection-config.json`,
+`infection-timer.json` (gemessene Wandzeit, Argumente, Vergleichs-SHA) und
+`infection-sources.json` (SHA-256). Fehlende, ungültige oder unvollständige Reports und
+Werkzeugfehler sind rot. `mutation` erzeugt seine Coverage frisch; `mutation-report`
+prüft nur den übergebenen Report und führt keine Mutationen aus. Bei separater
+Reportprüfung braucht ein überlebender Mutant in einer teilweise geänderten Datei
+den ursprünglichen AST-Endpunkt `originalEndLine`; fehlen diese Bereichsdaten
+(wie im unveränderten Infection-0.29-JSON), ist `mutation-range-unknown` rot.
+Formatierte Gesamtquelltexte werden niemals in ursprüngliche Zeilenbereiche zurückgerechnet.
+Der native Lauf benötigt diese zusätzliche Angabe nicht: Infection hat dort bereits
+Knotenstart und Knotenende gegen den Diff geprüft; jeder ausgewählte Überlebende blockiert.
+Fehlerhafte Mutantenprozesse und Syntaxfehler blockieren mit `mutation-error` und Ursache,
+auch wenn der Infection-Hauptprozess Exit 0 liefert. Ignores können solche Fehler nicht verdecken.
+
+CI führt zusätzlich `node scripts/gate/mutation-proof.js` im isolierten QA-Mount aus, sobald der Diff
+`scripts/gate/` oder die Composer-Dateien ändert (sonst übersprungen, ADR 0033).
+Ein kleines Fixture mit zunächst grüner, zu schwacher Assertion erzeugt echte überlebende
+Infection-Mutanten: Gate-Exit 1. Ein Ignore ohne Begründung erzeugt Gate-Exit 1.
+Nach der stärkeren Assertion werden echte Mutanten getötet und das Gate ist grün.
+Alle Originale, Befehlszeiten und Exits liegen unter `reports/mutation-proof/`;
+der Quell-Mount wird im `finally` wiederhergestellt. Der Nachweis erzeugt keine
+Repository-Branches oder Commits. Danach läuft das reguläre blockierende `full`.
+CI lädt sämtliche Reports auch bei Fehler hoch; `Gate (required)` fordert weiterhin
+Erfolg des Qualitätsjobs. Der Pilot und der Fixture-Nachweis ersetzen keinen vollen Lauf.
+Der erste [Pilotbericht](checks/672-infection-pilot-2026-10-13.md) enthält gemessene
+Einzelzeiten, Originalpfade und die Grenzen der Volllauf-Hochrechnung.
+
+### Früher und billiger erkennen (lokal)
+
+Nichts davon ersetzt CI: CI prüft weiter den vollen Diff gegen den Zielbranch auf einer Instanz.
+
+**`matrix`** (läuft im `pre-push` vor `fast`): wählt wie `fast` die neuen/geänderten Tests
+(`*_test.php` und die Tests zu geänderten Klassen), aber seit dem letzten Push dieses Branches
+(`@{upstream}`, sonst Zielbranch; `GATE_MATRIX_BASE=<ref>` überschreibt) und führt sie auf einer
+privaten Instanz mit anderer Moodle-Version und Datenbank aus. Profile in
+`scripts/gate/matrix-profiles.json` (`53-pgsql` = Standard, `52-mariadb`; weitere Zeilen genügen),
+Auswahl mit `GATE_MATRIX_PROFILES=52-mariadb,53-pgsql`; `moodleRef` ist ein `origin/<Branch>`. Gemessen: warmer Lauf (Start, ein Testklasse, Stopp) 6 s auf 5.3 + PostgreSQL, Ersteinrichtung rund 3 Minuten. Die Instanz
+(`matrix-instance.sh`, `/opt/kurspilot-gate-m-<profil>`, Container `kurspilot-gate-m-<profil>-*`
+mit 3 GB/2 CPU Web und 1 GB/1 CPU DB) startet bei Bedarf, richtet sich einmal ein (Moodle-Worktree,
+Composer, PHPUnit-Init, rund 3 Minuten) und wird nach dem Lauf **gestoppt**; die Daten bleiben
+(Moodle 5.3 + PostgreSQL rund 0,85 GB, 5.2 + MariaDB rund 0,9 GB). Entfernen:
+`bash scripts/gate/matrix-instance.sh purge <profil>`. Der PHPUnit-Stand wird neu initialisiert,
+sobald sich `version.php` oder `db/` des Plugins ändern.
+
+**Inkrementelle Mutationsprüfung** (lokal, `mutation` und `full`): Nach einem grünen Lauf auf
+sauberem Arbeitsbaum steht der Commit in `$GATE_DIR/reports/mutation-green.json` (atomar
+geschrieben, nie bei Abbruch, Fehler, Lastschutz oder Befund). Der nächste lokale Lauf vergleicht
+gegen diesen Commit statt gegen den Zielbranch und prüft nur die seither geänderten Zeilen. Gilt
+nur, wenn der Commit Vorfahr von HEAD ist, derselbe Vergleichsstand gegolten hat und
+`mutation-ignore.json`, `mutation.js`, `gate.js`, `infection-git.sh`, `infection-bootstrap.php` und `baseline.json` unverändert sind und HEAD sowie sauberer Arbeitsbaum zu Laufbeginn und -ende gleich waren; sonst volle Basis wie bisher. Gemessen: Ein-Zeilen-Änderung nach grünem Lauf = 1 Mutant, 29 s (statt ca. 1512 Mutanten, rund 2,5 h). Mit
+`CI`/`GITHUB_ACTIONS` oder `GATE_MUTATION_FULL=1` immer volle Basis. Grenze: Eine Teständerung
+ohne Änderung der Produktionszeile prüft lokal keine alten Mutanten neu, das fängt CI.
+
+**Mutanten-Sharding** (lokal, `mutation` und `full`): ab `GATE_MUTATION_SHARD_MIN_LINES`
+geänderten Zeilen (Standard 200) und mindestens zwei Dateien verteilt das Gate die Dateien nach
+Zeilenzahl auf `GATE_MUTATION_INSTANCES` Instanzen (Standard 2, `1` = bisheriges Verhalten, in CI
+immer 1). Jede Zusatzinstanz (`mutation-full-instance.sh`, Id `s1`, `s2`) hat eigenen Webserver,
+eigene DB und `--threads=1`. Weniger Instanzen mit Meldung `mutation-shards:`, wenn weniger als
+`GATE_MIN_MEM_MB` + 5 GB je Zusatzinstanz Speicher oder weniger als 1,5 GB + 2,5 GB je neue
+Instanz Platz frei sind. Die Berichte werden summiert und mit derselben Auswertung bewertet (Gegenprobe: 81 Mutanten, 11 Überlebende, 10 Befunde, identisch zum seriellen Lauf). Bei `mutation` ohne wiederverwendete Coverage läuft der Initialtestlauf je Instanz; der Gewinn ist dort klein (580 s → 519 s), bei `full` mit gemeinsamer Coverage am größten.
+Fertige Shards hinterlassen einen atomaren Marker (Quellstand, Basis, Dateiliste) und werden bei
+gleichem Schlüssel nicht wiederholt. Nach Erfolg werden die Zusatzinstanzen entfernt
+(`GATE_MUTATION_KEEP_INSTANCES=1` behält sie gestoppt), nach einem Fehler nur gestoppt, damit die
+fertigen Shards erhalten bleiben.
+
+### Mutations-Volllauf (einmalig, #673)
+
+`node scripts/gate/mutation-full.js run` mutiert den gesamten Produktionscode (dieselben Ausschlüsse,
+Zeitgrenze und Coverage wie `mutation`, aber ohne Git-Diff) in Abschnitten je Verzeichnis
+(`plan` listet sie, größere Verzeichnisse in Blöcken zu zehn Dateien). Je Instanz läuft ein Abschnitt
+nach dem anderen (`--threads=1`). Fortschritt liegt unter `/var/lib/afk-pipeline/673/sections/`:
+`<name>.lock` (Besitzer, exklusiv angelegt), `<name>.compact.json` und zuletzt atomar `<name>.done`.
+Bei Abbruch läuft nur der unvollständige Abschnitt neu. Vor jedem Abschnitt gilt der Lastschutz
+(`host-load.js`): bei belegtem Host wartet der Lauf, er umgeht ihn nicht. Es braucht die frische
+`infection-coverage` eines `gate full` auf demselben Quellstand.
+
+Mehrere Instanzen: `bash scripts/gate/mutation-full-instance.sh up <id> [mem-gb] [cpus]` baut einen
+zusätzlichen Stack `kurspilot-gate-<id>` (eigenes Moodle, eigener Plugin-Mount aus dem Checkout, eigene
+Datenbank, eigenes PHPUnit-Datenverzeichnis, Speicher- und CPU-Grenzen; der Präfix hält den Lastschutz
+zufrieden). Jede Instanz startet mit `GATE_DIR=/opt/kurspilot-gate-<id>
+GATE_CONTAINER=kurspilot-gate-<id>-webserver-1 FULL_MUTATION_INSTANCE=<id>`
+(`FULL_MUTATION_ORDER=reverse` arbeitet die Liste von hinten ab) und nimmt den nächsten Abschnitt ohne
+fremdes Lock. Dieselbe Datenbank wird nie von zwei Läufern benutzt. Vor dem Lock und vor dem Done-Marker
+muss der Plugin-Mount (`treeDigest`, ohne `.phpunit.cache` und generierte `phpunit.xml`) dem beim Start
+festgehaltenen Quellstand (`plugin-digest.txt`) entsprechen, sonst bricht der Lauf ab. Den gemeinsamen
+Mount `/opt/kurspilot-gate/plugin` nicht für lange Läufe verwenden: andere `gate`-Läufe synchronisieren
+mit `rsync --delete` hinein. Eine Instanz-ID gehört genau einem Prozess: der Start räumt eigene Locks ohne Done-Marker weg. `FULL_MUTATION_DIR` verlegt das Arbeitsverzeichnis (Standard `/var/lib/afk-pipeline/673`). `... down <id>` entfernt nur den eigenen Stack.
+
+`run` bricht ab, wenn `reports/infection-coverage/junit.xml` älter ist als die neueste Datei in `Plugin/src/local_coursepilot/` (Hinweis: `npm run gate -- full`). `FULL_MUTATION_ALLOW_STALE=1` überschreibt die Prüfung bewusst.
+
+`verify <classes/datei.php> [phpunit-filter-regex]` mutiert genau eine Produktionsdatei (Vorlage: Fokuslauf aus #674). Standardfilter sind alle Plugin-Tests, Timeout 120 s. Ignores aus `mutation-ignore.json` gelten, Exit 1 bei offenen Überlebenden, sonst 0. Gleiche Frischeprüfung wie `run`. Die Datei schreibt in den gemeinsamen Mount `GATE_DIR` (Standard `/opt/kurspilot-gate`); für parallele Arbeit `GATE_DIR`/`GATE_CONTAINER` der Instanz setzen.
+
+`report <datum>` schreibt `docs/checks/673-mutationsvolllauf-<datum>-ueberlebende.md` (Überlebende je Datei)
+und `-prune.md` (Tests ohne getöteten Mutanten, Vertragstests ausgenommen). Tests werden nie gelöscht;
+der Prune-Bericht ist eine Liste für eine menschliche Entscheidung. MSI ist nur ein Trendwert ohne Schwelle.
+Ergebnis und Grenzen: [Hauptbericht](checks/673-mutationsvolllauf-2026-10-19.md).
+
+### Bewusste Leseausnahme bei eigenen Dateien
+
+Die Capability-Ausnahmen für `list_context_files`, `read_context_file`, `list_material_files`
+und `preview_material_file` in `scripts/gate/external-ignore.json` schützen den bestehenden
+Lesevertrag aus [ADR 0019](adr/0019-kontextbereich-in-private-files.md): Eigene Daten bleiben
+auch bei entzogener `moodle/user:manageownfiles`-Schreibberechtigung lesbar. Die vier externen
+Tests prüfen `execute()` und `clean_returnvalue()` mit `CAP_PROHIBIT`, eigenen Dateien und
+Benutzerwechsel. Nutzerkontext, externe Speicher-Eigentumsprüfung, Personenbezugs-Schalter
+und MCP-Fernzugriffsfreigabe gelten weiterhin.
+
+Kontext-Schreibwerkzeuge prüfen `manageownfiles` für die Moodle-Ablage. Externe Ablagen
+verwenden Anmeldung und Eigentumsprüfung am Speicher gemäß
+[ADR 0021](adr/0021-isolierung-und-personenbezug-am-externen-ablageort.md); die Moodle-Capability
+ist dort kein pauschaler Private-Files-Schalter.
+
+### Ausgabe
+
+Eine Zeile pro Befund, `datei:zeile: regel: text`, zuletzt `summary:`:
+
+```text
+Plugin/src/local_coursepilot/classes/x.php:0: coverage-file: 40.0% (4/10) unter 90%
+Plugin/src/local_coursepilot/classes/x.php:30: crap-method: hard crap=462 complexity=21
+summary: coverage=82.3% lines=… files=… files_below_50=… methods=… crap_over_8=… crap_over_30=…
+```
+
+Messwerte im Bericht (blockieren nicht, die Ratsche blockiert nur Geändertes):
+`coverage-file` (Datei unter 90 %), `crap-method` (CRAP über 8), `no-test-mapped`
+(Hinweis). `gate-error` ist immer rot. Ein fehlender, leerer oder
+ungültiger Clover-Bericht, 0 ausführbare Zeilen, Methoden ohne CRAP-Wert,
+negative Metriken, mehr gedeckte als ausführbare Zeilen, fehlgeschlagene Tests oder ein nicht laufender Container enden mit Exitcode 1,
+nie grün. Tests: `test/gate.test.js` mit Fixtures unter `test/fixtures/gate/`.
+
+## Fehlschlagslog und Rangliste
+
+Jeder Lauf hängt pro Prüfung Zeilen an `.gate-failures.log` im Repo-Wurzelverzeichnis
+(gitignoriert, überschreibbar über `GATE_FAILURE_LOG`). Format, tab-getrennt:
+`Datum` (ISO), `Prüfung` (bei Befunden die Regel), `Datei` (`-` ohne Dateibezug), `Ergebnis`
+(`ok`, `fail`, `abort`). Eine Prüfung schreibt sofort nach ihrem Ende; wirft sie oder
+endet ein Werkzeug ohne auswertbaren Befund, steht `abort`, und frühere Prüfungen des
+Laufs bleiben im Log. `npm run gate -- ranking` zeigt die Fehlschläge (`fail`, `abort`)
+als Rangliste nach Datei und nach Prüfung. Das ist Trend, keine Schwelle: Eine Datei
+oben in der Liste ist Kandidat für größeres Aufräumen (ADR 0029).
+
+## Statische Prüfungen
+
+Laufen im Gate-Container. **Jeder Befund blockiert**, ausgenommen `deptrac-baselined`
+(bekannter Verstoß aus der deptrac-Baseline, nur Bericht). Der Bestand ist ohne Befund
+(PHPStan über seine Baseline). Ein Werkzeug, das ohne auswertbaren Befund mit Fehlercode endet, ist
+rot (`gate-error`). `fast` führt (jetzt immer mit laufendem Container) moodle-cs, phpdoc, PHPStan, die Covers-Prüfung, die Kommentarsprache und die Kontext-/Capability-Prüfung externer Funktionen aus,
+`full` und `static` zusätzlich savepoints, Mustache und ESLint.
+
+PHPStan wird über Exitcode und JSON-Bericht gemeinsam bewertet: Nur ein vollständiger,
+sauberer Bericht mit Exit 0 ist grün. Fehlende oder widersprüchliche Summen und beschädigte
+Einträge sind Werkzeugfehler; auswertbare Befunde und interne Fehler bleiben im Bericht erhalten.
+
+| Prüfung | Regel im Bericht | Werkzeug |
+|---|---|---|
+| moodle-cs | `moodle-cs-error`, `moodle-cs-warning` | `moodle-plugin-ci phpcs` (TODO-Kommentare nur mit Link `https://github.com/matthiasgruenwald/moodle-coursepilot/issues/<nr>`; ohne den Sniff `moodle.Files.BoilerplateComment`, weil er die GPL-Kopfzeile verlangt und das Projekt nach ADR 0025 unter AGPL steht) |
+| phpdoc | `phpdoc` | `moodle-plugin-ci phpdoc` |
+| savepoints | `savepoints` | `moodle-plugin-ci savepoints` |
+| Mustache | `mustache` | `moodle-plugin-ci mustache` (vnu-jar, Java 11) |
+| ESLint, AMD-Build | `eslint`, `grunt-stale` | `moodle-plugin-ci grunt` |
+| PHPStan Level 6 | `phpstan` | `scripts/gate/phpstan/phpstan.neon` mit Baseline |
+| Kommentarsprache | `english-comment`, `english-ignore-invalid` | Node (`scripts/gate/english.js`): Umlaut/ß oder deutsches Funktionswort in einem PHP-Kommentar oder Docblock; ausgenommen `lang/de/`, `tests/fixtures/`, String-Literale. Fehlalarme nur in `scripts/gate/english-ignore.json` (`file`, `match`, `reason`; ohne Begründung rot) |
+| Externe Funktionen | `external-check-missing`, `external-ignore-invalid` (auch für veraltete Ausnahmen) | Node (`scripts/gate/capability.js`): jede Klasse in `classes/external/` ruft in `execute()` (auch über Methoden derselben Klasse, die es per `self::`/`static::`/`$this->` aufruft) `validate_context()` und `require_capability()`/`has_capability()` auf, oder einen Resolver aus `scripts/gate/external-resolvers.json` (feste, versionierte Liste; `call` als `klasse::methode`, `validates`/`requires`, `reason`). Ausnahmen nur in `scripts/gate/external-ignore.json` (`file`, `missing` = `context` oder `capability`, `reason`; ohne Begründung rot). Ausgabe: Klasse und fehlender Aufruf |
+| Covers-Pflicht | `covers-missing` | Node, listet nicht abstrakte `*_test`-Klassen ohne `#[Covers…]` |
+| Schichtregeln | `deptrac-violation`, `deptrac-unassigned`, `deptrac-baseline-stale`, `deptrac-baseline-ticket` (blockieren), `deptrac-baselined` (nur Bericht) | deptrac, siehe Abschnitt unten (`scripts/gate/deptrac.js`) |
+
+**Schichtregeln (ADR 0030)** prüft deptrac mit `scripts/gate/deptrac/deptrac.yaml`. Die Datei
+enthält die Klassenliste für den Wurzel-Namespace und die Regeln: Einstieg darf alles nutzen,
+Werkzeuge nur Fachmodule, Ports und Adapter, Fachmodule nie Werkzeuge, Adapter nur Ports. „Ports“ ist der
+Ablageort-Kern (Port, Anker, Pointer, Zugriffsprotokoll, Ereignisse) und gehört fachlich zu den Fachmodulen;
+er ist eine eigene Schicht, damit ein Adapter nur ihn und nicht die übrige Fachlogik nutzen darf. Jedes
+Werkzeug ist eine eigene Schicht, weil deptrac Abhängigkeiten innerhalb einer Schicht immer erlaubt und
+Werkzeug → Werkzeug sonst unsichtbar bliebe. Das Gate ist rot bei:
+
+- einem Verstoß, der nicht in der Baseline steht (`deptrac-violation`),
+- einer Klasse ohne Schichtzuordnung, etwa einer neuen Wurzel-Klasse oder einem neuen Werkzeug, das nicht in der Liste steht (`deptrac-unassigned`),
+- einem Baseline-Eintrag, den der Code nicht mehr verletzt (`deptrac-baseline-stale`),
+- einem Baseline-Eintrag ohne Ticketnummer (`deptrac-baseline-ticket`).
+
+Neue Wurzel-Klasse oder neues Werkzeug: Eintrag in `deptrac.yaml` ergänzen (Regex der passenden Schicht
+bzw. eine neue `Werkzeug_…`-Schicht samt Ruleset-Zeile). Die Baseline `scripts/gate/deptrac/deptrac-baseline.yaml`
+ist versioniert und darf nur schrumpfen; jeder Eintrag nennt das auflösende Ticket (#693, #696, #697, #700) und
+verschwindet mit dessen Umbau. Bekannte Verstöße erscheinen als `deptrac-baselined` im Bericht. Der Lauf nutzt
+die Konfiguration aus `/var/www/deptrac-config` im Container, die `sync-plugin.sh` spiegelt.
+
+deptrac wertet Docblocks nicht aus: Die Analyse läuft über `class`, `use` und `function`, nicht über
+Kommentare. Ein `{@see \local_coursepilot\external\…}` erzeugt deshalb keine Kante, ein echter `use`-Import oder
+Aufruf eines Werkzeugs aus `catalog/` oder `webdav/` dagegen einen Verstoß. Namespaces des Moodle-Kerns
+(`core_external\…`) liegen in keiner Schicht und bleiben ohne Befund.
+
+`full` und `static` schreiben zusätzlich `/opt/kurspilot-gate/reports/gate-static.json`.
+
+`moodle-plugin-ci` (symfony ^5.4) lässt sich nicht im Root-`composer.json` neben
+deptrac und Infection auflösen und liegt deshalb als eigenes dev-only Projekt unter
+`scripts/gate/plugin-ci/` (mit Lockfile). Das Setup-Skript installiert es zusammen mit
+den Root-Werkzeugen, Node 22, den Moodle-npm-Paketen und Java 11 in den Gate-Container.
+
+**PHPStan-Baseline** (`scripts/gate/phpstan/phpstan-baseline.neon`) ist versioniert und darf
+nur schrumpfen (ADR 0029). Pfade darin gelten relativ zum Container. Neu erzeugen mit
+`npm run gate -- phpstan-baseline`; das Kommando analysiert ohne die bestehende Baseline und
+schreibt deshalb immer den vollständigen Bestand. Nicht baseline-fähige Befunde
+(`return.missing`) bleiben im Bericht sichtbar. Die Tests unter `tests/` sind im Lauf enthalten.
+
+Jede Befundart (`identifier`), die in der Baseline bleibt, steht mit einer Begründung in
+`scripts/gate/phpstan/baseline-reasons.json`; `test/gate-phpstan-baseline.test.js` verlangt, dass
+beide Listen übereinstimmen. Eine neue Befundart in der Baseline braucht also eine Begründung,
+und eine nicht mehr vorkommende muss aus der Datei verschwinden.
+
+## Ratsche
+
+ADR 0029: Das Gate blockiert, was schlechter wird, und prüft, was geändert wird. Der
+Bestand über der Regel blockiert erst, wenn jemand ihn anfasst.
+
+| Regel im Bericht | Blockiert, wenn |
+|---|---|
+| `ratchet-coverage` | Gesamt-Coverage unter dem Wert in `scripts/gate/baseline.json` (nach Ausschlussliste) **und** unter der Untergrenze 95 % (ADR 0033) |
+| `ratchet-baseline-lowered` | `baseline.json` niedriger als im Vergleichsstand |
+| `ratchet-clover-missing` | eine relevante geänderte Produktionsdatei im Clover fehlt (Coverage und CRAP ungemessen) |
+| `ratchet-file-coverage` | eine geänderte Produktionsdatei unter 90 % Line-Coverage |
+| `ratchet-method-crap` | eine geänderte Methode mit CRAP über 8 |
+| `ratchet-phpstan-grown` | die PHPStan-Baseline hat je Datei und Befundart mehr Einträge als im Vergleichsstand |
+| `ratchet-deptrac-grown` | die deptrac-Baseline hat ein neues Paar Quelle → Ziel gegenüber dem Vergleichsstand |
+
+Dazu kommen die statischen Prüfungen (siehe oben) und die Schichtregeln.
+
+**Was wann greift:** `pre-commit` (`fast`) blockiert bei statischen Befunden, fehlgeschlagenen
+Tests und wachsenden Baselines (`ratchet-phpstan-grown`, `ratchet-deptrac-grown`,
+`ratchet-baseline-lowered`). Die Regeln, die einen Coverage-Bericht brauchen, also
+Gesamt-Coverage, Datei ≥ 90 % und Methode CRAP ≤ 8, greifen erst bei `full`, also verbindlich in CI
+(`pre-push` führt seit ADR 0033 `matrix` und `fast` aus).
+
+Geänderte Interfaces haben kein ausführbares PHPUnit-Coverage-Ziel. Ihre Adapter-Vertragstests
+tragen `#[Group('interface_name')]` und weiterhin `CoversClass` für die jeweilige Implementierung;
+`fast` wählt diese Gruppe für eine geänderte Interface-Datei. Eine konkrete Klasse braucht
+weiterhin ihre eigene `CoversClass`-Zuordnung. Coverage-Ratsche und Schwellen bleiben gleich.
+
+**Geänderte Datei und Methode:** Das Kommando liest `git diff -U0` des Arbeitsbaums gegen den
+Vergleichsstand und nimmt neue, unversionierte Dateien komplett als geändert. Eine Methode
+gilt als geändert, wenn eine geänderte Zeile zwischen ihrer Startzeile (aus dem Clover-Bericht)
+und der letzten Code-Zeile vor der nächsten Methode liegt; Docblock, Attribute und Leerzeilen
+der nächsten Methode gehören nicht dazu. Testdateien und ausgeschlossene Dateien zählen nicht.
+Gelöschte Dateien erzeugen keinen Befund. Eine reine Umbenennung (versioniert, oder unversioniert
+mit gleichem Inhalt wie die gelöschte Datei) gilt nicht als geändert und lässt die PHPStan-Baseline
+nicht wachsen, weil der Pfad des Vergleichsstands auf den neuen Namen abgebildet wird. Eine
+Umbenennung mit Änderung prüft nur die geänderten Zeilen. Wird eine Klasse (nicht nur die Datei)
+umbenannt, erscheint ihr deptrac-Baseline-Eintrag als neues Paar; Eintrag und Umbenennung
+gehören in dasselbe Ticket und der Eintrag wird dort mit umbenannt.
+
+**Vergleichsstand:** Ein explizites `GATE_BASE_REF` gewinnt immer: CI setzt bei PRs
+`origin/<tatsächlicher Zielbranch>` (auch `origin/main`), bei Push auf `dev`/`main` den
+Commit vor dem Push. Manuelle CI-Abnahmen wählen `dev` oder `main` ausdrücklich.
+CI lädt die vollständige Historie und alle Branch-Refs (`fetch-depth: 0`). Ein ungültiger
+Ref, flache Historie, fehlende gemeinsame Historie oder eine fehlende erforderliche
+Coverage-/PHPStan-/deptrac-Baseline im Vergleichsstand ist ein Fehler, kein grüner Vergleich.
+Die Baselines werden gegen den Zielbranch-Stand verglichen; geänderte Zeilen gegen die
+Merge-Base mit diesem Stand. So werden ausschließlich auf dem Zielbranch hinzugekommene
+Dateien nicht als PR-Änderung behandelt.
+
+Ohne expliziten Ref bleibt lokal der jüngere von Merge-Base mit `origin/dev` und `armedAt`,
+sonst `HEAD`. `armedAt` bleibt als historischer Startpunkt des einmaligen Scharfschaltens
+begründet erhalten. CLI-Nachweise prüfen die ältere Entwicklungsbasis, den expliziten
+Zielref (der `armedAt` ignoriert) und den neueren übernommenen Stand: nach Übernahme gewinnt
+die jüngere Merge-Base und neue Änderungen werden wieder geprüft. `armedAt` wird nicht
+verschoben. Der erstmalige Rollout auf `main` braucht seine eigene Messung und Abnahme,
+siehe [CI und Main-Bootstrap](ci-native-server-mcp.md#main-bootstrap).
+
+**Bootstrap-Variable:** `GATE_BOOTSTRAP_BASE=<vollständiger Commit-SHA>` gilt nur, wenn der
+Vergleichsstand genau dieser Commit ist und dort keine der drei Baselines liegt. Dann zählen die
+Baselines des Arbeitsstands als Erstbestand (kein Wachstums- und Absenkungsvergleich möglich),
+das Gate meldet `gate-bootstrap:`, und geänderte Zeilen werden ab `armedAt` geprüft (oder ab der
+Merge-Base, wenn sie jünger ist). Untergrenze 95 %, Datei ≥ 90 %, CRAP ≤ 8 und alle statischen
+Prüfungen gelten unverändert. Für jeden anderen Vergleichsstand ist die Variable wirkungslos, eine
+fehlende Baseline bleibt dort ein Fehler; hat der genannte Commit schon eine Baseline, ist der Lauf
+rot. Branchnamen und gekürzte SHAs gelten nicht.
+
+**Baseline-Datei** `scripts/gate/baseline.json`: `coverage` (`covered`/`statements`, Wert des
+vollen Laufs ohne die ausgeschlossenen Dateien), `excluded` (Pfad relativ zum Plugin, `/` am Ende
+= Verzeichnis, je Eintrag `reason`) und `armedAt`. Fortschreiben nur nach oben:
+
+```bash
+npm run gate -- full        # Messung
+npm run gate -- baseline    # hebt coverage an; verweigert, wenn der Messwert niedriger ist
+```
+
+**Ausschlussliste:** Sprachdateien, `db/access.php`, `db/events.php`, `db/services.php`,
+`db/tasks.php` und `version.php` sind reine Datentabellen ohne Logik. Unter `#[CoversClass]`
+lassen sie sich keiner Klasse zuordnen; sie tauchten nur deshalb in der Messung auf, weil
+Testklassen ohne Covers-Angabe alles Ausgeführte gutschrieben. Mit der Covers-Pflicht
+(`covers-missing`) fiel die Gutschrift weg: Die Messung sank von 82,33 % auf 75,48 %, davon
+1005 Zeilen aus diesen Dateien, der Rest ist Zuwachs an Code. Ohne diese Dateien im Nenner liegt
+der Bestand bei 81,08 % (11356/14006); das ist die Baseline. Nach #668 sind zusätzlich 18 ausdrücklich aufgelistete delegierende Einstiegsskripte
+ausgenommen. Ihre Fachentscheidungen liegen in getesteten Klassen; der Node-Vertrag
+`test/gate-entry-scripts.test.js` schützt die Liste und Logikfreiheit. Upgrade, Upgrade-Helfer
+und `lib.php` bleiben im Nenner. Die vollständige Messung beträgt 11990/13900 = 86,26 %;
+davon stammen +3,94 Prozentpunkte aus neuer Testdeckung und separat +0,91 aus dem
+Ausschluss von 149 verbliebenen Delegationszeilen. Dateideltas, Upgrade-Verhalten und
+Baseline-Fortschreibung sind im [Messbericht zu #668](research/qualitaets-baseline-668.md) belegt.
+
+## Hooks
+
+Versionierte Hooks unter `scripts/githooks/`, aktiviert über `core.hooksPath`:
+
+```bash
+npm run hooks:install
+```
+
+| Hook | Ruft auf | Dauer |
+|---|---|---|
+| `pre-commit` | `gate fast` (Node-Tests, PHPUnit zu geänderten Klassen, statische Prüfungen, Baseline-Ratsche) | unter einer Minute plus zugeordnete PHPUnit-Tests |
+| `pre-push` | `gate matrix`, dann `gate fast` (ADR 0033); einmal je Push, auch bei mehreren Refs. `full` läuft verbindlich in CI | Sekunden bis wenige Minuten |
+| Edit-Hook Claude/Codex | `gate edit`, startet `fast` bei Änderung an Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` | wie `fast` |
+
+Der Edit-Hook (`.claude/settings.json`, `.codex/hooks.json`) schreibt Befunde auf stderr und
+endet mit Exitcode 2, damit der Agent sie als Rückmeldung bekommt und weiterarbeitet. Ein
+stiller `php -l`-Hook entfällt, `fast` enthält die Syntaxprüfung über moodle-cs und PHPStan.
+Das Gate prüft den Arbeitsbaum. Damit das Geprüfte der gepushte Stand ist, blockiert `pre-push`,
+wenn ein gepushter Branch nicht `HEAD` ist oder versionierte Dateien geändert sind (committen oder
+stashen). Löschen und Tags laufen ohne Gate, ebenso Pushes, die gegen den Remote-Stand nur `docs/`-Dateien oder `*.md` ändern. Der Edit-Hook ignoriert eine nicht lesbare
+Hook-Eingabe (kein Edit-Ereignis) und meldet jeden Werkzeugfehler (`gate-error`) wie einen Befund
+auf stderr mit Exitcode 2.
+Hooks lassen sich mit `git commit --no-verify` übergehen; verbindlich bleibt CI.
+Ohne laufenden Gate-Container ist `fast` rot (`gate-error`).
+
+## Statische Prüfungen ohne Befund
+
+moodle-cs (Errors und Warnings), phpdoc, savepoints, Mustache, ESLint, AMD-Build, PHPStan nach
+Baseline und die Covers-Pflicht melden null. Wo eine Regel nicht zum Projekt passt, steht die
+Ausnahme versioniert und begründet im Code oder im Gate, nie stillschweigend:
+
+- **Dateikopf:** moodle-cs verlangt die GPL-Boilerplate, das Projekt steht nach ADR 0025 unter
+  AGPL-3.0-or-later. Der Sniff `moodle.Files.BoilerplateComment` ist deshalb in
+  `scripts/gate/static.js` ausgenommen; `phpcbf` darf die Köpfe nie umschreiben (ohne
+  `--exclude=moodle.Files.BoilerplateComment` würde es sie auf GPL setzen).
+- **Zeilenkommentare:** `// phpcs:ignore <Sniff> -- <Grund>` bzw. `phpcs:disable` mit Grund, nur dort, wo
+  der Sniff das Muster nicht kennt (Entry-Shims, Kindprozess-Fixtures, abstrakte Testbasis,
+  Heredoc-Fixtures, Markdown-Zitate in Strings).
+- **PHPStan-Baseline:** Jeder Eintrag in `scripts/gate/phpstan/phpstan-baseline.neon` trägt
+  direkt `# reason:`, `# evidence:` (JSON-Objekt: Plugin-Pfad → wörtliche Quellbelege) und
+  `# resolution:` (vollständige URL des Auflösungstickets oder `permanent`). Die Prüfung
+  `phpstan-reasons` gehört zu `fast`, `full` und `static`; fehlende Gründe/Tickets,
+  fremde Pfadzuordnung oder veraltete Quellbelege blockieren. Belege anderer Dateien
+  sind nur für einen tatsächlich eingebundenen Trait erlaubt. Die Prüfung kontrolliert
+  die Zuordnung und vorhandene Quellbelege; die fachliche Richtigkeit des Grundes bleibt
+  Gegenstand des Reviews.
+- **Typisierungsschulden:** Nullable Arrays, verschachtelte Array-Shapes, Promoted Properties
+  und Adapter-Test-Doubles sind typisierbar. Ihre bestehenden Ausnahmen nennen die konkrete
+  fehlende Annotation und [#714](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/714).
+  `pointer_scan::has_external_target()` benötigt etwa den Inhaltstyp des nullable Roh-Pointers
+  aus `raw_pointer_for()`. `moodle-plugin-ci phpdoc` und moodle-cs bleiben verbindlich;
+  `Type: …` als Prosa ersetzt keinen PHPStan-Typ.
+- **Neu erzeugte Baseline:** Der PHPStan-Generator schreibt keine Gründe. Nach
+  `phpstan-baseline` jeden verbleibenden Eintrag erneut mit Grund, Quellbeleg und
+  Auflösung kennzeichnen; ungeprüfte Generatorausgabe bleibt rot. Das Gate erwartet
+  das tab-eingerückte Generatorformat oder eine explizit leere `ignoreErrors: []`-Liste.
+
+## Messwerte im Vergleich zur Spec-Baseline
+
+Erster `full`-Lauf im Gate-Container (Moodle 5.1.7+, PHP 8.4, pcov), 1548 Tests,
+rund 15 Minuten:
+
+| Wert | Spec 0029 (CI, Moodle 5.0, dev @ 05fb815) | Gate-Container (5.1) |
+|---|---|---|
+| Line-Coverage | 82,3 % | 82,33 % (11967/14536) |
+| Dateien unter 50 % | 45 von 183 | 50 von 190 |
+| Methoden | 1088 | 1101 |
+| CRAP über 8 / über 30 | 88 / 5 | 90 / 7 |
+
+Die Gesamt-Coverage stimmt überein. Die übrigen Zahlen liegen leicht höher,
+weil der Gate-Stand seit `05fb815` gewachsen ist (+695 Zeilen Plugin-Code,
+u. a. `glossary_entry_writer`, `add_glossary_entries`,
+`activity_file_supplement`, `activity_files/lightboxgallery`) und auf 5.1
+statt 5.0 gemessen wird; neue Dateien und Methoden erhöhen Nenner und Zähler.
+
+## Dev-Werkzeuge
+
+`composer.json` und `composer.lock` im Repo-Root (PHPStan, deptrac, Infection)
+sind dev-only. Das Release-ZIP entsteht ausschließlich aus
+`Plugin/src/local_coursepilot/`; `test/native-release-artifact.test.js` prüft,
+dass kein Dev-Tool darin landet. `vendor/` ist gitignoriert.
+
+## Verbindliche CI und Artefakte
+
+Native CI führt denselben `npm run gate -- full`-Einstieg auf einem frisch eingerichteten,
+isolierten Moodle-5.1-/MariaDB-/PHP-8.4-Gate aus. Der Job `quality` gehört zusammen mit
+`phpunit`, `js-native` und `artifact` zu `Gate (required)`. Ausschließlich `success` für
+alle vier Jobs ist grün; fehlend, übersprungen, abgebrochen und fehlgeschlagen bleiben rot.
+
+`gate-trend-MOODLE_501_STABLE-<SHA>` enthält `gate-report.json` mit Gesamt-Coverage und
+`summary.methodsCrapOver8` sowie den Datei-/Methodenmesswerten. Es enthält keinen MSI; der MSI stammt aus dem
+einmaligen Mutations-Volllauf (`docs/checks/673-mutationsvolllauf-2026-11-08.md`).
+Auch bei roten Läufen wird das vorhandene Berichtsverzeichnis hochgeladen:
+Clover, `gate-static.json`, Git-Kontext, Setup-/full-Log und Exitdatei. Bei einem frühen
+Setup-/Testfehler können Messwerte fehlen; die vorhandenen Logs sind dann der Fehlernachweis,
+keine ersatzweise erfolgreiche Messung. Der Upload ist selbst verpflichtend.
+
+Feature-PRs sind erst nach der echten grünen Abnahme des gesamten Pflichtchecks zugelassen.
+Lokales Grün, Workflow-Vertragstests oder ein einzelner grüner Matrix-Leg reichen nicht.

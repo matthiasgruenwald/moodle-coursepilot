@@ -23,8 +23,6 @@
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Brings the existing OAuth tables in line with db/install.xml (#424 follow-up 3).
  *
@@ -44,7 +42,7 @@ defined('MOODLE_INTERNAL') || die();
 function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): void {
     global $DB;
 
-    // clientid: 64 characters were enough for client_ids issued via DCR, not
+    // Note: clientid: 64 characters were enough for client_ids issued via DCR, not
     // for CIMD, where the client_id is the URL itself (install.xml: 255).
     //
     // local_coursepilot_oauth_client carries a unique index on the
@@ -52,11 +50,13 @@ function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): v
     // (ddl_dependency_exception), hence drop the index, change the column,
     // restore the index.
     // aendern, Index zurueck.
-    foreach ([
+    foreach (
+        [
         'local_coursepilot_oauth_client' => new xmldb_index('clientid', XMLDB_INDEX_UNIQUE, ['clientid']),
         'local_coursepilot_oauth_code' => null,
         'local_coursepilot_oauth_token' => null,
-    ] as $tablename => $index) {
+        ] as $tablename => $index
+    ) {
         $table = new xmldb_table($tablename);
         $clientid = new xmldb_field('clientid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
         if (!$dbman->field_exists($table, $clientid)) {
@@ -72,7 +72,7 @@ function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): v
         }
     }
 
-    // codechallengemethod: PKCE is fixed to S256 (oauth_lib rejects
+    // Note: codechallengemethod: PKCE is fixed to S256 (oauth_lib rejects
     // every other method), the stored value was never read.
     // The column has therefore disappeared from install.xml - here it is dropped
     // from the existing data.
@@ -82,7 +82,7 @@ function local_coursepilot_repair_oauth_schema_drift(database_manager $dbman): v
         $dbman->drop_field($codetable, $challengemethod);
     }
 
-    // refreshtokenhash: NOT NULL according to install.xml. A row without a
+    // Note: refreshtokenhash: NOT NULL according to install.xml. A row without a
     // refresh token hash is unusable (the rotation from #336 cannot
     // renew it) - it is removed instead of being filled with a placeholder
     // that would look like a valid hash.
@@ -225,8 +225,8 @@ function local_coursepilot_migrate_anchor_files(): void {
  * Translates entries of a pending note from before #602 (German keys,
  * operations and WebDAV error classes) into the English form.
  *
- * @param array $entries Identifier => entry.
- * @return array
+ * @param mixed[] $entries Identifier => entry.
+ * @return mixed[]
  */
 function local_coursepilot_translate_pending_entries(array $entries): array {
     $keys = ['zeitpunkt' => 'timestamp', 'pfad' => 'path', 'vorgang' => 'operation',
@@ -256,6 +256,8 @@ function local_coursepilot_translate_pending_entries(array $entries): array {
 /**
  * Add stable grants and backfill in bounded, independently committed batches.
  * Unknown historical families stay NULL; never group by user/client or guess.
+ *
+ * @param database_manager $dbman The dbman.
  */
 function local_coursepilot_migrate_oauth_connections(database_manager $dbman): void {
     global $DB;
@@ -271,8 +273,10 @@ function local_coursepilot_migrate_oauth_connections(database_manager $dbman): v
     if (!$dbman->table_exists($grant)) {
         $dbman->create_table($grant);
     }
-    foreach (['local_coursepilot_oauth_token' => 'connectionid',
-            'local_coursepilot_workbench_ticket' => 'oauthconnectionid'] as $name => $column) {
+    foreach (
+        ['local_coursepilot_oauth_token' => 'connectionid',
+            'local_coursepilot_workbench_ticket' => 'oauthconnectionid'] as $name => $column
+    ) {
         $table = new xmldb_table($name);
         $field = new xmldb_field($column, XMLDB_TYPE_INTEGER, '10');
         if (!$dbman->field_exists($table, $field)) {
@@ -283,8 +287,17 @@ function local_coursepilot_migrate_oauth_connections(database_manager $dbman): v
             $dbman->add_index($table, $index);
         }
     }
-    while ($records = $DB->get_records_select('local_coursepilot_oauth_token',
-            'connectionid IS NULL AND revoked = 0', [], 'id', '*', 0, 100)) {
+    while (
+        $records = $DB->get_records_select(
+            'local_coursepilot_oauth_token',
+            'connectionid IS NULL AND revoked = 0',
+            [],
+            'id',
+            '*',
+            0,
+            100
+        )
+    ) {
         $transaction = $DB->start_delegated_transaction();
         try {
             foreach ($records as $record) {
@@ -293,8 +306,12 @@ function local_coursepilot_migrate_oauth_connections(database_manager $dbman): v
                     'statehash' => bin2hex(random_bytes(32)), 'timecreated' => $record->timecreated,
                 ]);
                 $DB->set_field('local_coursepilot_oauth_token', 'connectionid', $id, ['id' => $record->id]);
-                $DB->set_field('local_coursepilot_workbench_ticket', 'oauthconnectionid', $id,
-                    ['oauthtokenid' => $record->id, 'userid' => $record->userid]);
+                $DB->set_field(
+                    'local_coursepilot_workbench_ticket',
+                    'oauthconnectionid',
+                    $id,
+                    ['oauthtokenid' => $record->id, 'userid' => $record->userid]
+                );
             }
         } catch (Throwable $e) {
             $transaction->rollback($e);

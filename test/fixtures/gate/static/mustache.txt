@@ -1,0 +1,4 @@
+/var/www/html/public/local/coursepilot/templates/a.mustache - ERROR: HTML Validation error, line 12: Bad value for attribute.
+/var/www/html/public/local/coursepilot/templates/b.mustache - WARNING: Problem calling HTML validator - please report bug to integration team.
+/var/www/html/public/local/coursepilot/templates/c.mustache - INFO: HTML Validation info, line 43: Empty heading.
+/var/www/html/public/local/coursepilot/templates/c.mustache - OK: Mustache rendered html succesfully

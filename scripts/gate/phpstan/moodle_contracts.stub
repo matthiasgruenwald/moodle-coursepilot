@@ -1,0 +1,113 @@
+<?php
+
+namespace {
+    class admin_setting_configselect {
+        // Core leaves choices null for lazy loading, including its own module multiselect.
+        /** @var mixed[]|null */
+        public $choices;
+    }
+
+    // XMLDB_INDEX_UNIQUE/NOTUNIQUE are booleans; xmldb_index::set_attributes()
+    // derives uniqueness with !empty($type), despite the core string/int PHPDoc.
+    class xmldb_index {
+        /**
+         * @param string $name
+         * @param bool|null $type
+         * @param string[] $fields
+         * @param string[] $hints
+         */
+        public function __construct($name, $type = null, $fields = [], $hints = []) {}
+    }
+    class xmldb_table {
+        /**
+         * @param string $name
+         * @param bool $type
+         * @param string[] $fields
+         * @param string[] $hints
+         * @return void
+         */
+        public function add_index($name, $type, $fields, $hints = []) {}
+    }
+
+    // Core resolves $component . '_generator'; the declared base class loses
+    // concrete methods. A template preserves unknown components as the base type.
+    class testing_data_generator {
+        /**
+         * @template T of string
+         * @param T $component
+         * @return (T is 'core_question' ? core_question_generator
+         *     : (T is 'mod_assign' ? mod_assign_generator
+         *     : (T is 'mod_choice' ? mod_choice_generator
+         *     : (T is 'mod_folder' ? mod_folder_generator
+         *     : (T is 'mod_forum' ? mod_forum_generator
+         *     : (T is 'mod_glossary' ? mod_glossary_generator
+         *     : (T is 'mod_page' ? mod_page_generator
+         *     : (T is 'mod_quiz' ? mod_quiz_generator
+         *     : (T is 'mod_resource' ? mod_resource_generator
+         *     : (T is 'mod_wiki' ? mod_wiki_generator : component_generator_base))))))))))
+         */
+        public function get_plugin_generator($component) {}
+    }
+    class component_generator_base {}
+    class core_question_generator {}
+    class mod_assign_generator {}
+    class mod_choice_generator {}
+    class mod_folder_generator {}
+    class mod_forum_generator {}
+    class mod_glossary_generator {}
+    class mod_page_generator {}
+    class mod_quiz_generator {}
+    class mod_resource_generator {}
+    class mod_wiki_generator {}
+
+    class stdClass {}
+}
+
+namespace core_external {
+    class external_description {
+        // The constructor validates the integer VALUE_* constants, not booleans.
+        /** @var int */
+        public $required;
+    }
+}
+
+namespace availability_date {
+    class condition {
+        // get_json() casts an array to the global stdClass; core's docblock omits its namespace.
+        /**
+         * @param string $direction
+         * @param int $time
+         * @return \stdClass
+         */
+        public static function get_json($direction, $time) {}
+    }
+}
+namespace availability_group {
+    class condition {
+        /**
+         * @param int $groupid
+         * @return \stdClass
+         */
+        public static function get_json($groupid = 0) {}
+    }
+}
+
+namespace core_privacy\local\request {
+    class approved_contextlist {
+        // The core annotation \int[] accidentally resolves int as a class name.
+        /** @param int[] $contextids */
+        public function __construct(\stdClass $user, string $component, array $contextids) {}
+    }
+}
+
+namespace core\task {
+    class manager {
+        // get_scheduled_task() explicitly returns false for an unregistered class.
+        /**
+         * @param string $classname
+         * @return scheduled_task|false
+         */
+        public static function get_scheduled_task($classname) {}
+    }
+    abstract class scheduled_task {}
+}

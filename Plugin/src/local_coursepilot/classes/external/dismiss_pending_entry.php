@@ -23,8 +23,6 @@ use core_external\external_value;
 use local_coursepilot\pending_write_notice;
 use local_coursepilot\context_files;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Explicitly dismisses a pending-note entry (#492, ADR 0023 item 3,
  * Spec #486 §10), the second removal path besides replaying the write
@@ -40,8 +38,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class dismiss_pending_entry extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -51,8 +50,10 @@ class dismiss_pending_entry extends external_api {
     }
 
     /**
+     * Runs the dismiss pending entry tool.
+     *
      * @param string $identifier
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception pendingunknown if the identifier does not exist
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */
@@ -74,6 +75,8 @@ class dismiss_pending_entry extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

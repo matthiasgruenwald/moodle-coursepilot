@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\external;
 
+use core_external\external_api;
 use local_coursepilot\gd_support;
 use local_coursepilot\material_files;
 use local_coursepilot\storage_anchor;
@@ -35,6 +36,10 @@ defined('MOODLE_INTERNAL') || die();
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(crop_material_file::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\material_area::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\storage_write::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\private_files_storage_port::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\gd_support::class)]
 final class crop_material_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
@@ -44,6 +49,8 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Stores png.
+     *
      * @param string $filename
      * @param int $width
      * @param int $height
@@ -79,6 +86,8 @@ final class crop_material_file_test extends \advanced_testcase {
 
         $result = crop_material_file::execute('buchseite.png', 'ausschnitt.png', 0.5, 0.5, 0.75, 0.75);
 
+        $result = external_api::clean_returnvalue(crop_material_file::execute_returns(), $result);
+
         // 0.25 * 3000 = 750 and 0.25 * 2000 = 500. Cropping the 768px preview
         // would produce only a fraction of this resolution.
         $this->assertSame(750, $result['width']);
@@ -101,6 +110,45 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Available GD crop encodings yield readable images through the client contract.
+     *
+     * @param string $extension Target extension.
+     * @param int $imagetype Expected encoded format.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('output_formats')]
+    public function test_available_crop_output_formats_remain_readable(string $extension, int $imagetype): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        if ($extension === 'webp' && !function_exists('imagewebp')) {
+            $this->markTestSkipped('This GD build has no optional WebP encoder.');
+        }
+        $this->store_png('source.png', 20, 10);
+        $path = 'crop.' . $extension;
+        $result = crop_material_file::execute('source.png', $path, 0.0, 0.0, 0.5, 0.5);
+        $result = external_api::clean_returnvalue(crop_material_file::execute_returns(), $result);
+        $stored = \local_coursepilot\material_area::read($path);
+        $image = getimagesizefromstring($stored['content']);
+        $this->assertSame($path, $result['path']);
+        $this->assertSame([10, 5, $imagetype], array_slice($image, 0, 3));
+        $this->assertSame(10, $result['width']);
+        $this->assertSame(5, $result['height']);
+    }
+
+    /**
+     * Supplies the advertised raster output encodings.
+     *
+     * @return array<string, array{string, int}>
+     */
+    public static function output_formats(): array {
+        return [
+            'jpg' => ['jpg', IMAGETYPE_JPEG],
+            'jpeg' => ['jpeg', IMAGETYPE_JPEG],
+            'gif' => ['gif', IMAGETYPE_GIF],
+            'webp' => ['webp', IMAGETYPE_WEBP],
+        ];
+    }
+
+    /**
      * Record provenance in Moodle’s existing source field (Spec 0018 §5).
      */
     public function test_origin_is_recorded_in_source_field(): void {
@@ -117,6 +165,11 @@ final class crop_material_file_test extends \advanced_testcase {
             material_files::ITEMID,
             '/coursepilot-material/',
             'ausschnitt.png'
+        );
+        $this->assertSame(
+            serialize((object) ['original' => 'buchseite.png']),
+            $stored->get_source(),
+            'Provenance is stored as a serialized stdClass, not an array.'
         );
         $source = unserialize_object($stored->get_source());
         $this->assertSame('buchseite.png', $source->original);
@@ -155,6 +208,8 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Provides invalid coordinate cases.
+     *
      * @return array<string, array{0: float, 1: float, 2: float, 3: float}>
      */
     public static function invalid_coordinate_cases(): array {
@@ -168,6 +223,12 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Checks that rejects invalid coordinates.
+     *
+     * @param float $x0 The x0.
+     * @param float $y0 The y0.
+     * @param float $x1 The x1.
+     * @param float $y1 The y1.
      * @dataProvider invalid_coordinate_cases
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('invalid_coordinate_cases')]
@@ -283,6 +344,10 @@ final class crop_material_file_test extends \advanced_testcase {
     }
 
     /**
+     * Returns PNG bytes of a 1000x1000 image.
+     *
+     * @param int $width The width.
+     * @param int $height The height.
      * @return string PNG bytes of a 1000x1000 image.
      */
     private function build_png(int $width = 1000, int $height = 1000): string {

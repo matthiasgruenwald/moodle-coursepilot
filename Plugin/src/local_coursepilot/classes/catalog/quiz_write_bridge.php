@@ -20,8 +20,6 @@ use mod_quiz\question\display_options;
 use mod_quiz\quiz_settings as native_quiz_settings;
 use moodle_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Bridge for external/create_quiz and external/update_quiz_settings
  * (Spec 0015 §5, Ticket #398). Translate quiz catalog vocabulary to the
@@ -43,7 +41,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class quiz_write_bridge {
-
     /** @var string[] The eight review types; see quiz::REVIEW_TYPES. */
     private const REVIEW_TYPES = [
         'attempt', 'correctness', 'maxmarks', 'marks',
@@ -54,7 +51,7 @@ final class quiz_write_bridge {
      * Timing suffix to bitmask, using Moodle's own constants rather than
      * a plugin-specific bitmask vocabulary.
      *
-     * @var array<string, int>
+     * @return array<string, int>
      */
     private static function review_timings(): array {
         return [
@@ -63,21 +60,6 @@ final class quiz_write_bridge {
             'open' => display_options::LATER_WHILE_OPEN,
             'closed' => display_options::AFTER_CLOSE,
         ];
-    }
-
-    /**
-     * All 32 type/timing pseudofield names in catalog vocabulary.
-     *
-     * @return string[]
-     */
-    public static function review_field_names(): array {
-        $names = [];
-        foreach (self::REVIEW_TYPES as $type) {
-            foreach (array_keys(self::review_timings()) as $timing) {
-                $names[] = $type . $timing;
-            }
-        }
-        return $names;
     }
 
     /**
@@ -127,7 +109,7 @@ final class quiz_write_bridge {
      *
      * @param \stdClass $moduleinfo Updated in place.
      * @param string[] $texts
-     * @param array<int, int|float|string> $boundaries
+     * @param mixed[] $boundaries Type: array<int,int|float|string>.
      * @return void
      */
     public static function apply_feedback_pseudofields(\stdClass $moduleinfo, array $texts, array $boundaries): void {
@@ -183,8 +165,8 @@ final class quiz_write_bridge {
      * decided by {@see write_target}; like there, a rule only fires when the
      * patch touches one of its fields, so unchanged legacy values are not re-judged.
      *
-     * @param array $effective Checked target state ({@see write_target::$state}).
-     * @param array $patch Fields explicitly set by the patch/bundle. Without feedbacktext,
+     * @param mixed[] $effective Checked target state ({@see write_target::$state}).
+     * @param mixed[] $patch Fields explicitly set by the patch/bundle. Without feedbacktext,
      *        there is no feedback rule to check; carried-forward current values are valid.
      * @param float $grade Effective maximum grade for feedback boundaries: the new grade
      *        if changed in this call, otherwise the current grade.
@@ -195,39 +177,85 @@ final class quiz_write_bridge {
         // The form validation is not run by update_moduleinfo. Validate before
         // any grade change or activity patch, and never coerce strings/bools to points.
         if (array_key_exists('gradepass', $patch)) {
-            $passing = $patch['gradepass'];
-            if ((!is_int($passing) && !is_float($passing)) || !is_finite((float) $passing)
-                    || $passing < 0 || $passing > $grade) {
-                throw new moodle_exception('invalidquizgradepass', 'local_coursepilot', '', ['maximum' => $grade]);
-            }
+            self::validate_gradepass($patch['gradepass'], $grade);
         }
-        $gracetouched = array_key_exists('overduehandling', $patch) || array_key_exists('graceperiod', $patch);
-        if ($gracetouched && ($effective['overduehandling'] ?? '') === 'graceperiod') {
-            $min = (int) get_config('quiz', 'graceperiodmin');
-            $grace = (int) ($effective['graceperiod'] ?? 0);
-            if ($grace <= $min) {
-                self::throw_combination_violation(
-                    '"graceperiod" must exceed the server-wide minimum duration ('
-                        . $min . ' seconds) when "overduehandling"="graceperiod".'
-                );
-            }
+        if (array_key_exists('overduehandling', $patch) || array_key_exists('graceperiod', $patch)) {
+            self::validate_graceperiod($effective);
         }
+        if (array_key_exists('feedbacktext', $patch)) {
+            self::validate_feedback($patch['feedbacktext'], $patch['feedbackboundaries'] ?? [], $grade);
+        }
+    }
 
-        if (!array_key_exists('feedbacktext', $patch)) {
+    /**
+     * The passing grade is a finite number of points between 0 and the maximum.
+     *
+     * @param mixed $passing
+     * @param float $grade Effective maximum grade.
+     * @return void
+     * @throws moodle_exception invalidquizgradepass
+     */
+    private static function validate_gradepass(mixed $passing, float $grade): void {
+        if ((!is_int($passing) && !is_float($passing)) || !is_finite($passing) || $passing < 0 || $passing > $grade) {
+            throw new moodle_exception('invalidquizgradepass', 'local_coursepilot', '', ['maximum' => $grade]);
+        }
+    }
+
+    /**
+     * A grace period must exceed the server-wide minimum.
+     *
+     * @param mixed[] $effective Checked target state.
+     * @return void
+     * @throws moodle_exception combinationruleviolation
+     */
+    private static function validate_graceperiod(array $effective): void {
+        if (($effective['overduehandling'] ?? '') !== 'graceperiod') {
             return;
         }
-        $texts = $patch['feedbacktext'];
+        $min = (int) get_config('quiz', 'graceperiodmin');
+        // The state always carries graceperiod: from the quiz row on update, from the field default on create.
+        if ($effective['graceperiod'] <= $min) {
+            self::throw_combination_violation(
+                '"graceperiod" must exceed the server-wide minimum duration (' . $min
+                    . ' seconds) when "overduehandling"="graceperiod".'
+            );
+        }
+    }
+
+    /**
+     * Overall feedback: at least one text, one boundary fewer than texts, every
+     * boundary strictly inside (0, grade) and sorted descending.
+     *
+     * @param mixed $texts
+     * @param mixed $boundaries
+     * @param float $grade Effective maximum grade.
+     * @return void
+     * @throws moodle_exception combinationruleviolation
+     */
+    private static function validate_feedback(mixed $texts, mixed $boundaries, float $grade): void {
         if (!is_array($texts) || !$texts) {
             self::throw_combination_violation('"feedbacktext" must contain at least one entry.');
         }
-        $boundaries = $patch['feedbackboundaries'] ?? [];
         if (!is_array($boundaries) || count($boundaries) !== count($texts) - 1) {
             self::throw_combination_violation(
                 '"feedbackboundaries" must have exactly one fewer entry than "feedbacktext" ('
-                    . count($texts) . ' text(s), ' . count($boundaries) . ' boundary/boundaries).'
+                    . count($texts) . ' text(s), ' . count($boundaries)
+                    . ' boundary/boundaries).'
             );
         }
+        self::validate_boundary_range($boundaries, $grade);
+    }
 
+    /**
+     * Every boundary lies strictly between 0 and the maximum grade, and the
+     * list is strictly descending.
+     *
+     * @param mixed[] $boundaries Absolute points or percentages such as "50%".
+     * @param float $grade Effective maximum grade.
+     * @return void
+     * @throws moodle_exception combinationruleviolation
+     */
+    private static function validate_boundary_range(array $boundaries, float $grade): void {
         $previous = null;
         foreach ($boundaries as $boundary) {
             $numeric = self::resolve_boundary($boundary, $grade);
@@ -244,6 +272,8 @@ final class quiz_write_bridge {
     }
 
     /**
+     * Provides throw combination violation.
+     *
      * @param string $message
      * @return never
      * @throws moodle_exception combinationruleviolation

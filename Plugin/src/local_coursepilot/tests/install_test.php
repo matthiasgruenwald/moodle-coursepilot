@@ -27,7 +27,6 @@ namespace local_coursepilot;
  */
 #[\PHPUnit\Framework\Attributes\CoversNothing]
 final class install_test extends \advanced_testcase {
-
     /**
      * The installed plugin requires at least Moodle 5.0.
      */

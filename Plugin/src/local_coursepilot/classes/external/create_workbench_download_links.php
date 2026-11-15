@@ -24,8 +24,6 @@ use core_external\external_value;
 use local_coursepilot\material_files;
 use local_coursepilot\workbench_ticket;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Read-only tool (#501, Spec #486 §13): issues one-time download tickets
  * for workbench files. Shell clients can retrieve original bytes through
@@ -41,8 +39,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 class create_workbench_download_links extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -54,8 +53,10 @@ class create_workbench_download_links extends external_api {
     }
 
     /**
+     * Runs the create workbench download links tool.
+     *
      * @param string[] $paths
-     * @return array
+     * @return mixed[]
      * @throws \moodle_exception invalidmaterialpath, materialfilenotfound
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */
@@ -80,6 +81,8 @@ class create_workbench_download_links extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

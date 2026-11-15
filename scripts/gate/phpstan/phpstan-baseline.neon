@@ -1,0 +1,280 @@
+parameters:
+	ignoreErrors:
+		-
+			# reason: $PAGE is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"admin/connections.php":["$PAGE->set_context($context);"]}
+			# resolution: permanent
+			message: '#^Variable \$PAGE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/admin/connections.php
+
+		-
+			# reason: lightboxgallery_image belongs to optional mod_lightboxgallery, absent from the gate installation. This call to set_caption is part of the lightboxgallery adapter/test after plugin availability is checked; the optional class cannot be scanned here.
+			# evidence: {"classes/activity_files/lightboxgallery.php":["$image->set_caption($caption);"]}
+			# resolution: permanent
+			message: '#^Call to method set_caption\(\) on an unknown class lightboxgallery_image\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/classes/activity_files/lightboxgallery.php
+
+		-
+			# reason: lightboxgallery_image belongs to optional mod_lightboxgallery, absent from the gate installation. This construction is part of the lightboxgallery adapter/test after plugin availability is checked; the optional class cannot be scanned here.
+			# evidence: {"classes/activity_files/lightboxgallery.php":["$image = new \\lightboxgallery_image($file, $gallery, $cm);"]}
+			# resolution: permanent
+			message: '#^Instantiated class lightboxgallery_image not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/classes/activity_files/lightboxgallery.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"classes/catalog/assign.php":["require_once($CFG->dirroot . '/grade/grading/lib.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/catalog/assign.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"classes/external/ensure_question_bank.php":["require_once($CFG->libdir . '/questionlib.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: ../html/public/local/coursepilot/classes/external/ensure_question_bank.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"classes/external/ensure_question_category.php":["require_once($CFG->libdir . '/questionlib.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/ensure_question_category.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"classes/external/get_question.php":["require_once($CFG->libdir . '/questionlib.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/get_question.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"classes/external/get_question_categories.php":["require_once($CFG->libdir . '/questionlib.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/get_question_categories.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"classes/external/get_quiz_cleanup_plan.php":["require_once($CFG->dirroot . '/course/lib.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/get_quiz_cleanup_plan.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"classes/external/move_question.php":["require_once($CFG->libdir . '/questionlib.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/move_question.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"classes/external/update_mc_question.php":["require_once($CFG->libdir . '/questionlib.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/update_mc_question.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"classes/external/update_question_category.php":["require_once($CFG->libdir . '/questionlib.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/classes/external/update_question_category.php
+
+		-
+			# reason: $PAGE is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"connections.php":["$PAGE->set_context($context);"]}
+			# resolution: permanent
+			message: '#^Variable \$PAGE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/connections.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"oauth.php":["$response = oauth_lib::handle_discovery($CFG->wwwroot, $pathinfo);"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/oauth.php
+
+		-
+			# reason: $PAGE is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"oauth/authorize.php":["$PAGE->set_url('/local/coursepilot/oauth/authorize.php');"]}
+			# resolution: permanent
+			message: '#^Variable \$PAGE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/oauth/authorize.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"oauth/protected-resource.php":["echo json_encode(oauth_lib::protected_resource_metadata($CFG->wwwroot), JSON_UNESCAPED_SLASHES);"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/oauth/protected-resource.php
+
+		-
+			# reason: $CFG is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"surface.php":["$selfcheck = instance_check::self_check($CFG->wwwroot);"]}
+			# resolution: permanent
+			message: '#^Variable \$CFG might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/surface.php
+
+		-
+			# reason: $OUTPUT is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"surface.php":["echo $OUTPUT->header();"]}
+			# resolution: permanent
+			message: '#^Variable \$OUTPUT might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: ../html/public/local/coursepilot/surface.php
+
+		-
+			# reason: $PAGE is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"surface.php":["$PAGE->set_context($context);"]}
+			# resolution: permanent
+			message: '#^Variable \$PAGE might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/surface.php
+
+		-
+			# reason: This runtime contract uses assertTrue() on the explicit Moodle FORUM constant comparison. PHPStan derives the expected value from the current declaration; the assertion guards changes in the real contract.
+			# evidence: {"tests/catalog/forum_catalog_contract_test.php":["$this->assertTrue("]}
+			# resolution: permanent
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with bool and ''Constant FORUM…'' will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/catalog/forum_catalog_contract_test.php
+
+		-
+			# reason: This runtime contract uses assertTrue() on the page catalog constant comparison. PHPStan derives the expected value from the current declaration; the assertion guards changes in the real contract.
+			# evidence: {"tests/catalog/page_catalog_contract_test.php":["$this->assertTrue("]}
+			# resolution: permanent
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with bool and ''Constant…'' will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/catalog/page_catalog_contract_test.php
+
+		-
+			# reason: This runtime contract uses assertNotNull() on the quiz write-route result. PHPStan derives the expected value from the current declaration; the assertion guards changes in the real contract.
+			# evidence: {"tests/catalog/quiz_catalog_contract_test.php":["$this->assertNotNull(quiz::write_route());"]}
+			# resolution: permanent
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with string will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/catalog/quiz_catalog_contract_test.php
+
+		-
+			# reason: lightboxgallery_image belongs to optional mod_lightboxgallery, absent from the gate installation. This call to get_image_caption is part of the lightboxgallery adapter/test after plugin availability is checked; the optional class cannot be scanned here.
+			# evidence: {"tests/external/activity_file_supplement_test.php":["$this->assertSame('Scene ' . $i, $image->get_image_caption());"]}
+			# resolution: permanent
+			message: '#^Call to method get_image_caption\(\) on an unknown class lightboxgallery_image\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/activity_file_supplement_test.php
+
+		-
+			# reason: lightboxgallery_image belongs to optional mod_lightboxgallery, absent from the gate installation. This call to get_image_display_html is part of the lightboxgallery adapter/test after plugin availability is checked; the optional class cannot be scanned here.
+			# evidence: {"tests/external/activity_file_supplement_test.php":["$this->assertStringContainsString('Scene ' . $i, $image->get_image_display_html());"]}
+			# resolution: permanent
+			message: '#^Call to method get_image_display_html\(\) on an unknown class lightboxgallery_image\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/activity_file_supplement_test.php
+
+		-
+			# reason: lightboxgallery_image belongs to optional mod_lightboxgallery, absent from the gate installation. This construction is part of the lightboxgallery adapter/test after plugin availability is checked; the optional class cannot be scanned here.
+			# evidence: {"tests/external/activity_file_supplement_test.php":["$image = new \\lightboxgallery_image($file, $gallery, $cm);"]}
+			# resolution: permanent
+			message: '#^Instantiated class lightboxgallery_image not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../html/public/local/coursepilot/tests/external/activity_file_supplement_test.php
+
+		-
+			# reason: $DB is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"tests/fixtures/activity_template_create_race.php":["\\core\\session\\manager::set_user($DB->get_record('user', ['id' => (int) $argv[1]], '*', MUST_EXIST));"]}
+			# resolution: permanent
+			message: '#^Variable \$DB might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/tests/fixtures/activity_template_create_race.php
+
+		-
+			# reason: $DB is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"tests/fixtures/default_export_process.php":["\\core\\session\\manager::set_user($DB->get_record('user', ['id' => (int) $argv[2]], '*', MUST_EXIST));"]}
+			# resolution: permanent
+			message: '#^Variable \$DB might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/tests/fixtures/default_export_process.php
+
+		-
+			# reason: $DB is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"tests/fixtures/failed_restore_process.php":["\\core\\session\\manager::set_user($DB->get_record('user', ['id' => (int) $argv[2]], '*', MUST_EXIST));"]}
+			# resolution: permanent
+			message: '#^Variable \$DB might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/tests/fixtures/failed_restore_process.php
+
+		-
+			# reason: $DB is supplied by Moodle config/bootstrap, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"tests/fixtures/history_cleanup_process.php":["\\core\\session\\manager::set_user($DB->get_record('user', ['id' => (int) $argv[3]], '*', MUST_EXIST));"]}
+			# resolution: permanent
+			message: '#^Variable \$DB might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../html/public/local/coursepilot/tests/fixtures/history_cleanup_process.php
+
+		-
+			# reason: This runtime contract uses assertIsArray() on the OAuth response array. PHPStan derives the expected value from the current declaration; the assertion guards changes in the real contract.
+			# evidence: {"tests/oauth_lib_test.php":["$this->assertIsArray($response['body']);"]}
+			# resolution: permanent
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertIsArray\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: ../html/public/local/coursepilot/tests/oauth_lib_test.php
+
+		-
+			# reason: $plugin is supplied by the Moodle plugin loader, not declared locally in this entry script/include. The attached use is resolved at runtime after bootstrap; PHPStan does not model that include-scope assignment.
+			# evidence: {"version.php":["$plugin->component = 'local_coursepilot';"]}
+			# resolution: permanent
+			message: '#^Variable \$plugin might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: ../html/public/local/coursepilot/version.php

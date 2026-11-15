@@ -32,7 +32,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class image_preview {
-
     /** @var int Longest edge of the preview in pixels (spec 0018 §3.1). */
     private const MAX_EDGE = 768;
 
@@ -40,6 +39,8 @@ final class image_preview {
     private const JPEG_QUALITY = 80;
 
     /**
+     * Builds the image preview.
+     *
      * @param string $binary Raw content of the source file.
      * @return array{image_base64: string, mimetype: string, width: int, height: int}
      * @throws \moodle_exception materialpreviewunsupported if GD cannot

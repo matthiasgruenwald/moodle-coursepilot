@@ -1,0 +1,5 @@
+ RUN  Moodle PHPDoc Checker on local_coursepilot
+/var/www/html/public/local/coursepilot/classes/storage_anchor.php
+    Line 207: Phpdocs for function storage_anchor::port has incomplete parameters list (error)
+    Line 215: Phpdocs for function storage_anchor::port_at has incomplete parameters list (error)
+    Line 282: Phpdocs for function storage_anchor::save_location_selection has incomplete parameters list (error)

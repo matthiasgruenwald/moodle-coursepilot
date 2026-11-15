@@ -1,0 +1,122 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "categoryid",
+                "type": "int",
+                "default": "(none)"
+            },
+            {
+                "name": "name",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "parent",
+                "type": "int",
+                "default": 0
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "categoryid": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the category to change",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "name": {
+                "class": "core_external\\external_value",
+                "desc": "New category name (empty = keep the current name)",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "text"
+            },
+            "parent": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the new parent category (0 = keep the current parent)",
+                "required": 0,
+                "default": 0,
+                "allownull": true,
+                "type": "int"
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "id": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the changed category",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "name": {
+                "class": "core_external\\external_value",
+                "desc": "Category name after the change",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "parent": {
+                "class": "core_external\\external_value",
+                "desc": "ID of the parent category after the change",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "contextid": {
+                "class": "core_external\\external_value",
+                "desc": "Context ID of the category after the change",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "int"
+            },
+            "moved": {
+                "class": "core_external\\external_value",
+                "desc": "true if the parent category and/or context changed",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "renamed": {
+                "class": "core_external\\external_value",
+                "desc": "true if the name changed",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Teacher-facing message",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            }
+        }
+    }
+}

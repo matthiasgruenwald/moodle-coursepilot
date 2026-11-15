@@ -14,12 +14,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
+/**
+ * Shared storage contract suite for all storage port adapters.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
+ */
+
 namespace local_coursepilot\tests;
 
 use local_coursepilot\storage_area;
 use local_coursepilot\storage_conflict_exception;
 use local_coursepilot\storage_port;
 
+// phpcs:disable moodle.PHPUnit.TestClassesFinal.UnitTestClassesFinal -- Abstract contract base for the storage port adapter tests.
 /**
  * Shared storage contract suite (Issue #536, Spec 0021 Testing Decisions)
  * for all adapters, independent of location. Place the abstract fixture in
@@ -32,7 +41,6 @@ use local_coursepilot\storage_port;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 abstract class storage_port_contract_test extends \advanced_testcase {
-
     /**
      * Adapter under test.
      *
@@ -48,7 +56,9 @@ abstract class storage_port_contract_test extends \advanced_testcase {
      */
     abstract protected function area(): storage_area;
 
-    /** WebDAV is outside Moodle's user quota. */
+    /**
+     * WebDAV is outside Moodle's user quota.
+     */
     protected function applies_user_quota(): bool {
         return true;
     }
@@ -91,6 +101,56 @@ abstract class storage_port_contract_test extends \advanced_testcase {
         $this->assertSame('zweiter Inhalt', $port->read($area, 'plan.md')['content']);
     }
 
+    /**
+     * Replacing a note with empty content keeps both read and listing metadata usable.
+     */
+    public function test_empty_overwrite_keeps_read_and_list_metadata_usable(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $port->write($area, 'empty.md', 'Remove this content.');
+        $written = $port->write($area, 'empty.md', '');
+        $read = $port->read($area, 'empty.md');
+
+        $this->assertSame(0, $written['size']);
+        $this->assertSame('', $read['content']);
+        $this->assertSame(0, $read['size']);
+        $this->assertSame($written['checksum'], $read['checksum']);
+        $this->assertMatchesRegularExpression('/^"/', json_encode($read['mimetype'], JSON_THROW_ON_ERROR));
+        $entries = $port->list($area, '');
+        $this->assertCount(1, $entries);
+        $this->assertSame('empty.md', $entries[0]['name']);
+        $this->assertSame(0, $entries[0]['size']);
+        $this->assertMatchesRegularExpression('/^"/', json_encode($entries[0]['mimetype'], JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * A nested write returns its complete client path and keeps sibling files separate.
+     */
+    public function test_nested_write_preserves_the_complete_client_path(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $port->write($area, 'plan.md', 'Root plan');
+        $result = $port->write($area, 'subjects/math/plan.md', 'Mathematics plan');
+
+        $this->assertSame('subjects/math/plan.md', $result['path']);
+        $this->assertSame('Mathematics plan', $port->read($area, $result['path'])['content']);
+        $this->assertSame('Root plan', $port->read($area, 'plan.md')['content']);
+    }
+
+    /**
+     * The default area rules reject folder names outside the upload allowlist.
+     */
+    public function test_write_rejects_folder_names_outside_the_default_allowlist(): void {
+        $area = $this->area();
+        try {
+            $this->port()->write($area, 'math notes/plan.md', 'Must not be written');
+            $this->fail('Folder names with spaces must be refused by the default write policy.');
+        } catch (\moodle_exception $error) {
+            $this->assertSame($area->invalidpathkey, $error->errorcode);
+        }
+        $this->assertNull($this->port()->read($area, 'math notes/plan.md'));
+    }
+
     public function test_write_with_matching_checksum_succeeds(): void {
         $port = $this->port();
         $area = $this->area();
@@ -123,6 +183,16 @@ abstract class storage_port_contract_test extends \advanced_testcase {
         try {
             $this->port()->write($area, '../../../etc/plan.md', 'inhalt');
             $this->fail('A path containing a .. segment must be rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame($area->invalidpathkey, $e->errorcode);
+        }
+    }
+
+    public function test_read_rejects_an_empty_path(): void {
+        $area = $this->area();
+        try {
+            $this->port()->read($area, '');
+            $this->fail('An empty path names no file.');
         } catch (\moodle_exception $e) {
             $this->assertSame($area->invalidpathkey, $e->errorcode);
         }

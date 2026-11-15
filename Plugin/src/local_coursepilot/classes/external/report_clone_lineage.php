@@ -25,8 +25,6 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use invalid_parameter_exception;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Report question lineage after cloning (Spec 0017 §7.5, #422). For each
  * quiz question, identify whether clone_activity (#421) made an own copy or
@@ -55,8 +53,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class report_clone_lineage extends external_api {
-
     /**
+     * Describes the parameters of execute.
+     *
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
@@ -66,8 +65,10 @@ final class report_clone_lineage extends external_api {
     }
 
     /**
+     * Runs the report clone lineage tool.
+     *
      * @param int $cmid
-     * @return array
+     * @return mixed[]
      * @throws invalid_parameter_exception
      */
     public static function execute(int $cmid): array {
@@ -81,7 +82,7 @@ final class report_clone_lineage extends external_api {
         $context = context_module::instance($cm->id);
         self::validate_context($context);
         require_capability('local/coursepilot:use', $context);
-        // moodle/question:view no longer exists. Use moodle/question:viewall/viewmine,
+        // Note: moodle/question:view no longer exists. Use moodle/question:viewall/viewmine,
         // as in get_question and export_questions_xml.
         require_capability('moodle/question:viewall', $context);
 
@@ -147,7 +148,7 @@ final class report_clone_lineage extends external_api {
      * not repeatedly resolve it.
      *
      * @param int $contextid
-     * @param array<int, int> $cache By reference, contextid => courseid
+     * @param int[] $cache By reference, contextid => courseid
      * @return int
      */
     private static function course_of_context(int $contextid, array &$cache): int {
@@ -164,7 +165,9 @@ final class report_clone_lineage extends external_api {
     }
 
     /**
-     * @param array $questions
+     * Builds message.
+     *
+     * @param mixed[] $questions
      * @return string
      */
     private static function build_message(array $questions): string {
@@ -195,6 +198,8 @@ final class report_clone_lineage extends external_api {
     }
 
     /**
+     * Describes the return value of execute.
+     *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {

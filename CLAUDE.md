@@ -40,9 +40,10 @@ Der Server-MCP liegt unter `Plugin/src/local_coursepilot/` und wird für Entwick
 ## Aufgabenhandling
 
 - Vor Funktionsänderung: alle Aufrufer grep-en.
-- **Coding Standards:** vor dem Schreiben oder Reviewen von Code, Tests oder Skill-Korpus [`CODING_STANDARDS.md`](CODING_STANDARDS.md) lesen.
+- **Coding Standards:** vor dem Schreiben oder Reviewen von Code, Tests oder Skill-Korpus [`CODING_STANDARDS.md`](CODING_STANDARDS.md) lesen, dazu die Projektabweichungen in [`docs/agents/standards-abweichungen.md`](docs/agents/standards-abweichungen.md).
 - Pläne gehören nach `docs/plans/` (versioniert).
 - Single-context Repo: `CONTEXT.md` im Root, `docs/adr/` für Architekturentscheidungen, `docs/specs/` für Produktspezifikationen.
+- **Issues und PRs immer verlinken:** In Antworten an den Nutzer, Berichten, PR-Texten und Issue-Kommentaren jede Nennung eines Issues oder PRs als anklickbaren Markdown-Link schreiben, z. B. `[#705](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/705)`, nie nur `#705`. Gilt auch in Tabellen und Listen sowie für andere Repos (dann mit Repo-Namen im Linktext).
 
 ---
 
@@ -59,9 +60,12 @@ Volle Autonomie: `git add/commit/push`, `gh pr/issue` etc. ohne Rückfrage ausf�
 ```bash
 npm test                       # node --test, Vertragstests der nativen Linie
 npm run build:native-release   # Release-ZIP aus Plugin/src/local_coursepilot
+npm run gate -- fast|full      # Qualitäts-Gate (Messung), siehe docs/gate.md
 ```
 
 PHPUnit läuft nur im Spike-Container, siehe `docs/agents/testing.md`; in CI zusätzlich über `.github/workflows/native-ci.yml`.
+
+Lange Läufe (>5 min) als systemd-Einheit starten: siehe `docs/agents/testing.md` („Lange Läufe“).
 
 ### Plugin-Deploy auf die Spike-Instanz (Server-MCP, `local_coursepilot`)
 
@@ -81,14 +85,14 @@ Entpackt Plugin und `well-known` aus dem Tag nach `/opt/plugins/*-main` und füh
 
 ---
 
-## Hooks (siehe `.claude/settings.json`)
+## Hooks (siehe `.claude/settings.json`, `scripts/githooks/`)
 
-Nach Edit/Write automatisch:
-- `*.js` → `node --check` (Syntax)
-- `*.php` → `php -l` (Syntax, Plugin/src)
-- `test/*.test.js` → `npm test`
+Nach Edit/Write von Plugin-PHP, `test/**/*.js` oder `scripts/gate/**` läuft `node scripts/gate/gate.js edit`
+(dasselbe Gate wie `pre-commit`, Befunde als Rückmeldung bei Exitcode 2). Git-Hooks einmal pro Klon
+aktivieren: `npm run hooks:install` (`pre-commit` = `gate fast`, `pre-push` = `gate matrix` + `gate fast`, kein Husky; `full` läuft verbindlich in CI, ADR 0033).
 
-Codex nutzt diese Hooks nicht automatisch – `.codex/hooks.json` spiegelt dieselbe Logik.
+Codex nutzt dieselben Hooks: `.codex/hooks.json` spiegelt `.claude/settings.json`, Details in
+[`docs/gate.md`](docs/gate.md) und [`docs/agents/testing.md`](docs/agents/testing.md).
 
 ---
 

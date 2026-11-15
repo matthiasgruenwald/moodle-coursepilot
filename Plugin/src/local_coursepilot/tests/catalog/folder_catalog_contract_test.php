@@ -29,7 +29,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(folder::class)]
 #[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class folder_catalog_contract_test extends \advanced_testcase {
-
     /**
      * Catalog fields, real blocklisted columns and id exactly match the
      * folder table columns. Pseudofields do not count as database columns.
@@ -46,7 +45,7 @@ final class folder_catalog_contract_test extends \advanced_testcase {
             ['id'],
             array_map(static fn (field $f): string => $f->name, folder::fields()),
             folder::blocklist(),
-            array_intersect(shared_block::BLOCKLIST, $realcolumns)
+            array_intersect(shared_block::blocked_fields(), $realcolumns)
         );
         sort($known);
 

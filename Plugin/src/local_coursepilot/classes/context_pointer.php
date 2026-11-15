@@ -40,7 +40,6 @@ namespace local_coursepilot;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 final class context_pointer {
-
     /** @var string[] The two targets, required fields in both formats. */
     public const TARGETS = ['context_area', 'material_store'];
 
@@ -78,8 +77,8 @@ final class context_pointer {
      * recursive, idempotent, without validation. Translate values only under
      * "location" and "target"; preserve paths.
      *
-     * @param array $decoded
-     * @return array
+     * @param mixed[] $decoded
+     * @return mixed[]
      */
     public static function normalise(array $decoded): array {
         $result = [];
@@ -96,7 +95,9 @@ final class context_pointer {
     }
 
     /**
-     * @param array $decoded Pointer content already decoded from JSON.
+     * Resolves target.
+     *
+     * @param mixed[] $decoded Pointer content already decoded from JSON.
      * @param string $pointerkey The resolving area's {@see storage_area::$pointerkey}.
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
@@ -129,7 +130,9 @@ final class context_pointer {
     }
 
     /**
-     * @param array $decoded
+     * Resolves pair legacy.
+     *
+     * @param mixed[] $decoded
      * @return array{context_area: pointer_location, material_store: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
@@ -146,7 +149,9 @@ final class context_pointer {
     }
 
     /**
-     * @param array $decoded
+     * Resolves pair v2.
+     *
+     * @param mixed[] $decoded
      * @return array{context_area: pointer_location, material_store: pointer_location}
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
@@ -167,7 +172,9 @@ final class context_pointer {
     }
 
     /**
-     * @param array $target
+     * Resolves single v2.
+     *
+     * @param mixed[] $target
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
@@ -194,7 +201,7 @@ final class context_pointer {
      * Apply the IServ check (8), but not the nesting check (7): the previous
      * location is never compared with the current material store.
      *
-     * @param array $value Value of "previous_location" in the pointer document.
+     * @param mixed[] $value Value of "previous_location" in the pointer document.
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable/webdaviservfilesonly
      */
@@ -230,7 +237,7 @@ final class context_pointer {
      * Recognize the first format: "context_area" is a flat string rather than
      * an object. Both paths represent Moodle locations (Spec §2).
      *
-     * @param array $decoded
+     * @param mixed[] $decoded
      * @return bool
      */
     private static function is_legacy(array $decoded): bool {
@@ -238,7 +245,9 @@ final class context_pointer {
     }
 
     /**
-     * @param array $target
+     * Resolves external.
+     *
+     * @param mixed[] $target
      * @return pointer_location
      * @throws \moodle_exception pointerincomplete/pointerunreachable
      */
@@ -247,7 +256,8 @@ final class context_pointer {
         $relativepath = $target['path'] ?? null;
         $fingerprint = $target['fingerprint'] ?? null;
 
-        if (!is_numeric($instanceid) || (int) $instanceid <= 0
+        if (
+            !is_numeric($instanceid) || (int) $instanceid <= 0
             || !is_string($relativepath)
             || !is_array($fingerprint)
             || !is_string($fingerprint['server'] ?? null)
@@ -290,6 +300,8 @@ final class context_pointer {
     }
 
     /**
+     * Provides incomplete.
+     *
      * @throws \moodle_exception pointerincomplete
      */
     private static function incomplete(): never {

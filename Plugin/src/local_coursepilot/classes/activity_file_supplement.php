@@ -27,6 +27,12 @@ final class activity_file_supplement {
     /** @var array<string, class-string> Per-kind file declarations and native completion adapters. */
     private const TYPES = ['lightboxgallery' => activity_files\lightboxgallery::class];
 
+    /**
+     * Provides supports.
+     *
+     * @param string $modname The modname.
+     * @return bool
+     */
     public static function supports(string $modname): bool {
         return isset(self::TYPES[$modname]);
     }
@@ -36,6 +42,10 @@ final class activity_file_supplement {
      *
      * The capability is checked at course level here (module capabilities inherit from it); apply()
      * repeats it on the new module context.
+     *
+     * @param string $modname The modname.
+     * @param \context $context The context.
+     * @param mixed[] $entries The entries.
      */
     public static function validate(string $modname, \context $context, array $entries): void {
         if (!$entries) {
@@ -61,7 +71,12 @@ final class activity_file_supplement {
         }
     }
 
-    /** Only the new, still hidden activity owned by this create call may be passed. */
+    /**
+     * Only the new, still hidden activity owned by this create call may be passed.
+     *
+     * @param \stdClass $cm The cm.
+     * @param mixed[] $entries The entries.
+     */
     public static function apply(\stdClass $cm, array $entries): void {
         global $DB;
         if (!$entries) {
@@ -83,13 +98,27 @@ final class activity_file_supplement {
         }
     }
 
+    /**
+     * Copies the activity file supplement.
+     *
+     * @param \stdClass $cm The cm.
+     * @param \context_module $context The context.
+     * @param string $type The type.
+     * @param mixed[] $entry The entry.
+     */
     private static function copy(\stdClass $cm, \context_module $context, string $type, array $entry): void {
         $fs = get_file_storage();
         $area = $entry['filearea'];
         $itemid = $type::FILEAREAS[$area];
         $component = 'mod_' . $cm->modname;
-        $draftid = material_files::resolve_into_draft($context->id, $component, $area, $itemid,
-            [$entry['path']], $entry['location'] ?? material_files::LOCATION_STORE);
+        $draftid = material_files::resolve_into_draft(
+            $context->id,
+            $component,
+            $area,
+            $itemid,
+            [$entry['path']],
+            $entry['location'] ?? material_files::LOCATION_STORE
+        );
         try {
             file_save_draft_area_files($draftid, $context->id, $component, $area, $itemid);
             $filename = basename(material_files::normalise_path($entry['path']));

@@ -30,7 +30,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(resource::class)]
 #[CoversClass(\local_coursepilot\catalog\shared_block::class)]
 final class resource_catalog_contract_test extends \advanced_testcase {
-
     /**
      * Catalog fields, real blocklisted columns and id exactly match the
      * resource table columns. Pseudofields do not count as database columns.
@@ -47,7 +46,7 @@ final class resource_catalog_contract_test extends \advanced_testcase {
             ['id'],
             array_map(static fn (field $f): string => $f->name, resource::fields()),
             resource::blocklist(),
-            array_intersect(shared_block::BLOCKLIST, $realcolumns)
+            array_intersect(shared_block::blocked_fields(), $realcolumns)
         );
         sort($known);
 

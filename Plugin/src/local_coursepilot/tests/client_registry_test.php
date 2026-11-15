@@ -1,0 +1,251 @@
+<?php
+// This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
+
+namespace local_coursepilot;
+
+use PHPUnit\Framework\Attributes\CoversClass;
+
+/**
+ * Client registration and lookup through the public registry.
+ *
+ * @package    local_coursepilot
+ * @copyright  2026 Coursepilot
+ * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
+ */
+#[CoversClass(client_registry::class)]
+final class client_registry_test extends \advanced_testcase {
+    use \local_coursepilot\tests\caught_throwable;
+
+    /**
+     * Registration returns the unchanged public metadata and an exactly matched redirect.
+     */
+    public function test_registered_client_can_be_found_and_redirect_checked(): void {
+        $this->resetAfterTest();
+        $registry = new client_registry();
+        $response = $registry->register_client(['client_name' => 'Synthetic registry client',
+            'redirect_uris' => ['https://client.example/callback']]);
+        $client = $registry->get_client($response['client_id']);
+
+        $this->assertNotNull($client);
+        $this->assertSame('dcr', $client->source);
+        $this->assertSame([
+            'client_id' => $client->clientid,
+            'client_name' => 'Synthetic registry client',
+            'redirect_uris' => ['https://client.example/callback'],
+            'token_endpoint_auth_method' => 'none',
+            'grant_types' => ['authorization_code', 'refresh_token'],
+            'response_types' => ['code'],
+        ], $response);
+        $this->assertTrue($registry->redirect_uri_matches($client, 'https://client.example/callback'));
+        $this->assertFalse($registry->redirect_uri_matches($client, 'https://client.example/callback/extra'));
+    }
+    /**
+     * CIMD metadata is fetched once, cached and subject to exact redirect checks.
+     */
+    public function test_cimd_lookup_uses_adapter_and_keeps_first_document(): void {
+        $this->resetAfterTest();
+        $fetcher = new tests\cimd_fetch_fixture();
+        $registry = new client_registry($fetcher);
+        $url = 'https://client.example/metadata.json';
+        $client = $registry->get_client($url);
+        $this->assertNotNull($client);
+        $this->assertSame('cimd', $client->source);
+        $this->assertSame($url, $client->clientid);
+        $this->assertSame('none', $client->tokenendpointauthmethod);
+        $this->assertNull($client->clientsecret);
+        $fetcher->metadata = ['redirect_uris' => ['https://other.example/callback']];
+        $retryafter = 42;
+        $cached = $registry->get_client($url, $retryafter);
+        $this->assertSame((int) $client->id, (int) $cached->id);
+        $this->assertSame(0, $retryafter);
+        $this->assertSame([$url], $fetcher->requests);
+        $this->assertTrue($registry->redirect_uri_matches($cached, 'https://client.example/callback'));
+        $this->assertFalse($registry->redirect_uri_matches($cached, 'https://client.example/callback?extra=1'));
+        $this->assertFalse($registry->redirect_uri_matches($cached, 'https://other.example/callback'));
+    }
+
+    public function test_cimd_race_returns_the_record_for_the_requested_client_id(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $registry = new client_registry();
+        $registry->register_client(['redirect_uris' => ['https://decoy.example/callback']]);
+
+        $url = 'https://client.example/metadata.json';
+        $winnerid = $DB->insert_record('local_coursepilot_oauth_client', (object) [
+            'clientid' => $url,
+            'clientname' => 'Concurrent CIMD client',
+            'redirecturis' => json_encode(['https://client.example/callback']),
+            'tokenendpointauthmethod' => 'none',
+            'clientsecret' => null,
+            'source' => 'cimd',
+            'timecreated' => time(),
+        ]);
+
+        $client = $this->succeeded(fn() => $registry->cache_cimd_client($url, [
+            'redirect_uris' => ['https://client.example/callback'],
+        ]));
+
+        $this->assertSame($winnerid, (int) $client->id);
+        $this->assertSame($url, $client->clientid);
+    }
+
+    /**
+     * Invalid identifiers and failed metadata never cause repeated adapter calls.
+     */
+    public function test_failed_metadata_and_invalid_ids_are_not_fetched_again(): void {
+        $this->resetAfterTest();
+        $fetcher = new tests\cimd_fetch_fixture();
+        $registry = new client_registry($fetcher);
+        foreach (['unknown', 'http://client.example/metadata', 'https://client.example/' . str_repeat('a', 255)] as $id) {
+            $this->assertNull($registry->get_client($id));
+        }
+        $this->assertSame([], $fetcher->requests);
+        foreach ([null, [], ['redirect_uris' => ['http://evil.example/callback']]] as $i => $metadata) {
+            $fetcher->metadata = $metadata;
+            $url = 'https://client.example/failure' . $i;
+            $this->assertNull($registry->get_client($url));
+            $retryafter = 42;
+            $this->assertNull($registry->get_client($url, $retryafter));
+            $this->assertSame(0, $retryafter);
+        }
+        $this->assertCount(3, $fetcher->requests);
+    }
+
+    /**
+     * Source and site exhaustion report retryafter before consulting the adapter.
+     */
+    public function test_cimd_budget_limits_do_not_fetch_rejected_clients(): void {
+        $this->resetAfterTest();
+        set_config('oauthcimdsitelimit', 2, 'local_coursepilot');
+        set_config('oauthcimdsourcelimit', 1, 'local_coursepilot');
+        $fetcher = new tests\cimd_fetch_fixture();
+        $registry = new client_registry($fetcher);
+        $_SERVER['REMOTE_ADDR'] = '192.0.2.1';
+        $this->assertNotNull($registry->get_client('https://client.example/first'));
+        $retryafter = 0;
+        $this->assertNull($registry->get_client('https://client.example/source-excess', $retryafter));
+        $this->assertGreaterThan(0, $retryafter);
+        $_SERVER['REMOTE_ADDR'] = '192.0.2.2';
+        $this->assertNotNull($registry->get_client('https://client.example/second', $retryafter));
+        $this->assertSame(0, $retryafter);
+        $_SERVER['REMOTE_ADDR'] = '192.0.2.3';
+        $this->assertNull($registry->get_client('https://client.example/site-excess', $retryafter));
+        $this->assertGreaterThan(0, $retryafter);
+        $this->assertNotNull($registry->get_client('https://client.example/first', $retryafter));
+        $this->assertSame(0, $retryafter);
+        $this->assertSame(['https://client.example/first', 'https://client.example/second'], $fetcher->requests);
+    }
+
+    /**
+     * Registration validation refuses invalid metadata through the registry itself.
+     */
+    public function test_invalid_registration_is_refused(): void {
+        $this->resetAfterTest();
+        $registry = new client_registry();
+        $invalidmetadata = [[], ['redirect_uris' => []],
+            ['redirect_uris' => array_fill(0, 11, 'https://client.example/callback')]];
+        foreach ($invalidmetadata as $metadata) {
+            $this->assertSame('invalid_client_metadata', $registry->register_client($metadata)['error']);
+        }
+        foreach (['https://client.example/' . str_repeat('x', 2048), 'http://evil.example/callback', '', 123, 'https://'] as $uri) {
+            $this->assertSame('invalid_redirect_uri', $registry->register_client(['redirect_uris' => [$uri]])['error']);
+        }
+    }
+
+    /**
+     * Secret clients retain their public registration response and loopback redirects.
+     */
+    public function test_secret_client_registration_retains_secret_and_sanitizes_name(): void {
+        $this->resetAfterTest();
+        $registry = new client_registry();
+        $response = $registry->register_client(['client_name' => '<b>Synthetic client</b>',
+            'redirect_uris' => ['http://127.0.0.1:8000/callback'], 'token_endpoint_auth_method' => 'client_secret_post']);
+        $this->assertSame('Synthetic client', $response['client_name']);
+        $this->assertSame('client_secret_post', $response['token_endpoint_auth_method']);
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $response['client_secret']);
+        $client = $registry->get_client($response['client_id']);
+        $this->assertSame($response['client_secret'], $client->clientsecret);
+        $this->assertSame($response, $registry->client_registration_response($client));
+        $fallback = $registry->register_client(['redirect_uris' => ['http://localhost/callback'],
+            'token_endpoint_auth_method' => 'unsupported']);
+        $this->assertSame('none', $fallback['token_endpoint_auth_method']);
+        $this->assertNull($fallback['client_name']);
+        $this->assertArrayNotHasKey('client_secret', $fallback);
+    }
+
+    /**
+     * Every refusal names its RFC 7591 error code and tells the client what to fix.
+     */
+    public function test_registration_refusals_carry_exact_code_and_description(): void {
+        $this->resetAfterTest();
+        $registry = new client_registry();
+        $ok = 'https://client.example/callback';
+
+        $this->assertSame(
+            ['error' => 'invalid_client_metadata', 'error_description' => 'redirect_uris is required.'],
+            $registry->register_client(['redirect_uris' => []])
+        );
+        $this->assertSame(
+            ['error' => 'invalid_client_metadata', 'error_description' => 'Too many redirect_uris.'],
+            $registry->register_client(['redirect_uris' => array_fill(0, 11, $ok)])
+        );
+        $this->assertSame(
+            ['error' => 'invalid_redirect_uri', 'error_description' => 'redirect_uri is too long.'],
+            $registry->register_client(['redirect_uris' => ['https://client.example/' . str_repeat('x', 2048)]])
+        );
+        $this->assertSame(
+            [
+                'error' => 'invalid_redirect_uri',
+                'error_description' => 'redirect_uri must use https or a loopback address (http://127.0.0.1 / http://localhost).',
+            ],
+            $registry->register_client(['redirect_uris' => ['http://evil.example/callback']])
+        );
+    }
+
+    /**
+     * Ten redirect URIs are the limit and a dynamically registered client_id is 24 random bytes in hex.
+     */
+    public function test_registration_accepts_ten_redirects_and_issues_a_48_digit_client_id(): void {
+        $this->resetAfterTest();
+        $registry = new client_registry();
+
+        $response = $registry->register_client(['redirect_uris' => array_fill(0, 10, 'https://client.example/callback')]);
+
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{48}$/', $response['client_id']);
+    }
+
+    /**
+     * A second first lookup of the same metadata URL returns the record the first one stored.
+     */
+    public function test_caching_the_same_cimd_url_twice_returns_the_stored_client(): void {
+        $this->resetAfterTest();
+        $registry = new client_registry();
+        $registry->register_client(['client_name' => 'Earlier client', 'redirect_uris' => ['https://earlier.example/cb']]);
+        $url = 'https://client.example/metadata.json';
+        $metadata = ['client_name' => 'Metadata client', 'redirect_uris' => ['https://client.example/callback']];
+
+        $first = $registry->cache_cimd_client($url, $metadata);
+        $second = $this->succeeded(fn() => $registry->cache_cimd_client(
+            $url,
+            ['redirect_uris' => ['https://other.example/callback']]
+        ));
+
+        $this->assertSame($url, $first->clientid);
+        $this->assertEquals($first->id, $second->id);
+        $this->assertSame($url, $second->clientid);
+        $this->assertSame('Metadata client', $second->clientname);
+    }
+}

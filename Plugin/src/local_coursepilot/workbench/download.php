@@ -35,40 +35,4 @@ define('NO_DEBUG_DISPLAY', true);
 
 require(__DIR__ . '/../../../config.php');
 
-use local_coursepilot\access_log;
-use local_coursepilot\workbench_ticket;
-
-$toolname = 'coursepilot_workbench_download';
-
-// PARAM_ALPHANUM matches oauth_lib::random_token() hexadecimal secrets.
-// Update this validation if the format changes, for example to base64url.
-$ticket = optional_param('ticket', '', PARAM_ALPHANUM);
-
-if ($ticket === '') {
-    http_response_code(404);
-    access_log::log_failure('workbenchticketinvalid', $toolname);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => get_string('workbenchticketinvalid', 'local_coursepilot')]);
-    return;
-}
-
-try {
-    $delivery = workbench_ticket::redeem($ticket);
-} catch (\local_coursepilot\workbench_ticket_redemption_failed $e) {
-    http_response_code(403);
-    // Log the fixed reason key, never the ticket secret (Spec #486 §13).
-    // The path is known once the ticket is found; only unknown tickets have null.
-    access_log::log_failure($e->errorcode, $toolname, $e->path);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => $e->getMessage()]);
-    return;
-}
-
-access_log::log_success($toolname, false, $delivery['path'], $delivery['userid']);
-
-header('Content-Type: ' . $delivery['mimetype']);
-header('Content-Length: ' . $delivery['size']);
-header('Content-Disposition: attachment; filename="' . rawurlencode($delivery['filename']) . '"');
-header('X-Content-Type-Options: nosniff');
-header('Cache-Control: private, no-store');
-echo $delivery['content'];
+\local_coursepilot\output\http_endpoint::download(optional_param('ticket', '', PARAM_ALPHANUM))->send();

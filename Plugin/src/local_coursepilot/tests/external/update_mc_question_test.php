@@ -29,12 +29,156 @@ use local_coursepilot\webdav\webdav_instance;
  * @license    https://www.gnu.org/licenses/agpl-3.0.html GNU AGPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(update_mc_question::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_xml::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_import::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_suspect_gate::class)]
 final class update_mc_question_test extends \advanced_testcase {
     use webdav_instance_fixture;
 
     protected function tearDown(): void {
         \core\di::reset_container();
         parent::tearDown();
+    }
+
+    /**
+     * Invalid patches leave the original question and version unchanged.
+     *
+     * @param string $patch
+     * @param string $message
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalid_patches')]
+    public function test_invalid_patch_leaves_question_unchanged(string $patch, string $message): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $created = create_mc_question::execute($categoryid, 'Original', 'Original text', 'single', [
+            ['answer' => 'A', 'fraction' => 1], ['answer' => 'B', 'fraction' => 0],
+        ]);
+        $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
+        try {
+            update_mc_question::execute($created['questionid'], $patch);
+            $this->fail('Expected the patch to be rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString($message, $e->getMessage());
+        }
+        $read = get_question::execute($categoryid, 'Original');
+        $read = external_api::clean_returnvalue(get_question::execute_returns(), $read);
+        $this->assertSame('Original text', $read['questiontext']);
+        $this->assertSame(1, $read['version']);
+        $this->assertSame($created['questionbankentryid'], $read['questionbankentryid']);
+    }
+
+    /**
+     * Malformed fields and answer lists rejected by the patch contract.
+     *
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function invalid_patches(): array {
+        return [
+            'malformed JSON' => ['{', 'valid JSON object'],
+            'list instead of object' => ['[1]', 'valid JSON object'],
+            'unknown field' => ['{"penalty":0.5}', 'Unknown field "penalty"'],
+            'array name' => ['{"name":[]}', '"name" must be a scalar text value or null.'],
+            'object question text' => ['{"questiontext":{"text":"Nested"}}',
+                '"questiontext" must be a scalar text value or null.'],
+            'array general feedback' => ['{"generalfeedback":["Nested"]}',
+                '"generalfeedback" must be a scalar text value or null.'],
+            'invalid mode' => ['{"selectionmode":"other"}', 'single or multiple'],
+            'empty answers' => ['{"answers":[]}', 'non-empty list'],
+            'missing answer' => ['{"answers":[{"fraction":1}]}', 'needs "answer" and "fraction"'],
+            'missing fraction' => ['{"answers":[{"answer":"A"}]}', 'needs "answer" and "fraction"'],
+            'scalar answer' => ['{"answers":["A"]}', 'needs "answer" and "fraction"'],
+            'invalid feedback images' => ['{"answers":[{"feedback_images":"image.png"}]}', 'list of material folder paths'],
+            'invalid total' => ['{"answers":[{"answer":"A","fraction":0.5},{"answer":"B","fraction":0}]}',
+                'sum to exactly 1'],
+        ];
+    }
+
+    /**
+     * Scalar text values retain their established string conversion without accepting nested JSON.
+     *
+     * @param string $field
+     * @param mixed $value
+     * @param string $expected
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('scalar_text_patches')]
+    public function test_scalar_text_patch_keeps_its_text(string $field, mixed $value, string $expected): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $created = create_mc_question::execute($categoryid, 'Original', 'Original text', 'single', [
+            ['answer' => 'A', 'fraction' => 1], ['answer' => 'B', 'fraction' => 0],
+        ]);
+        $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
+        $result = update_mc_question::execute($created['questionid'], json_encode([$field => $value]));
+        $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
+        $this->assertSame('updated', $result['status']);
+        $question = get_question::execute($categoryid, '', $result['questionid']);
+        $question = external_api::clean_returnvalue(get_question::execute_returns(), $question);
+        $this->assertSame($expected, $question[$field]);
+    }
+
+    /**
+     * Existing JSON scalar coercions at the text-field boundary.
+     *
+     * @return array<string, array{string, mixed, string}>
+     */
+    public static function scalar_text_patches(): array {
+        return [
+            'integer' => ['questiontext', 42, '42'],
+            'decimal' => ['questiontext', 12.5, '12.5'],
+            'true' => ['questiontext', true, '1'],
+            'false' => ['generalfeedback', false, ''],
+            'null' => ['generalfeedback', null, ''],
+        ];
+    }
+
+    /**
+     * The multiple-choice patch refuses other native question types.
+     */
+    public function test_rejects_non_multiple_choice_question(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        /** @var \core_question_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $question = $generator->create_question('truefalse', null, ['category' => $categoryid]);
+        $this->expectException(\invalid_parameter_exception::class);
+        $this->expectExceptionMessage('only works for multiple-choice questions');
+        update_mc_question::execute((int) $question->id, '{"name":"Refused"}');
+    }
+
+    /**
+     * A full simple-field patch changes only the requested question version.
+     */
+    public function test_patch_updates_all_simple_fields_and_multiple_answer_weights(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $created = create_mc_question::execute($categoryid, 'Before', 'Old text', 'single', [
+            ['answer' => 'A', 'fraction' => 1], ['answer' => 'B', 'fraction' => 0],
+        ]);
+        $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
+        $result = update_mc_question::execute($created['questionid'], json_encode([
+            'name' => 'After',
+            'questiontext' => '<p>New text</p>',
+            'generalfeedback' => 'General feedback',
+            'defaultmark' => 3.5,
+            'selectionmode' => 'multiple',
+            'answers' => [
+                ['answer' => 'A', 'fraction' => 0.5, 'feedback' => 'First'],
+                ['answer' => 'B', 'fraction' => 0.5, 'feedback' => 'Second'],
+                ['answer' => 'C', 'fraction' => -1],
+            ],
+        ]));
+        $result = external_api::clean_returnvalue(update_mc_question::execute_returns(), $result);
+        $read = get_question::execute($categoryid, 'After');
+        $read = external_api::clean_returnvalue(get_question::execute_returns(), $read);
+        $this->assertSame('updated', $result['status']);
+        $this->assertSame($created['questionbankentryid'], $result['questionbankentryid']);
+        $this->assertSame(2, $read['version']);
+        $this->assertSame('<p>New text</p>', $read['questiontext']);
+        $this->assertSame('General feedback', $read['generalfeedback']);
+        $this->assertEquals(3.5, $read['defaultmark']);
+        $this->assertSame('multiple', $read['selectionmode']);
+        $this->assertSame('First', $read['answers'][0]['feedback']);
+        $this->assertEquals(-1, $read['answers'][2]['fraction']);
     }
 
     /**
@@ -74,6 +218,10 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->assertSame($entryid, $result['questionbankentryid'], 'Neue Version DESSELBEN Bank-Eintrags.');
         $this->assertSame(2, $result['version']);
         $this->assertFalse($result['idnumber_added']);
+        $this->assertSame(
+            'MC question "Additionsfrage" updated (bank entry ' . $entryid . ', new version 2).',
+            $result['message']
+        );
 
         $countafter = $DB->count_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
         $this->assertSame($countbefore, $countafter, 'No new bank entry, only a new version.');
@@ -137,7 +285,11 @@ final class update_mc_question_test extends \advanced_testcase {
 
         $newpenalty = $DB->get_field('question', 'penalty', ['id' => $result['questionid']], MUST_EXIST);
         $newoptions = $DB->get_record(
-            'qtype_multichoice_options', ['questionid' => $result['questionid']], '*', MUST_EXIST);
+            'qtype_multichoice_options',
+            ['questionid' => $result['questionid']],
+            '*',
+            MUST_EXIST
+        );
 
         $this->assertEqualsWithDelta(0.5, (float) $newpenalty, 0.0001, 'penalty blieb erhalten.');
         $this->assertEquals(0, $newoptions->shuffleanswers, 'shuffleanswers blieb erhalten.');
@@ -165,12 +317,17 @@ final class update_mc_question_test extends \advanced_testcase {
         $neighbour = create_mc_question::execute($categoryid, 'Nachbarfrage', 'Frage B', 'single', $answers);
         $neighbour = external_api::clean_returnvalue(create_mc_question::execute_returns(), $neighbour);
         $neighbouridnumber = $DB->get_field(
-            'question_bank_entries', 'idnumber', ['id' => $neighbour['questionbankentryid']], MUST_EXIST);
+            'question_bank_entries',
+            'idnumber',
+            ['id' => $neighbour['questionbankentryid']],
+            MUST_EXIST
+        );
 
         // Simulate an imported question with no idnumber.
         $DB->set_field('question_bank_entries', 'idnumber', null, ['id' => $target['questionbankentryid']]);
         $this->assertEmpty(
-            $DB->get_field('question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST));
+            $DB->get_field('question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST)
+        );
 
         $result = update_mc_question::execute(
             $target['questionid'],
@@ -183,12 +340,27 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->assertSame($target['questionbankentryid'], $result['questionbankentryid'], 'New version, no new entry.');
 
         $newidnumber = $DB->get_field(
-            'question_bank_entries', 'idnumber', ['id' => $target['questionbankentryid']], MUST_EXIST);
+            'question_bank_entries',
+            'idnumber',
+            ['id' => $target['questionbankentryid']],
+            MUST_EXIST
+        );
         $this->assertNotEmpty($newidnumber, 'Exactly this one question now has an idnumber.');
+        $this->assertSame(2, $result['version']);
+        $this->assertSame(
+            'MC question "Frage A (korrigiert)" updated (bank entry ' . $target['questionbankentryid']
+                . ', new version 2). idnumber "' . $newidnumber
+                . '" was assigned retroactively (the question had none before).',
+            $result['message']
+        );
 
         // The neighboring question remains unchanged.
         $unchangedneighbouridnumber = $DB->get_field(
-            'question_bank_entries', 'idnumber', ['id' => $neighbour['questionbankentryid']], MUST_EXIST);
+            'question_bank_entries',
+            'idnumber',
+            ['id' => $neighbour['questionbankentryid']],
+            MUST_EXIST
+        );
         $this->assertSame($neighbouridnumber, $unchangedneighbouridnumber);
     }
 
@@ -311,7 +483,10 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->upload_material('diagramm.png', 'Version-1');
 
         $created = create_mc_question::execute(
-            $categoryid, 'Frage', 'Text', 'single',
+            $categoryid,
+            'Frage',
+            'Text',
+            'single',
             [
                 ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
                 ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
@@ -347,7 +522,10 @@ final class update_mc_question_test extends \advanced_testcase {
         $this->upload_material('arbeitsblatt.pdf', 'PDF-Inhalt');
 
         $created = create_mc_question::execute(
-            $categoryid, 'Frage', 'Text', 'single',
+            $categoryid,
+            'Frage',
+            'Text',
+            'single',
             [
                 ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
                 ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
@@ -383,7 +561,10 @@ final class update_mc_question_test extends \advanced_testcase {
         [, $categoryid] = $this->setup_course_and_category();
 
         $created = create_mc_question::execute(
-            $categoryid, 'Frage', 'Text', 'single',
+            $categoryid,
+            'Frage',
+            'Text',
+            'single',
             [
                 ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
                 ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
@@ -402,6 +583,63 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
+     * A later text-only patch names the embedded binary removed by the XML transport.
+     */
+    public function test_text_only_patch_names_the_embedded_file_removed_from_the_new_version(): void {
+        $this->resetAfterTest();
+        [, $categoryid] = $this->setup_course_and_category();
+        $imagebytes = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7E'
+                . 'AAAOxAGVKw4bAAAADElEQVQImWM4wSUCAAKEAOdVyX4MAAAAAElFTkSuQmCC',
+            true
+        );
+        $this->assertIsString($imagebytes);
+        $this->upload_material('warnung.png', $imagebytes);
+        $created = create_mc_question::execute(
+            $categoryid,
+            'Bildwarnung',
+            'Alter Fragetext',
+            'single',
+            [
+                ['answer' => 'a', 'fraction' => 1.0, 'feedback' => ''],
+                ['answer' => 'b', 'fraction' => 0.0, 'feedback' => ''],
+            ]
+        );
+        $created = external_api::clean_returnvalue(create_mc_question::execute_returns(), $created);
+        $questiontext = '<p>Bildquelle:</p><img src="@@PLUGINFILE@@/warnung.png" alt="Roter Punkt">';
+        $embedded = update_mc_question::execute(
+            $created['questionid'],
+            json_encode(['questiontext' => $questiontext, 'questiontext_images' => ['warnung.png']])
+        );
+        $embedded = external_api::clean_returnvalue(update_mc_question::execute_returns(), $embedded);
+        $this->assertSame(2, $embedded['version']);
+        $file = $this->stored_question_file('question', 'questiontext', $embedded['questionid'], 'warnung.png');
+        $this->assertNotFalse($file);
+        $this->assertSame($imagebytes, $file->get_content(), 'The original version really contains the image binary.');
+
+        $updated = update_mc_question::execute(
+            $embedded['questionid'],
+            json_encode(['generalfeedback' => 'Erklärung nach Bildtransport'])
+        );
+        $updated = external_api::clean_returnvalue(update_mc_question::execute_returns(), $updated);
+        $this->assertSame('updated', $updated['status']);
+        $this->assertSame($created['questionbankentryid'], $updated['questionbankentryid']);
+        $this->assertSame(3, $updated['version']);
+        $this->assertSame(
+            'MC question "Bildwarnung" updated (bank entry ' . $created['questionbankentryid']
+                . ', new version 3). WARNING: The question contained embedded files that were removed in the process: '
+                . 'warnung.png.',
+            $updated['message']
+        );
+        $readback = get_question::execute($categoryid, '', $updated['questionid']);
+        $readback = external_api::clean_returnvalue(get_question::execute_returns(), $readback);
+        $this->assertSame('Erklärung nach Bildtransport', $readback['generalfeedback']);
+        $this->assertStringContainsString('@@PLUGINFILE@@/warnung.png', $readback['questiontext']);
+    }
+
+    /**
+     * Provides upload material.
+     *
      * @param string $path
      * @param string $content
      * @return void
@@ -412,6 +650,8 @@ final class update_mc_question_test extends \advanced_testcase {
     }
 
     /**
+     * Provides stored question file.
+     *
      * @param string $component
      * @param string $filearea
      * @param int $itemid
@@ -420,7 +660,7 @@ final class update_mc_question_test extends \advanced_testcase {
      */
     private function stored_question_file(string $component, string $filearea, int $itemid, string $filename) {
         global $DB;
-        // ponytail: query directly. get_area_files() would need the category
+        // Deliberate shortcut - ponytail: query directly. get_area_files() would need the category
         // context; component/filearea/itemid/filename identifies the file here.
         $record = $DB->get_record('files', [
             'component' => $component,

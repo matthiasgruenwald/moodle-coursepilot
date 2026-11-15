@@ -15,12 +15,12 @@
 // along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Connection self-service (#338): teachers see and revoke only their own
- * active remote connections. oauth_lib::active_tokens_for_user()/revoke_token()
+ * Connection self-service: teachers see and revoke only their own
+ * active remote connections. connection::active_tokens_for_user()/revoke_token()
  * enforce ownership in database queries, not merely in display. Linked
  * from the profile by local_coursepilot_myprofile_navigation() in lib.php.
  *
- * Thin I/O shell (#334): {@see \local_coursepilot\oauth_lib} owns testable logic.
+ * Thin I/O shell: {@see \local_coursepilot\connection} owns the connection lifecycle.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -29,10 +29,7 @@
 
 require(__DIR__ . '/../../config.php');
 
-use local_coursepilot\oauth_lib;
 use local_coursepilot\output\connections_page;
-use local_coursepilot\output\location_selection as location_selection_output;
-use local_coursepilot\webdav\webdav_setup_steps;
 
 require_login(null, false);
 
@@ -45,20 +42,4 @@ $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('myconnections', 'local_coursepilot'));
 $PAGE->set_heading(get_string('myconnections', 'local_coursepilot'));
 
-$revokeid = optional_param('revoke', 0, PARAM_INT);
-if ($revokeid) {
-    require_sesskey();
-    // Filter by $USER->id ownership: a foreign token ID revokes nothing.
-    oauth_lib::revoke_token($revokeid, (int) $USER->id);
-    redirect(new moodle_url('/local/coursepilot/connections.php'));
-}
-
-$tokens = oauth_lib::active_tokens_for_user((int) $USER->id);
-
-echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('local_coursepilot/connections', connections_page::page_data(
-    $tokens,
-    location_selection_output::current_locations_data(),
-    new moodle_url(webdav_setup_steps::LOCATION_SELECTION_PAGE)
-));
-echo $OUTPUT->footer();
+connections_page::response(optional_param('revoke', 0, PARAM_INT))->send();

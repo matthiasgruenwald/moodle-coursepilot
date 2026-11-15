@@ -1,5 +1,18 @@
 <?php
 // This file is part of Coursepilot, a plugin for Moodle - http://moodle.org/
+//
+// Coursepilot is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Coursepilot is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Coursepilot.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace local_coursepilot\external;
 
@@ -15,7 +28,9 @@ use core_external\external_api;
 #[\PHPUnit\Framework\Attributes\CoversClass(get_question_category_cleanup_plan::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\question_bank_context::class)]
 final class get_question_category_cleanup_plan_test extends \advanced_testcase {
-    /** An empty leaf is listed with a manual instruction; nothing is deleted. */
+    /**
+     * An empty leaf is listed with a manual instruction; nothing is deleted.
+     */
     public function test_lists_empty_leaf_without_deleting_it(): void {
         global $CFG, $DB;
         $this->resetAfterTest();
@@ -35,12 +50,15 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
             'parent' => (int) $category->parent,
             'editurl' => $CFG->wwwroot . '/question/edit.php?cmid=' . $bank->cmid
                 . '&cat=' . $category->id . ',' . $context->id,
-            'reason' => 'Empty leaf category with no questions or subcategories. Coursepilot does not delete it; review it manually and, if appropriate, delete it in Moodle using the link.',
+            'reason' => 'Empty leaf category with no questions or subcategories. Coursepilot does not delete it; review it '
+                . 'manually and, if appropriate, delete it in Moodle using the link.',
         ]], $result['removals']);
         $this->assertTrue($DB->record_exists('question_categories', ['id' => $category->id]));
     }
 
-    /** The tool is registered as read-only with the same schema and service allowlist. */
+    /**
+     * The tool is registered as read-only with the same schema and service allowlist.
+     */
     public function test_registered_as_read_only_tool(): void {
         $this->resetAfterTest();
         $tool = 'coursepilot_plan_question_category_cleanup';
@@ -49,13 +67,19 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         $this->assertFalse(\local_coursepilot\tool_registry::is_write($tool));
         $this->assertSame('read', \local_coursepilot\tool_registry::service_functions()[$function]['type']);
         $this->assertContains($function, \local_coursepilot\privacy_surface::registered_functions());
-        $this->assertSame(['courseid', 'questionbankid'],
-            \local_coursepilot\tool_registry::schemas()[$tool]['required']);
-        $this->assertSame('Builds a non-destructive cleanup plan for empty leaf categories in a named question bank.',
-            \local_coursepilot\tool_registry::descriptions()[$tool]);
+        $this->assertSame(
+            ['courseid', 'questionbankid'],
+            \local_coursepilot\tool_registry::schemas()[$tool]['required']
+        );
+        $this->assertSame(
+            'Builds a non-destructive cleanup plan for empty leaf categories in a named question bank.',
+            \local_coursepilot\tool_registry::descriptions()[$tool]
+        );
     }
 
-    /** A parent with an empty child needs two manual cleanup passes (#315). */
+    /**
+     * A parent with an empty child needs two manual cleanup passes (#315).
+     */
     public function test_parent_is_only_listed_after_its_empty_child_is_removed(): void {
         global $DB;
         $this->resetAfterTest();
@@ -76,7 +100,9 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         $this->assertSame([(int) $parent->id], array_column($second['removals'], 'id'));
     }
 
-    /** A bank with questions only has no suggestions; even a childless top is never listed. */
+    /**
+     * A bank with questions only has no suggestions; even a childless top is never listed.
+     */
     public function test_clean_bank_and_childless_top_return_empty_lists(): void {
         global $DB;
         $this->resetAfterTest();
@@ -94,7 +120,12 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         $this->assertSame([], get_question_category_cleanup_plan::execute($course->id, $toponly->cmid)['removals']);
     }
 
-    /** Each capability is enforced in the specified context. */
+    /**
+     * Each capability is enforced in the specified context.
+     *
+     * @param string $capability The capability.
+     * @param string $level The level.
+     */
     #[\PHPUnit\Framework\Attributes\DataProvider('denied_capability_provider')]
     public function test_rejects_missing_capability(string $capability, string $level): void {
         global $DB;
@@ -109,7 +140,11 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         get_question_category_cleanup_plan::execute($course->id, $bank->cmid);
     }
 
-    /** @return array */
+    /**
+     * Provides cases for denied capability provider.
+     *
+     * @return mixed[]
+     */
     public static function denied_capability_provider(): array {
         return [
             'course use' => ['local/coursepilot:use', 'course'],
@@ -118,7 +153,9 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         ];
     }
 
-    /** A question bank CMID from another course cannot be used. */
+    /**
+     * A question bank CMID from another course cannot be used.
+     */
     public function test_rejects_bank_from_another_course(): void {
         $this->resetAfterTest();
         [$course] = $this->create_populated_bank();
@@ -129,7 +166,9 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         get_question_category_cleanup_plan::execute($course->id, $foreignbank->cmid);
     }
 
-    /** A CMID of another module type is rejected even in the same course. */
+    /**
+     * A CMID of another module type is rejected even in the same course.
+     */
     public function test_rejects_non_bank_module(): void {
         $this->resetAfterTest();
         [$course] = $this->create_populated_bank();
@@ -139,7 +178,11 @@ final class get_question_category_cleanup_plan_test extends \advanced_testcase {
         get_question_category_cleanup_plan::execute($course->id, $page->cmid);
     }
 
-    /** @return array Course, bank and bank context; teacher is the current user. */
+    /**
+     * Returns course, bank and bank context; teacher is the current user.
+     *
+     * @return mixed[] Course, bank and bank context; teacher is the current user.
+     */
     private function create_populated_bank(): array {
         global $DB;
         $course = $this->getDataGenerator()->create_course();
