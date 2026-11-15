@@ -511,7 +511,7 @@ $string['tool_export_activity_backup'] = 'Returns the activity XML (backup file 
 $string['tool_export_default_activity'] = 'Returns the activity XML of a developed (not catalogued) activity type with Moodle default values - a template for creating it from XML. This write operation creates a hidden temporary activity and removes it again before returning XML; nothing remains in the course. Use the existing plan and approval workflow.';
 $string['tool_export_questions_xml'] = 'Exports questions as a complete Moodle XML file.';
 $string['tool_get_course_catalog'] = 'Reads a compact, filterable Moodle course catalog for course planning. The source is explicitly marked as read from Moodle. detail="full" returns targeted full content; "compact" returns previews. Profile-field restrictions are masked: type, field, and operator remain visible while the value is replaced. Group names are never returned; only group mode and identifiers are available. Assume grouping only when the teacher explicitly mentions it.';
-$string['tool_get_module_settings'] = 'Reads the full current state of one activity for a subsequent settings update.';
+$string['tool_get_module_settings'] = 'Reads current activity settings for a subsequent update. Credential fields are omitted; the quiz access password remains available.';
 $string['tool_get_modules'] = 'Lists the activities of a course or section for targeted access.';
 $string['tool_get_question'] = 'Reads the latest version of a single question.';
 $string['tool_get_question_categories'] = 'Lists the question categories of a named question bank.';
