@@ -423,6 +423,30 @@ final class dispatcher_test extends \advanced_testcase {
     }
 
     /**
+     * Every listed tool carries the annotations derived from its read/write classification.
+     */
+    public function test_tools_list_annotates_every_tool_from_its_access_type(): void {
+        $this->resetAfterTest();
+        [, $token] = $this->create_authenticated_user();
+
+        $response = dispatcher::handle(['id' => 1, 'method' => 'tools/list'], $token, $this->headers());
+
+        $functions = tool_registry::service_functions();
+        $allowed = tool_registry::allowed_tools();
+        foreach ($response['body']['result']['tools'] as $tool) {
+            $name = $tool['name'];
+            $iswrite = $functions[$allowed[$name]]['type'] === 'write';
+            $this->assertArrayHasKey('annotations', $tool, $name);
+            $this->assertSame(!$iswrite, $tool['annotations']['readOnlyHint'], $name);
+            $this->assertIsBool($tool['annotations']['openWorldHint'], $name);
+            $this->assertSame(tool_registry::annotations()[$name], $tool['annotations'], $name);
+            if (!$iswrite) {
+                $this->assertFalse($tool['annotations']['destructiveHint'], $name);
+            }
+        }
+    }
+
+    /**
      * Parameterless tools must return properties as a JSON object;
      * json_encode([]) would send clients an invalid JSON array (#566).
      */

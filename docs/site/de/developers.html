@@ -56,7 +56,7 @@
 
     <h2 id="werkzeugvertrag">Werkzeugvertrag</h2>
     <ul>
-      <li><strong>Eine Deklaration je Werkzeug:</strong> <code>tool_registry::TOOLS</code> treibt Webservice-Registrierung (<code>db/services.php</code>), MCP-Schema (abgeleitet aus <code>execute_parameters()</code>) und Datenschutz-Positivliste. Keine zweite Schema-Deklaration.</li>
+      <li><strong>Eine Deklaration je Werkzeug:</strong> <code>tool_registry::TOOLS</code> treibt Webservice-Registrierung (<code>db/services.php</code>), MCP-Schema (abgeleitet aus <code>execute_parameters()</code>) und Datenschutz-Positivliste. Keine zweite Schema-Deklaration. Derselbe Eintrag liefert die MCP-<code>annotations</code> in <code>tools/list</code>: <code>readOnlyHint</code> aus der Lese-/Schreib-Einstufung, <code>destructiveHint</code> und <code>idempotentHint</code> je Schreibwerkzeug deklariert (Lesewerkzeuge senden false und true; idempotent heißt: gleicher Aufruf, gleicher Moodle-Zustand), <code>openWorldHint</code> true für Werkzeuge, die einen externen WebDAV-Ort erreichen können (Kontextbereich, Materialdateien über <code>location</code>).</li>
       <li><strong>Englische Basis:</strong> Werkzeugnamen, Parameter, Rückgabeschlüssel und Beschreibungen sind englisch; Moodle-Strings liegen nur in <code>lang/en/</code> (ADR 0024).</li>
       <li><strong>Schreibend oder lesend</strong> ergibt sich aus dem Namensmuster. Mutierende Werkzeuge nutzen das Muster eines Bestätigungsparameters (<code>confirmed</code>).</li>
       <li><strong>Vertragstests:</strong> <code>tool_schema_contract_test.php</code> und <code>privacy_surface_test.php</code> prüfen die real registrierte Oberfläche.</li>

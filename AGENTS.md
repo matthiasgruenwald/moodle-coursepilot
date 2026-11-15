@@ -6,6 +6,7 @@ Coursepilot ist ein Moodle-Plugin (`Plugin/src/local_coursepilot/`), das selbst 
 
 - Kanonische Workflow-Doku: [CLAUDE.md](CLAUDE.md)
 - Vor Funktionsänderungen alle Aufrufer suchen.
+- Issues und PRs in Antworten und Berichten immer als anklickbaren Markdown-Link nennen, nie nur `#123` (siehe [CLAUDE.md](CLAUDE.md), „Aufgabenhandling“).
 - **Coding Standards:** vor dem Schreiben oder Reviewen von Code, Tests oder Skill-Korpus [`CODING_STANDARDS.md`](CODING_STANDARDS.md) lesen, dazu die Projektabweichungen in [`docs/agents/standards-abweichungen.md`](docs/agents/standards-abweichungen.md).
 
 ## Befehle

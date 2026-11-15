@@ -37,6 +37,8 @@ test('CI wiring: full on the minimum version is mandatory with target history an
   assert.match(quality, /format\('origin\/\{0\}', github\.base_ref\)/);
   assert.match(quality, /github\.event\.before/);
   assert.match(quality, /npm run gate -- full/);
+  // #715: the bootstrap base is one pinned full commit SHA, never a branch name or an expression.
+  assert.deepEqual(quality.match(/GATE_BOOTSTRAP_BASE: .*/g), ['GATE_BOOTSTRAP_BASE: 2b534e52bd04f928cb1371870f6a70962d6b297e']);
   // ADR 0033: one part without mutation on a pull request; four advisory mutation parts otherwise.
   assert.match(quality, /part: \$\{\{ fromJSON\(github\.event_name == 'pull_request' && '\[0\]' \|\| '\[0, 1, 2, 3\]'\) \}\}/);
   assert.match(quality, /GATE_MUTATION: \$\{\{ github\.event_name != 'pull_request' && '1' \|\| '0' \}\}/);

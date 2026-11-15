@@ -332,5 +332,11 @@ function xmldb_local_coursepilot_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026100344, 'local', 'coursepilot');
     }
 
+    if ($oldversion < 2026111500) {
+        // Re-evaluate imported markers after the front matter recognition fix.
+        $DB->delete_records('local_coursepilot_context_mark');
+        upgrade_plugin_savepoint(true, 2026111500, 'local', 'coursepilot');
+    }
+
     return true;
 }

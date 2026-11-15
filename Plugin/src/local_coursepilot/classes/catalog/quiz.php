@@ -529,6 +529,7 @@ final class quiz implements module_catalog {
                 'groupmode' => (int) groups_get_activity_groupmode($cm),
                 'groupingid' => (int) $cm->groupingid,
                 'idnumber' => (string) $cm->idnumber,
+                'indent' => (int) $cm->indent,
             ],
             quiz_write_bridge::decompose_review_bitmasks($instance),
             quiz_write_bridge::read_feedback((int) $instance->id)

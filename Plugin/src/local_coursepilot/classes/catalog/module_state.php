@@ -33,7 +33,7 @@ final class module_state {
      * authorised catalog client. Read access needs only local/coursepilot:use,
      * unlike get_moduleinfo_data(), which requires manageactivities.
      *
-     * Settings retain raw instance fields and the catalog vocabulary. Draft
+     * Settings retain non-credential instance fields and the catalog vocabulary. Draft
      * editor helpers and derived gradebook fields are omitted; quiz passing
      * grades are read from its primary grade item by effective_settings().
      *
@@ -75,6 +75,7 @@ final class module_state {
             'visible' => (int) $cm->visible,
             'visibleoncoursepage' => (int) $cm->visibleoncoursepage,
             'idnumber' => (string) $cm->idnumber,
+            'indent' => (int) $cm->indent,
             'groupmode' => (int) groups_get_activity_groupmode($cm),
             'groupingid' => (int) $cm->groupingid,
             'course' => (int) $cm->course,
@@ -99,7 +100,7 @@ final class module_state {
         if ($cm->modname === 'quiz') {
             $data = array_merge($data, quiz::grade_settings((int) $cm->instance));
         }
-        return $data;
+        return activity_credentials::settings((string) $cm->modname, $data);
     }
 
     /**

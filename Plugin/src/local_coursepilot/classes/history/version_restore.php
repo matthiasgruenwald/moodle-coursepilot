@@ -19,6 +19,7 @@ namespace local_coursepilot\history;
 use context_module;
 use core_external\external_api;
 use local_coursepilot\activity_file_trash;
+use local_coursepilot\catalog\cm_indent;
 use local_coursepilot\catalog\completion_settings;
 use local_coursepilot\catalog\module_settings;
 use local_coursepilot\catalog\module_state;
@@ -65,7 +66,10 @@ final class version_restore {
         $target = version_history::state_at($cmid, $targetversion);
         $before = self::read_settings($cmid);
 
-        $normalpatch = self::build_normal_patch($catalogclass, $before, $target);
+        $normalpatch = cm_indent::without_unsupported(
+            self::build_normal_patch($catalogclass, $before, $target),
+            get_course((int) $cm->course)
+        );
         $completionpatch = self::build_completion_patch($before, $target);
 
         $changes = [];

@@ -40,8 +40,13 @@ final class tool_schema_contract_test extends \advanced_testcase {
         foreach ($tools as $name => $tool) {
             $this->assertSame(
                 ['classname', 'descriptionkey'],
-                array_keys($tool),
-                "{$name}: Registration may only contain the class and description key."
+                array_slice(array_keys($tool), 0, 2),
+                "{$name}: Registration starts with the class and description key."
+            );
+            $this->assertSame(
+                [],
+                array_diff(array_keys($tool), ['classname', 'descriptionkey', 'destructive', 'idempotent', 'external']),
+                "{$name}: Registration may add only annotation declarations, never descriptions or schemas."
             );
         }
 

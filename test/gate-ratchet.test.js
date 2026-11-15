@@ -123,6 +123,71 @@ test('ratchet CLI: every required target baseline must exist', () => {
   }
 });
 
+test('ratchet CLI: GATE_BOOTSTRAP_BASE accepts exactly one target commit without baselines (#715)', () => {
+  const rels = ['scripts/gate/baseline.json', 'scripts/gate/phpstan/phpstan-baseline.neon', 'scripts/gate/deptrac/deptrac-baseline.yaml'];
+  const repo = makeRepo();
+  const withBaselines = git(repo, 'rev-parse', 'HEAD').trim();
+  rels.forEach(rel => fs.rmSync(path.join(repo, rel)));
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'main without gate baselines');
+  git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  const main = git(repo, 'rev-parse', 'HEAD').trim();
+  // Cleanup before arming: stock, although it differs from main.
+  git(repo, 'restore', `--source=${withBaselines}`, '--', ...rels);
+  write(repo, `${PLUGIN}/classes/a.php`, SOURCE.replace('return 1;', 'return 11;'));
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'arming cleanup');
+  const armedAt = git(repo, 'rev-parse', 'HEAD').trim();
+  write(repo, 'scripts/gate/baseline.json', JSON.stringify({ ...BASELINE, armedAt }));
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'armed baseline');
+  write(repo, 'clover.xml', clover({ aCovered: 5, extraFiles: goodExtra }));
+  const args = ['ratchet', path.join(repo, 'clover.xml')];
+  const env = extra => ({ GATE_BASE_REF: 'origin/main', ...extra });
+
+  for (const value of ['', 'origin/main', main.slice(0, 12), withBaselines]) {
+    const refused = run(repo, args, env({ GATE_BOOTSTRAP_BASE: value }));
+    assert.equal(refused.status, 1, refused.out);
+    assert.match(refused.out, /gate-error: .*Zielbranch-Baseline fehlt/);
+    assert.doesNotMatch(refused.out, /gate-bootstrap/);
+  }
+  const accepted = run(repo, args, env({ GATE_BOOTSTRAP_BASE: main }));
+  assert.equal(accepted.status, 0, accepted.out);
+  assert.match(accepted.out, /gate-bootstrap: origin\/main hat keine Gate-Baselines/);
+  assert.match(accepted.out, /summary: ratchet .* violations=0/);
+
+  // Lines changed after arming are still checked, and the coverage floor still holds.
+  write(repo, `${PLUGIN}/classes/a.php`, SOURCE.replace('return 1;', 'return 111;'));
+  const changed = run(repo, args, env({ GATE_BOOTSTRAP_BASE: main }));
+  assert.equal(changed.status, 1);
+  assert.match(changed.out, /ratchet-file-coverage: .*50\.0%/);
+  git(repo, 'checkout', '--', `${PLUGIN}/classes/a.php`);
+  write(repo, 'clover.xml', clover({ aCovered: 5, extraFiles: [{ name: 'classes/b.php', st: 90, cov: 60 }] }));
+  const low = run(repo, args, env({ GATE_BOOTSTRAP_BASE: main }));
+  assert.equal(low.status, 1);
+  assert.match(low.out, /ratchet-coverage: Gesamt-Coverage 65\.00%/);
+
+  // The variable is inert for every other target: dev compares normally.
+  git(repo, 'update-ref', 'refs/remotes/origin/dev', 'HEAD');
+  const dev = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/dev', GATE_BOOTSTRAP_BASE: main });
+  assert.equal(dev.status, 0, dev.out);
+  assert.doesNotMatch(dev.out, /gate-bootstrap/);
+  fs.rmSync(repo, { recursive: true, force: true });
+});
+
+test('ratchet CLI: GATE_BOOTSTRAP_BASE refuses a target that already has a baseline', () => {
+  const repo = makeRepo();
+  fs.rmSync(path.join(repo, 'scripts/gate/baseline.json'));
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-qm', 'target with static baselines only');
+  git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  write(repo, 'scripts/gate/baseline.json', JSON.stringify(BASELINE));
+  const partial = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/main', GATE_BOOTSTRAP_BASE: git(repo, 'rev-parse', 'HEAD').trim() });
+  assert.equal(partial.status, 1);
+  assert.match(partial.out, /gate-error: .*hat bereits Gate-Baselines \(scripts\/gate\/phpstan\/phpstan-baseline\.neon, scripts\/gate\/deptrac\/deptrac-baseline\.yaml\)/);
+  fs.rmSync(repo, { recursive: true, force: true });
+});
+
 test('ratchet CLI: invalid refs and shallow history cannot prove a comparison', () => {
   const repo = makeRepo();
   const invalid = run(repo, ['ratchet'], { GATE_BASE_REF: 'origin/missing' });

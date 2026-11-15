@@ -126,7 +126,7 @@ final class storage_write {
             if (
                 in_array($e->errorcode, [
                     $this->area->invalidpathkey, $this->area->quotaerrorkey,
-                    'contextfilenotmarkdown', 'materialfiledisallowedtype',
+                    'contextfilenotmarkdown', 'materialfiledisallowedtype', 'materialfileinvalidname',
                 ], true)
             ) {
                 throw $e;

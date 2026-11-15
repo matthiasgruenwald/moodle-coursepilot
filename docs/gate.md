@@ -410,6 +410,15 @@ die jüngere Merge-Base und neue Änderungen werden wieder geprüft. `armedAt` w
 verschoben. Der erstmalige Rollout auf `main` braucht seine eigene Messung und Abnahme,
 siehe [CI und Main-Bootstrap](ci-native-server-mcp.md#main-bootstrap).
 
+**Bootstrap-Variable:** `GATE_BOOTSTRAP_BASE=<vollständiger Commit-SHA>` gilt nur, wenn der
+Vergleichsstand genau dieser Commit ist und dort keine der drei Baselines liegt. Dann zählen die
+Baselines des Arbeitsstands als Erstbestand (kein Wachstums- und Absenkungsvergleich möglich),
+das Gate meldet `gate-bootstrap:`, und geänderte Zeilen werden ab `armedAt` geprüft (oder ab der
+Merge-Base, wenn sie jünger ist). Untergrenze 95 %, Datei ≥ 90 %, CRAP ≤ 8 und alle statischen
+Prüfungen gelten unverändert. Für jeden anderen Vergleichsstand ist die Variable wirkungslos, eine
+fehlende Baseline bleibt dort ein Fehler; hat der genannte Commit schon eine Baseline, ist der Lauf
+rot. Branchnamen und gekürzte SHAs gelten nicht.
+
 **Baseline-Datei** `scripts/gate/baseline.json`: `coverage` (`covered`/`statements`, Wert des
 vollen Laufs ohne die ausgeschlossenen Dateien), `excluded` (Pfad relativ zum Plugin, `/` am Ende
 = Verzeichnis, je Eintrag `reason`) und `armedAt`. Fortschreiben nur nach oben:

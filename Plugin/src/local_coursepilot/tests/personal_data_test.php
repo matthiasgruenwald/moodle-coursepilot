@@ -36,12 +36,39 @@ final class personal_data_test extends \advanced_testcase {
         $this->assertTrue(personal_data::allowed());
     }
 
-    public function test_front_matter_flag_marks_a_file(): void {
-        $this->assertTrue(personal_data::is_marked("---\npersonenbezug: true\n---\nText"));
+    /**
+     * Recognise imported editor variants without extending the accepted flag values.
+     *
+     * @param string $content File content.
+     * @param bool $marked Expected personal-data marker.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('marker_provider')]
+    public function test_front_matter_marker(string $content, bool $marked): void {
+        $this->assertSame($marked, personal_data::is_marked($content));
     }
 
-    public function test_file_without_front_matter_or_flag_is_unmarked(): void {
-        $this->assertFalse(personal_data::is_marked("personenbezug: true\nText"));
-        $this->assertFalse(personal_data::is_marked("---\npersonenbezug: false\n---\nText"));
+    /**
+     * Accepted marker syntax and values from specification 0010.
+     *
+     * @return array<string, array{string, bool}>
+     */
+    public static function marker_provider(): array {
+        return [
+            'canonical' => ["---\npersonenbezug: true\n---\nText", true],
+            'BOM' => ["\xEF\xBB\xBF---\npersonenbezug: true\n---\nText", true],
+            'blank lines' => ["\n \r\n---\npersonenbezug: true\n---\nText", true],
+            'end of file' => ["---\npersonenbezug: true\n---", true],
+            'space before colon' => ["---\npersonenbezug : true\n---\nText", true],
+            'nested CRLF' => ["---\r\ncoursepilot:\r\n  personenbezug: true\r\n---\r\n", true],
+            'multiline value' => ["---\npersonenbezug:\n  true\n---\n", true],
+            'dotted' => ["---\ncoursepilot.personenbezug:true\n---\n", true],
+            'no front matter' => ["personenbezug: true\nText", false],
+            'false' => ["---\npersonenbezug: false\n---\nText", false],
+            'capitalised' => ["---\npersonenbezug: True\n---\n", false],
+            'quoted' => ["---\npersonenbezug: \"true\"\n---\n", false],
+            'yes' => ["---\npersonenbezug: yes\n---\n", false],
+            'body only' => ["---\ntitle: Plan\n---\npersonenbezug: true", false],
+            'intro' => ["Intro\n---\npersonenbezug: true\n---\n", false],
+        ];
     }
 }

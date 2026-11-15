@@ -402,6 +402,13 @@ Entscheidungen, per PHPUnit erzwungen, kein Node-Test):
   verbotene Bestandteile und Abgleichstatus.
 - `tools/list` und `tools/call` leiten sich beide aus derselben Allowlist ab
   — gelistet und aufrufbar ist dieselbe Menge (Umsetzung #309).
+- `tools/list` liefert je Werkzeug `annotations` (MCP 2025-11-25, `ToolAnnotations`):
+  `readOnlyHint` folgt der Lese-/Schreib-Einstufung der Registry. Lesende Werkzeuge senden
+  ausdrücklich `destructiveHint: false` und `idempotentHint: true`; Schreibwerkzeuge deklarieren
+  beides im Registry-Eintrag (fehlend oder bei Lesewerkzeugen vorhanden: `coding_exception`).
+  Idempotent heißt: gleicher Aufruf, gleicher Moodle-Zustand; Verlaufseinträge des Plugins
+  zählen nicht, Fragenversionen in Moodle schon. `openWorldHint` ist `true` für Werkzeuge, die
+  einen externen WebDAV-Ort erreichen können (Kontextbereich und Materialquelle über `location`).
 
 ## 7. Discovery (`.well-known`) ohne Webserver-Eingriff
 
