@@ -43,6 +43,7 @@ Der Server-MCP liegt unter `Plugin/src/local_coursepilot/` und wird für Entwick
 - **Coding Standards:** vor dem Schreiben oder Reviewen von Code, Tests oder Skill-Korpus [`CODING_STANDARDS.md`](CODING_STANDARDS.md) lesen, dazu die Projektabweichungen in [`docs/agents/standards-abweichungen.md`](docs/agents/standards-abweichungen.md).
 - Pläne gehören nach `docs/plans/` (versioniert).
 - Single-context Repo: `CONTEXT.md` im Root, `docs/adr/` für Architekturentscheidungen, `docs/specs/` für Produktspezifikationen.
+- **Issues und PRs immer verlinken:** In Antworten an den Nutzer, Berichten, PR-Texten und Issue-Kommentaren jede Nennung eines Issues oder PRs als anklickbaren Markdown-Link schreiben, z. B. `[#705](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/705)`, nie nur `#705`. Gilt auch in Tabellen und Listen sowie für andere Repos (dann mit Repo-Namen im Linktext).
 
 ---
 
