@@ -30,7 +30,7 @@
         "keys": {
             "path": {
                 "class": "core_external\\external_value",
-                "desc": "File path relative to the material store, e.g. \"screenshot.png\"",
+                "desc": "File path relative to the material store, e.g. \"screenshot.png\". The file name must be ASCII without spaces or umlauts (A-Z, a-z, 0-9, _, -) with one allowed extension (pdf, docx, doc, xlsx, xls, pptx, ppt, html, htm, png, jpg, jpeg, gif, svg, txt, csv, zip, odt, ods, odp, odg, webp); normalise it first",
                 "required": 1,
                 "default": null,
                 "allownull": true,

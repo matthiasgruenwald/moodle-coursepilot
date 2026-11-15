@@ -127,7 +127,7 @@
             },
             "targetpath": {
                 "class": "core_external\\external_value",
-                "desc": "PNG target path relative to the workbench root, resolved like crop_material_file; an existing file is replaced",
+                "desc": "PNG target path relative to the workbench root, resolved like crop_material_file; an existing file is replaced; the file name must be ASCII without spaces or umlauts (A-Z, a-z, 0-9, _, -), normalise it first",
                 "required": 1,
                 "default": null,
                 "allownull": true,
