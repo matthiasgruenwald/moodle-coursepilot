@@ -16,6 +16,8 @@
 
 namespace local_coursepilot\history;
 
+use local_coursepilot\catalog\activity_credentials;
+
 /**
  * Read interface of the change history (#394, Spec 0015 §10.6):
  * list_activity_versions (one-line summary per version against its predecessor) and
@@ -77,7 +79,7 @@ final class version_history {
             'modname' => (string) $cm->modname,
             'before' => self::describe_meta($fromstate),
             'after' => self::describe_meta($tostate),
-            'changes' => self::diff_fields(self::public_state($fromstate), self::public_state($tostate)),
+            'changes' => self::diff_fields((string) $cm->modname, self::public_state($fromstate), self::public_state($tostate)),
             'files' => self::diff_files((int) $fromstate->id, (int) $tostate->id),
             'gap_notice' => get_string_manager()->get_string('historygapnotice', 'local_coursepilot', null, 'en'),
         ];
@@ -394,19 +396,27 @@ final class version_history {
 
     /**
      * Complete field diff with before/after value per changed field,
-     * for compare_activity_versions.
+     * for compare_activity_versions. Credential changes expose names only.
      *
+     * @param string $modname
      * @param mixed[] $before
      * @param mixed[] $after
      * @return mixed[]
      */
-    private static function diff_fields(array $before, array $after): array {
+    private static function diff_fields(string $modname, array $before, array $after): array {
         $changes = [];
         foreach (self::changed_fields($before, $after) as $field) {
+            $hidden = activity_credentials::hidden($modname, $field);
             $changes[] = [
                 'field' => $field,
-                'before_json' => json_encode($before[$field] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'after_json' => json_encode($after[$field] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'before_json' => json_encode(
+                    $hidden ? '[redacted]' : ($before[$field] ?? null),
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                ),
+                'after_json' => json_encode(
+                    $hidden ? '[redacted]' : ($after[$field] ?? null),
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                ),
             ];
         }
         return $changes;
