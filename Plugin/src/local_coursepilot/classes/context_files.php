@@ -286,4 +286,18 @@ final class context_files {
             throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $path);
         }
     }
+
+    /**
+     * Whether a path is a journal: any file below a "journal" folder or any
+     * "journal-*.md" file, at any depth, case-insensitive (ADR 0034).
+     * Bound to the path, not to anything the client declares.
+     *
+     * @param string $path Relative context path.
+     * @return bool
+     */
+    public static function is_journal(string $path): bool {
+        $segments = explode('/', strtolower(trim($path, '/')));
+        $name = array_pop($segments);
+        return in_array('journal', $segments, true) || preg_match('/^journal-.*\.md$/', $name) === 1;
+    }
 }

@@ -16,7 +16,7 @@ the four file tools below. Basis: Spec 0016 §7/§8
 |---|---|---|
 | `coursepilot_list_context_files` | List folders; optional `previous_location` for old content | Per entry: `contenthash`, `timemodified`, `locked` |
 | `coursepilot_read_context_file` | Read files; optional `previous_location` | `content`, `contenthash`, `timemodified` |
-| `coursepilot_write_context_file` | Create/fully overwrite; optional `expected_contenthash`, `pending_entry` identifier and `create_only` for copying old content | Created/overwritten message; conflicts: `contextfilechanged`/`contextfilealreadyexists` |
+| `coursepilot_write_context_file` | Create, or fully overwrite with `expected_contenthash` (required for an existing file, else `contextfileversionrequired`; existing journal files are never replaced, `contextjournalappendonly`); optional `pending_entry` identifier and `create_only` for copying old content | Created/overwritten message; conflicts: `contextfilechanged`/`contextfilealreadyexists` |
 | `coursepilot_append_context_file` | Append in one server call; optional `expected_contenthash` for external storage and `pending_entry` | Appended/created message, with rotation advice when needed |
 | `coursepilot_dismiss_pending_entry` | Explicitly dismiss a pending-note entry by `identifier` | Confirmation |
 | `coursepilot_dismiss_previous_location` | Explicitly end the previous-location state; no parameters | Confirmation |

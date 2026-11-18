@@ -61,7 +61,7 @@
             },
             "expected_contenthash": {
                 "class": "core_external\\external_value",
-                "desc": "Optional: contenthash from the last read - if it does not match, the operation aborts",
+                "desc": "Required to replace an existing file: contenthash from the last read - if it does not match, the operation aborts. Without it the call only creates; an existing file fails with contextfileversionrequired",
                 "required": 0,
                 "default": "",
                 "allownull": true,

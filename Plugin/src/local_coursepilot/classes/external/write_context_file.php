@@ -58,7 +58,8 @@ class write_context_file extends external_api {
             'content' => new external_value(PARAM_RAW, 'Complete new file content'),
             'expected_contenthash' => new external_value(
                 PARAM_RAW_TRIMMED,
-                'Optional: contenthash from the last read - if it does not match, the operation aborts',
+                'Required to replace an existing file: contenthash from the last read - if it does not match, the operation '
+                    . 'aborts. Without it the call only creates; an existing file fails with contextfileversionrequired',
                 VALUE_DEFAULT,
                 ''
             ),
@@ -98,7 +99,8 @@ class write_context_file extends external_api {
      * @return mixed[]
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextfilechanged,
-     *         contextfilealreadyexists, contextquotaexceeded
+     *         contextfilealreadyexists, contextfileversionrequired, contextjournalappendonly,
+     *         contextquotaexceeded
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(

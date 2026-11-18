@@ -272,6 +272,7 @@ final class context_area {
             throw new \moodle_exception('contextfilealreadyexists', 'local_coursepilot', '', $path);
         }
         context_files::guard_existing_locked($existing['content'] ?? null, $path);
+        self::guard_replace_rules($existing !== null, $path, $expectedcontenthash);
         context_files::guard_new_content($location, $path, $content);
         self::guard_pending_retry($path, $pendingentry, $existing !== null, $expectedcontenthash);
         $written = $writer->write($content, $expectedcontenthash);
@@ -283,6 +284,26 @@ final class context_area {
             'verified' => self::read_back_matches($port, $area, $path, $content),
             'server_enforced' => $written['server_enforced'],
         ];
+    }
+
+    /**
+     * Replacing needs the version read before and never touches a journal (ADR 0034).
+     *
+     * @param bool $exists Whether the preflight found a target.
+     * @param string $path Relative context path.
+     * @param string $expectedcontenthash Explicit client checksum.
+     * @throws \moodle_exception contextjournalappendonly, contextfileversionrequired
+     */
+    private static function guard_replace_rules(bool $exists, string $path, string $expectedcontenthash): void {
+        if (!$exists) {
+            return;
+        }
+        if (context_files::is_journal($path)) {
+            throw new \moodle_exception('contextjournalappendonly', 'local_coursepilot', '', $path);
+        }
+        if ($expectedcontenthash === '') {
+            throw new \moodle_exception('contextfileversionrequired', 'local_coursepilot', '', $path);
+        }
     }
 
     /**

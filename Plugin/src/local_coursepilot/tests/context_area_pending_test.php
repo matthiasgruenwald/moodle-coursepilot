@@ -481,7 +481,13 @@ final class context_area_pending_test extends \advanced_testcase {
         ], $written);
         $this->assertFalse($appended['created']);
         $this->assertSame("# Plan\nNext step", $port->read(context_files::area(), 'plan.md')['content']);
-        $replaced = context_area::write_to($port, $location, 'plan.md', '# Replaced');
+        $replaced = context_area::write_to(
+            $port,
+            $location,
+            'plan.md',
+            '# Replaced',
+            $port->read(context_files::area(), 'plan.md')['checksum']
+        );
         $this->assertSame([
             'path' => 'plan.md', 'created' => false, 'size' => 10, 'oldsize' => 16, 'verified' => true, 'server_enforced' => true,
         ], $replaced);
