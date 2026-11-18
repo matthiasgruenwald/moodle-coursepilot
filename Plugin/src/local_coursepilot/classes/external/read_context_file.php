@@ -58,7 +58,7 @@ class read_context_file extends external_api {
                 false
             ),
             'section' => new external_value(
-                PARAM_TEXT,
+                PARAM_RAW,
                 'Optional: heading of one section to read, e.g. "Week 2" or "## Week 2" (case-insensitive); the section '
                     . 'includes its sub-headings. Files over 100 lines return only a table of contents without it',
                 VALUE_DEFAULT,
@@ -141,11 +141,11 @@ class read_context_file extends external_api {
             'partial' => new external_value(PARAM_BOOL, 'True when content is not the whole file (toc or one section)'),
             'toc' => new external_multiple_structure(new external_single_structure([
                 'level' => new external_value(PARAM_INT, 'Heading level, 2 or 3'),
-                'heading' => new external_value(PARAM_TEXT, 'Heading text without the leading hashes'),
+                'heading' => new external_value(PARAM_RAW, 'Heading text without the leading hashes'),
                 'start_line' => new external_value(PARAM_INT, 'First line of the section, 1-based'),
                 'end_line' => new external_value(PARAM_INT, 'Last line of the section, inclusive'),
             ]), 'Table of contents of a long file read without section/whole, otherwise empty'),
-            'hint' => new external_value(PARAM_TEXT, 'How to read a section or the whole file; empty when content is complete'),
+            'hint' => new external_value(PARAM_RAW, 'How to read a section or the whole file; empty when content is complete'),
         ]);
     }
 }

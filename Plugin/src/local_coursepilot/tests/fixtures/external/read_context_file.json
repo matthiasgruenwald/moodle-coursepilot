@@ -55,7 +55,7 @@
                 "required": 0,
                 "default": "",
                 "allownull": true,
-                "type": "text"
+                "type": "raw"
             },
             "whole": {
                 "class": "core_external\\external_value",
@@ -165,7 +165,7 @@
                             "required": 1,
                             "default": null,
                             "allownull": true,
-                            "type": "text"
+                            "type": "raw"
                         },
                         "start_line": {
                             "class": "core_external\\external_value",
@@ -192,7 +192,7 @@
                 "required": 1,
                 "default": null,
                 "allownull": true,
-                "type": "text"
+                "type": "raw"
             }
         }
     }

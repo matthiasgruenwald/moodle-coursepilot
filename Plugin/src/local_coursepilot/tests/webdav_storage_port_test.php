@@ -361,6 +361,51 @@ final class webdav_storage_port_test extends storage_port_contract_test {
     }
 
     /**
+     * Without a strong ETag a file changed or removed between the first read and the re-read before the PUT
+     * is a conflict, for write and append alike; nothing is written (ADR 0035).
+     *
+     * @param bool $append Append instead of write.
+     * @param bool $vanish Remove the file instead of changing it.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('racing_changes')]
+    public function test_without_a_strong_etag_a_change_before_the_re_read_is_a_conflict(bool $append, bool $vanish): void {
+        $this->transport->without_etags();
+        $written = $this->port()->write($this->area(), 'alt.md', 'erste Fassung');
+        $path = '/storageport-webdav-contract-test/alt.md';
+        $transport = new \local_coursepilot\tests\webdav\before_request_transport(
+            $this->transport,
+            'GET',
+            fn () => $vanish ? $this->transport->remove_file($path) : $this->transport->seed_file($path, 'Handänderung')
+        );
+        $port = new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $transport);
+
+        try {
+            $append
+                ? $port->append($this->area(), 'alt.md', ' neu', $written['checksum'])
+                : $port->write($this->area(), 'alt.md', 'neu', $written['checksum']);
+            $this->fail('A racing change must be a conflict.');
+        } catch (storage_conflict_exception $e) {
+            $puts = array_filter($this->transport->requests(), static fn (array $r): bool => $r['method'] === 'PUT');
+            $this->assertCount(1, $puts);
+            $this->assertSame($vanish ? null : 'Handänderung', $this->transport->content_of($path));
+        }
+    }
+
+    /**
+     * Supplies append/write and changed/vanished.
+     *
+     * @return array<string, array{bool, bool}>
+     */
+    public static function racing_changes(): array {
+        return [
+            'write changed' => [false, false],
+            'write vanished' => [false, true],
+            'append changed' => [true, false],
+            'append vanished' => [true, true],
+        ];
+    }
+
+    /**
      * With a strong ETag the server refuses a MOVE of a source changed after the PROPFIND (If-Match, 412).
      */
     public function test_move_with_a_strong_etag_is_refused_by_the_server_after_a_concurrent_change(): void {

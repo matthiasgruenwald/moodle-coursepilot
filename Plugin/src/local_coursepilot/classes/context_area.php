@@ -154,17 +154,13 @@ final class context_area {
     private static function is_entry_marked(storage_port $port, array $entry, string $directory): bool {
         $relativepath = $directory === '' ? $entry['name'] : $directory . '/' . $entry['name'];
 
-        // Without a check value (no strong ETag, ADR 0035) a path/size/time key is no safe cache key.
-        $remembered = $entry['contenthash'] !== '';
-        $marked = $remembered
-            ? mark_memory::lookup($relativepath, $entry['size'], $entry['timemodified'], $entry['contenthash'])
-            : null;
+        // Without a check value (no strong ETag, ADR 0035) the modification time stands in for it.
+        $checkvalue = $entry['contenthash'] !== '' ? $entry['contenthash'] : 'mtime:' . $entry['timemodified'];
+        $marked = mark_memory::lookup($relativepath, $entry['size'], $entry['timemodified'], $checkvalue);
         if ($marked === null) {
             $content = self::read_from($port, $relativepath);
             $marked = $content !== null && personal_data::is_marked($content['content']);
-            if ($remembered) {
-                mark_memory::remember($relativepath, $entry['size'], $entry['timemodified'], $entry['contenthash'], $marked);
-            }
+            mark_memory::remember($relativepath, $entry['size'], $entry['timemodified'], $checkvalue, $marked);
         }
 
         return $marked;
@@ -275,7 +271,6 @@ final class context_area {
         context_files::guard_existing_locked($existing['content'] ?? null, $path);
         self::guard_replace_rules($existing !== null, $path, $expectedcontenthash);
         context_files::guard_new_content($location, $path, $content);
-        self::guard_pending_retry($path, $pendingentry, $existing !== null, $expectedcontenthash);
         $written = $writer->write($content, $expectedcontenthash);
         return [
             'path' => $written['path'],

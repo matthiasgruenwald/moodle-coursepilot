@@ -20,7 +20,7 @@ namespace local_coursepilot;
  * Whole-area search for sync-client conflict copies (Spec 0030, ADR 0037 item 4), consumed by
  * the session start. Breadth first over {@see storage_port::list()}, bounded by folders, depth
  * and time. Never changes anything and never throws: an unreadable folder is named and skipped,
- * an outage ends the search as "not checked" with a reason.
+ * an outage ends the search with a reason, keeping what was found; "not checked" only when no folder could be listed.
  *
  * Reasons: "" (complete), "time_limit", "folder_limit", "depth_limit", "unreadable_folder",
  * "storage_unavailable".
@@ -81,7 +81,9 @@ final class conflict_scan {
                 $entries = $port->list($area, $folder);
             } catch (storage_failure $e) {
                 if (!in_array($e->errorclass, self::FOLDER_ERRORS, true)) {
-                    return self::result(false, 'storage_unavailable', [], [], $checked - 1, count($queue) + 1);
+                    // Keep what was found; "not checked" only when no folder could be listed at all.
+                    $listed = $checked - 1 - count($unreadable);
+                    return self::result($listed > 0, 'storage_unavailable', $copies, $unreadable, $checked - 1, count($queue) + 1);
                 }
                 $unreadable[] = $folder;
                 continue;

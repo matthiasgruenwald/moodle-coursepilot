@@ -34,3 +34,4 @@ ETag (`W/…`) ging als `If-Match` an den Server, obwohl `If-Match` stark vergle
 - Prüfwerte aus älteren Lesevorgängen am Ort ohne ETag passen nicht mehr: einmal neu lesen.
 - Auflistungen am IServ-Ort liefern keinen Prüfwert mehr; der Abgleich von Handänderungen
   braucht dort ein Lesen.
+- Der Markierungs-Speicher (Personenbezug beim Auflisten) schlüsselt Einträge ohne Prüfwert nach Pfad, Größe und Änderungszeit (Ersatzwert `mtime:<Zeit>`); das entspricht dem Sicherheitsniveau vor #780, und eine unveränderte Datei wird nicht bei jedem Auflisten erneut gelesen.

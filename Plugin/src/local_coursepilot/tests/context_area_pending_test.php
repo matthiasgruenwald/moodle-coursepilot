@@ -496,6 +496,23 @@ final class context_area_pending_test extends \advanced_testcase {
     }
 
     /**
+     * A pending retry that would replace an existing file needs the version read before, like any replacement.
+     */
+    public function test_pending_retry_replacing_an_existing_file_without_a_hash_needs_the_version(): void {
+        $location = pointer_location::moodle('/context/');
+        $port = new private_files_storage_port($location);
+        context_area::write_to($port, $location, 'plan.md', '# Plan');
+
+        try {
+            context_area::write_to($port, $location, 'plan.md', '# Retry', '', 'pending-1');
+            $this->fail('A replacement without the read version must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileversionrequired', $e->errorcode);
+        }
+        $this->assertSame('# Plan', $port->read(context_files::area(), 'plan.md')['content']);
+    }
+
+    /**
      * Supplies the two supported storage locations.
      *
      * @return array<string, array{bool}>

@@ -57,7 +57,7 @@ final class pointer_writer {
      *      webdav_storage_port (Issue #514). Other codes pass through unchanged
      *      as programming errors.
      */
-    private const LOCATION_FAILURE_CODES = [
+    public const LOCATION_FAILURE_CODES = [
         'webdavinstancemissing',
         'webdavinstanceforeign',
         'webdavnotenabled',

@@ -558,6 +558,30 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Without a strong ETag the modification time keys the mark memory (ADR 0035): an unchanged file is
+     * fetched once across listings, a changed modification time reads it again.
+     */
+    public function test_file_without_etag_is_fetched_once_until_its_modification_time_changes(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/lerngruppe.md', $this->marked_content());
+        $gets = static fn (): int => count(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'GET'));
+
+        $first = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute());
+        list_context_files::execute();
+        $this->assertSame(1, $gets());
+        $this->assertTrue($this->find_entry($first['entries'], 'lerngruppe.md')['locked']);
+
+        $fake->seed_file('/Coursepilot/Kontext/lerngruppe.md', $this->marked_content());
+        $third = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute());
+
+        $this->assertSame(2, $gets());
+        $this->assertTrue($this->find_entry($third['entries'], 'lerngruppe.md')['locked']);
+    }
+
+    /**
      * When #344 is enabled, skip checks and Markdown GETs because locked
      * is always false.
      */

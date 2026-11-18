@@ -272,6 +272,49 @@ final class start_context_test extends \advanced_testcase {
         $this->assertCount(1, $result['notices']);
     }
 
+    public function test_an_error_that_is_no_location_failure_propagates(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        \core\di::set(
+            \local_coursepilot\webdav\webdav_transport::class,
+            new class implements \local_coursepilot\webdav\webdav_transport {
+                /**
+                 * Fails like a programming error, not like a location outage.
+                 *
+                 * @param string $method
+                 * @param string $url
+                 * @param string[] $headers
+                 * @param string|null $body
+                 * @return \local_coursepilot\webdav\webdav_response
+                 */
+                public function request(
+                    string $method,
+                    string $url,
+                    array $headers = [],
+                    ?string $body = null
+                ): \local_coursepilot\webdav\webdav_response {
+                    throw new \moodle_exception('invalidcontextpath', 'local_coursepilot');
+                }
+            }
+        );
+
+        try {
+            $this->start();
+            $this->fail('A caller or programming error must not become a context gap.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidcontextpath', $e->errorcode);
+        }
+    }
+
+    public function test_a_long_heading_with_angle_brackets_is_returned_unchanged_in_the_toc(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_file($user, 'habits.md', implode("\n", array_merge(['# H', '## Use <details>'], array_fill(0, 120, 'x'))));
+
+        $this->assertSame('Use <details>', $this->start()['root_habits']['toc'][0]['heading']);
+    }
+
     /**
      * Own files stay readable with manageownfiles prohibited, as for read_context_file (ADR 0019).
      */

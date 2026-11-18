@@ -88,17 +88,28 @@ final class conflict_scan_test extends \advanced_testcase {
         $this->assertSame('unreadable_folder', $result['reason']);
     }
 
-    public function test_an_outage_is_not_checked_with_a_reason_and_does_not_throw(): void {
+    public function test_an_outage_at_the_root_is_not_checked_with_a_reason_and_does_not_throw(): void {
+        $port = $this->port(['' => $this->failure(webdav_error::UNREACHABLE)]);
+        $result = conflict_scan::run($port);
+        $this->assertFalse($result['checked']);
+        $this->assertFalse($result['complete']);
+        $this->assertSame('storage_unavailable', $result['reason']);
+        $this->assertSame([], $result['copies']);
+    }
+
+    public function test_an_outage_after_some_folders_keeps_what_was_found_and_stays_incomplete(): void {
         $port = $this->port([
             '' => ['a/', 'b/'],
             'a' => ['x (conflicted copy).md'],
             'b' => $this->failure(webdav_error::UNREACHABLE),
         ]);
         $result = conflict_scan::run($port);
-        $this->assertFalse($result['checked']);
+        $this->assertTrue($result['checked']);
         $this->assertFalse($result['complete']);
         $this->assertSame('storage_unavailable', $result['reason']);
-        $this->assertSame([], $result['copies']);
+        $this->assertSame(['a/x (conflicted copy).md'], array_column($result['copies'], 'copy'));
+        $this->assertSame(2, $result['folders_checked']);
+        $this->assertSame(1, $result['folders_waiting']);
     }
 
     public function test_stops_at_500_folders_and_counts_the_waiting_ones(): void {

@@ -116,6 +116,15 @@ final class fake_webdav_transport implements webdav_transport {
     }
 
     /**
+     * Removes a file without any request, as a concurrent deletion by someone else.
+     *
+     * @param string $path For example "/folder/file.md".
+     */
+    public function remove_file(string $path): void {
+        unset($this->store[$this->normalise($path)]);
+    }
+
+    /**
      * The ETag the fake currently holds for a path, as a client sends it in `If-Match`.
      *
      * @param string $path For example "/folder/file.md".

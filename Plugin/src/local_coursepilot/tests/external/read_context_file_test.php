@@ -681,6 +681,20 @@ final class read_context_file_test extends \advanced_testcase {
         $this->assertSame("## B\nb", $this->read_clean('plan.md', false, 'B')['content']);
     }
 
+    public function test_a_heading_with_angle_brackets_round_trips_through_toc_and_section(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $content = implode("\n", array_merge(['# T', '## Use <details> & more', 'detail text'], array_fill(0, 110, 'x')));
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', $content);
+
+        $toc = $this->read_clean('plan.md')['toc'];
+        $this->assertSame('Use <details> & more', $toc[0]['heading']);
+
+        $section = $this->read_clean('plan.md', false, $toc[0]['heading']);
+        $this->assertStringStartsWith("## Use <details> & more\ndetail text", $section['content']);
+    }
+
     public function test_unknown_section_lists_the_headings(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();

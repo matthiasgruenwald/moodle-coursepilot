@@ -26,6 +26,7 @@ use local_coursepilot\context_files;
 use local_coursepilot\context_reader;
 use local_coursepilot\location_selection;
 use local_coursepilot\pending_write_notice;
+use local_coursepilot\pointer_writer;
 
 /**
  * Session start of the context area (Spec 0030, ADR 0037 point 2): one read-only call that answers
@@ -76,6 +77,9 @@ final class start_context extends external_api {
                 'conflict_copies' => conflict_scan::run_current(),
             ];
         } catch (\moodle_exception $e) {
+            if (!self::is_location_failure($e)) {
+                throw $e;
+            }
             // The messages carry only the error class and the location page, never host or account.
             return ['location' => 'context_gap', 'cause' => $e->getMessage()] + $result + [
                 'root_index' => self::missing('index.md'),
@@ -84,6 +88,22 @@ final class start_context extends external_api {
             ];
         }
         return $result + $files;
+    }
+
+    /**
+     * Whether the exception means "the location does not answer" (storage failure, unusable
+     * instance or pointer), as opposed to a caller or programming error.
+     *
+     * @param \moodle_exception $e
+     * @return bool
+     */
+    private static function is_location_failure(\moodle_exception $e): bool {
+        return str_starts_with($e->errorcode, 'pointer')
+            || in_array(
+                $e->errorcode,
+                [...pointer_writer::LOCATION_FAILURE_CODES, 'webdavexternalerror', 'webdavexternalerrorunclear'],
+                true
+            );
     }
 
     /**
@@ -173,11 +193,11 @@ final class start_context extends external_api {
             'partial' => new external_value(PARAM_BOOL, 'True when content is not the whole file'),
             'toc' => new external_multiple_structure(new external_single_structure([
                 'level' => new external_value(PARAM_INT, 'Heading level, 2 or 3'),
-                'heading' => new external_value(PARAM_TEXT, 'Heading text without the leading hashes'),
+                'heading' => new external_value(PARAM_RAW, 'Heading text without the leading hashes'),
                 'start_line' => new external_value(PARAM_INT, 'First line of the section, 1-based'),
                 'end_line' => new external_value(PARAM_INT, 'Last line of the section, inclusive'),
             ]), 'Table of contents of a file over 100 lines, read it further with read_context_file'),
-            'hint' => new external_value(PARAM_TEXT, 'How to read on, or why the file is locked'),
+            'hint' => new external_value(PARAM_RAW, 'How to read on, or why the file is locked'),
         ], $description);
     }
 
