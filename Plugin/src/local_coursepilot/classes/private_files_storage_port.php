@@ -138,6 +138,7 @@ final class private_files_storage_port implements storage_port {
             'created' => $existing === null,
             'size' => $written['size'],
             'checksum' => $written['contenthash'],
+            'server_enforced' => true,
         ];
     }
 
@@ -164,6 +165,7 @@ final class private_files_storage_port implements storage_port {
             'created' => $existing === null,
             'size' => $size,
             'checksum' => $written['contenthash'],
+            'server_enforced' => true,
         ];
     }
 
@@ -176,6 +178,85 @@ final class private_files_storage_port implements storage_port {
     public function delete(storage_area $area, string $path): bool {
         [$directory, $filename] = $this->resolve_file($area, $path);
         return self::delete_file($directory, $filename);
+    }
+
+    /**
+     * Removes the target copy of a failed move; a failure here must not hide the original cause.
+     *
+     * @param \stored_file $copy
+     */
+    private static function discard(\stored_file $copy): void {
+        try {
+            $copy->delete();
+        } catch (\Throwable $e) {
+            debugging('Archive rollback failed for ' . $copy->get_filename() . ': ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * Moves a file without overwriting: the target is created from the stored file (a second name
+     * for the same content; an existing pathnamehash fails), checked against the expected content
+     * and only then is the source removed. The source is reloaded and compared again right before
+     * removal; a change in between rolls the target back. `server_enforced: true` means the check is
+     * ours (Moodle storage, no concurrent-writer guarantee): it narrows the race window to the reload
+     * and the delete but is not a database lock. No quota check: the content is not duplicated.
+     *
+     * @param storage_area $area The area.
+     * @param string $from The source path.
+     * @param string $to The target path.
+     * @param string $expectedchecksum The source checksum from an earlier read.
+     */
+    public function move(storage_area $area, string $from, string $to, string $expectedchecksum): array {
+        [$sourcedirectory, $sourcename] = $this->resolve_file($area, $from);
+        [$targetdirectory, $targetname] = $this->resolve_writable_file($area, $to);
+        $clientpath = storage_anchor::normalise_client_path($area, $to);
+        $source = self::find_file($sourcedirectory, $sourcename);
+        if ($source === null || $source->get_contenthash() !== $expectedchecksum) {
+            throw new storage_conflict_exception(storage_anchor::normalise_client_path($area, $from));
+        }
+        $record = self::filerecord(storage_anchor::own_context()->id, $targetdirectory, $targetname);
+        try {
+            $new = get_file_storage()->create_file_from_storedfile($record, $source);
+        } catch (\stored_file_creation_exception $e) {
+            throw new storage_conflict_exception($clientpath);
+        }
+        $sourcepath = storage_anchor::normalise_client_path($area, $from);
+        $this->remove_source($sourcedirectory, $sourcename, $expectedchecksum, $new, $sourcepath);
+        return ['path' => $clientpath, 'server_enforced' => true];
+    }
+
+    /**
+     * Removes the source of a move after reloading and comparing it once more; a change in between or
+     * a failure rolls the new target back.
+     *
+     * @param string $directory Directory of the source.
+     * @param string $name File name of the source.
+     * @param string $expectedchecksum The source checksum from an earlier read.
+     * @param \stored_file $new The target created from the source.
+     * @param string $clientpath Client path of the source, for the conflict.
+     * @throws storage_conflict_exception The source changed or vanished.
+     */
+    private function remove_source(
+        string $directory,
+        string $name,
+        string $expectedchecksum,
+        \stored_file $new,
+        string $clientpath
+    ): void {
+        try {
+            // The source object is stale by now: reload it and compare once more right before removing.
+            $current = self::find_file($directory, $name);
+            if ($current === null || $current->get_contenthash() !== $expectedchecksum) {
+                self::discard($new);
+                throw new storage_conflict_exception($clientpath);
+            }
+            $current->delete();
+        } catch (storage_conflict_exception $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            self::discard($new);
+            throw $e;
+        }
     }
 
     /**

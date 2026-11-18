@@ -6,21 +6,20 @@ description: Coursepilot implementation. Use this skill after approval such as "
 # coursepilot-implement
 
 First read `coursepilot_get_skill("coursepilot-core")` and
-`coursepilot_get_skill("context-area")` for tools, the write offer,
-journal append under session context authorization, manual-edit handling
-and rotation. Respond in the teacher's language.
+`coursepilot_get_skill("context-area")` for session start, tools, the order
+before and after any Moodle write, manual-edit handling and rotation. Respond in the teacher's language.
 
-Follow the core's status check before writing: read `status.md` through
+Follow the core's plan state check before writing: read the plan through
 `coursepilot_read_context_file`, including the manual-edit check. Before
 every Moodle write, also read
 `coursepilot_get_skill("implementation-plan-workflow")`. Select further
 activity references from the overview in `coursepilot-core`.
 
-After Moodle writes, update `status.md` through
-`coursepilot_write_context_file` after the write offer. Append the
+After Moodle writes, set the plan sections to `implemented` with deviations
+and remaining work as the write mode requires. Append the
 implementation report to the journal through
-`coursepilot_append_context_file`, automatically under session context
-authorization without individual confirmation. If appending fails due to
+`coursepilot_append_context_file`, automatically without individual
+confirmation. If appending fails due to
 a pending write or context gap, Moodle implementation still counts as
 complete. Replay only the report, never the implementation;
 see `coursepilot_get_skill("context-area")`.

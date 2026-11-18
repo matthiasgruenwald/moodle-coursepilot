@@ -211,6 +211,14 @@ deptrac:
       collectors:
         - type: classNameRegex
           value: '#^local_coursepilot\\external\\restore_activity_version$#'
+    - name: Werkzeug_archive_context_files
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\archive_context_files$#'
+    - name: Werkzeug_start_context
+      collectors:
+        - type: classNameRegex
+          value: '#^local_coursepilot\\external\\start_context$#'
     - name: Werkzeug_set_completion
       collectors:
         - type: classNameRegex
@@ -250,7 +258,7 @@ deptrac:
     - name: Fachmodule
       collectors:
         - type: classNameRegex
-          value: '#^local_coursepilot\\(remote_access|location_selection|activity_backup|activity_file_supplement|activity_file_trash|availability_privacy|cm_references|context_area|context_files|storage_write|context_pointer|course_module_placement|gd_support|glossary_entry_writer|image_preview|instance_check|mark_memory|material_area|material_composition|material_files|oauth_budget|oauth_cleanup|oauth_lib|connection|client_registry|pending_write_notice|pending_write_translation|personal_data|personal_data_hosts|plugin_meta|previous_location|question_bank_context|question_import|question_xml|question_suspect_gate|skill_corpus|workbench_ticket|workbench_ticket_redemption_failed|write_gate|xml_activity_creator)$#'
+          value: '#^local_coursepilot\\(remote_access|location_selection|activity_backup|activity_file_supplement|activity_file_trash|availability_privacy|cm_references|conflict_copy|conflict_scan|context_archive|context_area|context_files|context_reader|context_reference_search|context_references|context_toc|storage_write|context_pointer|course_module_placement|gd_support|glossary_entry_writer|image_preview|instance_check|mark_memory|material_area|material_composition|material_files|oauth_budget|oauth_cleanup|oauth_lib|connection|client_registry|pending_write_notice|pending_write_translation|personal_data|personal_data_hosts|plugin_meta|previous_location|question_bank_context|question_import|question_xml|question_suspect_gate|skill_corpus|workbench_ticket|workbench_ticket_redemption_failed|write_gate|xml_activity_creator)$#'
         - type: classNameRegex
           value: '#^local_coursepilot\\(catalog|history|quiz|activity_files)\\#'
     # Ports: Ablageort-Kern (Port, Anker, Pointer, Zugriffsprotokoll, Ereignisse) als Teil der Fachmodule;
@@ -268,10 +276,11 @@ deptrac:
         - type: classNameRegex
           value: '#^local_coursepilot\\webdav\\#'
   ruleset:
-    Einstieg: [Fachmodule, Ports, Adapter, Werkzeug_add_glossary_entries, Werkzeug_add_questions_to_quiz, Werkzeug_append_context_file, Werkzeug_clone_activity, Werkzeug_compare_activity_versions, Werkzeug_compose_material_file, Werkzeug_create_activity_from_xml, Werkzeug_create_mc_question, Werkzeug_create_module, Werkzeug_create_quiz, Werkzeug_create_workbench_download_links, Werkzeug_crop_material_file, Werkzeug_delete_material_files, Werkzeug_describe_module_fields, Werkzeug_dismiss_pending_entry, Werkzeug_dismiss_previous_location, Werkzeug_ensure_question_bank, Werkzeug_ensure_question_category, Werkzeug_ensure_quiz_question_categories, Werkzeug_ensure_section, Werkzeug_export_activity_backup, Werkzeug_export_default_activity, Werkzeug_export_questions_xml, Werkzeug_get_course_catalog, Werkzeug_get_module_settings, Werkzeug_get_modules, Werkzeug_get_question, Werkzeug_get_question_categories, Werkzeug_get_question_category_cleanup_plan, Werkzeug_get_quiz_cleanup_plan, Werkzeug_get_sections, Werkzeug_get_skill, Werkzeug_get_version_info, Werkzeug_import_questions_xml, Werkzeug_list_activity_versions, Werkzeug_list_context_files, Werkzeug_list_courses, Werkzeug_list_material_files, Werkzeug_list_skills, Werkzeug_move_module, Werkzeug_move_question, Werkzeug_move_section, Werkzeug_preview_material_file, Werkzeug_read_context_file, Werkzeug_report_clone_lineage, Werkzeug_report_loose_material_files, Werkzeug_restore_activity_version, Werkzeug_set_completion, Werkzeug_set_restriction, Werkzeug_update_mc_question, Werkzeug_update_module_settings, Werkzeug_update_question_category, Werkzeug_update_quiz_settings, Werkzeug_update_section, Werkzeug_upload_material_file, Werkzeug_write_context_file]
+    Einstieg: [Fachmodule, Ports, Adapter, Werkzeug_add_glossary_entries, Werkzeug_add_questions_to_quiz, Werkzeug_append_context_file, Werkzeug_archive_context_files, Werkzeug_clone_activity, Werkzeug_compare_activity_versions, Werkzeug_compose_material_file, Werkzeug_create_activity_from_xml, Werkzeug_create_mc_question, Werkzeug_create_module, Werkzeug_create_quiz, Werkzeug_create_workbench_download_links, Werkzeug_crop_material_file, Werkzeug_delete_material_files, Werkzeug_describe_module_fields, Werkzeug_dismiss_pending_entry, Werkzeug_dismiss_previous_location, Werkzeug_ensure_question_bank, Werkzeug_ensure_question_category, Werkzeug_ensure_quiz_question_categories, Werkzeug_ensure_section, Werkzeug_export_activity_backup, Werkzeug_export_default_activity, Werkzeug_export_questions_xml, Werkzeug_get_course_catalog, Werkzeug_get_module_settings, Werkzeug_get_modules, Werkzeug_get_question, Werkzeug_get_question_categories, Werkzeug_get_question_category_cleanup_plan, Werkzeug_get_quiz_cleanup_plan, Werkzeug_get_sections, Werkzeug_get_skill, Werkzeug_get_version_info, Werkzeug_import_questions_xml, Werkzeug_list_activity_versions, Werkzeug_list_context_files, Werkzeug_list_courses, Werkzeug_list_material_files, Werkzeug_list_skills, Werkzeug_move_module, Werkzeug_move_question, Werkzeug_move_section, Werkzeug_preview_material_file, Werkzeug_read_context_file, Werkzeug_report_clone_lineage, Werkzeug_report_loose_material_files, Werkzeug_restore_activity_version, Werkzeug_set_completion, Werkzeug_set_restriction, Werkzeug_start_context, Werkzeug_update_mc_question, Werkzeug_update_module_settings, Werkzeug_update_question_category, Werkzeug_update_quiz_settings, Werkzeug_update_section, Werkzeug_upload_material_file, Werkzeug_write_context_file]
     Werkzeug_add_glossary_entries: &werkzeug [Fachmodule, Ports, Adapter]
     Werkzeug_add_questions_to_quiz: *werkzeug
     Werkzeug_append_context_file: *werkzeug
+    Werkzeug_archive_context_files: *werkzeug
     Werkzeug_clone_activity: *werkzeug
     Werkzeug_compare_activity_versions: *werkzeug
     Werkzeug_compose_material_file: *werkzeug
@@ -317,6 +326,7 @@ deptrac:
     Werkzeug_report_loose_material_files: *werkzeug
     Werkzeug_restore_activity_version: *werkzeug
     Werkzeug_set_completion: *werkzeug
+    Werkzeug_start_context: *werkzeug
     Werkzeug_set_restriction: *werkzeug
     Werkzeug_update_mc_question: *werkzeug
     Werkzeug_update_module_settings: *werkzeug

@@ -59,7 +59,7 @@ class append_context_file extends external_api {
                 ''
             ),
             'expected_contenthash' => new external_value(
-                PARAM_ALPHANUMEXT,
+                PARAM_RAW_TRIMMED,
                 'Optional, only effective at the external location: contenthash of the target file from the last '
                     . 'read - if it does not match, the operation aborts. Without an ETag (IServ) the comparison '
                     . 'relies on the modification time (second resolution).',
@@ -127,7 +127,7 @@ class append_context_file extends external_api {
      * rotation hint (Spec 0016 §5.2/§8.4) from the location-neutral result
      * of {@see context_area::append()}.
      *
-     * @param mixed[] $result Type: array{path:string,created:bool,size:int}.
+     * @param mixed[] $result Type: array{path:string,created:bool,size:int,verified:bool,server_enforced:bool}.
      * @return mixed[]
      */
     private static function build_response(array $result): array {
@@ -141,11 +141,17 @@ class append_context_file extends external_api {
             $message .= ' ' . get_string('contextfilerotation', 'local_coursepilot');
         }
 
+        if (!$result['server_enforced']) {
+            $message .= ' ' . get_string('contextfilenotenforced', 'local_coursepilot');
+        }
+
         return [
             'path' => $result['path'],
             'created' => $result['created'],
             'size' => $result['size'],
             'message' => $message,
+            'verified' => $result['verified'],
+            'server_enforced' => $result['server_enforced'],
         ];
     }
 
@@ -160,6 +166,11 @@ class append_context_file extends external_api {
             'created' => new external_value(PARAM_BOOL, 'true if the file was newly created'),
             'size' => new external_value(PARAM_INT, 'Total file size after appending, in bytes'),
             'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
+            'verified' => new external_value(PARAM_BOOL, 'true if reading the file back returned exactly the expected bytes'),
+            'server_enforced' => new external_value(
+                PARAM_BOOL,
+                'false if the server did not enforce the write condition; a concurrent change could be overwritten unnoticed'
+            ),
         ]);
     }
 }

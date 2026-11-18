@@ -93,7 +93,7 @@ final class write_context_file_test extends \advanced_testcase {
         $this->setUser($user);
         $this->create_context_file($user, '/coursepilot/', 'plan.md', 'alt');
 
-        $result = $this->write('plan.md', '# Neuer Plan');
+        $result = $this->write('plan.md', '# Neuer Plan', $this->current_hash('plan.md'));
 
         $this->assertFalse($result['created']);
         $this->assertSame(
@@ -505,7 +505,7 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
         $seeded = $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
 
-        $result = $this->write('plan.md', '# Neuer Plan');
+        $result = $this->write('plan.md', '# Neuer Plan', $this->current_hash('plan.md'));
 
         $this->assertFalse($result['created']);
         $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
@@ -514,8 +514,180 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * IServ without ETags uses getlastmodified as a weaker substitute
-     * without changing the caller’s tool contract.
+     * A strong ETag means the server enforces the condition and the read-back
+     * confirms the bytes (ADR 0034/0035).
+     */
+    public function test_external_write_with_strong_etag_is_verified_and_server_enforced(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
+
+        $result = $this->write('plan.md', '# Neuer Plan', $this->current_hash('plan.md'));
+
+        $this->assertTrue($result['verified']);
+        $this->assertTrue($result['server_enforced']);
+        $this->assertStringNotContainsString(
+            get_string('contextfilenotenforced', 'local_coursepilot'),
+            $result['message']
+        );
+    }
+
+    /**
+     * Without a strong ETag the message says the server did not enforce the check.
+     */
+    public function test_external_overwrite_without_etag_reports_that_the_server_did_not_enforce(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
+
+        $result = $this->write('plan.md', '# Neuer Plan', $this->current_hash('plan.md'));
+
+        $this->assertTrue($result['verified']);
+        $this->assertFalse($result['server_enforced']);
+        $this->assertStringContainsString(
+            get_string('contextfilenotenforced', 'local_coursepilot'),
+            $result['message']
+        );
+    }
+
+    /**
+     * A weak ETag is no version: no If-Match goes out, the check is by bytes.
+     */
+    public function test_external_overwrite_with_weak_etag_sends_no_if_match_and_compares_bytes(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->with_weak_etags();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
+        $gelesen = external_api::clean_returnvalue(
+            read_context_file::execute_returns(),
+            read_context_file::execute('plan.md')
+        );
+        $this->assertSame('sha256:' . hash('sha256', 'alt'), $gelesen['contenthash']);
+
+        $result = $this->write('plan.md', '# Neuer Plan', $gelesen['contenthash']);
+
+        $this->assertFalse($result['server_enforced']);
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
+        $this->assertCount(1, $puts);
+        $this->assertArrayNotHasKey('If-Match', $puts[0]['headers']);
+    }
+
+    /**
+     * Unreadable after the write: written, but not verified, and no pending entry.
+     */
+    public function test_external_write_that_cannot_be_read_back_is_unverified(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        \core\di::set(
+            \local_coursepilot\webdav\webdav_transport::class,
+            new \local_coursepilot\tests\webdav\hiding_transport($fake)
+        );
+
+        $result = $this->write('plan.md', '# Plan');
+
+        $this->assertFalse($result['verified']);
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
+        $this->assertSame('# Plan', $this->external_content($fake, '/Coursepilot/Kontext/plan.md'));
+    }
+
+    /**
+     * Read-back bytes differing from the written ones are not verified.
+     */
+    public function test_external_write_whose_readback_differs_is_unverified(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        \core\di::set(
+            \local_coursepilot\webdav\webdav_transport::class,
+            new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
+                /** @var bool Whether the file was already tampered with. */
+                private bool $done = false;
+
+                /**
+                 * Creates the tampering transport.
+                 *
+                 * @param fake_webdav_transport $fake Server double.
+                 */
+                public function __construct(
+                    /** @var fake_webdav_transport Server double. */
+                    private readonly fake_webdav_transport $fake
+                ) {
+                }
+
+                /**
+                 * Forwards the request and tampers with the file after the first PUT.
+                 *
+                 * @param string $method
+                 * @param string $url
+                 * @param mixed[] $headers
+                 * @param string|null $body
+                 * @return \local_coursepilot\webdav\webdav_response
+                 */
+                public function request(
+                    string $method,
+                    string $url,
+                    array $headers = [],
+                    ?string $body = null
+                ): \local_coursepilot\webdav\webdav_response {
+                    $response = $this->fake->request($method, $url, $headers, $body);
+                    if ($method === 'PUT' && !$this->done) {
+                        $this->done = true;
+                        $this->fake->seed_file('/Coursepilot/Kontext/plan.md', 'verfaelscht');
+                    }
+                    return $response;
+                }
+            }
+        );
+
+        $result = $this->write('plan.md', '# Plan');
+
+        $this->assertFalse($result['verified']);
+    }
+
+    /**
+     * Private Files are read back too and always enforced.
+     */
+    public function test_private_files_write_is_verified_and_server_enforced(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $result = $this->write('plan.md', '# Plan');
+
+        $this->assertTrue($result['verified']);
+        $this->assertTrue($result['server_enforced']);
+    }
+
+    /**
+     * Without a strong ETag the expected check value is the sha256 of the
+     * bytes; a missing file is a conflict as well.
+     */
+    public function test_external_overwrite_without_etag_of_a_vanished_file_is_a_conflict(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
+        $gelesen = external_api::clean_returnvalue(
+            read_context_file::execute_returns(),
+            read_context_file::execute('plan.md')
+        );
+        $fake->seed_file('/Coursepilot/Kontext/other.md', 'x');
+
+        try {
+            $this->write('other.md', '# Neu', $gelesen['contenthash']);
+            $this->fail('Conflict should have been rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('storageconflict', $e->errorcode);
+        }
+    }
+
+    /**
+     * IServ without ETags: no If-Match, the bytes are compared before the PUT.
      */
     public function test_overwrites_existing_external_file_without_etag_iserv_mode(): void {
         $this->resetAfterTest();
@@ -524,7 +696,7 @@ final class write_context_file_test extends \advanced_testcase {
         $fake->seed_folder('/Coursepilot/Kontext');
         $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
 
-        $result = $this->write('plan.md', '# Neuer Plan');
+        $result = $this->write('plan.md', '# Neuer Plan', $this->current_hash('plan.md'));
 
         $this->assertFalse($result['created']);
         $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
@@ -579,8 +751,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Without an ETag, compare modification times for weaker concurrency
-     * protection (#513, Spec §4).
+     * Without an ETag, the bytes read right before the PUT are compared
+     * (ADR 0035), also within the same second.
      */
     public function test_stale_checkvalue_without_etag_is_rejected_as_conflict_iserv_mode(): void {
         $this->resetAfterTest();
@@ -630,7 +802,7 @@ final class write_context_file_test extends \advanced_testcase {
             write_context_file::execute('plan.md', '# Plan', '', $kennung);
             $this->fail('Backfilling without a check value should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('storageconflict', $e->errorcode);
+            $this->assertSame('contextfileversionrequired', $e->errorcode);
         }
         $this->assertSame('inzwischen gewachsen', $this->external_content($fake2, '/Coursepilot/Kontext/plan.md'));
     }
@@ -732,7 +904,7 @@ final class write_context_file_test extends \advanced_testcase {
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $decorator);
 
         try {
-            $this->write('plan.md', '# Neuer Plan');
+            $this->write('plan.md', '# Neuer Plan', $this->current_hash('plan.md'));
             $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
@@ -914,7 +1086,7 @@ final class write_context_file_test extends \advanced_testcase {
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $onlyputfails);
 
         try {
-            $this->write('plan.md', '# Neuer Plan');
+            $this->write('plan.md', '# Neuer Plan', $this->current_hash('plan.md'));
             $this->fail('Full storage should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('pendingwritefailed', $e->errorcode);
@@ -1327,7 +1499,7 @@ final class write_context_file_test extends \advanced_testcase {
         \core\di::set(\local_coursepilot\webdav\webdav_transport::class, $decorator);
 
         try {
-            $this->write('plan.md', '# Neuer Plan');
+            $this->write('plan.md', '# Neuer Plan', $this->current_hash('plan.md'));
             $this->fail('Conflict should have been rejected.');
         } catch (\moodle_exception $e) {
             $this->assertSame('storageconflict', $e->errorcode);
@@ -1651,7 +1823,7 @@ final class write_context_file_test extends \advanced_testcase {
             write_context_file::execute('plan.md', '# Plan', '', 'IRGENDEINEKENNUNG');
             $this->fail('Backfilling without a check value should have been rejected.');
         } catch (\moodle_exception $e) {
-            $this->assertSame('storageconflict', $e->errorcode);
+            $this->assertSame('contextfileversionrequired', $e->errorcode);
         }
 
         $this->assertSame('inzwischen gewachsen', $this->read_stored($user, '/coursepilot/', 'plan.md'));
@@ -1689,7 +1861,108 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Returns validated endpoint response.
+     * An existing file is replaced only with the version read before (ADR 0034).
+     */
+    public function test_replacing_an_existing_file_needs_a_version_and_leaves_it_untouched(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', 'alt');
+
+        try {
+            $this->write('plan.md', '# Neu');
+            $this->fail('Replacing without a version should have been rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfileversionrequired', $e->errorcode);
+            $this->assertStringContainsString('expected_contenthash', $e->getMessage());
+        }
+
+        $this->assertSame('alt', $this->read_stored($user, '/coursepilot/', 'plan.md'));
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
+    }
+
+    /**
+     * Paths that count as journal: any depth, case-insensitive.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function journal_path_provider(): array {
+        return [
+            'journal folder' => ['journal/2026.md'],
+            'nested journal folder' => ['a/Journal/b/x.md'],
+            'journal file' => ['journal-2026.md'],
+            'nested journal file' => ['a/b/JOURNAL-x.md'],
+        ];
+    }
+
+    /**
+     * An existing journal file is never replaced, not even with a matching version.
+     *
+     * @param string $path
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('journal_path_provider')]
+    public function test_existing_journal_is_never_replaced(string $path): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $dir = '/coursepilot/' . (str_contains($path, '/') ? dirname($path) . '/' : '');
+        $this->create_context_file($user, $dir, basename($path), 'alt');
+
+        try {
+            $this->write($path, '# Neu', $this->current_hash($path));
+            $this->fail('Replacing a journal should have been rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextjournalappendonly', $e->errorcode);
+            $this->assertStringContainsString('coursepilot_append_context_file', $e->getMessage());
+        }
+
+        $this->assertSame('alt', $this->read_stored($user, $dir, basename($path)));
+    }
+
+    /**
+     * Creating a journal (rotation) and a look-alike name stay allowed.
+     */
+    public function test_new_journal_may_be_created_and_lookalikes_are_not_journals(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $this->assertTrue($this->write('journal/2027.md', '# neu')['created']);
+        $this->assertTrue($this->write('journal-2027.md', '# neu')['created']);
+        $this->assertFalse(context_files::is_journal('journals/x.md'));
+        $this->assertFalse(context_files::is_journal('myjournal-x.md'));
+        $this->assertFalse(context_files::is_journal('journal.md'));
+    }
+
+    /**
+     * The journal rule also holds for the catch-up of a pending entry.
+     */
+    public function test_pending_catch_up_cannot_replace_a_journal(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'journal-a.md', 'alt');
+
+        try {
+            write_context_file::execute('journal-a.md', '# Neu', $this->current_hash('journal-a.md'), 'IRGENDEINEKENNUNG');
+            $this->fail('Replacing a journal should have been rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextjournalappendonly', $e->errorcode);
+        }
+    }
+
+    /**
+     * Returns the contenthash a client would get from reading the file.
+     *
+     * @param string $path
+     * @return string
+     */
+    private function current_hash(string $path): string {
+        return read_context_file::execute($path)['contenthash'];
+    }
+
+    /**
+     * Writes through the public tool seam and cleans the result.
      *
      * @param string $path
      * @param string $content

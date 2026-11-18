@@ -57,8 +57,9 @@ class write_context_file extends external_api {
             'path' => new external_value(PARAM_PATH, 'File path relative to the context area, e.g. "plan.md"'),
             'content' => new external_value(PARAM_RAW, 'Complete new file content'),
             'expected_contenthash' => new external_value(
-                PARAM_ALPHANUMEXT,
-                'Optional: contenthash from the last read - if it does not match, the operation aborts',
+                PARAM_RAW_TRIMMED,
+                'Required to replace an existing file: contenthash from the last read - if it does not match, the operation '
+                    . 'aborts. Without it the call only creates; an existing file fails with contextfileversionrequired',
                 VALUE_DEFAULT,
                 ''
             ),
@@ -98,7 +99,8 @@ class write_context_file extends external_api {
      * @return mixed[]
      * @throws \moodle_exception invalidcontextpath, contextfilenotmarkdown,
      *         contextfiletoolarge, contextfilelocked, contextfilechanged,
-     *         contextfilealreadyexists, contextquotaexceeded
+     *         contextfilealreadyexists, contextfileversionrequired, contextjournalappendonly,
+     *         contextquotaexceeded
      * @throws \required_capability_exception without moodle/user:manageownfiles
      */
     public static function execute(
@@ -140,7 +142,7 @@ class write_context_file extends external_api {
      * Builds the teacher-facing change message from the location-independent
      * result of {@see context_area::write()}.
      *
-     * @param mixed[] $result Type: array{path:string,created:bool,size:int,oldsize:int}.
+     * @param mixed[] $result Type: array{path:string,created:bool,size:int,oldsize:int,verified:bool,server_enforced:bool}.
      * @return mixed[]
      */
     private static function build_response(array $result): array {
@@ -152,11 +154,17 @@ class write_context_file extends external_api {
                 'after' => $result['size'],
             ]);
 
+        if (!$result['server_enforced']) {
+            $message .= ' ' . get_string('contextfilenotenforced', 'local_coursepilot');
+        }
+
         return [
             'path' => $result['path'],
             'created' => $result['created'],
             'size' => $result['size'],
             'message' => $message,
+            'verified' => $result['verified'],
+            'server_enforced' => $result['server_enforced'],
         ];
     }
 
@@ -171,6 +179,11 @@ class write_context_file extends external_api {
             'created' => new external_value(PARAM_BOOL, 'true if the file was newly created'),
             'size' => new external_value(PARAM_INT, 'New file size in bytes'),
             'message' => new external_value(PARAM_RAW, 'Teacher-facing change message'),
+            'verified' => new external_value(PARAM_BOOL, 'true if reading the file back returned exactly the expected bytes'),
+            'server_enforced' => new external_value(
+                PARAM_BOOL,
+                'false if the server did not enforce the write condition; a concurrent change could be overwritten unnoticed'
+            ),
         ]);
     }
 }

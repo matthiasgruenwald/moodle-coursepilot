@@ -101,4 +101,4 @@ working against invalid knowledge.
 
 templates.md stores activity templates (Spec 0013), a separate concept.
 Other context rules still come from `coursepilot_get_skill("context-area")`:
-plan/status write offers, manual edits, rotation and real-name marking.
+plan write offers, manual edits, rotation and real-name marking.

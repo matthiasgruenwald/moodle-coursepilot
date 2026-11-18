@@ -6,8 +6,8 @@ description: Coursepilot planning. Use this skill for requests such as "Plan the
 # coursepilot-plan
 
 First read `coursepilot_get_skill("coursepilot-core")` and
-`coursepilot_get_skill("context-area")` for tools, the write offer and
-manual-edit handling. Respond in the teacher's language.
+`coursepilot_get_skill("context-area")` for session start, tools, layout,
+write mode and manual-edit handling. Respond in the teacher's language.
 
 Read further references as the situation requires:
 
@@ -20,8 +20,9 @@ Read further references as the situation requires:
 - An inventory change that cannot currently be performed:
   `coursepilot_get_skill("notepad")`.
 
-Write `plan.md`, `status.md` and templates through
-`coursepilot_write_context_file` only after the write offer, never silently.
+Write the plan (sections `draft`, then `approved` once the teacher approves)
+and templates through the context file tools as the write mode in
+`context-area` requires, never silently.
 
 Follow the core's one-plan rule and plan discipline.
 

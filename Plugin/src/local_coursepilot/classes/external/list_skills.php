@@ -26,7 +26,6 @@ use local_coursepilot\pending_write_notice;
 use local_coursepilot\location_selection;
 use local_coursepilot\remote_access;
 use local_coursepilot\skill_corpus;
-use local_coursepilot\webdav\webdav_setup_steps;
 
 /**
  * Skill catalog (Spec 0020 §4, Issue #450): name, trigger, kind and length
@@ -72,47 +71,9 @@ final class list_skills extends external_api {
         ], skill_corpus::list());
 
         global $USER;
-        $locationselectionlink = (new \moodle_url(webdav_setup_steps::LOCATION_SELECTION_PAGE))->out(false);
-        $notices = [];
-        try {
-            $document = \local_coursepilot\storage_anchor::read_raw_pointer();
-            if ($document !== null) {
-                // Reuse resolution for completeness checks (Issue #519, Spec #486 §10).
-                // Broken/incomplete pointers raise pointerincomplete,
-                // pointerunreachable or materialstoreincontext. The target itself is unused.
-                \local_coursepilot\context_pointer::resolve_target($document, 'context_area');
-            }
-            if (location_selection::open_with_access((int) $USER->id)) {
-                // Open location selection with enablement (Issue #494), without network access.
-                $notices[] = self::notice('listskillslocationselectionhint', $locationselectionlink);
-            }
-            if (\local_coursepilot\previous_location::open()) {
-                // Previous location exists (Issue #498, Spec #486 §9/§10), without network or counts.
-                $notices[] = self::notice('listskillspreviouslocationhint', $locationselectionlink);
-            }
-        } catch (\moodle_exception $e) {
-            // A broken pointer must not fail the handshake (Issue #519, Spec #486 §10).
-            // Return the catalog with a notice instead of the two facts above,
-            // still without network access.
-            $notices = [self::notice('listskillspointerbrokenhint', $locationselectionlink)];
-        }
+        $notices = location_selection::notices((int) $USER->id);
 
         return ['skills' => $skills, 'pending_entries' => pending_write_notice::list_grouped(), 'notices' => $notices];
-    }
-
-    /**
-     * Build a notices entry with localized text and a location-selection link
-     * (code review, Issue #519). Shared by the three notice cases.
-     *
-     * @param string $stringkey Language key in local_coursepilot.
-     * @param string $link Resolved link to the location selection page.
-     * @return array{text: string, link: string}
-     */
-    private static function notice(string $stringkey, string $link): array {
-        return [
-            'text' => get_string($stringkey, 'local_coursepilot', webdav_setup_steps::LOCATION_SELECTION_PAGE),
-            'link' => $link,
-        ];
     }
 
     /**

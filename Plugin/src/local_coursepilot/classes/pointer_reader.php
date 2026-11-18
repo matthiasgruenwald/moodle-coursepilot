@@ -31,20 +31,34 @@ use local_coursepilot\webdav\webdav_setup_steps;
  */
 final class pointer_reader {
     /**
-     * Derive a check value from ETag or `getlastmodified` (Issue #513,
-     * Spec #486 §4/§6). {@see webdav_storage_port} returns it as `contenthash`
-     * and accepts it as `expected_contenthash` to compare with the current state.
+     * Returns the ETag when it is strong, otherwise null (ADR 0035). Servers
+     * compare `If-Match` strongly, so a weak ETag (`W/`) is no usable version.
      *
-     * This opaque value is not Moodle's content hash. Prefer an ETag (Nextcloud);
-     * otherwise use `getlastmodified` (IServ), with the documented limitation of
-     * second-level resolution.
+     * @param string|null $etag ETag as sent by the server.
+     * @return string|null The strong ETag, or null for none, empty or weak.
+     */
+    public static function strong_etag(?string $etag): ?string {
+        return ($etag === null || $etag === '' || str_starts_with($etag, 'W/')) ? null : $etag;
+    }
+
+    /**
+     * Derive a check value (Spec #486 §4/§6, ADR 0035). {@see webdav_storage_port}
+     * returns it as `contenthash` and accepts it as `expected_contenthash`.
+     *
+     * A strong ETag yields its SHA-1 (the server enforces it via `If-Match`).
+     * Without one, the check value is `sha256:<hex>` of the bytes - empty when the
+     * bytes were not read (listings never fetch content). Not Moodle's content hash.
      *
      * @param string|null $etag
-     * @param int $timemodified
-     * @return string 40-character SHA-1 hex value, safe for PARAM_ALPHANUMEXT, unlike quoted raw ETags.
+     * @param string|null $content Bytes, if they were read.
+     * @return string SHA-1 hex of a strong ETag, `sha256:<hex>` of the bytes, or ''.
      */
-    public static function external_checkvalue(?string $etag, int $timemodified): string {
-        return $etag !== null ? sha1('etag:' . $etag) : sha1('mtime:' . $timemodified);
+    public static function external_checkvalue(?string $etag, ?string $content): string {
+        $strong = self::strong_etag($etag);
+        if ($strong !== null) {
+            return sha1('etag:' . $strong);
+        }
+        return $content === null ? '' : 'sha256:' . hash('sha256', $content);
     }
 
     /**

@@ -39,6 +39,9 @@ final class fake_webdav_transport implements webdav_transport {
     /** @var bool Whether PUT/PROPFIND return ETags (disabled for IServ). */
     private bool $etagsenabled = true;
 
+    /** @var bool Whether generated ETags are weak (`W/` prefix). */
+    private bool $weaketags = false;
+
     /** @var string|null Normalized path displaying the IServ area menu instead of storage contents. */
     private ?string $iservrootpath = null;
 
@@ -113,6 +116,36 @@ final class fake_webdav_transport implements webdav_transport {
     }
 
     /**
+     * Removes a file without any request, as a concurrent deletion by someone else.
+     *
+     * @param string $path For example "/folder/file.md".
+     */
+    public function remove_file(string $path): void {
+        unset($this->store[$this->normalise($path)]);
+    }
+
+    /**
+     * The ETag the fake currently holds for a path, as a client sends it in `If-Match`.
+     *
+     * @param string $path For example "/folder/file.md".
+     * @return string|null Null for a missing path or a server without ETags.
+     */
+    public function etag_of(string $path): ?string {
+        return $this->store[$this->normalise($path)]['etag'] ?? null;
+    }
+
+    /**
+     * The content the fake currently holds for a path, without any request.
+     *
+     * @param string $path For example "/folder/file.md".
+     * @return string|null Null for a missing path.
+     */
+    public function content_of(string $path): ?string {
+        $entry = $this->store[$this->normalise($path)] ?? null;
+        return $entry === null || $entry['collection'] ? null : $entry['content'];
+    }
+
+    /**
      * Seeds folder.
      *
      * @param string $path For example, "/folder".
@@ -131,6 +164,13 @@ final class fake_webdav_transport implements webdav_transport {
      */
     public function without_etags(): void {
         $this->etagsenabled = false;
+    }
+
+    /**
+     * Servers such as proxies may send weak ETags (`W/"..."`); `If-Match` cannot use them.
+     */
+    public function with_weak_etags(): void {
+        $this->weaketags = true;
     }
 
     /**
@@ -213,7 +253,7 @@ final class fake_webdav_transport implements webdav_transport {
             'GET' => $this->handle_get($path),
             'PUT' => $this->handle_put($path, $headers, $body ?? ''),
             'MKCOL' => $this->handle_mkcol($path),
-            'MOVE' => $this->handle_move($path, $headers['Destination'] ?? ''),
+            'MOVE' => $this->handle_move($path, $headers),
             'DELETE' => $this->handle_delete($path),
             default => throw new \InvalidArgumentException('Unbekanntes WebDAV-Verb: ' . $method),
         };
@@ -328,23 +368,37 @@ final class fake_webdav_transport implements webdav_transport {
     }
 
     /**
-     * Handles move.
+     * Handles move like RFC 4918: `Overwrite: F` refuses an existing destination and `If-Match`
+     * a changed source (412 each), a missing destination parent is 409.
      *
      * @param string $path The path.
-     * @param string $destinationurl The destinationurl.
+     * @param mixed[] $headers The request headers.
      * @return webdav_response
      */
-    private function handle_move(string $path, string $destinationurl): webdav_response {
+    private function handle_move(string $path, array $headers): webdav_response {
         if (!isset($this->store[$path])) {
             return $this->not_found_dav_response();
         }
+        $destinationurl = $headers['Destination'] ?? '';
         if ($destinationurl === '') {
             return new webdav_response(409, [], '');
         }
         $destination = $this->normalise($this->path_of($destinationurl));
+        $parent = $this->parent_of($destination);
+        if ($parent !== '' && (!isset($this->store[$parent]) || !$this->store[$parent]['collection'])) {
+            return new webdav_response(409, [], '');
+        }
+        $ifmatch = $headers['If-Match'] ?? null;
+        if ($ifmatch !== null && $this->store[$path]['etag'] !== $ifmatch) {
+            return new webdav_response(412, [], '');
+        }
+        $existed = isset($this->store[$destination]);
+        if ($existed && ($headers['Overwrite'] ?? 'T') === 'F') {
+            return new webdav_response(412, [], '');
+        }
         $this->store[$destination] = $this->store[$path];
         unset($this->store[$path]);
-        return new webdav_response(201, [], '');
+        return new webdav_response($existed ? 204 : 201, [], '');
     }
 
     /**
@@ -498,7 +552,7 @@ final class fake_webdav_transport implements webdav_transport {
      * @return string
      */
     private function make_etag(string $content): string {
-        return '"' . substr(sha1($content), 0, 16) . '"';
+        return ($this->weaketags ? 'W/' : '') . '"' . substr(sha1($content), 0, 16) . '"';
     }
 
     /**

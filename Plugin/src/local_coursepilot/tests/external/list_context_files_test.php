@@ -108,6 +108,32 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Sync-client conflict copies of the listed level are reported next to the entries (#783).
+     */
+    public function test_reports_conflict_copies_of_the_listed_level_only(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', 'A');
+        $this->create_context_file($user, '/coursepilot/', 'plan (conflicted copy 2026-11-17).md', 'B');
+        $this->create_context_file($user, '/coursepilot/', 'name 2.md', 'C');
+        $this->create_context_file($user, '/coursepilot/sub/', 'x.sync-conflict-20261117-093000.md', 'D');
+
+        $result = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute());
+        $this->assertSame(
+            [['copy' => 'plan (conflicted copy 2026-11-17).md', 'original' => 'plan.md', 'original_exists' => true]],
+            $result['conflict_copies']
+        );
+        $this->assertContains('name 2.md', array_column($result['entries'], 'name'));
+
+        $sub = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute('sub'));
+        $this->assertSame(
+            [['copy' => 'x.sync-conflict-20261117-093000.md', 'original' => 'x.md', 'original_exists' => false]],
+            $sub['conflict_copies']
+        );
+    }
+
+    /**
      * Each file has contenthash and timemodified (Spec 0016 §2). Folders
      * carry an empty hash and zero modification time.
      */
@@ -399,10 +425,10 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Without an ETag (IServ), use modification time as a weaker, nonempty
-     * check value (#513, Spec §4).
+     * Without a strong ETag (IServ) the listing reads no content: empty check
+     * value, the version comes from read_context_file (ADR 0035).
      */
-    public function test_external_listing_returns_a_nonempty_checkvalue_without_etag(): void {
+    public function test_external_listing_returns_an_empty_checkvalue_without_etag(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
         $fake->without_etags();
@@ -414,7 +440,7 @@ final class list_context_files_test extends \advanced_testcase {
 
         $entry = $this->find_entry($result['entries'], 'vorlagen.md');
         $this->assertNotNull($entry);
-        $this->assertNotSame('', $entry['contenthash']);
+        $this->assertSame('', $entry['contenthash']);
     }
 
     /**
@@ -529,6 +555,30 @@ final class list_context_files_test extends \advanced_testcase {
 
         $gets = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'GET'));
         $this->assertCount(2, $gets);
+    }
+
+    /**
+     * Without a strong ETag the modification time keys the mark memory (ADR 0035): an unchanged file is
+     * fetched once across listings, a changed modification time reads it again.
+     */
+    public function test_file_without_etag_is_fetched_once_until_its_modification_time_changes(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/lerngruppe.md', $this->marked_content());
+        $gets = static fn (): int => count(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'GET'));
+
+        $first = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute());
+        list_context_files::execute();
+        $this->assertSame(1, $gets());
+        $this->assertTrue($this->find_entry($first['entries'], 'lerngruppe.md')['locked']);
+
+        $fake->seed_file('/Coursepilot/Kontext/lerngruppe.md', $this->marked_content());
+        $third = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute());
+
+        $this->assertSame(2, $gets());
+        $this->assertTrue($this->find_entry($third['entries'], 'lerngruppe.md')['locked']);
     }
 
     /**

@@ -61,11 +61,11 @@
             },
             "expected_contenthash": {
                 "class": "core_external\\external_value",
-                "desc": "Optional: contenthash from the last read - if it does not match, the operation aborts",
+                "desc": "Required to replace an existing file: contenthash from the last read - if it does not match, the operation aborts. Without it the call only creates; an existing file fails with contextfileversionrequired",
                 "required": 0,
                 "default": "",
                 "allownull": true,
-                "type": "alphanumext"
+                "type": "raw_trimmed"
             },
             "pending_entry": {
                 "class": "core_external\\external_value",
@@ -131,6 +131,22 @@
                 "default": null,
                 "allownull": true,
                 "type": "raw"
+            },
+            "verified": {
+                "class": "core_external\\external_value",
+                "desc": "true if reading the file back returned exactly the expected bytes",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "server_enforced": {
+                "class": "core_external\\external_value",
+                "desc": "false if the server did not enforce the write condition; a concurrent change could be overwritten unnoticed",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
             }
         }
     }

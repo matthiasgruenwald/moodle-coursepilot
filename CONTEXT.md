@@ -193,11 +193,11 @@ Der noch nicht freigegebene Zustand der Planungsdatei `plan.md` eines Unterricht
 _Avoid_: Entwurf als umsetzbaren Plan behandeln, mehrere konkurrierende Planfassungen ohne Status
 
 **Status-gesteuerte Planfreigabe**:
-Der Wechsel eines `plan.md` vom Entwurfsstatus zum freigegebenen Implementierungsplan durch Aktualisierung von `status.md`, sobald die Lehrkraft den Plan bestaetigt.
+Der Wechsel eines `plan.md` vom Entwurfsstatus zum freigegebenen Implementierungsplan durch Aktualisierung von `status.md`, sobald die Lehrkraft den Plan bestaetigt. Seit ADR 0037 nur noch **Altes Layout**: Neue Schreibungen führen den Zustand je Planabschnitt (`draft`/`approved`/`implemented`).
 _Avoid_: freigegebener Plan nur im Chat, Dateiumbenennung als Freigabeersatz, Umsetzung aus nicht freigegebenem Status
 
 **Ein-Plan-Regel**:
-In Version 1 hat ein Unterrichtsvorhaben-Ordner genau eine aktive Planungsdatei: `plan.md`. Der aktuelle Zustand dieser Datei steht in `status.md`.
+In Version 1 hat ein Unterrichtsvorhaben-Ordner genau eine aktive Planungsdatei: `plan.md`. Der aktuelle Zustand dieser Datei steht in `status.md`. Seit ADR 0037 nur noch **Altes Layout**: Neue Schreibungen führen den Zustand je Planabschnitt (`draft`/`approved`/`implemented`).
 _Avoid_: mehrere aktive Planvarianten, Umsetzung muss zwischen konkurrierenden Plaenen waehlen, Variantenverwaltung in Version 1
 
 **Plan-Erkennung**:
@@ -311,11 +311,11 @@ Ein nicht ueberschriebenes, datiertes Markdown-Protokoll im Kontextbereich, das 
 _Avoid_: Git als einziges Gedaechtnis, automatische Ueberschreibung, nur Chatverlauf als Protokoll
 
 **Statusbericht**:
-Eine aktuelle, themenbezogene Markdown-Datei im Kontextbereich (Unterrichtsvorhaben-Ordner), die den Umsetzungsstand eines freigegebenen Plans zusammenfasst: was wurde in Moodle angelegt, was ist fehlgeschlagen, was ist noch offen.
+Eine aktuelle, themenbezogene Markdown-Datei im Kontextbereich (Unterrichtsvorhaben-Ordner), die den Umsetzungsstand eines freigegebenen Plans zusammenfasst: was wurde in Moodle angelegt, was ist fehlgeschlagen, was ist noch offen. Seit ADR 0037 nur noch **Altes Layout**: Neue Schreibungen führen den Zustand je Planabschnitt (`draft`/`approved`/`implemented`).
 _Avoid_: Umsetzungsstand nur im Journal suchen, plan.md mit Ausfuehrungsdetails vermischen, offene Teilumsetzungen verstecken
 
 **Statuswerte**:
-Die festen Zustaende eines Unterrichtsvorhabens in `status.md`: `in_planung`, `freigegeben`, `teilweise_umgesetzt`, `umgesetzt`, `blockiert`.
+Die festen Zustaende eines Unterrichtsvorhabens in `status.md`: `in_planung`, `freigegeben`, `teilweise_umgesetzt`, `umgesetzt`, `blockiert`. Seit ADR 0037 nur noch **Altes Layout**: Neue Schreibungen führen den Zustand je Planabschnitt (`draft`/`approved`/`implemented`).
 _Avoid_: freie Statusformulierungen, mehrdeutige Zwischenzustaende, Umsetzung ohne pruefbaren Freigabestatus
 
 **Statusbericht-Mindestinhalt**:
@@ -921,6 +921,47 @@ _Avoid_: README als Lehrkraft-Doku, Anleitung nur für einen KI-Client
 **Dokumentationsseite**:
 Die veröffentlichte Projektdoku, gegliedert nach Zielgruppe — Lehrkräfte, Admins, Entwickler — mit einer Übersicht der Besonderheiten für Außenstehende.
 _Avoid_: Doku nach Dateien statt nach Zielgruppe gliedern
+
+**Grundaufbau**:
+Die gemeinsame Ordnung des **Kontextbereichs** seit ADR 0037: Jede **Ebene** hat ein `index.md` (nur Verweise), dazu `habits.md`, `glossary.md`, `decisions/`, je Einheit `plan.md` (über 100 Zeilen `plan/`) mit Abschnittszuständen `draft`/`approved`/`implemented` und `journal/JJJJ-MM-TT.md`. Coursepilots Lerndateien bleiben an der Wurzel. Übernommen aus dem moocp-contextmanager (Spec 0030).
+_Avoid_: Statusdatei neben dem Plan, Geschichte im Plan statt im Journal
+
+**Ebene**:
+Eine Stufe des **Kontextbereichs** von der Wurzel bis zur Einheit (Wurzel, Fachbereich, Schuljahr, Klasse, Einheit). Eine tiefere Ebene gilt vor einer höheren nur, wo sie die Abweichung ausdrücklich nennt; ein Widerspruch ohne Abweichung wird mit der Lehrkraft geklärt.
+_Avoid_: stilles Entscheiden eines Widerspruchs
+
+**Index**:
+Die Datei `index.md` jeder **Ebene**; sie verweist nur auf die Ebenen darunter und die Dateien der eigenen Ebene. Im **Alten Layout** übernimmt an der Wurzel `CONTEXT.md` diese Rolle, wenn `index.md` fehlt.
+_Avoid_: Index mit **Inhaltsverzeichnis** verwechseln
+
+**Gewohnheit**:
+Eine Arbeitsweise der Lehrkraft in `habits.md` auf der allgemeinsten passenden **Ebene**, darunter der **Aufschreibmodus**.
+
+**Aufschreibmodus**:
+Die **Gewohnheit**, wann die KI vor dem Festhalten fragt: `ask` (Vorgabe), `always` (schreibt und meldet jede Schreibung) oder `wait` (sammelt ungespeicherte Punkte im Chat). Ersetzt das frühere **Schreibangebot**.
+_Avoid_: Schreibmodus
+
+**Inhaltsverzeichnis**:
+Die Gliederung einer Datei über 100 Zeilen aus ihren Überschriften `##`/`###` mit Zeilenbereichen. `coursepilot_read_context_file` liefert sie statt des Textes, bis `section` oder `whole` verlangt wird; der Prüfwert gilt immer für die ganze Datei.
+Code: `context_toc`
+_Avoid_: Index
+
+**Verifiziert**:
+Das Urteil des Werkzeugs nach jeder Schreibung: Die Datei liest zurück, wie sie geschrieben wurde (`verified`). Ob der Ort die Stand-Prüfung selbst erzwungen hat, sagt getrennt `server_enforced` (ADR 0034/0035).
+Code: `verified`
+_Avoid_: Urteil der KI über den Schreiberfolg
+
+**Konfliktkopie**:
+Eine Datei, die ein Sync-Client bei gleichzeitiger Änderung anlegt (Syncthing, Nextcloud, Dropbox, Seafile). Coursepilot erkennt sie am Namen, meldet sie mit dem Original und ändert sie nie.
+Code: `conflict_copy`
+
+**Archiv**:
+Der Unterordner `archive/` eines Ordners im **Kontextbereich**, in den `coursepilot_archive_context_files` alte Dateien verschiebt, nie löschend, nie überschreibend, nie Journale (ADR 0036).
+Code: `context_archive`
+_Avoid_: Papierkorb
+
+**Altes Layout**:
+Die Dateien vor dem **Grundaufbau**: `CONTEXT.md` als Index, `status.md`, `journal-*.md`. Sie bleiben lesbar und anhängbar; neue Schreibungen nutzen den Grundaufbau. Der Umbau übernimmt nur belegte Fakten, archiviert die alten Dateien und korrigiert gemeldete Verweise.
 
 ## Relationships
 

@@ -62,7 +62,7 @@ final class private_files_storage_port_test extends storage_port_contract_test {
         }
         $this->assertSame('First', $port->read($area, 'plan.md')['content']);
         $this->assertSame([
-            'path' => 'plan.md', 'created' => false, 'size' => 8, 'checksum' => sha1('First123'),
+            'path' => 'plan.md', 'created' => false, 'size' => 8, 'checksum' => sha1('First123'), 'server_enforced' => true,
         ], $port->append($area, 'plan.md', '123', $first['checksum']));
         $this->assertSame('First123', $port->read($area, 'plan.md')['content']);
         $this->assertSame(0, private_files_storage_port::remaining_quota());
@@ -308,6 +308,34 @@ final class private_files_storage_port_test extends storage_port_contract_test {
         );
         $this->assertSame($source, $file->get_source());
         $this->assertSame('# Updated', $port->read($area, 'plan.md')['content']);
+    }
+
+    /**
+     * A source that changed between the copy and the removal is kept and the new target is rolled back.
+     */
+    public function test_removal_of_a_changed_source_keeps_it_and_discards_the_new_target(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $directory = '/storageport-contract-test/';
+        $first = $port->write($area, 'alt.md', 'erste Fassung');
+        $port->write($area, 'alt.md', 'zweite Fassung');
+        $port->write($area, 'neu.md', 'Kopie');
+        $new = get_file_storage()->get_file(
+            storage_anchor::own_context()->id,
+            storage_anchor::COMPONENT,
+            storage_anchor::FILEAREA,
+            storage_anchor::ITEMID,
+            $directory,
+            'neu.md'
+        );
+        $remove = new \ReflectionMethod($port, 'remove_source');
+        try {
+            $remove->invoke($port, $directory, 'alt.md', $first['checksum'], $new, 'alt.md');
+            $this->fail('A source that changed before the removal must raise a conflict.');
+        } catch (storage_conflict_exception $e) {
+            $this->assertSame('zweite Fassung', $port->read($area, 'alt.md')['content']);
+            $this->assertNull($port->read($area, 'neu.md'));
+        }
     }
 
     /**
