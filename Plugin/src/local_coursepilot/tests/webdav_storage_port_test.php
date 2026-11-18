@@ -284,6 +284,187 @@ final class webdav_storage_port_test extends storage_port_contract_test {
     }
 
     /**
+     * Returns the MOVE requests the fake saw.
+     *
+     * @return array<int, array{method: string, url: string, headers: array<string, string>, body: ?string}>
+     */
+    private function moves(): array {
+        return array_values(array_filter($this->transport->requests(), static fn (array $r): bool => $r['method'] === 'MOVE'));
+    }
+
+    /**
+     * A strong ETag makes the server enforce the source version; the target is never overwritten.
+     */
+    public function test_move_sends_if_match_and_overwrite_false_for_a_strong_etag(): void {
+        $port = $this->port();
+        $written = $port->write($this->area(), 'alt.md', 'Inhalt');
+
+        $result = $port->move($this->area(), 'alt.md', 'archive/alt.md', $written['checksum']);
+
+        $this->assertTrue($result['server_enforced']);
+        $this->assertCount(1, $this->moves());
+        $headers = $this->moves()[0]['headers'];
+        $this->assertSame('F', $headers['Overwrite']);
+        $this->assertSame($this->transport->etag_of('/storageport-webdav-contract-test/archive/alt.md'), $headers['If-Match']);
+    }
+
+    /**
+     * Without a strong ETag the bytes are compared right before the MOVE, which carries no If-Match (ADR 0035).
+     */
+    public function test_move_without_a_strong_etag_compares_bytes_and_reports_not_enforced(): void {
+        $this->transport->without_etags();
+        $port = $this->port();
+        $written = $port->write($this->area(), 'alt.md', 'Inhalt');
+
+        $result = $port->move($this->area(), 'alt.md', 'archive/alt.md', $written['checksum']);
+
+        $this->assertFalse($result['server_enforced']);
+        $this->assertSame('F', $this->moves()[0]['headers']['Overwrite']);
+        $this->assertArrayNotHasKey('If-Match', $this->moves()[0]['headers']);
+        $this->assertSame('Inhalt', $port->read($this->area(), 'archive/alt.md')['content']);
+    }
+
+    /**
+     * A weak ETag is no version for If-Match (ADR 0035): same path as without an ETag.
+     */
+    public function test_move_with_a_weak_etag_sends_no_if_match(): void {
+        $this->transport->with_weak_etags();
+        $port = $this->port();
+        $written = $port->write($this->area(), 'alt.md', 'Inhalt');
+
+        $result = $port->move($this->area(), 'alt.md', 'archive/alt.md', $written['checksum']);
+
+        $this->assertFalse($result['server_enforced']);
+        $this->assertArrayNotHasKey('If-Match', $this->moves()[0]['headers']);
+    }
+
+    /**
+     * Without a strong ETag a change after the first read is caught by the byte comparison; no MOVE is sent.
+     */
+    public function test_move_without_a_strong_etag_detects_a_change_before_the_move(): void {
+        $this->transport->without_etags();
+        $written = $this->port()->write($this->area(), 'alt.md', 'erste Fassung');
+        $transport = new \local_coursepilot\tests\webdav\before_request_transport(
+            $this->transport,
+            'GET',
+            fn () => $this->transport->seed_file('/storageport-webdav-contract-test/alt.md', 'Handänderung')
+        );
+        $port = new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $transport);
+
+        try {
+            $port->move($this->area(), 'alt.md', 'archive/alt.md', $written['checksum']);
+            $this->fail('The changed source must not be moved.');
+        } catch (storage_conflict_exception $e) {
+            $this->assertSame([], $this->moves());
+            $this->assertSame('Handänderung', $this->port()->read($this->area(), 'alt.md')['content']);
+        }
+    }
+
+    /**
+     * Without a strong ETag a file changed or removed between the first read and the re-read before the PUT
+     * is a conflict, for write and append alike; nothing is written (ADR 0035).
+     *
+     * @param bool $append Append instead of write.
+     * @param bool $vanish Remove the file instead of changing it.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('racing_changes')]
+    public function test_without_a_strong_etag_a_change_before_the_re_read_is_a_conflict(bool $append, bool $vanish): void {
+        $this->transport->without_etags();
+        $written = $this->port()->write($this->area(), 'alt.md', 'erste Fassung');
+        $path = '/storageport-webdav-contract-test/alt.md';
+        $transport = new \local_coursepilot\tests\webdav\before_request_transport(
+            $this->transport,
+            'GET',
+            fn () => $vanish ? $this->transport->remove_file($path) : $this->transport->seed_file($path, 'Handänderung')
+        );
+        $port = new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $transport);
+
+        try {
+            $append
+                ? $port->append($this->area(), 'alt.md', ' neu', $written['checksum'])
+                : $port->write($this->area(), 'alt.md', 'neu', $written['checksum']);
+            $this->fail('A racing change must be a conflict.');
+        } catch (storage_conflict_exception $e) {
+            $puts = array_filter($this->transport->requests(), static fn (array $r): bool => $r['method'] === 'PUT');
+            $this->assertCount(1, $puts);
+            $this->assertSame($vanish ? null : 'Handänderung', $this->transport->content_of($path));
+        }
+    }
+
+    /**
+     * Supplies append/write and changed/vanished.
+     *
+     * @return array<string, array{bool, bool}>
+     */
+    public static function racing_changes(): array {
+        return [
+            'write changed' => [false, false],
+            'write vanished' => [false, true],
+            'append changed' => [true, false],
+            'append vanished' => [true, true],
+        ];
+    }
+
+    /**
+     * With a strong ETag the server refuses a MOVE of a source changed after the PROPFIND (If-Match, 412).
+     */
+    public function test_move_with_a_strong_etag_is_refused_by_the_server_after_a_concurrent_change(): void {
+        $written = $this->port()->write($this->area(), 'alt.md', 'erste Fassung');
+        $transport = new \local_coursepilot\tests\webdav\before_request_transport(
+            $this->transport,
+            'MOVE',
+            fn () => $this->transport->seed_file('/storageport-webdav-contract-test/alt.md', 'Handänderung')
+        );
+        $port = new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $transport);
+
+        try {
+            $port->move($this->area(), 'alt.md', 'archive/alt.md', $written['checksum']);
+            $this->fail('The server must refuse the changed source.');
+        } catch (storage_conflict_exception $e) {
+            $this->assertCount(1, $this->moves());
+            $this->assertSame('Handänderung', $this->port()->read($this->area(), 'alt.md')['content']);
+            $this->assertNull($this->port()->read($this->area(), 'archive/alt.md'));
+        }
+    }
+
+    /**
+     * A target that appears between the preflight and the MOVE survives: Overwrite F makes the server refuse (412).
+     */
+    public function test_move_onto_a_target_created_meanwhile_keeps_both_files(): void {
+        $written = $this->port()->write($this->area(), 'alt.md', 'Quelle');
+        $transport = new \local_coursepilot\tests\webdav\before_request_transport(
+            $this->transport,
+            'MOVE',
+            fn () => $this->transport->seed_file('/storageport-webdav-contract-test/archive/alt.md', 'Ziel')
+        );
+        $port = new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $transport);
+
+        $this->expectException(storage_conflict_exception::class);
+        try {
+            $port->move($this->area(), 'alt.md', 'archive/alt.md', $written['checksum']);
+        } finally {
+            $this->assertSame('Quelle', $this->port()->read($this->area(), 'alt.md')['content']);
+            $this->assertSame('Ziel', $this->port()->read($this->area(), 'archive/alt.md')['content']);
+        }
+    }
+
+    /**
+     * A server that does not answer is an outage, not a conflict.
+     */
+    public function test_move_reports_an_outage_as_storage_failure(): void {
+        $written = $this->port()->write($this->area(), 'alt.md', 'Inhalt');
+        $transport = new \local_coursepilot\tests\webdav\before_request_transport(
+            $this->transport,
+            'MOVE',
+            fn () => $this->transport->deny_auth(401)
+        );
+        $port = new webdav_storage_port($this->instanceid, 'storageport-webdav-contract-test', $transport);
+
+        $this->expectException(storage_failure::class);
+        $port->move($this->area(), 'alt.md', 'archive/alt.md', $written['checksum']);
+    }
+
+    /**
      * Reading a folder path yields no file, without fetching the collection.
      */
     public function test_read_of_a_folder_is_null(): void {

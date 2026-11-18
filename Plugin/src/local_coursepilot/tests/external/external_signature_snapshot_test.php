@@ -21,6 +21,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use local_coursepilot\external\add_glossary_entries;
 use local_coursepilot\external\add_questions_to_quiz;
 use local_coursepilot\external\append_context_file;
+use local_coursepilot\external\archive_context_files;
 use local_coursepilot\external\clone_activity;
 use local_coursepilot\external\compare_activity_versions;
 use local_coursepilot\external\compose_material_file;
@@ -67,6 +68,7 @@ use local_coursepilot\external\report_loose_material_files;
 use local_coursepilot\external\restore_activity_version;
 use local_coursepilot\external\set_completion;
 use local_coursepilot\external\set_restriction;
+use local_coursepilot\external\start_context;
 use local_coursepilot\external\update_mc_question;
 use local_coursepilot\external\update_module_settings;
 use local_coursepilot\external\update_question_category;
@@ -92,6 +94,7 @@ use local_coursepilot\external\write_context_file;
 #[CoversClass(add_glossary_entries::class)]
 #[CoversClass(add_questions_to_quiz::class)]
 #[CoversClass(append_context_file::class)]
+#[CoversClass(archive_context_files::class)]
 #[CoversClass(clone_activity::class)]
 #[CoversClass(compare_activity_versions::class)]
 #[CoversClass(compose_material_file::class)]
@@ -138,6 +141,7 @@ use local_coursepilot\external\write_context_file;
 #[CoversClass(restore_activity_version::class)]
 #[CoversClass(set_completion::class)]
 #[CoversClass(set_restriction::class)]
+#[CoversClass(start_context::class)]
 #[CoversClass(update_mc_question::class)]
 #[CoversClass(update_module_settings::class)]
 #[CoversClass(update_question_category::class)]

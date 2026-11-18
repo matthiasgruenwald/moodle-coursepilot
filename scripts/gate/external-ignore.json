@@ -20,6 +20,11 @@
     "reason": "ADR 0019: bewusster Lesevertrag im validierten eigenen Nutzerkontext, auch bei CAP_PROHIBIT für moodle/user:manageownfiles; externe Instanzen bleiben eigentumsgeprüft (ADR 0021), Personenbezugs-Schalter und MCP-Fernzugriffsfreigabe gelten weiter"
   },
   {
+    "file": "Plugin/src/local_coursepilot/classes/external/start_context.php",
+    "missing": "capability",
+    "reason": "ADR 0019: bewusster Lesevertrag im validierten eigenen Nutzerkontext wie read_context_file, auch bei CAP_PROHIBIT für moodle/user:manageownfiles; externe Instanzen bleiben eigentumsgeprüft (ADR 0021), Personenbezugs-Schalter und MCP-Fernzugriffsfreigabe gelten weiter"
+  },
+  {
     "file": "Plugin/src/local_coursepilot/classes/external/list_material_files.php",
     "missing": "capability",
     "reason": "bewusster Lesevertrag für eigene Materialdateien im validierten Nutzerkontext entsprechend ADR 0019, auch bei CAP_PROHIBIT für moodle/user:manageownfiles; externe Instanzen bleiben eigentumsgeprüft (ADR 0021), MCP-Fernzugriffsfreigabe gilt weiter"
@@ -33,6 +38,11 @@
     "file": "Plugin/src/local_coursepilot/classes/external/write_context_file.php",
     "missing": "capability",
     "reason": "context_area::write() verlangt moodle/user:manageownfiles nur für die Moodle-Ablage; bei externem Speicherort gilt stattdessen die Anmeldung am Speicher, daher kein unbedingter Aufruf in execute()"
+  },
+  {
+    "file": "Plugin/src/local_coursepilot/classes/external/archive_context_files.php",
+    "missing": "capability",
+    "reason": "context_archive::run() verlangt moodle/user:manageownfiles nur für die Moodle-Ablage; bei externem Speicherort gilt stattdessen die Anmeldung am Speicher, daher kein unbedingter Aufruf in execute()"
   },
   {
     "file": "Plugin/src/local_coursepilot/classes/external/append_context_file.php",

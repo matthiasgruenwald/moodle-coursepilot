@@ -71,7 +71,7 @@ final class interleaved_storage_port implements storage_port {
      * @param string $content Content to persist.
      * @param string|null $expectedchecksum Authorised preflight state.
      * @param string $source Serialised provenance.
-     * @return array{path: string, created: bool, size: int, checksum: string}
+     * @return array{path: string, created: bool, size: int, checksum: string, server_enforced: bool}
      */
     public function write(
         storage_area $area,
@@ -91,7 +91,7 @@ final class interleaved_storage_port implements storage_port {
      * @param string $path Relative target path.
      * @param string $content Content to persist.
      * @param string|null $expectedchecksum Authorised preflight state.
-     * @return array{path: string, created: bool, size: int, checksum: string}
+     * @return array{path: string, created: bool, size: int, checksum: string, server_enforced: bool}
      */
     public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
         ($this->beforewrite)();
@@ -107,5 +107,19 @@ final class interleaved_storage_port implements storage_port {
      */
     public function delete(storage_area $area, string $path): bool {
         return $this->inner->delete($area, $path);
+    }
+
+    /**
+     * Delegates the move operation at the storage boundary, after the intervening action.
+     *
+     * @param storage_area $area Target area.
+     * @param string $from Source path.
+     * @param string $to Target path.
+     * @param string $expectedchecksum Source checksum.
+     * @return array{path: string, server_enforced: bool}
+     */
+    public function move(storage_area $area, string $from, string $to, string $expectedchecksum): array {
+        ($this->beforewrite)();
+        return $this->inner->move($area, $from, $to, $expectedchecksum);
     }
 }

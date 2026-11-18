@@ -42,8 +42,8 @@ as "Yes, implement it this way", "The plan looks good, go ahead" or
 
 The plan is plan.md in the teacher's context area, not a local data object;
 see `coursepilot_get_skill("context-area")`. Record sections, activities,
-gate status and deviations there. Update after each plan change through
-the write offer.
+gate status and deviations there, as sections with a state. Update after
+each plan change as the write mode in `context-area` requires.
 
 ### Natural opening requests
 
@@ -90,12 +90,13 @@ before further planning or approval.
 #### Step 4: wait for approval
 
 Write only after explicit teacher confirmation. Without it, call no
-writing tool. Follow the one-plan rule and status-controlled approval in
-CONTEXT.md: exactly one active plan.md per project, approval recorded in
-status.md rather than only chat.
+writing tool. Follow the one-plan rule in `coursepilot-core`: exactly one
+active plan per project, approval recorded in the plan sections (`approved`),
+not only in chat.
 
-Completion criterion: status.md has the established freigegeben (approved)
-state before coursepilot-implement performs a Moodle write.
+Completion criterion: the sections to build are `approved` and their
+recording answered `verified` (`context-area`, "Before and after any Moodle
+write") before coursepilot-implement performs a Moodle write.
 
 ### Section and activity moves
 

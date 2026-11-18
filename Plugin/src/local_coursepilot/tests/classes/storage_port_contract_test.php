@@ -298,4 +298,65 @@ abstract class storage_port_contract_test extends \advanced_testcase {
     public function test_delete_reports_false_when_nothing_existed(): void {
         $this->assertFalse($this->port()->delete($this->area(), 'nieexistiert.md'));
     }
+
+    public function test_move_moves_a_file_into_a_new_folder_and_removes_the_source(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $written = $port->write($area, 'alt.md', 'Inhalt');
+
+        $result = $port->move($area, 'alt.md', 'archive/alt.md', $written['checksum']);
+
+        $this->assertSame('archive/alt.md', $result['path']);
+        $this->assertNull($port->read($area, 'alt.md'));
+        $this->assertSame('Inhalt', $port->read($area, 'archive/alt.md')['content']);
+    }
+
+    public function test_move_never_overwrites_an_existing_target(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $written = $port->write($area, 'alt.md', 'Quelle');
+        $port->write($area, 'archive/alt.md', 'Ziel');
+
+        try {
+            $port->move($area, 'alt.md', 'archive/alt.md', $written['checksum']);
+            $this->fail('An existing target must not be overwritten.');
+        } catch (storage_conflict_exception $e) {
+            $this->assertSame('Quelle', $port->read($area, 'alt.md')['content']);
+            $this->assertSame('Ziel', $port->read($area, 'archive/alt.md')['content']);
+        }
+    }
+
+    public function test_move_with_a_stale_checksum_keeps_the_source(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $written = $port->write($area, 'alt.md', 'erste Fassung');
+        $port->write($area, 'alt.md', 'zweite Fassung');
+
+        try {
+            $port->move($area, 'alt.md', 'archive/alt.md', $written['checksum']);
+            $this->fail('A source that changed since it was read must not be moved.');
+        } catch (storage_conflict_exception $e) {
+            $this->assertSame('zweite Fassung', $port->read($area, 'alt.md')['content']);
+            $this->assertNull($port->read($area, 'archive/alt.md'));
+        }
+    }
+
+    public function test_move_of_a_missing_source_raises_conflict(): void {
+        $this->expectException(storage_conflict_exception::class);
+        $this->port()->move($this->area(), 'fehlt.md', 'archive/fehlt.md', 'irgendwas');
+    }
+
+    public function test_move_applies_the_areas_writable_name_rule_to_the_target(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $written = $port->write($area, 'alt.md', 'Inhalt');
+
+        try {
+            $port->move($area, 'alt.md', 'archive/alt.txt', $written['checksum']);
+            $this->fail('A target that breaks the write rule must be rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextfilenotmarkdown', $e->errorcode);
+            $this->assertSame('Inhalt', $port->read($area, 'alt.md')['content']);
+        }
+    }
 }

@@ -18,8 +18,9 @@ Use only skills returned by `coursepilot_list_skills`. If locally installed
 Coursepilot skills are also present, tell the teacher and continue with
 server skills rather than mixing both sources.
 
-Report nonempty `pending_entries` and `notices` from that same response
-at session start; see `coursepilot_get_skill("context-area")`.
+At session start call `coursepilot_start_context` and follow "Session start"
+in `coursepilot_get_skill("context-area")`; it reports `pending_entries`
+and `notices` (do not repeat those of `coursepilot_list_skills`).
 
 Read `coursepilot_get_skill("notepad")` when an inventory change cannot
 currently be performed, or at session start for clients with local file tools.

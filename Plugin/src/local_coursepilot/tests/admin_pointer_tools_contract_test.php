@@ -234,17 +234,28 @@ final class admin_pointer_tools_contract_test extends \advanced_testcase {
         $build = new \ReflectionMethod(append_context_file::class, 'build_response');
         $limit = context_files::MAX_WRITE_BYTES;
 
-        $created = $build->invoke(null, ['path' => 'a.md', 'created' => true, 'size' => 5]);
-        $appended = $build->invoke(null, ['path' => 'a.md', 'created' => false, 'size' => 9]);
-        $atlimit = $build->invoke(null, ['path' => 'a.md', 'created' => false, 'size' => $limit]);
-        $beyond = $build->invoke(null, ['path' => 'a.md', 'created' => false, 'size' => $limit + 1]);
+        $created = $build->invoke(null, [
+            'path' => 'a.md', 'created' => true, 'size' => 5, 'verified' => true,
+            'server_enforced' => true]);
+        $appended = $build->invoke(null, [
+            'path' => 'a.md', 'created' => false, 'size' => 9, 'verified' => true,
+            'server_enforced' => true]);
+        $atlimit = $build->invoke(null, [
+            'path' => 'a.md', 'created' => false, 'size' => $limit, 'verified' => true,
+            'server_enforced' => true]);
+        $beyond = $build->invoke(null, [
+            'path' => 'a.md', 'created' => false, 'size' => $limit + 1, 'verified' => true,
+            'server_enforced' => true]);
 
         $this->assertSame(get_string('contextfilecreated', 'local_coursepilot', 'a.md'), $created['message']);
         $this->assertSame(
             get_string('contextfileappended', 'local_coursepilot', (object) ['path' => 'a.md', 'size' => 9]),
             $appended['message']
         );
-        $this->assertSame(['path', 'created', 'size', 'message'], array_keys($appended));
+        $this->assertSame(
+            ['path', 'created', 'size', 'message', 'verified', 'server_enforced'],
+            array_keys($appended)
+        );
         $this->assertSame(
             get_string('contextfileappended', 'local_coursepilot', (object) ['path' => 'a.md', 'size' => $limit]),
             $atlimit['message']

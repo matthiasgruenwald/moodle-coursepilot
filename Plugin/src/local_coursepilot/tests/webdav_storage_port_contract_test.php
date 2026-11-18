@@ -134,21 +134,84 @@ final class webdav_storage_port_contract_test extends \advanced_testcase {
         $this->assertSame('Hello world', $port->read($this->area(), 'dir/plan.md')['content']);
     }
 
-    public function test_without_etags_write_and_append_return_the_readable_modification_checksum(): void {
+    public function test_without_etags_write_and_append_return_the_sha256_of_the_bytes_and_no_server_enforcement(): void {
         $this->setup_instance();
         $this->fake->without_etags();
         $port = new webdav_storage_port($this->instanceid, 'Base', $this->fake);
 
         $written = $port->write($this->area(), 'plan.md', 'Hello');
-        $afterwrite = $port->read($this->area(), 'plan.md');
-        $this->assertGreaterThan(0, $afterwrite['timemodified']);
-        $this->assertSame($afterwrite['checksum'], $written['checksum']);
+        $this->assertSame('sha256:' . hash('sha256', 'Hello'), $written['checksum']);
+        $this->assertSame($written['checksum'], $port->read($this->area(), 'plan.md')['checksum']);
+        // Creation is enforced by If-None-Match: *.
+        $this->assertTrue($written['server_enforced']);
 
         $appended = $port->append($this->area(), 'plan.md', ' world', $written['checksum']);
-        $afterappend = $port->read($this->area(), 'plan.md');
-        $this->assertSame($afterappend['checksum'], $appended['checksum']);
-        $this->assertNotSame($written['checksum'], $appended['checksum']);
-        $this->assertSame('Hello world', $afterappend['content']);
+        $this->assertSame('sha256:' . hash('sha256', 'Hello world'), $appended['checksum']);
+        $this->assertFalse($appended['server_enforced']);
+
+        $replaced = $port->write($this->area(), 'plan.md', 'New', $appended['checksum']);
+        $this->assertFalse($replaced['server_enforced']);
+        $this->assertSame('New', $port->read($this->area(), 'plan.md')['content']);
+    }
+
+    public function test_without_a_strong_etag_a_changed_or_vanished_file_is_a_conflict_checked_by_bytes(): void {
+        $this->setup_instance();
+        $this->fake->without_etags();
+        $this->fake->seed_file('/Base/plan.md', 'alt');
+        $port = new webdav_storage_port($this->instanceid, 'Base', $this->fake);
+        $checksum = $port->read($this->area(), 'plan.md')['checksum'];
+
+        $this->fake->seed_file('/Base/plan.md', 'handaenderung');
+        $this->assertInstanceOf(
+            storage_conflict_exception::class,
+            $this->caught(fn() => $port->write($this->area(), 'plan.md', 'neu', $checksum))
+        );
+        $this->assertInstanceOf(
+            storage_conflict_exception::class,
+            $this->caught(fn() => $port->append($this->area(), 'plan.md', 'neu', $checksum))
+        );
+        $this->assertSame('handaenderung', $port->read($this->area(), 'plan.md')['content']);
+
+        $this->assertInstanceOf(
+            storage_conflict_exception::class,
+            $this->caught(fn() => $port->write($this->area(), 'missing.md', 'neu', $checksum))
+        );
+    }
+
+    public function test_a_weak_etag_is_treated_like_none_and_never_sent_as_if_match(): void {
+        $this->setup_instance();
+        $this->fake->with_weak_etags();
+        $this->fake->seed_folder('/Base');
+        $this->fake->seed_file('/Base/plan.md', 'alt');
+        $port = new webdav_storage_port($this->instanceid, 'Base', $this->fake);
+
+        $read = $port->read($this->area(), 'plan.md');
+        $this->assertSame('sha256:' . hash('sha256', 'alt'), $read['checksum']);
+        $before = count($this->fake->requests());
+        $listed = $port->list($this->area(), '');
+        $this->assertSame('', $listed[0]['checksum']);
+        $this->assertSame(['PROPFIND'], array_values(array_unique(array_column(
+            array_slice($this->fake->requests(), $before),
+            'method'
+        ))));
+
+        $written = $port->write($this->area(), 'plan.md', 'neu', $read['checksum']);
+
+        $this->assertFalse($written['server_enforced']);
+        $puts = array_values(array_filter($this->fake->requests(), static fn(array $r): bool => $r['method'] === 'PUT'));
+        $this->assertArrayNotHasKey('If-Match', $puts[0]['headers']);
+    }
+
+    public function test_a_strong_etag_is_enforced_by_the_server(): void {
+        $this->setup_instance();
+        $seeded = $this->fake->seed_file('/Base/plan.md', 'alt');
+        $port = new webdav_storage_port($this->instanceid, 'Base', $this->fake);
+
+        $written = $port->write($this->area(), 'plan.md', 'neu', $port->read($this->area(), 'plan.md')['checksum']);
+
+        $this->assertTrue($written['server_enforced']);
+        $puts = array_values(array_filter($this->fake->requests(), static fn(array $r): bool => $r['method'] === 'PUT'));
+        $this->assertSame($seeded['etag'], $puts[0]['headers']['If-Match']);
     }
 
     public function test_empty_parts_of_the_base_folder_never_reach_the_server_as_double_slashes(): void {
@@ -190,7 +253,7 @@ final class webdav_storage_port_contract_test extends \advanced_testcase {
         $this->assertSame('0', $rootchecks[0]['headers']['Depth']);
     }
 
-    public function test_a_write_whose_result_cannot_be_read_back_reports_the_content_length_and_a_zero_time(): void {
+    public function test_a_write_whose_result_cannot_be_read_back_reports_the_content_length_and_the_checksum_of_the_bytes(): void {
         $this->setup_instance();
         $hiding = new hiding_transport($this->fake);
         $port = new webdav_storage_port($this->instanceid, 'Base', $hiding);
@@ -200,7 +263,7 @@ final class webdav_storage_port_contract_test extends \advanced_testcase {
         $appended = $port->append($this->area(), 'other.md', '!');
 
         $this->assertSame(5, $written['size']);
-        $this->assertSame(pointer_reader::external_checkvalue(null, 0), $written['checksum']);
-        $this->assertSame(pointer_reader::external_checkvalue(null, 0), $appended['checksum']);
+        $this->assertSame(pointer_reader::external_checkvalue(null, 'Hello'), $written['checksum']);
+        $this->assertSame(pointer_reader::external_checkvalue(null, '!'), $appended['checksum']);
     }
 }

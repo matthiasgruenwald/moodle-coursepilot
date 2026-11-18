@@ -18,13 +18,12 @@ namespace local_coursepilot\external;
 
 use core_external\external_api;
 use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\previous_location;
-use local_coursepilot\context_area;
 use local_coursepilot\context_files;
-use local_coursepilot\personal_data;
-use local_coursepilot\pointer_location;
+use local_coursepilot\context_reader;
 use local_coursepilot\storage_anchor;
 
 /**
@@ -58,6 +57,19 @@ class read_context_file extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            'section' => new external_value(
+                PARAM_RAW,
+                'Optional: heading of one section to read, e.g. "Week 2" or "## Week 2" (case-insensitive); the section '
+                    . 'includes its sub-headings. Files over 100 lines return only a table of contents without it',
+                VALUE_DEFAULT,
+                ''
+            ),
+            'whole' => new external_value(
+                PARAM_BOOL,
+                'Optional: true returns the whole file even when it is longer than 100 lines',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -66,17 +78,29 @@ class read_context_file extends external_api {
      *
      * @param string $path
      * @param bool $previouslocation
+     * @param string $section Heading of the section to read, empty for none.
+     * @param bool $whole Return the whole file even when it is long.
      * @return mixed[]
      * @throws \moodle_exception invalidcontextpath for an empty path or
      *         a "."/".." segment; contextfilenotfound for missing files;
      *         previouslocationclosed if "previous_location" is requested without
-     *         open legacy storage.
+     *         open legacy storage; contextsectionandwhole, contextsectionunknown and
+     *         contextsectionambiguous for a bad section request.
      */
-    public static function execute(string $path, bool $previouslocation = false): array {
+    public static function execute(
+        string $path,
+        bool $previouslocation = false,
+        string $section = '',
+        bool $whole = false
+    ): array {
         $params = self::validate_parameters(
             self::execute_parameters(),
-            ['path' => $path, 'previous_location' => $previouslocation]
+            ['path' => $path, 'previous_location' => $previouslocation, 'section' => $section, 'whole' => $whole]
         );
+        $section = trim($params['section']);
+        if ($section !== '' && $params['whole']) {
+            throw new \moodle_exception('contextsectionandwhole', 'local_coursepilot');
+        }
 
         // No additional local/coursepilot:use capability is needed (unlike course
         // tools): the context area belongs to the person, so standard user rights
@@ -87,50 +111,11 @@ class read_context_file extends external_api {
 
         $path = storage_anchor::normalise_client_path(context_files::area(), $params['path']);
         $previous = $params['previous_location'] ? previous_location::require_open_location() : null;
-        $file = self::load($path, $previous);
-        if ($file === null) {
+        $result = context_reader::read_selected($path, $previous, $section, $params['whole']);
+        if ($result === null) {
             throw new \moodle_exception('contextfilenotfound', 'local_coursepilot', '', $params['path']);
         }
-
-        // Personal-data switch (#344, ADR 0011): checks the frontmatter marker,
-        // not a content-based guess; see local_coursepilot\personal_data.
-        if (personal_data::is_marked($file['content']) && !personal_data::allowed()) {
-            throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $params['path']);
-        }
-
-        return [
-            'path' => $file['path'],
-            'filename' => basename($file['path']),
-            'mimetype' => $file['mimetype'],
-            'size' => $file['size'],
-            'content' => $file['content'],
-            'contenthash' => $file['contenthash'],
-            'timemodified' => $file['timemodified'],
-        ];
-    }
-
-    /**
-     * Reads the canonical file; old names are read only when it is absent. Access and storage
-     * errors are not caught and the selected current/previous location is never crossed.
-     *
-     * @param string $path Normalised path.
-     * @param pointer_location|null $previous Previous location, null for the current one.
-     * @return mixed[]|null File data, null when neither the canonical nor the legacy file exists.
-     */
-    private static function load(string $path, ?pointer_location $previous): ?array {
-        $read = static fn(string $p): ?array => $previous
-            ? context_area::read_previous_location($p, $previous)
-            : context_area::read($p);
-        $file = $read($path);
-        $legacyname = [
-            'templates.md' => 'vorlagen.md',
-            'notepad.md' => 'merkzettel.md',
-            'CONTEXT-people.md' => 'CONTEXT.personen.md',
-        ][basename($path)] ?? null;
-        if ($file === null && $legacyname !== null) {
-            $file = $read((dirname($path) === '.' ? '' : dirname($path) . '/') . $legacyname);
-        }
-        return $file;
+        return $result;
     }
 
     /**
@@ -144,10 +129,23 @@ class read_context_file extends external_api {
             'filename' => new external_value(PARAM_TEXT, 'File name'),
             'mimetype' => new external_value(PARAM_RAW, 'MIME type'),
             'size' => new external_value(PARAM_INT, 'File size in bytes'),
-            'content' => new external_value(PARAM_RAW, 'File content'),
+            'content' => new external_value(
+                PARAM_RAW,
+                'File content; empty for a long file without section/whole (see toc and hint); only the section text '
+                    . 'with section'
+            ),
             // Added in Spec 0016 §2 for concurrency protection and manual-change detection.
-            'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Content checksum of the file'),
+            'contenthash' => new external_value(PARAM_RAW_TRIMMED, 'Content checksum of the file'),
             'timemodified' => new external_value(PARAM_INT, 'Time of last change'),
+            // Added in #782: long files are read through a table of contents.
+            'partial' => new external_value(PARAM_BOOL, 'True when content is not the whole file (toc or one section)'),
+            'toc' => new external_multiple_structure(new external_single_structure([
+                'level' => new external_value(PARAM_INT, 'Heading level, 2 or 3'),
+                'heading' => new external_value(PARAM_RAW, 'Heading text without the leading hashes'),
+                'start_line' => new external_value(PARAM_INT, 'First line of the section, 1-based'),
+                'end_line' => new external_value(PARAM_INT, 'Last line of the section, inclusive'),
+            ]), 'Table of contents of a long file read without section/whole, otherwise empty'),
+            'hint' => new external_value(PARAM_RAW, 'How to read a section or the whole file; empty when content is complete'),
         ]);
     }
 }

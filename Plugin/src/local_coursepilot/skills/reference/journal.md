@@ -6,9 +6,10 @@ description: Read this when recording a reusable decision or resuming a session 
 # Reference: journal and resuming work
 
 Read this for decisions worth documenting or requests to resume planning.
-The journal (`CONTEXT.md`) records planning, approvals, Moodle changes and
-context changes in dated Markdown files that are never overwritten:
-memory without Git. Use only the context-area tools.
+The journal records planning, approvals, Moodle changes and context changes
+in dated Markdown files that are only appended, never replaced (the tool
+refuses it): memory without Git. Use only the context-area tools. Reasons in
+entries follow the hard rule in `context-area`.
 
 ## Record decisions during work
 
@@ -33,11 +34,13 @@ Procedure:
 2. If necessary context is missing, clarify required context and offer a
    low-friction explanatory setup with preview;
    see `coursepilot_get_skill("context-onboarding")`. After confirmation,
-   create appropriate CONTEXT.md files and record the note immediately.
+   create the appropriate `index.md` files and record the note immediately.
 3. Append a separate entry through `coursepilot_append_context_file`.
    Group decisions go to the class journal; teaching/material/quiz/Moodle
    plans to the teaching-folder journal; context follows existing subject
-   assignment. Never directly overwrite existing journals or context files.
+   assignment. Never replace existing journals.
+   A surprising decision with a real alternative also gets its own file in
+   `decisions/`; see `context-area`.
 4. If the decision clarifies a canonical Coursepilot product/domain term,
    update repository CONTEXT.md instead or additionally. Use ADRs sparingly
    for decisions hard to reverse, surprising without context and involving
@@ -48,13 +51,14 @@ what remains open.
 
 ## Journal location
 
-Daily `journal-YYYY-MM-DD.md` files are relative to the context root;
-see context-area storage layout.
+Daily `journal/YYYY-MM-DD.md` files are relative to the context root;
+see context-area storage layout. Old `journal-YYYY-MM-DD.md` files stay
+readable and appendable; new days go to `journal/`.
 
 | Scope | Relative location |
 |---|---|
-| Class | `<school-year>/<class>/journal-<date>.md` for cross-subject group development |
-| Teaching folder | `<school-year>/<class>/<teaching-folder>/journal-<date>.md` for subject plans, Moodle implementation, materials and questions |
+| Class | `<school-year>/<class>/journal/<date>.md` for cross-subject group development |
+| Teaching folder | `<school-year>/<class>/<teaching-folder>/journal/<date>.md` for subject plans, Moodle implementation, materials and questions |
 
 Follow the changed context's location automatically. Ask only for real
 ambiguity, such as whether a note concerns the whole class or one subject.
@@ -62,7 +66,9 @@ A school-year journal is not the default.
 
 ## When to create entries
 
-Throughout the workflow, not only after Moodle writes:
+Throughout the workflow, not only after Moodle writes. Entries stay
+automatic in every write mode and are part of the order in "Before and after
+any Moodle write" (`context-area`):
 
 - Immediately after reusable group, subject, material, quiz or planning decisions.
 - After context onboarding or deliberate profile additions.
@@ -89,14 +95,14 @@ Every journal note uses append, not direct file replacement.
 For requests such as "Continue planning for 7a science" or "Where were we
 with 7a?":
 
-1. Report `pending_entries` from `coursepilot_list_skills` first and in a
+1. Report `pending_entries` from `coursepilot_start_context` first and in a
    separate paragraph from remaining work; see `context-area`.
 2. Load the applicable learning-group/subject profiles; see
    `coursepilot_get_skill("context-onboarding")`.
 3. Read recent class and/or teaching-folder journals through
-   `coursepilot_read_context_file`.
+   `coursepilot_read_context_file`, and the plan's `Open` list.
 4. Find entries in Remaining work, including existing headings in the
-   teacher's language.
+   teacher's language, and plan sections still `draft` or `approved`.
 5. Offer a follow-up proposal, e.g. "The last entry on 2026-06-10 left ...
    open. Shall we tackle that now?" Use the teacher's language.
 

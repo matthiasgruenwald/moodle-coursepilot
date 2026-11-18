@@ -87,6 +87,7 @@ class list_context_files extends external_api {
         return [
             'path' => $result['directory'],
             'entries' => $result['entries'],
+            'conflict_copies' => $result['conflict_copies'],
         ];
     }
 
@@ -113,9 +114,17 @@ class list_context_files extends external_api {
                         'Marked as personal data with the switch off - content unreadable, but still listed'
                     ),
                     // Added in Spec 0016 §2 for concurrency and manual-change detection.
-                    'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Content checksum, empty for folders'),
+                    'contenthash' => new external_value(PARAM_RAW_TRIMMED, 'Content checksum, empty for folders'),
                     'timemodified' => new external_value(PARAM_INT, 'Time of last change, 0 for folders'),
                 ])
+            ),
+            'conflict_copies' => new external_multiple_structure(
+                new external_single_structure([
+                    'copy' => new external_value(PARAM_TEXT, 'Name of the sync-client conflict copy in this folder'),
+                    'original' => new external_value(PARAM_TEXT, 'Name the original file would have'),
+                    'original_exists' => new external_value(PARAM_BOOL, 'Whether the original is in this folder, too'),
+                ]),
+                'Conflict copies (Syncthing, Nextcloud, Dropbox, Seafile) in this folder only; reported, never changed'
             ),
         ]);
     }

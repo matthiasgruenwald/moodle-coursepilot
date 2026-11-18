@@ -63,6 +63,52 @@ final class location_selection {
     public const BROWSE_TIMEOUT_MS = 8000;
 
     /**
+     * Link to the location selection page.
+     *
+     * @return string
+     */
+    public static function page_link(): string {
+        return (new \moodle_url(webdav_setup_steps::LOCATION_SELECTION_PAGE))->out(false);
+    }
+
+    /**
+     * Notices about the location, determined without network access: open location selection with
+     * enablement (#494), a previous location (#498), or a broken pointer (#519). Shared by the skill
+     * catalog and the session start.
+     *
+     * @param int $userid
+     * @return array<int, array{text: string, link: string}>
+     */
+    public static function notices(int $userid): array {
+        $link = self::page_link();
+        $notice = static fn (string $key): array => [
+            'text' => get_string($key, 'local_coursepilot', webdav_setup_steps::LOCATION_SELECTION_PAGE),
+            'link' => $link,
+        ];
+        $notices = [];
+        try {
+            $document = storage_anchor::read_raw_pointer();
+            if ($document !== null) {
+                // Reuse resolution for completeness checks (Issue #519, Spec #486 §10).
+                // Broken/incomplete pointers raise pointerincomplete,
+                // pointerunreachable or materialstoreincontext. The target itself is unused.
+                context_pointer::resolve_target($document, 'context_area');
+            }
+            if (self::open_with_access($userid)) {
+                $notices[] = $notice('listskillslocationselectionhint');
+            }
+            if (previous_location::open()) {
+                // Previous location exists (Issue #498, Spec #486 §9/§10), without network or counts.
+                $notices[] = $notice('listskillspreviouslocationhint');
+            }
+        } catch (\moodle_exception $e) {
+            // A broken pointer must not fail the caller (Issue #519, Spec #486 §10).
+            $notices = [$notice('listskillspointerbrokenhint')];
+        }
+        return $notices;
+    }
+
+    /**
      * Page readiness/empty state (#494): missing WebDAV enablement takes
      * precedence over missing instances. A teacher without access never sees
      * the wrong empty state, even with an existing instance.

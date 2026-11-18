@@ -6,6 +6,17 @@ lokalen Coursepilot-MCP. Entwicklungs- und Issue-Repository ist
 (primäres Repository); der Plugin-Quellbaum wird separat als Mirror für das Moodle Plugin
 Directory veröffentlicht.
 
+## Coursepilot 2.2.0-beta — Kontextbereich nach dem Vorbild des moocp-contextmanager
+
+- **Sitzungsbeginn in einem Schritt:** `coursepilot_start_context` meldet Lage des Kontextbereichs (oder Ursache einer Kontextlücke mit Link zur Ortswahl), noch nicht gespeicherte Schreibvorgänge, Konfliktkopien, Wurzelindex und Gewohnheiten.
+- **Kein Überschreiben ungelesener Dateien:** Eine vorhandene Datei wird nur mit der zuletzt gelesenen Version ersetzt. Jede Schreibung wird zurückgelesen und als `verified` gemeldet.
+- **Journale nur anhängen:** Dateien in `journal/` und `journal-*.md` lassen sich nicht ersetzen.
+- **WebDAV ohne ETag (IServ):** Die Version ist jetzt eine Prüfsumme des Inhalts statt der Änderungszeit; die Antwort sagt ehrlich, wenn der Server die Prüfung nicht selbst erzwingt. Schwache ETags werden nicht mehr als Bedingung gesendet. Einmal neu lesen, falls ein alter Prüfwert abgewiesen wird.
+- **Lange Dateien:** Dateien über 100 Zeilen kommen zuerst als Inhaltsverzeichnis; einzelne Abschnitte lassen sich gezielt lesen.
+- **Konfliktkopien** von Nextcloud, Syncthing, Dropbox und Seafile werden gemeldet, nie verändert.
+- **Archivieren:** `coursepilot_archive_context_files` verschiebt alte Dateien nach `archive/`, ohne zu löschen, und nennt Verweise in Indexdateien, die angepasst werden müssen.
+- **Neuer Grundaufbau im Skill-Korpus:** `index.md` je Ebene, Gewohnheiten, Entscheidungen, Plan mit Abschnittszuständen und Tagesjournal; das bisherige Layout (`CONTEXT.md`, `status.md`) bleibt lesbar. Gründe und Daten schreibt die KI nur aus einer Quelle.
+
 ## Coursepilot 2.1.4-beta — Fehlerbehebungen und Qualitäts-Baseline
 
 - **Tests starten wieder:** Nach `add_questions_to_quiz` berechnet Coursepilot die Punktesumme des Tests neu. Zuvor blieb sie 0 und Moodle verweigerte den Versuchsstart. Bereits betroffene Tests heilen beim nächsten Hinzufügen einer Frage oder bei einer Änderung eines Platzes.
