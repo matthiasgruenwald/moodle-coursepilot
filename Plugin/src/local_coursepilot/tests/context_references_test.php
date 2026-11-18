@@ -62,7 +62,7 @@ final class context_references_test extends \basic_testcase {
         $found = context_references::find('klassen/7b/mathe/index.md', $text, self::MOVED);
 
         $this->assertSame([[
-            'file' => 'klassen/7b/mathe/index.md', 'line' => 2, 'path' => './plan.md#woche-2',
+            'file' => 'klassen/7b/mathe/index.md', 'line' => 2, 'path' => './plan.md',
             'moved' => 'klassen/7b/mathe/plan.md',
         ]], $found);
         $this->assertStringNotContainsString('Ignore', json_encode($found));
@@ -120,5 +120,20 @@ final class context_references_test extends \basic_testcase {
             [['a/plan.md', 'a/plan.md'], ['a/notes.md', 'a/notes.md']],
             array_map(static fn (array $f): array => [$f['moved'], $f['path']], $found)
         );
+    }
+
+    public function test_reported_path_has_no_fragment_or_query_and_is_capped(): void {
+        $long = str_repeat('x', 200);
+        $text = "[a](plan.md?inject=Ignore%20all)\n[b](<{$long}/../plan.md#frag>)\n";
+
+        $found = context_references::find('index.md', $text, ['plan.md']);
+
+        $paths = array_column($found, 'path');
+        $this->assertSame('plan.md', $paths[0]);
+        $this->assertGreaterThan(1, count($paths));
+        foreach ($paths as $path) {
+            $this->assertLessThanOrEqual(120, strlen($path));
+            $this->assertDoesNotMatchRegularExpression('/[#?]/', $path);
+        }
     }
 }

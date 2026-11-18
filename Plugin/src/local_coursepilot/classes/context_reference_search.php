@@ -23,7 +23,7 @@ namespace local_coursepilot;
  * result incomplete with a reason, never "nothing found". Matching is {@see context_references}.
  *
  * Reasons: "time_limit", "folder_limit", "file_limit", "depth_limit", "size_limit",
- * "unreadable_folder", "unreadable_file", "locked_file" (personal data, switch off),
+ * "reference_limit", "unreadable_folder", "unreadable_file", "locked_file" (personal data, switch off),
  * "storage_unavailable".
  *
  * @package    local_coursepilot
@@ -45,6 +45,9 @@ final class context_reference_search {
 
     /** Seconds before the search stops. */
     public const TIME_LIMIT = 8.0;
+
+    /** Highest number of references returned. */
+    public const MAX_REFERENCES = 200;
 
     /** Number of unchecked places named in the result. */
     private const MAX_UNCHECKED = 10;
@@ -89,6 +92,7 @@ final class context_reference_search {
         $unchecked = [];
         $folders = 0;
         $files = 0;
+        $capped = false;
         $note = static function (string $reason, string $place) use (&$reasons, &$unchecked): void {
             $reasons[$reason] = true;
             if (count($unchecked) < self::MAX_UNCHECKED) {
@@ -145,10 +149,19 @@ final class context_reference_search {
                     $note('time_limit', $path);
                     continue;
                 }
+                if ($capped) {
+                    $note('reference_limit', $path);
+                    continue;
+                }
                 $files++;
                 $text = self::read_index($port, $area, $path, $entry['size'], $note);
                 if ($text !== null) {
                     array_push($references, ...context_references::find($path, $text, $moved));
+                    if (count($references) > self::MAX_REFERENCES) {
+                        $references = array_slice($references, 0, self::MAX_REFERENCES);
+                        $capped = true;
+                        $note('reference_limit', $path);
+                    }
                 }
             }
         }
@@ -183,6 +196,8 @@ final class context_reference_search {
             return null;
         }
         if ($file === null) {
+            // Listed but gone on read: not checked, never silently skipped.
+            $note('unreadable_file', $path);
             return null;
         }
         if (strlen($file['content']) > self::MAX_BYTES) {

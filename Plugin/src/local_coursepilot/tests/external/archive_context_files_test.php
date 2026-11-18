@@ -290,7 +290,7 @@ final class archive_context_files_test extends \advanced_testcase {
         $this->assertSame([
             ['file' => 'index.md', 'line' => 2, 'path' => 'klassen/7b/plan.md', 'moved' => 'klassen/7b/plan.md'],
             ['file' => 'index.md', 'line' => 3, 'path' => 'klassen/7b/status.md', 'moved' => 'klassen/7b/status.md'],
-            ['file' => 'klassen/7b/CONTEXT.md', 'line' => 1, 'path' => './plan.md#woche-2', 'moved' => 'klassen/7b/plan.md'],
+            ['file' => 'klassen/7b/CONTEXT.md', 'line' => 1, 'path' => './plan.md', 'moved' => 'klassen/7b/plan.md'],
             ['file' => 'klassen/7b/unit/index.md', 'line' => 1, 'path' => '../plan.md', 'moved' => 'klassen/7b/plan.md'],
         ], $result['references']);
         $this->assertTrue($result['references_complete']);

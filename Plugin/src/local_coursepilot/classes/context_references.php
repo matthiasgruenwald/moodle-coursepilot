@@ -33,6 +33,9 @@ final class context_references {
     /** Longest candidate path taken from a line. */
     private const MAX_CANDIDATE = 300;
 
+    /** Longest path returned; fragment and query never are (K3: the file is untrusted data). */
+    private const MAX_REPORTED = 120;
+
     /**
      * Finds the references to moved files in one index file.
      *
@@ -57,11 +60,21 @@ final class context_references {
                         continue;
                     }
                     $reported[$target . '|' . $candidate] = true;
-                    $found[] = ['file' => $file, 'line' => $index + 1, 'path' => $candidate, 'moved' => $target];
+                    $found[] = ['file' => $file, 'line' => $index + 1, 'path' => self::reported($candidate), 'moved' => $target];
                 }
             }
         }
         return $found;
+    }
+
+    /**
+     * The path as written, without `#fragment` and `?query`, cut to a safe length.
+     *
+     * @param string $candidate
+     * @return string
+     */
+    private static function reported(string $candidate): string {
+        return mb_strcut(preg_split('/[#?]/', $candidate, 2)[0], 0, self::MAX_REPORTED, 'UTF-8');
     }
 
     /**

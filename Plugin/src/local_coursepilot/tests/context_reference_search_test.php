@@ -168,12 +168,14 @@ final class context_reference_search_test extends \advanced_testcase {
 
     public function test_deeper_folders_than_the_depth_limit_are_not_searched(): void {
         $tree = [];
+        $contents = [];
         $path = 'a';
         for ($i = 0; $i <= context_reference_search::MAX_DEPTH + 1; $i++) {
             $tree[$path] = ['index.md', 'd/'];
+            $contents[$path . '/index.md'] = '';
             $path .= '/d';
         }
-        $result = context_reference_search::run(new tree_storage_port($tree), 'a', self::MOVED);
+        $result = context_reference_search::run(new tree_storage_port($tree, null, $contents), 'a', self::MOVED);
 
         $this->assertSame(['depth_limit'], $result['reasons']);
         // The root above the level, the level itself and ten levels below it.
@@ -220,5 +222,28 @@ final class context_reference_search_test extends \advanced_testcase {
 
         $this->assertSame(['locked_file'], $result['reasons']);
         $this->assertSame([], $result['references']);
+    }
+
+    public function test_references_are_capped_and_the_search_says_so(): void {
+        $tree = ['a' => ['index.md', 'sub/'], 'a/sub' => ['index.md']];
+        $contents = [
+            'a/index.md' => implode("\n", array_fill(0, context_reference_search::MAX_REFERENCES + 5, 'plan.md')),
+            'a/sub/index.md' => '../plan.md',
+        ];
+
+        $result = context_reference_search::run(new tree_storage_port($tree, null, $contents), 'a', self::MOVED);
+
+        $this->assertCount(context_reference_search::MAX_REFERENCES, $result['references']);
+        $this->assertSame(['reference_limit'], $result['reasons']);
+        $this->assertSame(['a/index.md', 'a/sub/index.md'], $result['unchecked']);
+    }
+
+    public function test_an_index_file_that_vanished_on_read_is_unreadable_not_skipped(): void {
+        $tree = ['a' => ['index.md']];
+
+        $result = context_reference_search::run(new tree_storage_port($tree), 'a', self::MOVED);
+
+        $this->assertSame(['unreadable_file'], $result['reasons']);
+        $this->assertSame(['a/index.md'], $result['unchecked']);
     }
 }
