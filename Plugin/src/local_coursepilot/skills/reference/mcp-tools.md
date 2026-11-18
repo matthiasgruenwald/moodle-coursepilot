@@ -134,5 +134,6 @@ rules are defined in context-area; tools here are an index:
 | `coursepilot_read_context_file` | Read files, optionally at previous_location |
 | `coursepilot_write_context_file` | Create/full replacement; optional pending_entry or create_only for old-content copying |
 | `coursepilot_append_context_file` | Append; optional pending_entry |
+| `coursepilot_archive_context_files` | Move direct .md files of a folder to `<folder>/archive/` (never journals, never overwrite); reports references in index files (file, line, path) to fix with read/write |
 | `coursepilot_dismiss_pending_entry` | Explicitly dismiss a pending-note entry |
 | `coursepilot_dismiss_previous_location` | Explicitly end old-content state |

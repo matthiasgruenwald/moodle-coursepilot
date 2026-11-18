@@ -21,7 +21,8 @@ use local_coursepilot\storage_port;
 
 /**
  * Read-only fake port over a folder tree: folder path => entry names ("name/" is a folder) or a
- * Throwable that listing the folder throws. Optional callback on every list.
+ * Throwable that listing the folder throws. Optional callback on every list; optional file contents
+ * (path => content or Throwable) that read() serves, other paths do not exist.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -33,12 +34,15 @@ final class tree_storage_port implements storage_port {
      *
      * @param mixed[] $tree Folder path => entry names, or a Throwable.
      * @param \Closure|null $onlist Called with the folder path on every list.
+     * @param mixed[] $contents File path => content, or a Throwable that reading the file throws.
      */
     public function __construct(
         /** @var mixed[] Folder path => entry names, or a Throwable. */
         private readonly array $tree,
         /** @var \Closure|null Called with the folder path on every list. */
         private readonly ?\Closure $onlist = null,
+        /** @var mixed[] File path => content, or a Throwable. */
+        private readonly array $contents = [],
     ) {
     }
 
@@ -57,21 +61,31 @@ final class tree_storage_port implements storage_port {
         if ($names instanceof \Throwable) {
             throw $names;
         }
-        return array_map(static fn (string $n): array => [
-            'name' => rtrim($n, '/'), 'type' => str_ends_with($n, '/') ? 'folder' : 'file',
-            'size' => 0, 'mimetype' => '', 'checksum' => '', 'timemodified' => 0,
-        ], $names);
+        return array_map(function (string $n) use ($path): array {
+            $content = $this->contents[$path === '' ? $n : $path . '/' . $n] ?? '';
+            return [
+                'name' => rtrim($n, '/'), 'type' => str_ends_with($n, '/') ? 'folder' : 'file',
+                'size' => is_string($content) ? strlen($content) : 0, 'mimetype' => '', 'checksum' => '', 'timemodified' => 0,
+            ];
+        }, $names);
     }
 
     /**
-     * Not used.
+     * Serves a configured file, any other path does not exist.
      *
      * @param storage_area $area Target area.
      * @param string $path Relative path.
      * @return mixed[]|null
      */
     public function read(storage_area $area, string $path): ?array {
-        throw new \coding_exception('not used');
+        $content = $this->contents[$path] ?? null;
+        if ($content instanceof \Throwable) {
+            throw $content;
+        }
+        return $content === null ? null : [
+            'content' => $content, 'checksum' => sha1($content), 'size' => strlen($content),
+            'mimetype' => 'text/markdown', 'timemodified' => 0,
+        ];
     }
 
     /**
@@ -115,6 +129,19 @@ final class tree_storage_port implements storage_port {
      * @return bool
      */
     public function delete(storage_area $area, string $path): bool {
+        throw new \coding_exception('not used');
+    }
+
+    /**
+     * Not used.
+     *
+     * @param storage_area $area Target area.
+     * @param string $from Source path.
+     * @param string $to Target path.
+     * @param string $expectedchecksum Source checksum.
+     * @return array{path: string, server_enforced: bool}
+     */
+    public function move(storage_area $area, string $from, string $to, string $expectedchecksum): array {
         throw new \coding_exception('not used');
     }
 }

@@ -267,6 +267,14 @@ final class tool_registry {
             'idempotent' => false,
             'external' => true,
         ],
+        'coursepilot_archive_context_files' => [
+            'classname' => 'local_coursepilot\external\archive_context_files',
+            'descriptionkey' => 'tool_archive_context_files',
+            // Moves files below archive/, never deletes or overwrites; a second call finds nothing to move.
+            'destructive' => false,
+            'idempotent' => false,
+            'external' => true,
+        ],
         'coursepilot_list_material_files' => [
             'classname' => 'local_coursepilot\external\list_material_files',
             'descriptionkey' => 'tool_list_material_files',
@@ -511,7 +519,7 @@ final class tool_registry {
             return false;
         }
         return preg_match(
-            '/\\\\(?:restore|update|create|set|ensure|move|import|export|add|write|append|upload|crop|compose|delete|clone|'
+            '/\\\\(?:restore|update|create|set|ensure|move|import|export|add|write|append|archive|upload|crop|compose|delete|clone|'
                 . 'dismiss)_/',
             $classname
         ) === 1;

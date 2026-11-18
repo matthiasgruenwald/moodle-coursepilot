@@ -328,6 +328,59 @@ final class webdav_storage_port implements storage_port {
     }
 
     /**
+     * Moves the webdav storage port. The source version is checked here (strong ETag, or the bytes
+     * read right before for a server without one, ADR 0035); MOVE itself never overwrites.
+     *
+     * @param storage_area $area The area.
+     * @param string $from The source path.
+     * @param string $to The target path.
+     * @param string $expectedchecksum The source checksum from an earlier read.
+     */
+    public function move(storage_area $area, string $from, string $to, string $expectedchecksum): array {
+        [$fromfolders, $fromname] = $this->split_file_path($area, $from);
+        [$tofolders, $toname] = storage_anchor::writable_segments($area, $to);
+        $frompath = implode('/', [...$fromfolders, $fromname]);
+        $topath = implode('/', [...$tofolders, $toname]);
+
+        try {
+            $resolved = $this->resolved_instance();
+            $client = $resolved->client();
+            $sourceurl = $resolved->file_url($this->relative_path($fromfolders, $fromname));
+            $existing = $this->current_entry($client, $sourceurl);
+            if ($existing === null) {
+                throw new storage_conflict_exception($frompath);
+            }
+            $this->require_checksum_match($existing, $expectedchecksum, $frompath);
+            if ($this->lacks_strong_etag($existing)) {
+                $this->require_current_bytes($this->fresh_bytes($client, $sourceurl, $frompath), $expectedchecksum, $frompath);
+            }
+            $this->ensure_directory($resolved, $tofolders);
+            try {
+                $client->move(
+                    $sourceurl,
+                    $resolved->file_url($this->relative_path($tofolders, $toname)),
+                    pointer_reader::strong_etag($existing['etag'])
+                );
+            } catch (webdav_error $e) {
+                if ($e->errorclass === webdav_error::NOT_FOUND) {
+                    throw new storage_conflict_exception($frompath);
+                }
+                if ($e->errorclass === webdav_error::CONFLICT) {
+                    // 412: the source changed or the target exists - nothing was moved.
+                    throw new storage_conflict_exception($topath);
+                }
+                throw $e;
+            }
+        } catch (webdav_error $e) {
+            throw new storage_failure($e->errorclass, $e);
+        } catch (\moodle_exception $e) {
+            throw $this->location_failure($e);
+        }
+
+        return ['path' => $topath, 'server_enforced' => !$this->lacks_strong_etag($existing)];
+    }
+
+    /**
      * Caller and conflict errors pass through; unavailable locations are outages.
      *
      * @param \moodle_exception $e Original location or caller error.

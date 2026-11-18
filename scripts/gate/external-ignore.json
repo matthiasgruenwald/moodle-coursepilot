@@ -40,6 +40,11 @@
     "reason": "context_area::write() verlangt moodle/user:manageownfiles nur für die Moodle-Ablage; bei externem Speicherort gilt stattdessen die Anmeldung am Speicher, daher kein unbedingter Aufruf in execute()"
   },
   {
+    "file": "Plugin/src/local_coursepilot/classes/external/archive_context_files.php",
+    "missing": "capability",
+    "reason": "context_archive::run() verlangt moodle/user:manageownfiles nur für die Moodle-Ablage; bei externem Speicherort gilt stattdessen die Anmeldung am Speicher, daher kein unbedingter Aufruf in execute()"
+  },
+  {
     "file": "Plugin/src/local_coursepilot/classes/external/append_context_file.php",
     "missing": "capability",
     "reason": "context_area::append() verlangt moodle/user:manageownfiles nur für die Moodle-Ablage; bei externem Speicherort gilt stattdessen die Anmeldung am Speicher, daher kein unbedingter Aufruf in execute()"

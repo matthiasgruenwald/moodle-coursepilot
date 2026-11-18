@@ -180,14 +180,20 @@ final class webdav_client {
     }
 
     /**
-     * Moves the webdav client.
+     * Moves a file without ever overwriting (`Overwrite: F`, ADR 0036). With a strong ETag of the
+     * source, `If-Match` makes the server refuse the move when the source changed.
      *
      * @param string $sourceurl
      * @param string $destinationurl Full destination address.
-     * @throws webdav_error
+     * @param string|null $etag Last-read strong ETag of the source, null when there is none.
+     * @throws webdav_error CONFLICT (412) if the destination exists or the source changed,
+     *         NOT_FOUND if the source is missing.
      */
-    public function move(string $sourceurl, string $destinationurl): void {
-        $this->send('MOVE', $sourceurl, ['Destination' => $destinationurl]);
+    public function move(string $sourceurl, string $destinationurl, ?string $etag = null): void {
+        $this->send('MOVE', $sourceurl, [
+            'Destination' => $destinationurl,
+            'Overwrite' => 'F',
+        ] + ($etag !== null ? ['If-Match' => $etag] : []));
     }
 
     /**

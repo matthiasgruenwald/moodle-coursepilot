@@ -181,6 +181,39 @@ final class private_files_storage_port implements storage_port {
     }
 
     /**
+     * Moves a file without overwriting: the target is created from the stored file (a second name
+     * for the same content; an existing pathnamehash fails), checked against the expected content
+     * and only then is the source removed. No quota check: the content is not duplicated.
+     *
+     * @param storage_area $area The area.
+     * @param string $from The source path.
+     * @param string $to The target path.
+     * @param string $expectedchecksum The source checksum from an earlier read.
+     */
+    public function move(storage_area $area, string $from, string $to, string $expectedchecksum): array {
+        [$sourcedirectory, $sourcename] = $this->resolve_file($area, $from);
+        [$targetdirectory, $targetname] = $this->resolve_writable_file($area, $to);
+        $clientpath = storage_anchor::normalise_client_path($area, $to);
+        $source = self::find_file($sourcedirectory, $sourcename);
+        if ($source === null || $source->get_contenthash() !== $expectedchecksum) {
+            throw new storage_conflict_exception(storage_anchor::normalise_client_path($area, $from));
+        }
+        $record = self::filerecord(storage_anchor::own_context()->id, $targetdirectory, $targetname);
+        try {
+            $new = get_file_storage()->create_file_from_storedfile($record, $source);
+        } catch (\stored_file_creation_exception $e) {
+            throw new storage_conflict_exception($clientpath);
+        }
+        try {
+            $source->delete();
+        } catch (\Throwable $e) {
+            $new->delete();
+            throw $e;
+        }
+        return ['path' => $clientpath, 'server_enforced' => true];
+    }
+
+    /**
      * Resolves file.
      *
      * @param storage_area $area The area.

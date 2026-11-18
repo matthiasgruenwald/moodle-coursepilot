@@ -53,7 +53,8 @@ final class tool_registry_classification_test extends \advanced_testcase {
         'coursepilot_create_mc_question', 'coursepilot_update_mc_question', 'coursepilot_import_questions_xml',
         'coursepilot_export_questions_xml', 'coursepilot_ensure_quiz_question_categories',
         'coursepilot_add_glossary_entries', 'coursepilot_add_questions_to_quiz', 'coursepilot_write_context_file',
-        'coursepilot_append_context_file', 'coursepilot_upload_material_file', 'coursepilot_crop_material_file',
+        'coursepilot_append_context_file', 'coursepilot_archive_context_files', 'coursepilot_upload_material_file',
+        'coursepilot_crop_material_file',
         'coursepilot_compose_material_file', 'coursepilot_delete_material_files', 'coursepilot_clone_activity',
         'coursepilot_create_activity_from_xml', 'coursepilot_export_default_activity',
         'coursepilot_dismiss_pending_entry', 'coursepilot_dismiss_previous_location',
@@ -93,7 +94,8 @@ final class tool_registry_classification_test extends \advanced_testcase {
      */
     private const OPEN_WORLD = [
         'coursepilot_list_context_files', 'coursepilot_read_context_file', 'coursepilot_write_context_file',
-        'coursepilot_start_context', 'coursepilot_append_context_file', 'coursepilot_list_material_files',
+        'coursepilot_start_context', 'coursepilot_append_context_file', 'coursepilot_archive_context_files',
+        'coursepilot_list_material_files',
         'coursepilot_preview_material_file',
         'coursepilot_crop_material_file', 'coursepilot_compose_material_file', 'coursepilot_create_module',
         'coursepilot_update_module_settings', 'coursepilot_add_glossary_entries', 'coursepilot_import_questions_xml',

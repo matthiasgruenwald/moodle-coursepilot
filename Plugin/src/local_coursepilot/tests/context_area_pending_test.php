@@ -595,6 +595,19 @@ final class context_area_pending_test extends \advanced_testcase {
             public function delete(storage_area $area, string $path): bool {
                 return false;
             }
+
+            /**
+             * Moves the context area pending test.
+             *
+             * @param storage_area $area The area.
+             * @param string $from The source path.
+             * @param string $to The target path.
+             * @param string $expectedchecksum The expected source checksum.
+             * @return array{path: string, server_enforced: bool}
+             */
+            public function move(storage_area $area, string $from, string $to, string $expectedchecksum): array {
+                throw $this->failure;
+            }
         };
     }
 }

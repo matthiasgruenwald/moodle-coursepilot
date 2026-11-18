@@ -21,6 +21,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use local_coursepilot\external\add_glossary_entries;
 use local_coursepilot\external\add_questions_to_quiz;
 use local_coursepilot\external\append_context_file;
+use local_coursepilot\external\archive_context_files;
 use local_coursepilot\external\clone_activity;
 use local_coursepilot\external\compare_activity_versions;
 use local_coursepilot\external\compose_material_file;
@@ -93,6 +94,7 @@ use local_coursepilot\external\write_context_file;
 #[CoversClass(add_glossary_entries::class)]
 #[CoversClass(add_questions_to_quiz::class)]
 #[CoversClass(append_context_file::class)]
+#[CoversClass(archive_context_files::class)]
 #[CoversClass(clone_activity::class)]
 #[CoversClass(compare_activity_versions::class)]
 #[CoversClass(compose_material_file::class)]

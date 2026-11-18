@@ -40,7 +40,7 @@ final class conflict_scan {
     public const TIME_LIMIT = 8.0;
 
     /** Storage error classes that name one folder, not the whole location. */
-    private const FOLDER_ERRORS = [
+    public const FOLDER_ERRORS = [
         \local_coursepilot\webdav\webdav_error::NOT_FOUND,
         \local_coursepilot\webdav\webdav_error::BLOCKED,
         \local_coursepilot\webdav\webdav_error::CONFLICT,

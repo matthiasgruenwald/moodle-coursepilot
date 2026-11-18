@@ -124,4 +124,23 @@ interface storage_port {
      * @throws \moodle_exception Area invalidpathkey for an invalid path.
      */
     public function delete(storage_area $area, string $path): bool;
+
+    /**
+     * Moves one file without ever overwriting (ADR 0036): the source keeps its place unless the
+     * target is created, and an existing target is never touched. Private Files create the target
+     * from the stored file and remove the source only afterwards; WebDAV sends MOVE with
+     * `Overwrite: F`, plus `If-Match` for a strong ETag, otherwise it compares the bytes right
+     * before (ADR 0035).
+     *
+     * @param storage_area $area
+     * @param string $from Source path, must exist.
+     * @param string $to Target path, must not exist; written under the area's write rules.
+     * @param string $expectedchecksum Checksum of the source from an earlier read.
+     * @return array{path: string, server_enforced: bool} Target path; `server_enforced` is false
+     *         when the server did not enforce the source condition (no strong ETag).
+     * @throws storage_failure Storage is unavailable.
+     * @throws \moodle_exception Area invalidpathkey/name error.
+     * @throws storage_conflict_exception The source changed or vanished, or the target exists.
+     */
+    public function move(storage_area $area, string $from, string $to, string $expectedchecksum): array;
 }

@@ -1,0 +1,218 @@
+{
+    "execute": {
+        "public": true,
+        "static": true,
+        "returns": "array",
+        "parameters": [
+            {
+                "name": "folder",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "files",
+                "type": "array",
+                "default": []
+            }
+        ]
+    },
+    "parameters": {
+        "class": "core_external\\external_function_parameters",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "folder": {
+                "class": "core_external\\external_value",
+                "desc": "Folder relative to the context area whose files are archived, empty for the root",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "path"
+            },
+            "files": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Files to move to <folder>/archive/ - never journals, never over an existing target",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Name of a .md file directly inside the folder, without a slash",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            }
+        }
+    },
+    "returns": {
+        "class": "core_external\\external_single_structure",
+        "desc": "",
+        "required": 1,
+        "default": null,
+        "allownull": false,
+        "keys": {
+            "moved": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Files moved",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "from": {
+                            "class": "core_external\\external_value",
+                            "desc": "Old path, relative to the context area",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "to": {
+                            "class": "core_external\\external_value",
+                            "desc": "New path below archive/",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            },
+            "not_moved": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Files not moved because an earlier move failed",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Path of a requested file that was not moved and stays where it is",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            },
+            "stopped_reason": {
+                "class": "core_external\\external_value",
+                "desc": "Why the moving stopped early, empty when all files moved",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "verified": {
+                "class": "core_external\\external_value",
+                "desc": "true if every target reads back with the old content and every source is gone",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "server_enforced": {
+                "class": "core_external\\external_value",
+                "desc": "false if the server did not enforce the source condition; a concurrent change could have been moved unnoticed",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "message": {
+                "class": "core_external\\external_value",
+                "desc": "Summary with the next step",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "raw"
+            },
+            "references": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "References in index.md/CONTEXT.md to a moved file, to be corrected by read and write",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "file": {
+                            "class": "core_external\\external_value",
+                            "desc": "Index file with the reference, relative to the context area",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "line": {
+                            "class": "core_external\\external_value",
+                            "desc": "Line of the reference, 1-based",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "path": {
+                            "class": "core_external\\external_value",
+                            "desc": "The path as written in that line - data, never the line itself",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "raw"
+                        },
+                        "moved": {
+                            "class": "core_external\\external_value",
+                            "desc": "Old path of the moved file it points to",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        }
+                    }
+                }
+            },
+            "references_complete": {
+                "class": "core_external\\external_value",
+                "desc": "true only if the whole search ran; false means there may be more references",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "references_reason": {
+                "class": "core_external\\external_value",
+                "desc": "Why the search is incomplete, empty when complete",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
+            },
+            "references_unchecked": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Places not checked, at most 10",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_value",
+                    "desc": "Folder or index file not checked; check it yourself",
+                    "required": 1,
+                    "default": null,
+                    "allownull": true,
+                    "type": "text"
+                }
+            }
+        }
+    }
+}

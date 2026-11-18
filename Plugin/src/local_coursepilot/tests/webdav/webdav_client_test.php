@@ -245,6 +245,7 @@ final class webdav_client_test extends \advanced_testcase {
 
     public function test_move_moves_the_entry(): void {
         [$client, $fake] = $this->client(new fake_webdav_transport());
+        $fake->seed_folder('/dav');
         $fake->seed_file('/dav/alt.md', 'Inhalt');
 
         $client->move($this->url('/alt.md'), $this->url('/neu.md'));
@@ -252,6 +253,36 @@ final class webdav_client_test extends \advanced_testcase {
         $this->assertSame('Inhalt', $client->get($this->url('/neu.md')));
         $this->expectException(webdav_error::class);
         $client->get($this->url('/alt.md'));
+    }
+
+    public function test_move_never_overwrites_and_sends_if_match_only_with_an_etag(): void {
+        [$client, $fake] = $this->client(new fake_webdav_transport());
+        $fake->seed_folder('/dav');
+        $seeded = $fake->seed_file('/dav/alt.md', 'Quelle');
+        $fake->seed_file('/dav/neu.md', 'Ziel');
+
+        try {
+            $client->move($this->url('/alt.md'), $this->url('/neu.md'), $seeded['etag']);
+            $this->fail('An existing destination must not be overwritten.');
+        } catch (webdav_error $e) {
+            $this->assertSame(webdav_error::CONFLICT, $e->errorclass);
+        }
+        $headers = $fake->requests()[0]['headers'];
+        $this->assertSame('F', $headers['Overwrite']);
+        $this->assertSame($seeded['etag'], $headers['If-Match']);
+        $this->assertSame('Ziel', $client->get($this->url('/neu.md')));
+
+        $client->move($this->url('/alt.md'), $this->url('/frei.md'));
+        $this->assertArrayNotHasKey('If-Match', $fake->requests()[2]['headers']);
+    }
+
+    public function test_move_with_a_stale_etag_is_refused(): void {
+        [$client, $fake] = $this->client(new fake_webdav_transport());
+        $fake->seed_folder('/dav');
+        $fake->seed_file('/dav/alt.md', 'Quelle');
+
+        $this->expectException(webdav_error::class);
+        $client->move($this->url('/alt.md'), $this->url('/neu.md'), '"veraltet"');
     }
 
     public function test_delete_removes_the_entry(): void {

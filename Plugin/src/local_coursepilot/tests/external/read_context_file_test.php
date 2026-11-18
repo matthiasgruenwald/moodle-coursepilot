@@ -315,13 +315,14 @@ final class read_context_file_test extends \advanced_testcase {
 
 
     /**
-     * The context area has exactly two write endpoints (#408/#409, Spec 0016
-     * §4): write_context_file and append_context_file. Uploading or saving
+     * The context area has exactly three write endpoints (#408/#409, Spec 0016
+     * §4; #785, ADR 0036): write_context_file, append_context_file and
+     * archive_context_files (moves, never deletes). Uploading or saving
      * material in the context area remains excluded. The material store
      * (Spec 0018 §2/§4.2, #428) has its own upload_material_file tool, so the
      * save/upload exclusion applies only to context tools.
      */
-    public function test_context_write_surface_is_exactly_two_tools(): void {
+    public function test_context_write_surface_is_exactly_three_tools(): void {
         $writetools = [];
         foreach (\local_coursepilot\privacy_surface::allowed_tools() as $toolname => $functionname) {
             if (!str_contains($toolname, 'context')) {
@@ -335,7 +336,7 @@ final class read_context_file_test extends \advanced_testcase {
         }
         sort($writetools);
         $this->assertSame(
-            ['coursepilot_append_context_file', 'coursepilot_write_context_file'],
+            ['coursepilot_append_context_file', 'coursepilot_archive_context_files', 'coursepilot_write_context_file'],
             $writetools
         );
     }
