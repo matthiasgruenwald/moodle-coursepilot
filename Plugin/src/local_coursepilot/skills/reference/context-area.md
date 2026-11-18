@@ -14,7 +14,7 @@ the four file tools below. Basis: Spec 0016 §7/§8
 
 | Tool | Purpose | Response |
 |---|---|---|
-| `coursepilot_list_context_files` | List folders; optional `previous_location` for old content | Per entry: `contenthash`, `timemodified`, `locked` |
+| `coursepilot_list_context_files` | List folders; optional `previous_location` for old content | Per entry: `contenthash`, `timemodified`, `locked`; `conflict_copies` (`copy`, `original`, `original_exists`) lists sync-client conflict copies of this folder - report them, never change them |
 | `coursepilot_read_context_file` | Read files; optional `previous_location`, `section` (heading text, with or without `##`), `whole` (true = all). Files over 100 lines return `content` empty plus `toc` (`level`, `heading`, `start_line`, `end_line`), `partial` and `hint`; read a section with `section`, all with `whole: true`, which replacing a file needs first | `content`, `partial`, `toc`, `hint`, `contenthash`, `timemodified` |
 | `coursepilot_write_context_file` | Create, or fully overwrite with `expected_contenthash` (required for an existing file, else `contextfileversionrequired`; existing journal files are never replaced, `contextjournalappendonly`); optional `pending_entry` identifier and `create_only` for copying old content | Created/overwritten message; conflicts: `contextfilechanged`/`contextfilealreadyexists` |
 | `coursepilot_append_context_file` | Append in one server call; optional `expected_contenthash` for external storage and `pending_entry` | Appended/created message, with rotation advice when needed |

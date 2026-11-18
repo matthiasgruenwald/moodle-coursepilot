@@ -108,6 +108,32 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
+     * Sync-client conflict copies of the listed level are reported next to the entries (#783).
+     */
+    public function test_reports_conflict_copies_of_the_listed_level_only(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', 'A');
+        $this->create_context_file($user, '/coursepilot/', 'plan (conflicted copy 2026-11-17).md', 'B');
+        $this->create_context_file($user, '/coursepilot/', 'name 2.md', 'C');
+        $this->create_context_file($user, '/coursepilot/sub/', 'x.sync-conflict-20261117-093000.md', 'D');
+
+        $result = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute());
+        $this->assertSame(
+            [['copy' => 'plan (conflicted copy 2026-11-17).md', 'original' => 'plan.md', 'original_exists' => true]],
+            $result['conflict_copies']
+        );
+        $this->assertContains('name 2.md', array_column($result['entries'], 'name'));
+
+        $sub = external_api::clean_returnvalue(list_context_files::execute_returns(), list_context_files::execute('sub'));
+        $this->assertSame(
+            [['copy' => 'x.sync-conflict-20261117-093000.md', 'original' => 'x.md', 'original_exists' => false]],
+            $sub['conflict_copies']
+        );
+    }
+
+    /**
      * Each file has contenthash and timemodified (Spec 0016 §2). Folders
      * carry an empty hash and zero modification time.
      */

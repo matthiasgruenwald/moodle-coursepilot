@@ -127,6 +127,46 @@
                         }
                     }
                 }
+            },
+            "conflict_copies": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Conflict copies (Syncthing, Nextcloud, Dropbox, Seafile) in this folder only; reported, never changed",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "copy": {
+                            "class": "core_external\\external_value",
+                            "desc": "Name of the sync-client conflict copy in this folder",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "original": {
+                            "class": "core_external\\external_value",
+                            "desc": "Name the original file would have",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "original_exists": {
+                            "class": "core_external\\external_value",
+                            "desc": "Whether the original is in this folder, too",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "bool"
+                        }
+                    }
+                }
             }
         }
     }

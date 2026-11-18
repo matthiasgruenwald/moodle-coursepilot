@@ -91,7 +91,7 @@ final class context_area {
      *
      * @param string $path
      * @param bool $previouslocation Lists the read-only previous location instead.
-     * @return array{directory: string, entries: mixed[]}
+     * @return array{directory: string, entries: mixed[], conflict_copies: mixed[]}
      */
     public static function list(string $path, bool $previouslocation = false): array {
         $area = context_files::area();
@@ -111,6 +111,7 @@ final class context_area {
                 static fn (array $entry): array => self::annotate_entry($port, $entry, $directory),
                 $entries
             ),
+            'conflict_copies' => conflict_copy::in_entries($entries),
         ];
     }
 
