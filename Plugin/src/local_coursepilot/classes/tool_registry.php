@@ -343,6 +343,11 @@ final class tool_registry {
             'classname' => 'local_coursepilot\external\list_skills',
             'descriptionkey' => 'tool_list_skills',
         ],
+        'coursepilot_start_context' => [
+            'classname' => 'local_coursepilot\external\start_context',
+            'descriptionkey' => 'tool_start_context',
+            'external' => true,
+        ],
         'coursepilot_get_skill' => ['classname' => 'local_coursepilot\external\get_skill', 'descriptionkey' => 'tool_get_skill'],
         'coursepilot_dismiss_pending_entry' => [
             'classname' => 'local_coursepilot\external\dismiss_pending_entry',

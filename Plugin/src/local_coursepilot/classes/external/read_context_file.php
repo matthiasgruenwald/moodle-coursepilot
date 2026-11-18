@@ -22,11 +22,8 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_coursepilot\previous_location;
-use local_coursepilot\context_area;
 use local_coursepilot\context_files;
-use local_coursepilot\context_toc;
-use local_coursepilot\personal_data;
-use local_coursepilot\pointer_location;
+use local_coursepilot\context_reader;
 use local_coursepilot\storage_anchor;
 
 /**
@@ -114,101 +111,11 @@ class read_context_file extends external_api {
 
         $path = storage_anchor::normalise_client_path(context_files::area(), $params['path']);
         $previous = $params['previous_location'] ? previous_location::require_open_location() : null;
-        $file = self::load($path, $previous);
-        if ($file === null) {
+        $result = context_reader::read_selected($path, $previous, $section, $params['whole']);
+        if ($result === null) {
             throw new \moodle_exception('contextfilenotfound', 'local_coursepilot', '', $params['path']);
         }
-
-        // Personal-data switch (#344, ADR 0011): checks the frontmatter marker,
-        // not a content-based guess; see local_coursepilot\personal_data.
-        if (personal_data::is_marked($file['content']) && !personal_data::allowed()) {
-            throw new \moodle_exception('contextfilelocked', 'local_coursepilot', '', $params['path']);
-        }
-
-        // The hash, size and time always describe the whole file (#782).
-        $selected = self::select($file['path'], $file['content'], $section, $params['whole']);
-        return [
-            'path' => $file['path'],
-            'filename' => basename($file['path']),
-            'mimetype' => $file['mimetype'],
-            'size' => $file['size'],
-            'content' => $selected['content'],
-            'contenthash' => $file['contenthash'],
-            'timemodified' => $file['timemodified'],
-            'partial' => $selected['partial'],
-            'toc' => $selected['toc'],
-            'hint' => $selected['hint'],
-        ];
-    }
-
-    /**
-     * Chooses what to return of the content: all, one section or only the table of contents.
-     *
-     * @param string $path Resolved path, for messages.
-     * @param string $content Whole file content.
-     * @param string $section Heading to read, empty for none.
-     * @param bool $whole
-     * @return array{content: string, partial: bool, toc: array<int, array<string, mixed>>, hint: string}
-     */
-    private static function select(string $path, string $content, string $section, bool $whole): array {
-        $lines = context_toc::lines($content);
-        $all = ['content' => $content, 'partial' => false, 'toc' => [], 'hint' => ''];
-        if ($whole || ($section === '' && count($lines) <= context_toc::MAX_LINES)) {
-            return $all;
-        }
-        $sections = context_toc::sections($lines);
-        $count = count($lines);
-        if ($section === '') {
-            $hint = $sections
-                ? get_string('contextfiletoc', 'local_coursepilot', ['lines' => $count, 'example' => $sections[0]['heading']])
-                : get_string('contextfiletocnoheadings', 'local_coursepilot', $count);
-            return ['content' => '', 'partial' => true, 'toc' => $sections, 'hint' => $hint];
-        }
-        $found = context_toc::find($sections, $section);
-        if (count($found) !== 1) {
-            $a = ['section' => $section, 'path' => $path];
-            throw $found
-                ? new \moodle_exception('contextsectionambiguous', 'local_coursepilot', '', $a + [
-                    'count' => count($found),
-                    'lines' => implode(', ', array_column($found, 'start_line')),
-                ])
-                : new \moodle_exception('contextsectionunknown', 'local_coursepilot', '', $a + [
-                    'headings' => $sections ? implode('; ', array_column($sections, 'heading')) : '-',
-                ]);
-        }
-        [$start, $end] = [$found[0]['start_line'], $found[0]['end_line']];
-        return [
-            'content' => context_toc::slice($lines, $start, $end),
-            'partial' => true,
-            'toc' => [],
-            'hint' => get_string('contextfilesection', 'local_coursepilot', [
-                'heading' => $found[0]['heading'], 'start' => $start, 'end' => $end, 'lines' => $count,
-            ]),
-        ];
-    }
-
-    /**
-     * Reads the canonical file; old names are read only when it is absent. Access and storage
-     * errors are not caught and the selected current/previous location is never crossed.
-     *
-     * @param string $path Normalised path.
-     * @param pointer_location|null $previous Previous location, null for the current one.
-     * @return mixed[]|null File data, null when neither the canonical nor the legacy file exists.
-     */
-    private static function load(string $path, ?pointer_location $previous): ?array {
-        $read = static fn(string $p): ?array => $previous
-            ? context_area::read_previous_location($p, $previous)
-            : context_area::read($p);
-        $file = $read($path);
-        $legacyname = [
-            'templates.md' => 'vorlagen.md',
-            'notepad.md' => 'merkzettel.md',
-            'CONTEXT-people.md' => 'CONTEXT.personen.md',
-        ][basename($path)] ?? null;
-        if ($file === null && $legacyname !== null) {
-            $file = $read((dirname($path) === '.' ? '' : dirname($path) . '/') . $legacyname);
-        }
-        return $file;
+        return $result;
     }
 
     /**

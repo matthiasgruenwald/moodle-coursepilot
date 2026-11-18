@@ -67,6 +67,7 @@ use local_coursepilot\external\report_loose_material_files;
 use local_coursepilot\external\restore_activity_version;
 use local_coursepilot\external\set_completion;
 use local_coursepilot\external\set_restriction;
+use local_coursepilot\external\start_context;
 use local_coursepilot\external\update_mc_question;
 use local_coursepilot\external\update_module_settings;
 use local_coursepilot\external\update_question_category;
@@ -138,6 +139,7 @@ use local_coursepilot\external\write_context_file;
 #[CoversClass(restore_activity_version::class)]
 #[CoversClass(set_completion::class)]
 #[CoversClass(set_restriction::class)]
+#[CoversClass(start_context::class)]
 #[CoversClass(update_mc_question::class)]
 #[CoversClass(update_module_settings::class)]
 #[CoversClass(update_question_category::class)]
