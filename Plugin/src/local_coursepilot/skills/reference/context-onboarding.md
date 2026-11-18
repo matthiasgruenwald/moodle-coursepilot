@@ -28,8 +28,9 @@ Only as an explicitly selected setup option, never automatically.
 Examples: "Set up context for 7a science", "Create a learning-group profile
 for 7a" or "Set up my class/group".
 
-If `<school-year>/<class>/CONTEXT.md` already exists according to
-`coursepilot_list_context_files`, point to it rather than offering setup again.
+If `<school-year>/<class>/index.md` (or an old-layout `CONTEXT.md`) already
+exists according to `coursepilot_list_context_files`, point to it rather than
+offering setup again.
 
 ## Required context
 
@@ -49,8 +50,12 @@ Paths are relative to the context root; see context-area storage layout.
 
 | File | Location |
 |---|---|
-| Learning-group profile | `<school-year>/<class>/CONTEXT.md` |
-| Subject profile | `<school-year>/<class>/<subject>/CONTEXT.md` |
+| Learning-group profile | `<school-year>/<class>/index.md` |
+| Subject profile | `<school-year>/<class>/<subject>/index.md` |
+
+Habits go to `habits.md` and terms to `glossary.md` on the level they apply
+to; see `context-area`. Old-layout `CONTEXT.md` profiles stay readable and
+are read as profiles; never create new ones.
 
 Independent subgroups use their own class value and folder under the year.
 
@@ -68,7 +73,7 @@ Completion: all required details, at least year and class/group, are available.
 ### Step 2: explain creation
 
 Briefly name files, location and purpose before requesting content.
-Example: "I will create 2025-26/7a/CONTEXT.md in your context area. It records
+Example: "I will create 2025-26/7a/index.md in your context area. It records
 cross-subject information about the group." Use the teacher's language.
 
 Completion: the teacher knows targets and purposes before content questions.
@@ -92,7 +97,7 @@ Completion: the question is answered or explicitly skipped.
 
 ### Step 5: preview and create after confirmation
 
-Show CONTEXT.md previews before `coursepilot_write_context_file`.
+Show `index.md` previews before `coursepilot_write_context_file`.
 Do not overwrite existing files or create without confirmed preview.
 
 Completion: confirmed files exactly match their previews, or creation
@@ -107,13 +112,14 @@ Completion: the choice was offered, regardless of the selected option.
 
 ## Frontmatter and index (OKF, Specs 0010/0011)
 
-Created CONTEXT.md profiles/projects use only Spec 0010's limited YAML:
+Created `index.md` profiles/projects use only Spec 0010's limited YAML:
 type, title, tags, status, created, updated, about, gradeLevel,
 coursepilot.personenbezug and coursepilot.weitergabe. Formulate it and
 show it in preview; invent no new frontmatter syntax.
 
 When creating a teaching project, best-effort add its folder to root
-index.md with subject, year level, tags, summary and status. If index.md
+index.md with subject, year level, tags, summary and status, and record its
+Moodle course ID and name in the project's own `index.md`. If index.md
 is unreadable or has broken/duplicate markers, warn and preserve it.
 This must not block creation of the project itself.
 
