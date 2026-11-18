@@ -80,36 +80,36 @@ deutlich sicherer und geordneter mit dem Kontextbereich. Coursepilot hat davon n
 Coursepilot übernimmt den Kern des contextmanager in seine Architektur aus
 `context_area`, `storage_port` (Private Files, WebDAV) und `storage_write`:
 
-1. [#780](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/780) **Version und Rücklesen.** `write_context_file` ersetzt eine vorhandene Datei nur mit
+1. **Version und Rücklesen.** `write_context_file` ersetzt eine vorhandene Datei nur mit
    `expected_contenthash`; ohne ihn legt es nur an (`contextfileversionrequired`, nächster
    Schritt: lesen). `write`/`append` lesen nach dem Schreiben zurück und melden `verified`.
-2. [#781](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/781) **Journal nur anhängen.** Eine vorhandene Datei unter einem Ordner `journal/` (jede Ebene)
+2. **Journal nur anhängen.** Eine vorhandene Datei unter einem Ordner `journal/` (jede Ebene)
    oder namens `journal-*.md` (jede Ebene, Groß-/Kleinschreibung egal) ersetzt
    `write_context_file` nie (`contextjournalappendonly`); das Archiv verschiebt sie nie.
-3. [#782](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/782) **WebDAV-Version.** Starkes ETag → Version aus dem ETag, `If-Match`. Kein oder schwaches
+3. **WebDAV-Version.** Starkes ETag → Version aus dem ETag, `If-Match`. Kein oder schwaches
    ETag → `sha256:<hex>` der gelesenen Bytes; vor `PUT`/`MOVE` liest der Port erneut und
    vergleicht, dann ohne `If-Match`. Antworten tragen `server_enforced: false` und einen
    Satz, dass eine gleichzeitige Änderung unbemerkt überschrieben werden könnte.
-4. [#783](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/783) **Inhaltsverzeichnis.** `read_context_file` liefert für Dateien über 100 Zeilen die
+4. **Inhaltsverzeichnis.** `read_context_file` liefert für Dateien über 100 Zeilen die
    Gliederung (`##`/`###` mit Zeilenbereichen, Codeblöcke zählen nicht), bis `section`
    (Überschriftstext oder `## Text`) oder `whole: true` verlangt wird. `contenthash` gilt
    immer für die ganze Datei.
-5. [#784](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/784) **Konfliktkopien.** Eine reine Namensprüfung (Syncthing, Nextcloud alt/neu, Dropbox,
+5. **Konfliktkopien.** Eine reine Namensprüfung (Syncthing, Nextcloud alt/neu, Dropbox,
    Seafile) meldet Paare in `list_context_files` (diese Ebene) und im Sitzungsbeginn (ganzer
    Bereich, begrenzt auf 500 Ordner, 10 Ebenen, 8 Sekunden; sonst „nicht vollständig geprüft“
    mit Grund und Zahl).
-6. [#785](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/785) **Sitzungsbeginn.** `coursepilot_start_context` (lesend, ohne Parameter) antwortet auch
+6. **Sitzungsbeginn.** `coursepilot_start_context` (lesend, ohne Parameter) antwortet auch
    ohne Ort: Lage (`answers` oder Kontextlücke mit Ursache und Ortswahl-Link), offene
    Ausstände, Altbestand-Hinweis, Konfliktkopien, Wurzel-`index.md` (sonst `CONTEXT.md` als
    altes Layout, sonst „missing“) und Wurzel-`habits.md`, beide nach Regel 4 und als Daten
    gekennzeichnet.
-7. [#786](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/786) **Archiv.** `coursepilot_archive_context_files(folder, files[])` verschiebt direkte
+7. **Archiv.** `coursepilot_archive_context_files(folder, files[])` verschiebt direkte
    `.md`-Dateien eines Ordners nach `<folder>/archive/`, nie Journale, nie über ein
    vorhandenes Ziel, nie löschend; danach sucht es in `index.md`/`CONTEXT.md` der Ebene,
    darüber und darunter (ohne `archive/`) nach Verweisen und nennt Datei, Zeile und Pfad,
    nie die Zeile. Grenzen: 10 Ebenen, 300 Ordner, 100 Indexdateien, 1 MiB je Datei,
    8 Sekunden; jede Grenze macht die Suche `INCOMPLETE`.
-8. [#787](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/787) **Skill-Korpus.** Grundaufbau (Ebenen mit `index.md`, `habits.md`, `glossary.md`,
+8. **Skill-Korpus.** Grundaufbau (Ebenen mit `index.md`, `habits.md`, `glossary.md`,
    `decisions/`, `plan.md` oder `plan/` mit Abschnittszuständen, `journal/JJJJ-MM-TT.md`),
    altes Layout bleibt lesbar; harte Regel „Gründe nur aus einer Quelle“; Aufschreibmodus
    (`ask`/`always`/`wait`); „ignoriere den Kontext“; Reihenfolge vor jedem Moodle-Schreiben
@@ -123,14 +123,14 @@ Coursepilot übernimmt den Kern des contextmanager in seine Architektur aus
 Reihenfolge = Abhängigkeit. Jedes Ticket ist ein vertikaler Schnitt mit PHPUnit über
 `execute()` und grünem `npm run gate -- fast`.
 
-1. WebDAV-Version ohne starkes ETag und Rücklesen mit `verified` (ADR 0034/0035).
-2. Ersetzen nur mit gelesener Version; Journal nur anhängen (ADR 0034).
-3. Lesen langer Dateien über das Inhaltsverzeichnis (ADR 0037).
-4. Konfliktkopien erkennen und in `list_context_files` melden (ADR 0037).
-5. `coursepilot_start_context` (ADR 0037).
-6. `coursepilot_archive_context_files` mit Verweissuche (ADR 0036).
-7. Skill-Korpus auf Grundaufbau und neue Regeln (ADR 0037).
-8. Glossar, Release Notes, Version 2.2.0-beta, Deploy Spike und Devstack.
+1. [#780](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/780) WebDAV-Version ohne starkes ETag und Rücklesen mit `verified` (ADR 0034/0035).
+2. [#781](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/781) Ersetzen nur mit gelesener Version; Journal nur anhängen (ADR 0034).
+3. [#782](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/782) Lesen langer Dateien über das Inhaltsverzeichnis (ADR 0037).
+4. [#783](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/783) Konfliktkopien erkennen und in `list_context_files` melden (ADR 0037).
+5. [#784](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/784) `coursepilot_start_context` (ADR 0037).
+6. [#785](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/785) `coursepilot_archive_context_files` mit Verweissuche (ADR 0036).
+7. [#786](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/786) Skill-Korpus auf Grundaufbau und neue Regeln (ADR 0037).
+8. [#787](https://github.com/matthiasgruenwald/moodle-coursepilot/issues/787) Glossar, Release Notes, Version 2.2.0-beta, Deploy Spike und Devstack.
 
 ## Testing Decisions
 
