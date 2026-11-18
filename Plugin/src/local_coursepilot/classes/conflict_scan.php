@@ -67,12 +67,9 @@ final class conflict_scan {
         $reason = '';
         $checked = 0;
         while ($queue !== []) {
-            if ($checked >= self::MAX_FOLDERS) {
-                $reason = 'folder_limit';
-                break;
-            }
-            if ($clock() >= $end) {
-                $reason = 'time_limit';
+            $stop = self::stop_reason($checked, $clock() >= $end);
+            if ($stop !== '') {
+                $reason = $stop;
                 break;
             }
             [$folder, $depth] = array_shift($queue);
@@ -81,29 +78,82 @@ final class conflict_scan {
                 $entries = $port->list($area, $folder);
             } catch (storage_failure $e) {
                 if (!in_array($e->errorclass, self::FOLDER_ERRORS, true)) {
-                    // Keep what was found; "not checked" only when no folder could be listed at all.
-                    $listed = $checked - 1 - count($unreadable);
-                    return self::result($listed > 0, 'storage_unavailable', $copies, $unreadable, $checked - 1, count($queue) + 1);
+                    return self::outage($copies, $unreadable, $checked, count($queue));
                 }
                 $unreadable[] = $folder;
                 continue;
             }
             array_push($copies, ...conflict_copy::in_entries($entries, $folder));
-            foreach ($entries as $entry) {
-                if ($entry['type'] !== 'folder') {
-                    continue;
-                }
-                if ($depth + 1 > self::MAX_DEPTH) {
-                    $reason = $reason ?: 'depth_limit';
-                    continue;
-                }
-                $queue[] = [$folder === '' ? $entry['name'] : $folder . '/' . $entry['name'], $depth + 1];
+            $deeper = self::enqueue_folders($entries, $folder, $depth, $queue);
+            $reason = $reason === '' ? $deeper : $reason;
+        }
+        return self::result(true, self::final_reason($reason, $unreadable), $copies, $unreadable, $checked, count($queue));
+    }
+
+    /**
+     * Why the search has to stop before reading the next folder.
+     *
+     * @param int $checked Folders read so far.
+     * @param bool $timeup Whether the time limit is reached.
+     * @return string "folder_limit", "time_limit" or "" to go on.
+     */
+    private static function stop_reason(int $checked, bool $timeup): string {
+        if ($checked >= self::MAX_FOLDERS) {
+            return 'folder_limit';
+        }
+        return $timeup ? 'time_limit' : '';
+    }
+
+    /**
+     * Queues the sub folders of a listing.
+     *
+     * @param mixed[] $entries Listing of the folder.
+     * @param string $folder The folder listed.
+     * @param int $depth Its depth.
+     * @param mixed[] $queue Folders still to read, extended.
+     * @return string "depth_limit" when a folder was too deep to queue, otherwise "".
+     */
+    private static function enqueue_folders(array $entries, string $folder, int $depth, array &$queue): string {
+        $reason = '';
+        foreach ($entries as $entry) {
+            if ($entry['type'] !== 'folder') {
+                continue;
             }
+            if ($depth + 1 > self::MAX_DEPTH) {
+                $reason = 'depth_limit';
+                continue;
+            }
+            $queue[] = [$folder === '' ? $entry['name'] : $folder . '/' . $entry['name'], $depth + 1];
         }
-        if ($reason === '' && $unreadable !== []) {
-            $reason = 'unreadable_folder';
-        }
-        return self::result(true, $reason, $copies, $unreadable, $checked, count($queue));
+        return $reason;
+    }
+
+    /**
+     * The reason of a search that ran to its end.
+     *
+     * @param string $reason Reason so far.
+     * @param string[] $unreadable Folders that could not be read.
+     * @return string
+     */
+    private static function final_reason(string $reason, array $unreadable): string {
+        return ($reason === '' && $unreadable !== []) ? 'unreadable_folder' : $reason;
+    }
+
+    /**
+     * Result of a search ended by an outage; keeps what was found, "not checked" only when no folder
+     * could be listed at all.
+     *
+     * @param mixed[] $copies
+     * @param string[] $unreadable
+     * @param int $checked Folders counted including the failed one.
+     * @param int $waiting Folders still queued, without the failed one.
+     * @return array{checked: bool, complete: bool, reason: string,
+     *         copies: array<int, array{copy: string, original: string, original_exists: bool}>,
+     *         unreadable: string[], folders_checked: int, folders_waiting: int}
+     */
+    private static function outage(array $copies, array $unreadable, int $checked, int $waiting): array {
+        $listed = $checked - 1 - count($unreadable);
+        return self::result($listed > 0, 'storage_unavailable', $copies, $unreadable, $checked - 1, $waiting + 1);
     }
 
     /**

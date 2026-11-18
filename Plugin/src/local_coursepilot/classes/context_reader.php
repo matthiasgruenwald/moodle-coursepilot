@@ -81,24 +81,12 @@ final class context_reader {
             return $all;
         }
         $sections = context_toc::sections($lines);
-        $count = count($lines);
         if ($section === '') {
-            $hint = $sections
-                ? get_string('contextfiletoc', 'local_coursepilot', ['lines' => $count, 'example' => $sections[0]['heading']])
-                : get_string('contextfiletocnoheadings', 'local_coursepilot', $count);
-            return ['content' => '', 'partial' => true, 'toc' => $sections, 'hint' => $hint];
+            return self::table_of_contents($sections, count($lines));
         }
         $found = context_toc::find($sections, $section);
         if (count($found) !== 1) {
-            $a = ['section' => $section, 'path' => $path];
-            throw $found
-                ? new \moodle_exception('contextsectionambiguous', 'local_coursepilot', '', $a + [
-                    'count' => count($found),
-                    'lines' => implode(', ', array_column($found, 'start_line')),
-                ])
-                : new \moodle_exception('contextsectionunknown', 'local_coursepilot', '', $a + [
-                    'headings' => $sections ? implode('; ', array_column($sections, 'heading')) : '-',
-                ]);
+            throw self::section_error($found, $sections, $section, $path);
         }
         [$start, $end] = [$found[0]['start_line'], $found[0]['end_line']];
         return [
@@ -106,9 +94,45 @@ final class context_reader {
             'partial' => true,
             'toc' => [],
             'hint' => get_string('contextfilesection', 'local_coursepilot', [
-                'heading' => $found[0]['heading'], 'start' => $start, 'end' => $end, 'lines' => $count,
+                'heading' => $found[0]['heading'], 'start' => $start, 'end' => $end, 'lines' => count($lines),
             ]),
         ];
+    }
+
+    /**
+     * The answer for a long file without a wanted section: no content, the table of contents and a hint.
+     *
+     * @param mixed[] $sections From {@see context_toc::sections()}.
+     * @param int $count Number of lines.
+     * @return array{content: string, partial: bool, toc: array<int, array<string, mixed>>, hint: string}
+     */
+    private static function table_of_contents(array $sections, int $count): array {
+        $hint = $sections
+            ? get_string('contextfiletoc', 'local_coursepilot', ['lines' => $count, 'example' => $sections[0]['heading']])
+            : get_string('contextfiletocnoheadings', 'local_coursepilot', $count);
+        return ['content' => '', 'partial' => true, 'toc' => $sections, 'hint' => $hint];
+    }
+
+    /**
+     * The error for a wanted section that is not found exactly once.
+     *
+     * @param mixed[] $found Sections with the wanted heading.
+     * @param mixed[] $sections All sections of the file.
+     * @param string $section Wanted heading.
+     * @param string $path Resolved path, for the message.
+     * @return \moodle_exception
+     */
+    private static function section_error(array $found, array $sections, string $section, string $path): \moodle_exception {
+        $a = ['section' => $section, 'path' => $path];
+        if ($found) {
+            return new \moodle_exception('contextsectionambiguous', 'local_coursepilot', '', $a + [
+                'count' => count($found),
+                'lines' => implode(', ', array_column($found, 'start_line')),
+            ]);
+        }
+        return new \moodle_exception('contextsectionunknown', 'local_coursepilot', '', $a + [
+            'headings' => $sections ? implode('; ', array_column($sections, 'heading')) : '-',
+        ]);
     }
 
     /**

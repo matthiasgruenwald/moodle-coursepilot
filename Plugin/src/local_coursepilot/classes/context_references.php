@@ -52,19 +52,46 @@ final class context_references {
         }
         $found = [];
         foreach (preg_split('/\r\n|\n|\r/', $text) as $index => $line) {
-            $reported = [];
-            foreach (self::candidates($line) as $candidate) {
-                foreach (array_unique([self::resolve($candidate, $folder), self::resolve($candidate, '')]) as $resolved) {
-                    $target = $resolved === null ? null : ($targets[strtolower($resolved)] ?? null);
-                    if ($target === null || isset($reported[$target . '|' . $candidate])) {
-                        continue;
-                    }
-                    $reported[$target . '|' . $candidate] = true;
-                    $found[] = ['file' => $file, 'line' => $index + 1, 'path' => self::reported($candidate), 'moved' => $target];
+            array_push($found, ...self::in_line($file, $folder, $index + 1, $line, $targets));
+        }
+        return $found;
+    }
+
+    /**
+     * The references to moved files in one line, each moved file once per written path.
+     *
+     * @param string $file Path of the index file.
+     * @param string $folder Folder of the index file, '' for the root.
+     * @param int $number 1-based line number.
+     * @param string $line
+     * @param string[] $targets Moved files by their lower-case path.
+     * @return array<int, array{file: string, line: int, path: string, moved: string}>
+     */
+    private static function in_line(string $file, string $folder, int $number, string $line, array $targets): array {
+        $found = [];
+        $reported = [];
+        foreach (self::candidates($line) as $candidate) {
+            foreach (array_unique([self::resolve($candidate, $folder), self::resolve($candidate, '')]) as $resolved) {
+                $target = self::target_of($resolved, $targets);
+                if ($target === null || isset($reported[$target . '|' . $candidate])) {
+                    continue;
                 }
+                $reported[$target . '|' . $candidate] = true;
+                $found[] = ['file' => $file, 'line' => $number, 'path' => self::reported($candidate), 'moved' => $target];
             }
         }
         return $found;
+    }
+
+    /**
+     * The moved file a resolved path names.
+     *
+     * @param string|null $resolved Resolved path or null.
+     * @param string[] $targets Moved files by their lower-case path.
+     * @return string|null
+     */
+    private static function target_of(?string $resolved, array $targets): ?string {
+        return $resolved === null ? null : ($targets[strtolower($resolved)] ?? null);
     }
 
     /**
@@ -113,25 +140,56 @@ final class context_references {
         if (preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:/', $path)) {
             return null;
         }
+        $path = self::decoded($path);
+        $parts = self::base_segments($path, $base);
+        foreach (explode('/', $path) as $part) {
+            $parts = self::apply_segment($parts, $part);
+            if ($parts === null) {
+                return null;
+            }
+        }
+        return $parts === [] ? null : implode('/', $parts);
+    }
+
+    /**
+     * The segments of the base folder, or none for an absolute or empty path or the root.
+     *
+     * @param string $path Decoded path.
+     * @param string $base Folder relative to the root, '' for the root.
+     * @return string[]
+     */
+    private static function base_segments(string $path, string $base): array {
+        return ($path !== '' && $path[0] !== '/' && $base !== '') ? explode('/', $base) : [];
+    }
+
+    /**
+     * The path without `#fragment` and `?query`, percent-decoded, with forward slashes.
+     *
+     * @param string $path
+     * @return string
+     */
+    private static function decoded(string $path): string {
         foreach (['#', '?'] as $separator) {
             $at = strpos($path, $separator);
             $path = $at === false ? $path : substr($path, 0, $at);
         }
-        $path = str_replace('\\', '/', rawurldecode($path));
-        $parts = ($path !== '' && $path[0] !== '/' && $base !== '') ? explode('/', $base) : [];
-        foreach (explode('/', $path) as $part) {
-            if ($part === '' || $part === '.') {
-                continue;
-            }
-            if ($part !== '..') {
-                $parts[] = $part;
-                continue;
-            }
-            if ($parts === []) {
-                return null;
-            }
-            array_pop($parts);
+        return str_replace('\\', '/', rawurldecode($path));
+    }
+
+    /**
+     * Applies one path segment: skips empty and `.`, steps up on `..`, appends anything else.
+     *
+     * @param string[] $parts Segments so far.
+     * @param string $part
+     * @return string[]|null The new segments, null when `..` leaves the root.
+     */
+    private static function apply_segment(array $parts, string $part): ?array {
+        if ($part === '' || $part === '.') {
+            return $parts;
         }
-        return $parts === [] ? null : implode('/', $parts);
+        if ($part !== '..') {
+            return [...$parts, $part];
+        }
+        return $parts === [] ? null : array_slice($parts, 0, -1);
     }
 }

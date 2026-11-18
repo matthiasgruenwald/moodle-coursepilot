@@ -112,16 +112,29 @@ final class context_archive {
             if (isset($paths[$name])) {
                 throw new \moodle_exception('contextarchiveduplicate', 'local_coursepilot', '', $name);
             }
-            $from = $prefix . $name;
-            $to = $prefix . self::FOLDER . '/' . $name;
-            storage_anchor::writable_segments($area, $from);
-            storage_anchor::writable_segments($area, $to);
-            if (context_files::is_journal($from) || context_files::is_journal($to)) {
-                throw new \moodle_exception('contextarchivejournal', 'local_coursepilot', '', $from);
-            }
-            $paths[$name] = ['from' => $from, 'to' => $to];
+            $paths[$name] = self::checked_pair($area, $prefix, $name);
         }
         return array_values($paths);
+    }
+
+    /**
+     * Source and target path of one file, checked against the area rules and the journal.
+     *
+     * @param storage_area $area
+     * @param string $prefix Folder with trailing slash, or ''.
+     * @param string $name File name.
+     * @return array{from: string, to: string}
+     * @throws \moodle_exception
+     */
+    private static function checked_pair(storage_area $area, string $prefix, string $name): array {
+        $from = $prefix . $name;
+        $to = $prefix . self::FOLDER . '/' . $name;
+        storage_anchor::writable_segments($area, $from);
+        storage_anchor::writable_segments($area, $to);
+        if (context_files::is_journal($from) || context_files::is_journal($to)) {
+            throw new \moodle_exception('contextarchivejournal', 'local_coursepilot', '', $from);
+        }
+        return ['from' => $from, 'to' => $to];
     }
 
     /**

@@ -77,36 +77,20 @@ final class context_reference_search {
         int $maxfolders = self::MAX_FOLDERS,
         int $maxfiles = self::MAX_FILES
     ): array {
-        $clock ??= static fn (): float => microtime(true);
+        $clock = self::clock($clock);
         $end = $clock() + $timelimit;
         $area = context_files::area();
-        $parts = $folder === '' ? [] : explode('/', $folder);
-        $queue = [];
-        foreach (array_keys($parts) as $level) {
-            $queue[] = [implode('/', array_slice($parts, 0, $level)), 0, false];
-        }
-        $queue[] = [$folder, 0, true];
-
-        $references = [];
-        $reasons = [];
-        $unchecked = [];
+        $queue = self::initial_queue($folder);
+        $state = ['files' => 0, 'references' => [], 'capped' => false, 'reasons' => [], 'unchecked' => []];
+        $note = self::recorder($state);
         $folders = 0;
-        $files = 0;
-        $capped = false;
-        $note = static function (string $reason, string $place) use (&$reasons, &$unchecked): void {
-            $reasons[$reason] = true;
-            if (count($unchecked) < self::MAX_UNCHECKED) {
-                $unchecked[] = $place === '' ? '(root)' : $place;
-            }
-        };
+        $scan = ['port' => $port, 'area' => $area, 'moved' => $moved, 'clock' => $clock, 'end' => $end, 'maxfiles' => $maxfiles];
 
         while ($queue !== []) {
             [$current, $depth, $descend] = array_shift($queue);
-            $stop = $folders >= $maxfolders ? 'folder_limit' : ($clock() >= $end ? 'time_limit' : '');
+            $stop = self::stop_reason($folders, $maxfolders, $clock() >= $end);
             if ($stop !== '') {
-                foreach (array_merge([[$current]], $queue) as [$left]) {
-                    $note($stop, $left);
-                }
+                self::note_all($note, $stop, $current, $queue);
                 break;
             }
             $folders++;
@@ -117,61 +101,189 @@ final class context_reference_search {
                     $note('unreadable_folder', $current);
                     continue;
                 }
-                foreach (array_merge([[$current]], $queue) as [$left]) {
-                    $note('storage_unavailable', $left);
-                }
+                self::note_all($note, 'storage_unavailable', $current, $queue);
                 break;
             } catch (\moodle_exception $e) {
                 $note('unreadable_folder', $current);
                 continue;
             }
-            foreach ($entries as $entry) {
-                $path = $current === '' ? $entry['name'] : $current . '/' . $entry['name'];
-                if ($entry['type'] === 'folder') {
-                    if (!$descend || strtolower($entry['name']) === 'archive') {
-                        continue;
-                    }
-                    if ($depth + 1 > self::MAX_DEPTH) {
-                        $note('depth_limit', $path);
-                        continue;
-                    }
-                    $queue[] = [$path, $depth + 1, true];
-                    continue;
-                }
-                if (!in_array(strtolower($entry['name']), self::INDEX_NAMES, true)) {
-                    continue;
-                }
-                if ($files >= $maxfiles) {
-                    $note('file_limit', $path);
-                    continue;
-                }
-                if ($clock() >= $end) {
-                    $note('time_limit', $path);
-                    continue;
-                }
-                if ($capped) {
-                    $note('reference_limit', $path);
-                    continue;
-                }
-                $files++;
-                $text = self::read_index($port, $area, $path, $entry['size'], $note);
-                if ($text !== null) {
-                    array_push($references, ...context_references::find($path, $text, $moved));
-                    if (count($references) > self::MAX_REFERENCES) {
-                        $references = array_slice($references, 0, self::MAX_REFERENCES);
-                        $capped = true;
-                        $note('reference_limit', $path);
-                    }
-                }
-            }
+            self::scan_entries($scan, $entries, [$current, $depth, $descend], $queue, $state, $note);
         }
         return [
-            'references' => $references,
-            'reasons' => array_keys($reasons),
-            'files_checked' => $files,
+            'references' => $state['references'],
+            'reasons' => array_keys($state['reasons']),
+            'files_checked' => $state['files'],
             'folders_checked' => $folders,
-            'unchecked' => $unchecked,
+            'unchecked' => $state['unchecked'],
         ];
+    }
+
+    /**
+     * Builds the function that records a reason and the place it applies to in the state.
+     *
+     * @param mixed[] $state Result so far, extended by the function.
+     * @return \Closure
+     */
+    private static function recorder(array &$state): \Closure {
+        return static function (string $reason, string $place) use (&$state): void {
+            $state['reasons'][$reason] = true;
+            if (count($state['unchecked']) < self::MAX_UNCHECKED) {
+                $state['unchecked'][] = $place === '' ? '(root)' : $place;
+            }
+        };
+    }
+
+    /**
+     * The given clock or the real one.
+     *
+     * @param \Closure|null $clock
+     * @return \Closure Returns the current time in seconds.
+     */
+    private static function clock(?\Closure $clock): \Closure {
+        return $clock ?? static fn (): float => microtime(true);
+    }
+
+    /**
+     * The levels to read first: every level above the moved files (not descending) and their own level.
+     *
+     * @param string $folder Level the files were moved from, '' for the root.
+     * @return array<int, array{0: string, 1: int, 2: bool}> Folder, depth, whether to descend.
+     */
+    private static function initial_queue(string $folder): array {
+        $parts = $folder === '' ? [] : explode('/', $folder);
+        $queue = [];
+        foreach (array_keys($parts) as $level) {
+            $queue[] = [implode('/', array_slice($parts, 0, $level)), 0, false];
+        }
+        $queue[] = [$folder, 0, true];
+        return $queue;
+    }
+
+    /**
+     * Why the search has to stop before reading the next folder.
+     *
+     * @param int $folders Folders read so far.
+     * @param int $maxfolders Highest number of folders.
+     * @param bool $timeup Whether the time limit is reached.
+     * @return string "folder_limit", "time_limit" or "" to go on.
+     */
+    private static function stop_reason(int $folders, int $maxfolders, bool $timeup): string {
+        if ($folders >= $maxfolders) {
+            return 'folder_limit';
+        }
+        return $timeup ? 'time_limit' : '';
+    }
+
+    /**
+     * Notes the current and all queued places as not checked.
+     *
+     * @param \Closure $note Records a reason and the place it applies to.
+     * @param string $reason
+     * @param string $current Folder that was about to be read.
+     * @param mixed[] $queue Folders still waiting.
+     */
+    private static function note_all(\Closure $note, string $reason, string $current, array $queue): void {
+        foreach (array_merge([[$current]], $queue) as [$left]) {
+            $note($reason, $left);
+        }
+    }
+
+    /**
+     * Goes through one listing: queues sub folders and reads index files.
+     *
+     * @param mixed[] $scan
+     *        Fixed parts of the search.
+     * @param mixed[] $entries Listing.
+     * @param mixed[] $level Folder, depth and whether to descend.
+     * @param mixed[] $queue Folders still to read, extended.
+     * @param mixed[] $state Result so far, extended.
+     * @param \Closure $note Records a reason and the place it applies to.
+     */
+    private static function scan_entries(
+        array $scan,
+        array $entries,
+        array $level,
+        array &$queue,
+        array &$state,
+        \Closure $note
+    ): void {
+        [$current, $depth, $descend] = $level;
+        foreach ($entries as $entry) {
+            $path = $current === '' ? $entry['name'] : $current . '/' . $entry['name'];
+            if ($entry['type'] === 'folder') {
+                if ($descend) {
+                    self::enqueue_folder($entry['name'], $path, $depth, $queue, $note);
+                }
+            } else if (in_array(strtolower($entry['name']), self::INDEX_NAMES, true)) {
+                self::scan_index($scan, $path, $entry['size'], $state, $note);
+            }
+        }
+    }
+
+    /**
+     * Queues a sub folder unless it is the archive or too deep.
+     *
+     * @param string $name Folder name.
+     * @param string $path Folder path.
+     * @param int $depth Depth of the folder above.
+     * @param mixed[] $queue Folders still to read, extended.
+     * @param \Closure $note Records a reason and the place it applies to.
+     */
+    private static function enqueue_folder(string $name, string $path, int $depth, array &$queue, \Closure $note): void {
+        if (strtolower($name) === 'archive') {
+            return;
+        }
+        if ($depth + 1 > self::MAX_DEPTH) {
+            $note('depth_limit', $path);
+            return;
+        }
+        $queue[] = [$path, $depth + 1, true];
+    }
+
+    /**
+     * Reads one index file and collects its references, within the limits.
+     *
+     * @param mixed[] $scan
+     * @param string $path Path of the index file.
+     * @param int $size Size from the listing.
+     * @param mixed[] $state Result so far, extended.
+     * @param \Closure $note Records a reason and the place it applies to.
+     */
+    private static function scan_index(array $scan, string $path, int $size, array &$state, \Closure $note): void {
+        $limit = self::index_limit($state, $scan['maxfiles'], $scan['clock']() >= $scan['end']);
+        if ($limit !== '') {
+            $note($limit, $path);
+            return;
+        }
+        $state['files']++;
+        $text = self::read_index($scan['port'], $scan['area'], $path, $size, $note);
+        if ($text === null) {
+            return;
+        }
+        array_push($state['references'], ...context_references::find($path, $text, $scan['moved']));
+        if (count($state['references']) > self::MAX_REFERENCES) {
+            $state['references'] = array_slice($state['references'], 0, self::MAX_REFERENCES);
+            $state['capped'] = true;
+            $note('reference_limit', $path);
+        }
+    }
+
+    /**
+     * Which limit forbids reading one more index file.
+     *
+     * @param mixed[] $state Result so far.
+     * @param int $maxfiles Highest number of index files.
+     * @param bool $timeup Whether the time limit is reached.
+     * @return string The reason, "" when the file may be read.
+     */
+    private static function index_limit(array $state, int $maxfiles, bool $timeup): string {
+        if ($state['files'] >= $maxfiles) {
+            return 'file_limit';
+        }
+        if ($timeup) {
+            return 'time_limit';
+        }
+        return $state['capped'] ? 'reference_limit' : '';
     }
 
     /**

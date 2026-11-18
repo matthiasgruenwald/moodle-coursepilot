@@ -55,6 +55,16 @@ final class context_toc {
      * @return array<int, array{level: int, heading: string, start_line: int, end_line: int}> 1-based, inclusive.
      */
     public static function sections(array $lines): array {
+        return self::with_ends(self::headings($lines), count($lines));
+    }
+
+    /**
+     * The level two and three headings outside code fences.
+     *
+     * @param string[] $lines
+     * @return array<int, array{level: int, heading: string, start_line: int}>
+     */
+    private static function headings(array $lines): array {
         $heads = [];
         $fence = null;
         foreach ($lines as $i => $line) {
@@ -72,9 +82,20 @@ final class context_toc {
                 $heads[] = ['level' => strlen($m[1]), 'heading' => $m[2], 'start_line' => $i + 1];
             }
         }
+        return $heads;
+    }
+
+    /**
+     * Adds the last line of each section: the line before the next heading of the same or a higher level.
+     *
+     * @param mixed[] $heads
+     * @param int $count Number of lines of the file.
+     * @return array<int, array{level: int, heading: string, start_line: int, end_line: int}>
+     */
+    private static function with_ends(array $heads, int $count): array {
         $sections = [];
         foreach ($heads as $k => $head) {
-            $end = count($lines);
+            $end = $count;
             for ($j = $k + 1; $j < count($heads); $j++) {
                 if ($heads[$j]['level'] <= $head['level']) {
                     $end = $heads[$j]['start_line'] - 1;

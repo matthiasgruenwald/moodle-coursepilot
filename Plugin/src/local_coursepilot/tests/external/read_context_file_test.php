@@ -41,6 +41,7 @@ defined('MOODLE_INTERNAL') || die();
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\pointer_reader::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_area::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\personal_data::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_coursepilot\context_reader::class)]
 final class read_context_file_test extends \advanced_testcase {
     use webdav_instance_fixture;
 

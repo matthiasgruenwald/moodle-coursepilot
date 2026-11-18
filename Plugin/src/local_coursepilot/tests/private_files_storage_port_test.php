@@ -311,6 +311,34 @@ final class private_files_storage_port_test extends storage_port_contract_test {
     }
 
     /**
+     * A source that changed between the copy and the removal is kept and the new target is rolled back.
+     */
+    public function test_removal_of_a_changed_source_keeps_it_and_discards_the_new_target(): void {
+        $port = $this->port();
+        $area = $this->area();
+        $directory = '/storageport-contract-test/';
+        $first = $port->write($area, 'alt.md', 'erste Fassung');
+        $port->write($area, 'alt.md', 'zweite Fassung');
+        $port->write($area, 'neu.md', 'Kopie');
+        $new = get_file_storage()->get_file(
+            storage_anchor::own_context()->id,
+            storage_anchor::COMPONENT,
+            storage_anchor::FILEAREA,
+            storage_anchor::ITEMID,
+            $directory,
+            'neu.md'
+        );
+        $remove = new \ReflectionMethod($port, 'remove_source');
+        try {
+            $remove->invoke($port, $directory, 'alt.md', $first['checksum'], $new, 'alt.md');
+            $this->fail('A source that changed before the removal must raise a conflict.');
+        } catch (storage_conflict_exception $e) {
+            $this->assertSame('zweite Fassung', $port->read($area, 'alt.md')['content']);
+            $this->assertNull($port->read($area, 'neu.md'));
+        }
+    }
+
+    /**
      * Provides port.
      *
      * @return storage_port

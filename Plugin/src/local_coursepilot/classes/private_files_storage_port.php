@@ -220,12 +220,35 @@ final class private_files_storage_port implements storage_port {
         } catch (\stored_file_creation_exception $e) {
             throw new storage_conflict_exception($clientpath);
         }
+        $sourcepath = storage_anchor::normalise_client_path($area, $from);
+        $this->remove_source($sourcedirectory, $sourcename, $expectedchecksum, $new, $sourcepath);
+        return ['path' => $clientpath, 'server_enforced' => true];
+    }
+
+    /**
+     * Removes the source of a move after reloading and comparing it once more; a change in between or
+     * a failure rolls the new target back.
+     *
+     * @param string $directory Directory of the source.
+     * @param string $name File name of the source.
+     * @param string $expectedchecksum The source checksum from an earlier read.
+     * @param \stored_file $new The target created from the source.
+     * @param string $clientpath Client path of the source, for the conflict.
+     * @throws storage_conflict_exception The source changed or vanished.
+     */
+    private function remove_source(
+        string $directory,
+        string $name,
+        string $expectedchecksum,
+        \stored_file $new,
+        string $clientpath
+    ): void {
         try {
             // The source object is stale by now: reload it and compare once more right before removing.
-            $current = self::find_file($sourcedirectory, $sourcename);
+            $current = self::find_file($directory, $name);
             if ($current === null || $current->get_contenthash() !== $expectedchecksum) {
                 self::discard($new);
-                throw new storage_conflict_exception(storage_anchor::normalise_client_path($area, $from));
+                throw new storage_conflict_exception($clientpath);
             }
             $current->delete();
         } catch (storage_conflict_exception $e) {
@@ -234,7 +257,6 @@ final class private_files_storage_port implements storage_port {
             self::discard($new);
             throw $e;
         }
-        return ['path' => $clientpath, 'server_enforced' => true];
     }
 
     /**
