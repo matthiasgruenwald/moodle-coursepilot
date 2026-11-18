@@ -13,6 +13,16 @@
                 "name": "previouslocation",
                 "type": "bool",
                 "default": false
+            },
+            {
+                "name": "section",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "whole",
+                "type": "bool",
+                "default": false
             }
         ]
     },
@@ -34,6 +44,22 @@
             "previous_location": {
                 "class": "core_external\\external_value",
                 "desc": "Optional: true reads from the previous location instead of the current one (read-only switch for the legacy stock, Issue #498) - only takes effect while a legacy stock is open",
+                "required": 0,
+                "default": false,
+                "allownull": true,
+                "type": "bool"
+            },
+            "section": {
+                "class": "core_external\\external_value",
+                "desc": "Optional: heading of one section to read, e.g. \"Week 2\" or \"## Week 2\" (case-insensitive); the section includes its sub-headings. Files over 100 lines return only a table of contents without it",
+                "required": 0,
+                "default": "",
+                "allownull": true,
+                "type": "text"
+            },
+            "whole": {
+                "class": "core_external\\external_value",
+                "desc": "Optional: true returns the whole file even when it is longer than 100 lines",
                 "required": 0,
                 "default": false,
                 "allownull": true,
@@ -82,7 +108,7 @@
             },
             "content": {
                 "class": "core_external\\external_value",
-                "desc": "File content",
+                "desc": "File content; empty for a long file without section/whole (see toc and hint); only the section text with section",
                 "required": 1,
                 "default": null,
                 "allownull": true,
@@ -103,6 +129,70 @@
                 "default": null,
                 "allownull": true,
                 "type": "int"
+            },
+            "partial": {
+                "class": "core_external\\external_value",
+                "desc": "True when content is not the whole file (toc or one section)",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "bool"
+            },
+            "toc": {
+                "class": "core_external\\external_multiple_structure",
+                "desc": "Table of contents of a long file read without section/whole, otherwise empty",
+                "required": 1,
+                "default": null,
+                "allownull": false,
+                "content": {
+                    "class": "core_external\\external_single_structure",
+                    "desc": "",
+                    "required": 1,
+                    "default": null,
+                    "allownull": false,
+                    "keys": {
+                        "level": {
+                            "class": "core_external\\external_value",
+                            "desc": "Heading level, 2 or 3",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "heading": {
+                            "class": "core_external\\external_value",
+                            "desc": "Heading text without the leading hashes",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "text"
+                        },
+                        "start_line": {
+                            "class": "core_external\\external_value",
+                            "desc": "First line of the section, 1-based",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        },
+                        "end_line": {
+                            "class": "core_external\\external_value",
+                            "desc": "Last line of the section, inclusive",
+                            "required": 1,
+                            "default": null,
+                            "allownull": true,
+                            "type": "int"
+                        }
+                    }
+                }
+            },
+            "hint": {
+                "class": "core_external\\external_value",
+                "desc": "How to read a section or the whole file; empty when content is complete",
+                "required": 1,
+                "default": null,
+                "allownull": true,
+                "type": "text"
             }
         }
     }

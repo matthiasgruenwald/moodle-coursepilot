@@ -259,7 +259,7 @@ final class read_context_file_test extends \advanced_testcase {
      */
     public function test_execute_parameters_expose_no_area_selector(): void {
         $definition = read_context_file::execute_parameters()->keys;
-        $this->assertSame(['path', 'previous_location'], array_keys($definition));
+        $this->assertSame(['path', 'previous_location', 'section', 'whole'], array_keys($definition));
     }
 
     /**
@@ -556,6 +556,203 @@ final class read_context_file_test extends \advanced_testcase {
 
         $this->assertStringNotContainsString($this->fixtureserver, $encoded);
         $this->assertStringNotContainsString($this->fixturekonto, $encoded);
+    }
+
+    /**
+     * Builds a long plan file: "##" in line 3, "###" in line 11, "##" in line 21, 101 lines.
+     *
+     * @return string
+     */
+    private function long_plan(): string {
+        $lines = [];
+        for ($n = 1; $n <= 101; $n++) {
+            $lines[] = [1 => '# Plan', 3 => '## Week 1: Start', 11 => '### Monday', 21 => '## Week 2: Depth'][$n] ?? "Line $n";
+        }
+        return implode("\n", $lines) . "\n";
+    }
+
+    /**
+     * Reads through the public seam, including response cleaning.
+     *
+     * @param mixed ...$args
+     * @return array<string, mixed>
+     */
+    private function read_clean(...$args): array {
+        return external_api::clean_returnvalue(read_context_file::execute_returns(), read_context_file::execute(...$args));
+    }
+
+    public function test_short_file_is_returned_whole(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $content = implode("\n", array_merge(['## First'], array_fill(0, 99, 'x'))) . "\n";
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', $content);
+
+        $result = $this->read_clean('plan.md');
+
+        $this->assertSame($content, $result['content']);
+        $this->assertFalse($result['partial']);
+        $this->assertSame([], $result['toc']);
+        $this->assertSame('', $result['hint']);
+    }
+
+    public function test_long_file_returns_table_of_contents_instead_of_content(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $content = $this->long_plan();
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', $content);
+
+        $result = $this->read_clean('plan.md');
+
+        $this->assertSame('', $result['content']);
+        $this->assertTrue($result['partial']);
+        $this->assertSame([
+            ['level' => 2, 'heading' => 'Week 1: Start', 'start_line' => 3, 'end_line' => 20],
+            ['level' => 3, 'heading' => 'Monday', 'start_line' => 11, 'end_line' => 20],
+            ['level' => 2, 'heading' => 'Week 2: Depth', 'start_line' => 21, 'end_line' => 101],
+        ], $result['toc']);
+        $this->assertStringContainsString('section', $result['hint']);
+        $this->assertStringContainsString('whole', $result['hint']);
+        $this->assertStringContainsString('Week 1: Start', $result['hint']);
+        // Metadata always describes the whole file.
+        $this->assertSame(sha1($content), $result['contenthash']);
+        $this->assertSame(strlen($content), $result['size']);
+    }
+
+    public function test_long_file_without_headings_points_to_whole(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', implode("\n", array_fill(0, 120, 'x')));
+
+        $result = $this->read_clean('plan.md');
+
+        $this->assertSame('', $result['content']);
+        $this->assertSame([], $result['toc']);
+        $this->assertTrue($result['partial']);
+        $this->assertStringContainsString('whole', $result['hint']);
+        $this->assertStringNotContainsString('section=', $result['hint']);
+    }
+
+    public function test_whole_returns_the_full_long_file(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $content = $this->long_plan();
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', $content);
+
+        $result = $this->read_clean('plan.md', false, '', true);
+
+        $this->assertSame($content, $result['content']);
+        $this->assertFalse($result['partial']);
+        $this->assertSame([], $result['toc']);
+    }
+
+    public function test_section_returns_the_section_with_its_subsections_and_whole_file_metadata(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $content = $this->long_plan();
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', $content);
+        $lines = explode("\n", $content);
+
+        $result = $this->read_clean('plan.md', false, '  week 1: START ');
+
+        $this->assertSame(implode("\n", array_slice($lines, 2, 18)), $result['content']);
+        $this->assertTrue($result['partial']);
+        $this->assertSame([], $result['toc']);
+        $this->assertStringContainsString('3-20', $result['hint']);
+        $this->assertStringContainsString('whole', $result['hint']);
+        $this->assertSame(sha1($content), $result['contenthash']);
+        $this->assertSame(strlen($content), $result['size']);
+
+        $marked = $this->read_clean('plan.md', false, '### Monday');
+        $this->assertSame(implode("\n", array_slice($lines, 10, 10)), $marked['content']);
+    }
+
+    public function test_section_on_a_short_file_also_returns_only_the_section(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', "# T\n## A\na\n## B\nb\n");
+
+        $this->assertSame("## B\nb", $this->read_clean('plan.md', false, 'B')['content']);
+    }
+
+    public function test_unknown_section_lists_the_headings(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', $this->long_plan());
+
+        try {
+            read_context_file::execute('plan.md', false, 'Week 9');
+            $this->fail('Unknown section must fail.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextsectionunknown', $e->errorcode);
+            $this->assertStringContainsString('Week 1: Start', $e->getMessage());
+            $this->assertStringContainsString('Week 2: Depth', $e->getMessage());
+        }
+    }
+
+    public function test_duplicate_section_is_ambiguous(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', "## Week\na\n## week\nb\n");
+
+        try {
+            read_context_file::execute('plan.md', false, 'Week');
+            $this->fail('Duplicate heading must fail.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('contextsectionambiguous', $e->errorcode);
+            $this->assertStringContainsString('whole', $e->getMessage());
+        }
+    }
+
+    public function test_section_together_with_whole_is_refused(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'plan.md', "## A\na\n");
+
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('contextsectionandwhole', 'local_coursepilot'));
+        read_context_file::execute('plan.md', false, 'A', true);
+    }
+
+    public function test_long_marked_file_stays_locked_for_toc_and_section(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file(
+            $user,
+            '/coursepilot/',
+            'plan.md',
+            $this->marked_content() . "\n## A\n" . implode("\n", array_fill(0, 120, 'x'))
+        );
+
+        foreach ([[], [false, 'A']] as $args) {
+            try {
+                read_context_file::execute('plan.md', ...$args);
+                $this->fail('Locked file must not be readable.');
+            } catch (\moodle_exception $e) {
+                $this->assertSame('contextfilelocked', $e->errorcode);
+            }
+        }
+    }
+
+    public function test_legacy_fallback_name_works_with_toc(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->create_context_file($user, '/coursepilot/', 'vorlagen.md', $this->long_plan());
+
+        $result = $this->read_clean('templates.md');
+
+        $this->assertSame('vorlagen.md', $result['path']);
+        $this->assertCount(3, $result['toc']);
     }
 
     /**
