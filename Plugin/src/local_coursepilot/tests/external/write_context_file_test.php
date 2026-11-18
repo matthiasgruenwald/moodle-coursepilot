@@ -514,8 +514,180 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * IServ without ETags uses getlastmodified as a weaker substitute
-     * without changing the caller’s tool contract.
+     * A strong ETag means the server enforces the condition and the read-back
+     * confirms the bytes (ADR 0034/0035).
+     */
+    public function test_external_write_with_strong_etag_is_verified_and_server_enforced(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
+
+        $result = $this->write('plan.md', '# Neuer Plan');
+
+        $this->assertTrue($result['verified']);
+        $this->assertTrue($result['server_enforced']);
+        $this->assertStringNotContainsString(
+            get_string('contextfilenotenforced', 'local_coursepilot'),
+            $result['message']
+        );
+    }
+
+    /**
+     * Without a strong ETag the message says the server did not enforce the check.
+     */
+    public function test_external_overwrite_without_etag_reports_that_the_server_did_not_enforce(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
+
+        $result = $this->write('plan.md', '# Neuer Plan');
+
+        $this->assertTrue($result['verified']);
+        $this->assertFalse($result['server_enforced']);
+        $this->assertStringContainsString(
+            get_string('contextfilenotenforced', 'local_coursepilot'),
+            $result['message']
+        );
+    }
+
+    /**
+     * A weak ETag is no version: no If-Match goes out, the check is by bytes.
+     */
+    public function test_external_overwrite_with_weak_etag_sends_no_if_match_and_compares_bytes(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->with_weak_etags();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
+        $gelesen = external_api::clean_returnvalue(
+            read_context_file::execute_returns(),
+            read_context_file::execute('plan.md')
+        );
+        $this->assertSame('sha256:' . hash('sha256', 'alt'), $gelesen['contenthash']);
+
+        $result = $this->write('plan.md', '# Neuer Plan', $gelesen['contenthash']);
+
+        $this->assertFalse($result['server_enforced']);
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r): bool => $r['method'] === 'PUT'));
+        $this->assertCount(1, $puts);
+        $this->assertArrayNotHasKey('If-Match', $puts[0]['headers']);
+    }
+
+    /**
+     * Unreadable after the write: written, but not verified, and no pending entry.
+     */
+    public function test_external_write_that_cannot_be_read_back_is_unverified(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        \core\di::set(
+            \local_coursepilot\webdav\webdav_transport::class,
+            new \local_coursepilot\tests\webdav\hiding_transport($fake)
+        );
+
+        $result = $this->write('plan.md', '# Plan');
+
+        $this->assertFalse($result['verified']);
+        $this->assertSame([], \local_coursepilot\pending_write_notice::list_grouped());
+        $this->assertSame('# Plan', $this->external_content($fake, '/Coursepilot/Kontext/plan.md'));
+    }
+
+    /**
+     * Read-back bytes differing from the written ones are not verified.
+     */
+    public function test_external_write_whose_readback_differs_is_unverified(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        \core\di::set(
+            \local_coursepilot\webdav\webdav_transport::class,
+            new class ($fake) implements \local_coursepilot\webdav\webdav_transport {
+                /** @var bool Whether the file was already tampered with. */
+                private bool $done = false;
+
+                /**
+                 * Creates the tampering transport.
+                 *
+                 * @param fake_webdav_transport $fake Server double.
+                 */
+                public function __construct(
+                    /** @var fake_webdav_transport Server double. */
+                    private readonly fake_webdav_transport $fake
+                ) {
+                }
+
+                /**
+                 * Forwards the request and tampers with the file after the first PUT.
+                 *
+                 * @param string $method
+                 * @param string $url
+                 * @param mixed[] $headers
+                 * @param string|null $body
+                 * @return \local_coursepilot\webdav\webdav_response
+                 */
+                public function request(
+                    string $method,
+                    string $url,
+                    array $headers = [],
+                    ?string $body = null
+                ): \local_coursepilot\webdav\webdav_response {
+                    $response = $this->fake->request($method, $url, $headers, $body);
+                    if ($method === 'PUT' && !$this->done) {
+                        $this->done = true;
+                        $this->fake->seed_file('/Coursepilot/Kontext/plan.md', 'verfaelscht');
+                    }
+                    return $response;
+                }
+            }
+        );
+
+        $result = $this->write('plan.md', '# Plan');
+
+        $this->assertFalse($result['verified']);
+    }
+
+    /**
+     * Private Files are read back too and always enforced.
+     */
+    public function test_private_files_write_is_verified_and_server_enforced(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $result = $this->write('plan.md', '# Plan');
+
+        $this->assertTrue($result['verified']);
+        $this->assertTrue($result['server_enforced']);
+    }
+
+    /**
+     * Without a strong ETag the expected check value is the sha256 of the
+     * bytes; a missing file is a conflict as well.
+     */
+    public function test_external_overwrite_without_etag_of_a_vanished_file_is_a_conflict(): void {
+        $this->resetAfterTest();
+        [$user, $fake] = $this->set_up_external_context();
+        $fake->without_etags();
+        $fake->seed_folder('/Coursepilot/Kontext');
+        $fake->seed_file('/Coursepilot/Kontext/plan.md', 'alt');
+        $gelesen = external_api::clean_returnvalue(
+            read_context_file::execute_returns(),
+            read_context_file::execute('plan.md')
+        );
+        $fake->seed_file('/Coursepilot/Kontext/other.md', 'x');
+
+        try {
+            $this->write('other.md', '# Neu', $gelesen['contenthash']);
+            $this->fail('Conflict should have been rejected.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('storageconflict', $e->errorcode);
+        }
+    }
+
+    /**
+     * IServ without ETags: no If-Match, the bytes are compared before the PUT.
      */
     public function test_overwrites_existing_external_file_without_etag_iserv_mode(): void {
         $this->resetAfterTest();
@@ -579,8 +751,8 @@ final class write_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Without an ETag, compare modification times for weaker concurrency
-     * protection (#513, Spec §4).
+     * Without an ETag, the bytes read right before the PUT are compared
+     * (ADR 0035), also within the same second.
      */
     public function test_stale_checkvalue_without_etag_is_rejected_as_conflict_iserv_mode(): void {
         $this->resetAfterTest();

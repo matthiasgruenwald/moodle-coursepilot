@@ -216,27 +216,16 @@ final class webdav_client_test extends \advanced_testcase {
         }
     }
 
-    public function test_put_overwrite_without_etag_uses_lastmodified_as_weak_substitute(): void {
-        [$client, $fake] = $this->client(new fake_webdav_transport());
-        $fake->without_etags();
-        $seeded = $fake->seed_file('/dav/da.md', 'alt');
-
-        $client->put_overwrite($this->url('/da.md'), 'neu', null, $seeded['lastmodified']);
-
-        $this->assertSame('neu', $client->get($this->url('/da.md')));
-    }
-
-    public function test_put_overwrite_without_etag_conflicts_on_stale_lastmodified(): void {
+    public function test_put_overwrite_without_etag_sends_no_if_match(): void {
         [$client, $fake] = $this->client(new fake_webdav_transport());
         $fake->without_etags();
         $fake->seed_file('/dav/da.md', 'alt');
 
-        try {
-            $client->put_overwrite($this->url('/da.md'), 'neu', null, 1);
-            $this->fail('CONFLICT erwartet.');
-        } catch (webdav_error $e) {
-            $this->assertSame(webdav_error::CONFLICT, $e->errorclass);
-        }
+        $client->put_overwrite($this->url('/da.md'), 'neu', null);
+
+        $puts = array_values(array_filter($fake->requests(), static fn (array $r) => $r['method'] === 'PUT'));
+        $this->assertArrayNotHasKey('If-Match', $puts[0]['headers']);
+        $this->assertSame('neu', $client->get($this->url('/da.md')));
     }
 
     public function test_mkcol_chain_creates_each_level_and_tolerates_existing_ones(): void {

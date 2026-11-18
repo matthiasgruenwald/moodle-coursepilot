@@ -399,10 +399,10 @@ final class list_context_files_test extends \advanced_testcase {
     }
 
     /**
-     * Without an ETag (IServ), use modification time as a weaker, nonempty
-     * check value (#513, Spec §4).
+     * Without a strong ETag (IServ) the listing reads no content: empty check
+     * value, the version comes from read_context_file (ADR 0035).
      */
-    public function test_external_listing_returns_a_nonempty_checkvalue_without_etag(): void {
+    public function test_external_listing_returns_an_empty_checkvalue_without_etag(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
         $fake->without_etags();
@@ -414,7 +414,7 @@ final class list_context_files_test extends \advanced_testcase {
 
         $entry = $this->find_entry($result['entries'], 'vorlagen.md');
         $this->assertNotNull($entry);
-        $this->assertNotSame('', $entry['contenthash']);
+        $this->assertSame('', $entry['contenthash']);
     }
 
     /**

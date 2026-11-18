@@ -73,6 +73,7 @@ $string['contextfilecreated'] = '{$a} neu angelegt.';
 $string['contextfileexternalconflict'] = 'Konflikt: {$a} wurde extern zwischenzeitlich geändert — bitte neu lesen, die Änderungen zusammenführen und erneut schreiben.';
 $string['contextfilehostnotallowed'] = 'Datei {$a}: Dieser Speicher ist für personenbezogene Daten nicht zugelassen.';
 $string['contextfilelocked'] = 'Datei gesperrt: {$a} — personenbezogen markiert (personenbezug: true), der Schalter für personenbezogene Kontextdaten ist ausgeschaltet.';
+$string['contextfilenotenforced'] = 'Der Server hat die Prüfung auf eine gleichzeitige Änderung nicht erzwungen (kein starkes ETag); eine gleichzeitige Änderung könnte unbemerkt überschrieben worden sein.';
 $string['contextfilenotfound'] = 'Datei nicht gefunden: {$a}';
 $string['contextfilenotmarkdown'] = 'In den Kontextbereich lassen sich nur .md-Dateien schreiben: {$a}';
 $string['contextfileoverwritten'] = '{$a->path} überschrieben (vorher: {$a->before} Byte, jetzt: {$a->after} Byte).';

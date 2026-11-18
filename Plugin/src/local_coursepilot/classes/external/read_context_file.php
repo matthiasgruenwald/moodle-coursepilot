@@ -146,7 +146,7 @@ class read_context_file extends external_api {
             'size' => new external_value(PARAM_INT, 'File size in bytes'),
             'content' => new external_value(PARAM_RAW, 'File content'),
             // Added in Spec 0016 §2 for concurrency protection and manual-change detection.
-            'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Content checksum of the file'),
+            'contenthash' => new external_value(PARAM_RAW_TRIMMED, 'Content checksum of the file'),
             'timemodified' => new external_value(PARAM_INT, 'Time of last change'),
         ]);
     }

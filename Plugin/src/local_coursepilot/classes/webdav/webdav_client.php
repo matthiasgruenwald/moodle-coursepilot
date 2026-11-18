@@ -137,33 +137,19 @@ final class webdav_client {
     }
 
     /**
-     * Conditionally overwrites an existing file (spec §4).
+     * Conditionally overwrites an existing file (spec §4, ADR 0035).
      *
-     * If an ETag is available, `If-Match: <ETag>` carries the comparison - a
-     * server-checked 412 becomes CONFLICT. If an ETag is missing (IServ),
-     * `getlastmodified` serves as a weak, client-side-checked substitute: a
-     * differing modification time becomes CONFLICT locally, *before* anything
-     * is written at all. Lost updates are thus only weakly
-     * detectable (spec §4 names this as open).
+     * With a strong ETag, `If-Match: <ETag>` carries the comparison - a
+     * server-checked 412 becomes CONFLICT. Without one the PUT is unconditional;
+     * the caller compares the bytes right before ({@see webdav_storage_port}).
      *
      * @param string $url
      * @param string $content
-     * @param string|null $etag Last-read ETag, if the server supplies one.
-     * @param int|null $expectedlastmodified Last-read modification time, if no ETag is available.
+     * @param string|null $etag Last-read strong ETag, null if the server supplies none.
      * @throws webdav_error CONFLICT on a detected collision.
      */
-    public function put_overwrite(string $url, string $content, ?string $etag, ?int $expectedlastmodified = null): void {
-        $headers = [];
-        if ($etag !== null) {
-            $headers['If-Match'] = $etag;
-        } else if ($expectedlastmodified !== null) {
-            $current = $this->propfind($url, 0);
-            $actual = $current[0]['timemodified'] ?? null;
-            if ($actual !== $expectedlastmodified) {
-                throw new webdav_error(webdav_error::CONFLICT, 'Modification time differs from the expected state (no ETag).');
-            }
-        }
-        $this->send('PUT', $url, $headers, $content);
+    public function put_overwrite(string $url, string $content, ?string $etag): void {
+        $this->send('PUT', $url, $etag !== null ? ['If-Match' => $etag] : [], $content);
     }
 
     /**

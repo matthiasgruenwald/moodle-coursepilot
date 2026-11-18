@@ -36,9 +36,9 @@ use local_coursepilot\webdav\webdav_transport;
  * ({@see \curl_transport}, in operation behind {@see webdav_instance}) remains
  * unchanged. Tests pass their fake transport to the constructor.
  *
- * The check value of this adapter is a hash formed from ETag/modification time
- * ({@see pointer_reader::external_checkvalue()}) - WebDAV has no
- * Moodle `contenthash`.
+ * The check value of this adapter is a hash of a strong ETag, otherwise
+ * `sha256:<hex>` of the bytes ({@see pointer_reader::external_checkvalue()},
+ * ADR 0035) - WebDAV has no Moodle `contenthash`.
  *
  * @package    local_coursepilot
  * @copyright  2026 Coursepilot
@@ -186,7 +186,7 @@ final class webdav_storage_port implements storage_port {
         }
         return [
             'content' => $content,
-            'checksum' => pointer_reader::external_checkvalue($entry['etag'] ?? null, $entry['timemodified']),
+            'checksum' => pointer_reader::external_checkvalue($entry['etag'] ?? null, $content),
             'size' => $entry['size'],
             'mimetype' => $mimetype,
             'timemodified' => $entry['timemodified'],
@@ -223,7 +223,7 @@ final class webdav_storage_port implements storage_port {
             // Folders carry no checksum, like Private Files (same field set).
             'checksum' => $entry['type'] === 'folder'
                 ? ''
-                : pointer_reader::external_checkvalue($entry['etag'], $entry['timemodified']),
+                : pointer_reader::external_checkvalue($entry['etag'], null),
             'timemodified' => $entry['timemodified'],
         ], $raw);
     }
@@ -259,6 +259,9 @@ final class webdav_storage_port implements storage_port {
             $existing = $this->current_entry($client, $fileurl);
             $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
             $this->ensure_directory($resolved, $folders);
+            if ($this->lacks_strong_etag($existing) && $expectedchecksum !== null) {
+                $this->require_current_bytes($this->fresh_bytes($client, $fileurl, $clientpath), $expectedchecksum, $clientpath);
+            }
             $this->put($client, $fileurl, $content, $existing, $clientpath);
 
             $written = $this->current_entry($client, $fileurl);
@@ -272,7 +275,8 @@ final class webdav_storage_port implements storage_port {
             'path' => $clientpath,
             'created' => $existing === null,
             'size' => $written['size'] ?? strlen($content),
-            'checksum' => pointer_reader::external_checkvalue($written['etag'] ?? null, $written['timemodified'] ?? 0),
+            'checksum' => pointer_reader::external_checkvalue($written['etag'] ?? null, $content),
+            'server_enforced' => !$this->lacks_strong_etag($existing),
         ];
     }
 
@@ -297,7 +301,14 @@ final class webdav_storage_port implements storage_port {
             $this->require_checksum_match($existing, $expectedchecksum, $clientpath);
             $this->ensure_directory($resolved, $folders);
 
-            $newcontent = $existing === null ? $content : ($client->get($fileurl) . $content);
+            $newcontent = $content;
+            if ($existing !== null) {
+                $current = $this->fresh_bytes($client, $fileurl, $clientpath);
+                if ($this->lacks_strong_etag($existing) && $expectedchecksum !== null) {
+                    $this->require_current_bytes($current, $expectedchecksum, $clientpath);
+                }
+                $newcontent = $current . $content;
+            }
             $this->put($client, $fileurl, $newcontent, $existing, $clientpath);
 
             $written = $this->current_entry($client, $fileurl);
@@ -311,7 +322,8 @@ final class webdav_storage_port implements storage_port {
             'path' => $clientpath,
             'created' => $existing === null,
             'size' => strlen($newcontent),
-            'checksum' => pointer_reader::external_checkvalue($written['etag'] ?? null, $written['timemodified'] ?? 0),
+            'checksum' => pointer_reader::external_checkvalue($written['etag'] ?? null, $newcontent),
+            'server_enforced' => !$this->lacks_strong_etag($existing),
         ];
     }
 
@@ -507,7 +519,7 @@ final class webdav_storage_port implements storage_port {
             if ($existing === null) {
                 $client->put_new($fileurl, $content);
             } else {
-                $client->put_overwrite($fileurl, $content, $existing['etag'], $existing['timemodified']);
+                $client->put_overwrite($fileurl, $content, pointer_reader::strong_etag($existing['etag']));
             }
         } catch (webdav_error $e) {
             if ($e->errorclass === webdav_error::CONFLICT) {
@@ -538,10 +550,59 @@ final class webdav_storage_port implements storage_port {
             }
             return;
         }
-        $actual = $existing !== null
-            ? pointer_reader::external_checkvalue($existing['etag'], $existing['timemodified'])
-            : null;
-        if ($actual !== $expectedchecksum) {
+        if ($existing === null) {
+            throw new storage_conflict_exception($clientpath);
+        }
+        if ($this->lacks_strong_etag($existing)) {
+            // Compared by bytes right before the PUT ({@see require_current_bytes()}).
+            return;
+        }
+        if (pointer_reader::external_checkvalue($existing['etag'], null) !== $expectedchecksum) {
+            throw new storage_conflict_exception($clientpath);
+        }
+    }
+
+    /**
+     * Whether the server cannot enforce a condition for this existing file (ADR 0035).
+     *
+     * @param mixed[]|null $existing Type: array{etag:?string,timemodified:int,size:int}|null.
+     * @return bool True for an existing file without a strong ETag.
+     */
+    private function lacks_strong_etag(?array $existing): bool {
+        return $existing !== null && pointer_reader::strong_etag($existing['etag']) === null;
+    }
+
+    /**
+     * Reads the file again, right before a write; a vanished file is a conflict.
+     *
+     * @param webdav_client $client
+     * @param string $fileurl
+     * @param string $clientpath For the error message.
+     * @return string Current bytes.
+     * @throws storage_conflict_exception
+     * @throws webdav_error every other error.
+     */
+    private function fresh_bytes(webdav_client $client, string $fileurl, string $clientpath): string {
+        try {
+            return $client->get($fileurl);
+        } catch (webdav_error $e) {
+            if ($e->errorclass === webdav_error::NOT_FOUND) {
+                throw new storage_conflict_exception($clientpath);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Compares the freshly read bytes with the check value of the caller.
+     *
+     * @param string $current Bytes read right before the PUT.
+     * @param string $expectedchecksum
+     * @param string $clientpath For the error message.
+     * @throws storage_conflict_exception
+     */
+    private function require_current_bytes(string $current, string $expectedchecksum, string $clientpath): void {
+        if (pointer_reader::external_checkvalue(null, $current) !== $expectedchecksum) {
             throw new storage_conflict_exception($clientpath);
         }
     }

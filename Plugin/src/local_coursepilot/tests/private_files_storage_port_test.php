@@ -62,7 +62,7 @@ final class private_files_storage_port_test extends storage_port_contract_test {
         }
         $this->assertSame('First', $port->read($area, 'plan.md')['content']);
         $this->assertSame([
-            'path' => 'plan.md', 'created' => false, 'size' => 8, 'checksum' => sha1('First123'),
+            'path' => 'plan.md', 'created' => false, 'size' => 8, 'checksum' => sha1('First123'), 'server_enforced' => true,
         ], $port->append($area, 'plan.md', '123', $first['checksum']));
         $this->assertSame('First123', $port->read($area, 'plan.md')['content']);
         $this->assertSame(0, private_files_storage_port::remaining_quota());

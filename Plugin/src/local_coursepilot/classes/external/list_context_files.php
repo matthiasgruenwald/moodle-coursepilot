@@ -113,7 +113,7 @@ class list_context_files extends external_api {
                         'Marked as personal data with the switch off - content unreadable, but still listed'
                     ),
                     // Added in Spec 0016 §2 for concurrency and manual-change detection.
-                    'contenthash' => new external_value(PARAM_ALPHANUMEXT, 'Content checksum, empty for folders'),
+                    'contenthash' => new external_value(PARAM_RAW_TRIMMED, 'Content checksum, empty for folders'),
                     'timemodified' => new external_value(PARAM_INT, 'Time of last change, 0 for folders'),
                 ])
             ),

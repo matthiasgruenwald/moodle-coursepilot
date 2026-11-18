@@ -81,7 +81,8 @@ interface storage_port {
      *        A supplied checksum differing from current content, including a missing
      *        file, throws {@see storage_conflict_exception}.
      * @param string $source Optional serialised provenance; supported by Private Files only.
-     * @return array{path: string, created: bool, size: int, checksum: string}
+     * @return array{path: string, created: bool, size: int, checksum: string, server_enforced: bool}
+     *         `server_enforced` is false when the server did not enforce the write condition (ADR 0035).
      * @throws storage_failure Storage is unavailable.
      * @throws \moodle_exception Area invalidpathkey/name error,
      *         area quotaerrorkey
@@ -102,7 +103,8 @@ interface storage_port {
      * @param string $path
      * @param string $content Content to append.
      * @param string|null $expectedchecksum Preflight condition, as for write().
-     * @return array{path: string, created: bool, size: int, checksum: string}
+     * @return array{path: string, created: bool, size: int, checksum: string, server_enforced: bool}
+     *         `server_enforced` is false when the server did not enforce the write condition (ADR 0035).
      * @throws storage_failure Storage is unavailable.
      * @throws \moodle_exception Area invalidpathkey/name error,
      *         area quotaerrorkey

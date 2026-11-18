@@ -476,11 +476,15 @@ final class context_area_pending_test extends \advanced_testcase {
         $written = context_area::write_to($port, $location, 'plan.md', '# Plan');
         $appended = context_area::append_to($port, $location, 'plan.md', "\nNext step");
 
-        $this->assertSame(['path' => 'plan.md', 'created' => true, 'size' => 6, 'oldsize' => 0], $written);
+        $this->assertSame([
+            'path' => 'plan.md', 'created' => true, 'size' => 6, 'oldsize' => 0, 'verified' => true, 'server_enforced' => true,
+        ], $written);
         $this->assertFalse($appended['created']);
         $this->assertSame("# Plan\nNext step", $port->read(context_files::area(), 'plan.md')['content']);
         $replaced = context_area::write_to($port, $location, 'plan.md', '# Replaced');
-        $this->assertSame(['path' => 'plan.md', 'created' => false, 'size' => 10, 'oldsize' => 16], $replaced);
+        $this->assertSame([
+            'path' => 'plan.md', 'created' => false, 'size' => 10, 'oldsize' => 16, 'verified' => true, 'server_enforced' => true,
+        ], $replaced);
         $this->assertSame('# Replaced', $port->read(context_files::area(), 'plan.md')['content']);
         $this->assertSame([], pending_write_notice::list_grouped());
     }
@@ -549,7 +553,7 @@ final class context_area_pending_test extends \advanced_testcase {
              * @param string $path The path.
              * @param string $content The content.
              * @param ?string $expectedchecksum The expectedchecksum.
-             * @return array{path: string, created: bool, size: int, checksum: string}
+             * @return array{path: string, created: bool, size: int, checksum: string, server_enforced: bool}
              * @param string $source Serialised provenance.
              */
             public function write(
@@ -569,7 +573,7 @@ final class context_area_pending_test extends \advanced_testcase {
              * @param string $path The path.
              * @param string $content The content.
              * @param ?string $expectedchecksum The expectedchecksum.
-             * @return array{path: string, created: bool, size: int, checksum: string}
+             * @return array{path: string, created: bool, size: int, checksum: string, server_enforced: bool}
              */
             public function append(storage_area $area, string $path, string $content, ?string $expectedchecksum = null): array {
                 throw $this->failure;

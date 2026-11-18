@@ -138,6 +138,7 @@ final class private_files_storage_port implements storage_port {
             'created' => $existing === null,
             'size' => $written['size'],
             'checksum' => $written['contenthash'],
+            'server_enforced' => true,
         ];
     }
 
@@ -164,6 +165,7 @@ final class private_files_storage_port implements storage_port {
             'created' => $existing === null,
             'size' => $size,
             'checksum' => $written['contenthash'],
+            'server_enforced' => true,
         ];
     }
 

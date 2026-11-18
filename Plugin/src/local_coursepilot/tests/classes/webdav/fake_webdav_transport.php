@@ -39,6 +39,9 @@ final class fake_webdav_transport implements webdav_transport {
     /** @var bool Whether PUT/PROPFIND return ETags (disabled for IServ). */
     private bool $etagsenabled = true;
 
+    /** @var bool Whether generated ETags are weak (`W/` prefix). */
+    private bool $weaketags = false;
+
     /** @var string|null Normalized path displaying the IServ area menu instead of storage contents. */
     private ?string $iservrootpath = null;
 
@@ -131,6 +134,13 @@ final class fake_webdav_transport implements webdav_transport {
      */
     public function without_etags(): void {
         $this->etagsenabled = false;
+    }
+
+    /**
+     * Servers such as proxies may send weak ETags (`W/"..."`); `If-Match` cannot use them.
+     */
+    public function with_weak_etags(): void {
+        $this->weaketags = true;
     }
 
     /**
@@ -498,7 +508,7 @@ final class fake_webdav_transport implements webdav_transport {
      * @return string
      */
     private function make_etag(string $content): string {
-        return '"' . substr(sha1($content), 0, 16) . '"';
+        return ($this->weaketags ? 'W/' : '') . '"' . substr(sha1($content), 0, 16) . '"';
     }
 
     /**

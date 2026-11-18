@@ -90,7 +90,7 @@ final class storage_write {
      * @param string $expectedchecksum Explicit client condition, otherwise the preflight checksum.
      * @param bool $append Append rather than replace.
      * @param string $source Optional serialised provenance for Private Files.
-     * @return array{path: string, created: bool, size: int, checksum: string}
+     * @return array{path: string, created: bool, size: int, checksum: string, server_enforced: bool}
      */
     public function write(
         string $content,
@@ -113,7 +113,7 @@ final class storage_write {
      * @param string $operation Pending operation category.
      * @param bool $append Append rather than replace.
      * @param string $source Serialised provenance for Private Files.
-     * @return array{path: string, created: bool, size: int, checksum: string}
+     * @return array{path: string, created: bool, size: int, checksum: string, server_enforced: bool}
      */
     private function persist(string $content, string $checksum, string $operation, bool $append, string $source): array {
         try {

@@ -153,11 +153,17 @@ final class context_area {
     private static function is_entry_marked(storage_port $port, array $entry, string $directory): bool {
         $relativepath = $directory === '' ? $entry['name'] : $directory . '/' . $entry['name'];
 
-        $marked = mark_memory::lookup($relativepath, $entry['size'], $entry['timemodified'], $entry['contenthash']);
+        // Without a check value (no strong ETag, ADR 0035) a path/size/time key is no safe cache key.
+        $remembered = $entry['contenthash'] !== '';
+        $marked = $remembered
+            ? mark_memory::lookup($relativepath, $entry['size'], $entry['timemodified'], $entry['contenthash'])
+            : null;
         if ($marked === null) {
             $content = self::read_from($port, $relativepath);
             $marked = $content !== null && personal_data::is_marked($content['content']);
-            mark_memory::remember($relativepath, $entry['size'], $entry['timemodified'], $entry['contenthash'], $marked);
+            if ($remembered) {
+                mark_memory::remember($relativepath, $entry['size'], $entry['timemodified'], $entry['contenthash'], $marked);
+            }
         }
 
         return $marked;
@@ -199,7 +205,7 @@ final class context_area {
      * @param string $pendingentry Pending retry identifier.
      * @param bool $createonly Reject existing targets.
      * @param int $courseid Course for pending writes.
-     * @return array{path: string, created: bool, size: int, oldsize: int}
+     * @return array{path: string, created: bool, size: int, oldsize: int, verified: bool, server_enforced: bool}
      */
     public static function write(
         string $path,
@@ -245,7 +251,7 @@ final class context_area {
      * @param string $pendingentry Pending retry identifier.
      * @param bool $createonly Reject an existing target.
      * @param int $courseid Course ID for pending writes.
-     * @return array{path: string, created: bool, size: int, oldsize: int}
+     * @return array{path: string, created: bool, size: int, oldsize: int, verified: bool, server_enforced: bool}
      */
     public static function write_to(
         storage_port $port,
@@ -274,7 +280,28 @@ final class context_area {
             'created' => $written['created'],
             'size' => $written['size'],
             'oldsize' => $existing['size'] ?? 0,
+            'verified' => self::read_back_matches($port, $area, $path, $content),
+            'server_enforced' => $written['server_enforced'],
         ];
+    }
+
+    /**
+     * Reads the file back through the same port and compares the bytes (ADR 0034).
+     * A read failure is no outage - the write happened - but an unverified result.
+     *
+     * @param storage_port $port Port the write went through.
+     * @param storage_area $area Target area.
+     * @param string $path Relative context path.
+     * @param string $expected Bytes the file must now have.
+     * @return bool True only if the file reads back exactly as expected.
+     */
+    private static function read_back_matches(storage_port $port, storage_area $area, string $path, string $expected): bool {
+        try {
+            $stored = $port->read($area, $path);
+        } catch (\Throwable $e) {
+            return false;
+        }
+        return $stored !== null && $stored['content'] === $expected;
     }
 
     /**
@@ -315,7 +342,7 @@ final class context_area {
      * @param string $expectedcontenthash Explicit checksum from an earlier read.
      * @param string $pendingentry Pending retry identifier.
      * @param int $courseid Course for pending writes.
-     * @return array{path: string, created: bool, size: int}
+     * @return array{path: string, created: bool, size: int, verified: bool, server_enforced: bool}
      */
     public static function append(
         string $path,
@@ -355,7 +382,7 @@ final class context_area {
      * @param string $expectedcontenthash Expected preflight checksum.
      * @param string $pendingentry Pending retry identifier.
      * @param int $courseid Course ID for pending writes.
-     * @return array{path: string, created: bool, size: int}
+     * @return array{path: string, created: bool, size: int, verified: bool, server_enforced: bool}
      */
     public static function append_to(
         storage_port $port,
@@ -379,6 +406,12 @@ final class context_area {
         }
         self::guard_pending_retry($path, $pendingentry, $existing !== null, $expectedcontenthash);
         $written = $writer->write($content, append: true);
-        return ['path' => $written['path'], 'created' => $written['created'], 'size' => $written['size']];
+        return [
+            'path' => $written['path'],
+            'created' => $written['created'],
+            'size' => $written['size'],
+            'verified' => self::read_back_matches($port, $area, $path, $finalcontent),
+            'server_enforced' => $written['server_enforced'],
+        ];
     }
 }

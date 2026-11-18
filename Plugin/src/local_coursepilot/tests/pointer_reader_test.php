@@ -34,23 +34,26 @@ final class pointer_reader_test extends \advanced_testcase {
      * ETag takes precedence over getlastmodified; SHA-1 hex is safe for
      * PARAM_ALPHANUMEXT even when ETags contain quotes.
      */
-    public function test_external_checkvalue_prefers_etag(): void {
-        $withetag = pointer_reader::external_checkvalue('"abc"', 1700000000);
+    public function test_external_checkvalue_prefers_strong_etag(): void {
+        $withetag = pointer_reader::external_checkvalue('"abc"', 'bytes');
 
         $this->assertSame(sha1('etag:"abc"'), $withetag);
-        $this->assertSame($withetag, pointer_reader::external_checkvalue('"abc"', 1800000000));
+        $this->assertSame($withetag, pointer_reader::external_checkvalue('"abc"', 'other bytes'));
+        $this->assertSame($withetag, pointer_reader::external_checkvalue('"abc"', null));
         $this->assertMatchesRegularExpression('/^[0-9a-f]{40}$/', $withetag);
     }
 
     /**
-     * Without ETags (IServ), getlastmodified supplies the check value;
-     * a changed timestamp changes that value.
+     * Without a strong ETag (none, empty or weak) the bytes supply the check
+     * value (ADR 0035); without bytes it stays empty.
      */
-    public function test_external_checkvalue_falls_back_to_timemodified(): void {
-        $first = pointer_reader::external_checkvalue(null, 1700000000);
+    public function test_external_checkvalue_falls_back_to_sha256_of_the_bytes(): void {
+        $expected = 'sha256:' . hash('sha256', 'bytes');
 
-        $this->assertSame(sha1('mtime:1700000000'), $first);
-        $this->assertNotSame($first, pointer_reader::external_checkvalue(null, 1700000001));
+        $this->assertSame($expected, pointer_reader::external_checkvalue(null, 'bytes'));
+        $this->assertSame($expected, pointer_reader::external_checkvalue('W/"abc"', 'bytes'));
+        $this->assertSame('', pointer_reader::external_checkvalue(null, null));
+        $this->assertSame('', pointer_reader::external_checkvalue('W/"abc"', null));
     }
 
     /**

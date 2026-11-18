@@ -82,6 +82,7 @@ $string['contextfilecreated'] = '{$a} created.';
 $string['contextfileexternalconflict'] = 'Conflict: {$a} was changed externally in the meantime — please read it again, merge the changes, and write again.';
 $string['contextfilehostnotallowed'] = 'File {$a}: this storage is not approved for personal data.';
 $string['contextfilelocked'] = 'File locked: {$a} — marked as containing personal data (personenbezug: true), the switch for personal context data is off.';
+$string['contextfilenotenforced'] = 'The server did not enforce the check against a concurrent change (no strong ETag); a simultaneous change could have been overwritten unnoticed.';
 $string['contextfilenotfound'] = 'File not found: {$a}';
 $string['contextfilenotmarkdown'] = 'Only .md files can be written to the context area: {$a}';
 $string['contextfileoverwritten'] = '{$a->path} overwritten (before: {$a->before} bytes, now: {$a->after} bytes).';

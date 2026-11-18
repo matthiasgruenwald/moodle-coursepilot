@@ -115,7 +115,7 @@
                             "required": 1,
                             "default": null,
                             "allownull": true,
-                            "type": "alphanumext"
+                            "type": "raw_trimmed"
                         },
                         "timemodified": {
                             "class": "core_external\\external_value",

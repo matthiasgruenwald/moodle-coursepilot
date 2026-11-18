@@ -446,10 +446,9 @@ final class read_context_file_test extends \advanced_testcase {
     }
 
     /**
-     * Without ETags (IServ), the checksum uses modification time: weaker but
-     * still nonempty (#513, Spec §4).
+     * Without ETags (IServ), the check value is the sha256 of the bytes (ADR 0035).
      */
-    public function test_external_read_returns_a_nonempty_checkvalue_without_etag(): void {
+    public function test_external_read_returns_the_sha256_checkvalue_without_etag(): void {
         $this->resetAfterTest();
         [$user, $fake] = $this->set_up_external_context();
         $fake->without_etags();
@@ -459,7 +458,7 @@ final class read_context_file_test extends \advanced_testcase {
         $result = read_context_file::execute('vorlagen.md');
         $result = external_api::clean_returnvalue(read_context_file::execute_returns(), $result);
 
-        $this->assertNotSame('', $result['contenthash']);
+        $this->assertSame('sha256:' . hash('sha256', '# Extern gemerkt'), $result['contenthash']);
     }
 
     /**
