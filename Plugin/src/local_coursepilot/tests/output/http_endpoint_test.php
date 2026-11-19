@@ -140,7 +140,13 @@ final class http_endpoint_test extends \advanced_testcase {
         ], []);
         $this->assertSame('', $empty->body);
         $this->assertArrayNotHasKey('Content-Type', $empty->headers);
-        $this->assertSame([], http_endpoint::request_headers(), 'CLI has no separate webserver header API.');
+        $server = $_SERVER;
+        $_SERVER = array_filter($server, fn($key) => !str_starts_with($key, 'HTTP_'), ARRAY_FILTER_USE_KEY);
+        try {
+            $this->assertSame([], http_endpoint::request_headers(), 'CLI has no separate webserver header API.');
+        } finally {
+            $_SERVER = $server;
+        }
     }
 
     #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
