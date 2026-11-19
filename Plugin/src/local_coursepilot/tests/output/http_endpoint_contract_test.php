@@ -223,7 +223,14 @@ final class http_endpoint_contract_test extends \advanced_testcase {
         $headers = $this->caught(fn() => http_endpoint::request_headers());
 
         $this->assertNull($headers);
-        $this->assertSame([], http_endpoint::request_headers());
+        // Environment-independent: a harness may define HTTP_HOST, which Moodle's getallheaders() fallback exposes.
+        $server = $_SERVER;
+        $_SERVER = array_filter($server, fn($key) => !str_starts_with($key, 'HTTP_'), ARRAY_FILTER_USE_KEY);
+        try {
+            $this->assertSame([], http_endpoint::request_headers());
+        } finally {
+            $_SERVER = $server;
+        }
     }
 
     /**
