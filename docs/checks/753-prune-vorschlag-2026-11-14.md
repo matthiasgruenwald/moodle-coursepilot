@@ -311,3 +311,21 @@ Unvollständige Matrixdaten: 20 Mutanten (Timeout/Fehler/ohne JUnit); sie schüt
 - oauth_connection_test::test_stolen_refresh_replay_revokes_every_successor_and_ticket: Muster `\bproc_open\s*\(`
 - oauth_connection_test::test_tickets_survive_rotation_and_end_with_their_connection: Muster `\bproc_open\s*\(`
 - oauth_connection_test::test_token_endpoint_does_not_disclose_replay_or_secrets: Muster `\bproc_open\s*\(`
+
+## Nachtrag 19.11.2026: Testnamen nach 2.2.0-beta
+
+Mit dem Port des Kontextbereichs ([#788](https://github.com/matthiasgruenwald/moodle-coursepilot/pull/788)) wurden Tests umbenannt, die dieser Bericht, die Evidenz unter `evidence/753/` und die Prune-Berichte von #673 noch unter altem Namen führen. Die Berichte bleiben unverändert, weil sie den Messstand ihres Quellstands belegen. Wer eine Löschliste daraus freigibt, nimmt die neuen Namen:
+
+| Alter Name | Neuer Name |
+|---|---|
+| `read_context_file_test::test_context_write_surface_is_exactly_two_tools` | `test_context_write_surface_is_exactly_three_tools` |
+| `read_context_file_test::test_external_read_returns_a_nonempty_checkvalue_without_etag` | `test_external_read_returns_the_sha256_checkvalue_without_etag` |
+| `list_context_files_test::test_external_listing_returns_a_nonempty_checkvalue_without_etag` | `test_external_listing_returns_an_empty_checkvalue_without_etag` |
+| `pointer_reader_test::test_external_checkvalue_prefers_etag` | `test_external_checkvalue_prefers_strong_etag` |
+| `pointer_reader_test::test_external_checkvalue_falls_back_to_timemodified` | `test_external_checkvalue_falls_back_to_sha256_of_the_bytes` |
+| `webdav_client_test::test_put_overwrite_without_etag_uses_lastmodified_as_weak_substitute` | `test_put_overwrite_without_etag_sends_no_if_match` |
+| `webdav_client_test::test_put_overwrite_without_etag_conflicts_on_stale_lastmodified` | entfallen; ohne starkes ETag prüft jetzt der Speicherport die Bytes (ADR 0035) |
+| `webdav_storage_port_contract_test::test_without_etags_write_and_append_return_the_readable_modification_checksum` | `test_without_etags_write_and_append_return_the_sha256_of_the_bytes_and_no_server_enforcement` |
+| `webdav_storage_port_contract_test::test_a_write_whose_result_cannot_be_read_back_reports_the_content_length_and_a_zero_time` | `test_a_write_whose_result_cannot_be_read_back_reports_the_content_length_and_the_checksum_of_the_bytes` |
+
+Die neuen Tests prüfen das geänderte Verhalten und sind keine Prune-Kandidaten, solange kein neuer Messlauf vorliegt.
